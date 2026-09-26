@@ -19634,12 +19634,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native browser assertion→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 session-picker/swipe helpers are identical to frozen source; tagged Gi native browser journey passed six projects with clause-specific assertions. Piclaw UI and physical touch not executed; see session-switching-review.md.",
+      "evidence_link": "session-switching-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -19703,12 +19703,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native browser assertion→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 session-picker/swipe helpers are identical to frozen source; tagged Gi native browser journey passed six projects with clause-specific assertions. Piclaw UI and physical touch not executed; see session-switching-review.md.",
+      "evidence_link": "session-switching-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -19772,12 +19772,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native browser assertion→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 session-picker/swipe helpers are identical to frozen source; tagged Gi native browser journey passed six projects with clause-specific assertions. Piclaw UI and physical touch not executed; see session-switching-review.md.",
+      "evidence_link": "session-switching-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -19845,12 +19845,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native browser assertion→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 session-picker/swipe helpers are identical to frozen source; tagged Gi native browser journey passed six projects with clause-specific assertions. Piclaw UI and physical touch not executed; see session-switching-review.md.",
+      "evidence_link": "session-switching-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -19929,12 +19929,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native browser assertion→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 session-picker/swipe helpers are identical to frozen source; tagged Gi native browser journey passed six projects with clause-specific assertions. Piclaw UI and physical touch not executed; see session-switching-review.md.",
+      "evidence_link": "session-switching-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -20002,12 +20002,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native browser assertion→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 session-picker/swipe helpers are identical to frozen source; tagged Gi native browser journey passed six projects with clause-specific assertions. Piclaw UI and physical touch not executed; see session-switching-review.md.",
+      "evidence_link": "session-switching-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

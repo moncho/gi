@@ -20,6 +20,9 @@ if(reference.release!==`piclaw-${oracleVersion}-linux-x64-baseline`)throw Error(
 const map=await fs.readFile(path.join(oracleRoot,'app/runtime/web/static/classic/dist/app.bundle.js.map'));
 if(createHash('sha256').update(map).digest('hex')!==reference.map.sha256)throw Error('Piclaw source map changed');
 const state=JSON.parse(await fs.readFile(path.join(root,'tests/ux/fixtures/compose-pixel-state.json'),'utf8'));state.theme='light';state.sessionId='web:default';state.commands.push({name:'/skill:proof',description:'Oracle skill fixture'});
+// Keep the shared fixture immutable: this catalogue exists only for the Classic keyboard probe.
+state.model.model_options=[...state.model.model_options,
+ ...Array.from({length:12},(_,index)=>({label:`test/page-${String(index).padStart(2,'0')}`,provider:'test',id:`page-${index}`,name:`page-${index}`,context_window:65536}))];
 const browser=await ({chromium,webkit}[browserName]).launch({headless:true});const page=await browser.newPage({viewport:sizes[viewportName],serviceWorkers:'block'});
 const host=await installPixelHost({page,host:'piclaw',root:oracleRoot,state,reference});
 let queue=[{row_id:101,content:'QUEUED ORACLE TEXT',timestamp:state.now}];
@@ -29,6 +32,7 @@ const originalHTML=await fs.readFile(path.join(oracleRoot,'app/runtime/web/stati
 const servedHTML=originalHTML.replaceAll('__PICLAW_SANITIZE_SVG_FENCES_FLAG__','1');
 await page.route(host.origin+'/',route=>route.fulfill({contentType:'text/html',body:servedHTML}));
 await page.route('**/agent/queue-state?*',route=>route.fulfill({json:{items:queue,count:queue.length}}));
+await page.route('**/agent/models?*',route=>route.fulfill({json:{...state.model,models:state.model.model_options,available_model_count:state.model.model_options.length}}));
 await page.route('**/timeline?*',route=>route.fulfill({json:{posts,has_more:false}}));
 const queueMutations=[],messageRequests=[];
 await page.route('**/agent/default/message?*',async route=>{messageRequests.push({method:route.request().method(),url:route.request().url(),data:route.request().postDataJSON()});await route.fulfill({json:{ok:true,turn_id:'oracle-fixture-turn'}});});
@@ -77,6 +81,27 @@ try{
  await page.waitForFunction(()=>document.activeElement===document.querySelector('.compose-box textarea'));
  results.checks.push({name:'Loaded skill Quick Action insertion',inputBefore:'ORACLE SKILL DRAFT',inputAfter:await input.inputValue(),focused:await input.evaluate(e=>document.activeElement===e),messageRequests:messageRequests.length});
  if(results.checks.at(-1).inputAfter!=='/skill:proof'||!results.checks.at(-1).focused||messageRequests.length!==1)throw Error('Skill Quick Action oracle contract changed');
+ await page.getByRole('button',{name:'Open model picker'}).click();
+ const search=page.getByRole('combobox',{name:'Search models'}),list=page.getByRole('listbox',{name:'Models'});
+ await search.waitFor();await page.waitForFunction(()=>document.activeElement?.getAttribute('role')==='combobox');
+ await search.fill('test/page-');await page.waitForFunction(()=>document.querySelectorAll('[role="listbox"][aria-label="Models"] [role="option"]').length===12);
+ // Initial active key may retain the current model outside this query until
+ // effects settle; navigation and boundary keys are asserted separately.
+ const active=()=>search.getAttribute('aria-activedescendant');const modelChecks={name:'Model picker keyboard',count:await list.getByRole('option').count(),focused:await search.evaluate(el=>document.activeElement===el),
+ initial:await active()};
+ await search.press('PageDown');modelChecks.pageDown=await active();
+ await search.press('PageUp');modelChecks.pageUp=await active();
+ await search.press('Control+End');modelChecks.controlEnd=await active();
+ await search.press('Control+Home');modelChecks.controlHome=await active();
+ await search.press('Meta+End');modelChecks.metaEnd=await active();
+ await search.press('Meta+Home');modelChecks.metaHome=await active();
+ modelChecks.focusAfter=await search.evaluate(el=>document.activeElement===el);
+ await search.press('Escape');await list.waitFor({state:'hidden'});
+ modelChecks.closed=await list.count()===0;
+ await page.waitForFunction(()=>document.activeElement?.getAttribute('aria-label')==='Open model picker');
+ modelChecks.triggerFocused=await page.getByRole('button',{name:'Open model picker'}).evaluate(el=>document.activeElement===el);
+ results.checks.push(modelChecks);
+ if(modelChecks.count!==12||!modelChecks.focused||!modelChecks.pageDown?.includes('page-')||!modelChecks.pageUp?.includes('page-0')||modelChecks.controlHome!==modelChecks.metaHome||modelChecks.controlHome!==modelChecks.pageUp||modelChecks.controlEnd!==modelChecks.metaEnd||!modelChecks.controlEnd?.includes('page-11')||!modelChecks.focusAfter||!modelChecks.closed||!modelChecks.triggerFocused||messageRequests.length!==1)throw Error('Model picker oracle keyboard contract changed');
  results.failures=host.failures;results.calls=host.calls;results.assets=host.assets;
  host.assert();
 }catch(error){results.error=String(error);results.pageText=await page.locator('body').innerText();results.marked=await page.evaluate(()=>({marked:typeof window.marked,parse:typeof window.marked?.parse}));results.queueHTML=await page.locator('.compose-queue-stack').evaluateAll(els=>els.map(e=>e.outerHTML));results.failures=host.failures;results.calls=host.calls;await page.screenshot({path:out+'/probe-error.png'}).catch(()=>{});process.exitCode=1;}

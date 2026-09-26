@@ -252,26 +252,28 @@ if(process.env.GI_UX_MODEL_PICKER) test('@shared-34 Filter native models and nav
  let mutations=0;page.on('request',r=>{if(r.method()==='PATCH'&&r.url().endsWith(`/api/sessions/${main.id}/model`))mutations++;});
  await modelButton.click();const search=page.getByRole('combobox',{name:'Search models',exact:true});await expect(search).toBeVisible();
  const labels=()=>menu.getByRole('option').evaluateAll(nodes=>nodes.map(n=>n.title.startsWith('Blocked: ')?n.title.slice(9).split(' context window')[0]:n.title.split(' • ')[0]));
- const all=await labels();expect(all).toEqual(catalogue.map(x=>x.label).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'})));
- for(const [query,expected] of [['ux-local/pine',all.filter(x=>x.includes('ux-local/pine'))],['Forest pine',all.filter(x=>x==='ux-local/pine'||x==='ux-local/pine-small')],['32K ctx',catalogue.filter(x=>x.context_window===32000).map(x=>x.label).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}))]]){
+ const all=await labels();const sorted=catalogue.map(x=>x.label).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+ const nativeOrder=[before.current,...sorted.filter(label=>label!==before.current)];
+ expect(all).toEqual(nativeOrder); // Supplied catalogue sort, then Gi's Current group.
+ for(const [query,expected] of [['ux-local/pine',all.filter(x=>x.includes('ux-local/pine'))],['Forest pine',all.filter(x=>x==='ux-local/pine'||x==='ux-local/pine-small')],['32K ctx',all.filter(label=>catalogue.some(x=>x.label===label&&x.context_window===32000))]]){
   await search.fill(query);await expect.poll(labels).toEqual(expected);await expect(search).toBeFocused();
  }
  await search.fill('no matching native model');await expect(menu.getByRole('option')).toHaveCount(0);await search.press('Enter');expect(mutations).toBe(0);
  await search.fill('Forest pine-small');await expect(menu.getByRole('option')).toHaveCount(1);await expect(menu.getByRole('option')).toBeDisabled();await expect(menu.getByRole('option')).toHaveAccessibleDescription('Context window is smaller than the latest measured request.');await expect(search).not.toHaveAttribute('aria-activedescendant',/.+/);await search.press('ArrowDown');await search.press('Enter');expect(mutations).toBe(0);
  await search.fill('Forest pine');await search.press('Home');await search.press('X');await expect(search).toHaveValue('XForest pine');await search.press('Backspace');await expect(search).toHaveValue('Forest pine');await search.press('End');await search.press(' ');await expect(search).toHaveValue('Forest pine ');
  await search.fill('');const substring=option('aux-local/ux-local/pine-shadow');await substring.focus();
- await page.keyboard.type('ux-local/pi',{delay:10});const pine=option('ux-local/pine •');await expect(pine).toHaveClass(/active/);await expect(pine).toBeFocused();await expect(search).toHaveValue('');
+ await page.keyboard.type('ux-local/pi',{delay:10});const pine=menu.getByRole('option',{name:/^ux-local\/pine •/});await expect(pine).toHaveClass(/active/);await expect(pine).toBeFocused();await expect(search).toHaveValue('');
  await page.keyboard.type('per',{delay:10});const piper=option('ux-local/piper');await expect(piper).toBeFocused();await expect(piper).toHaveClass(/active/);
  const enabled=await menu.getByRole('option').evaluateAll(nodes=>nodes.filter(n=>!n.disabled).map(n=>n.textContent.trim()));
  const focused=()=>menu.getByRole('option').evaluateAll(nodes=>nodes.filter(n=>n===document.activeElement).map(n=>n.textContent.trim()));
  await page.keyboard.press('Home');await expect.poll(focused).toEqual([enabled[0]]);
- for(const [key,index] of [['PageDown',8],['PageUp',0],['End',enabled.length-1],['ArrowDown',0],['ArrowUp',enabled.length-1]]){await page.keyboard.press(key);await expect.poll(focused).toEqual([enabled[index]]);}
+ for(const [key,index] of [['PageDown',7],['PageUp',0],['End',enabled.length-1],['ArrowDown',enabled.length-1],['ArrowUp',enabled.length-2]]){await page.keyboard.press(key);await expect.poll(focused).toEqual([enabled[index]]);}
  await pine.focus();await page.keyboard.press('ArrowDown');await expect(piper).toBeFocused(); // skip the disabled pine-small row
  await page.keyboard.press('Escape');await expect(menu).toHaveCount(0);await expect(modelButton).toBeFocused();expect(mutations).toBe(0);expect((await state()).current).toBe(before.current);await expect(input).toHaveValue(draft);
  await modelButton.click();await expect(search).toHaveValue('');await search.fill('ux-local/piper');await search.press('Enter');await expect(menu).toHaveCount(0);await expect(modelButton).toHaveText('ux-local/piper');expect(mutations).toBe(1);expect((await state()).current).toBe('ux-local/piper');
  // Actual result buttons own Enter and Space even if the old highlight differs.
- for(const [label,key,count] of [['ux-local/pine •','Enter',2],['ux-local/large','Space',3]]){
-  await modelButton.click();await option(label).focus();await page.keyboard.press(key);await expect(menu).toHaveCount(0);expect(mutations).toBe(count);
+ for(const [label,key,count] of [['ux-local/pine','Enter',2],['ux-local/large','Space',3]]){
+  await modelButton.click();await menu.getByRole('option',{name:new RegExp('^'+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?: •|$)')}).focus();await page.keyboard.press(key);await expect(menu).toHaveCount(0);expect(mutations).toBe(count);
  }
  await expect.poll(storedDraft).toEqual(savedDraft);
  await page.reload();await expect(modelButton).toHaveText('ux-local/large');await expect(input).toHaveValue(draft);await expect(page.locator('.compose-file-pill[title="draft.txt"]')).toHaveCount(1);await expect(page.locator('.compose-file-pill[title^="Message reference:"]')).toHaveCount(1);expect(await storedDraft()).toEqual(savedDraft);

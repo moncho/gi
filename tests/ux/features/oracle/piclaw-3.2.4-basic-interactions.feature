@@ -37,6 +37,18 @@ Feature: Observed basic Classic interactions in the shipped Piclaw 3.2.4 UI
     And no new prompt is submitted by selecting the command
     But this fixture does not establish that a real skill is loaded or executes
 
+  @oracle-model-picker @conflicts-classic-021
+  Scenario: Model search keeps focus while Page and modified Home or End navigate
+    Given the isolated model catalogue has twelve matching models
+    When I open the model picker and search for "test/page-"
+    Then its search field retains focus as PageDown and PageUp change the active result
+    And Control with End and Home moves to the last and first result
+    And Meta with End and Home moves to the last and first result
+    When I press Escape
+    Then the picker closes and focus returns to its trigger
+    And no message is submitted by navigating the picker
+    But this fixture does not prove model mutation, disabled entries or physical keys
+
   @oracle-queue-return @conflicts-shared-28
   Scenario: Return to editor replaces the existing draft before removing the queued row
     Given the composer contains "NEWER UNSENT TEXT"

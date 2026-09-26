@@ -18,6 +18,7 @@ test('versioned oracle scenarios are parseable, isolated and intentionally outsi
   "A first Return sends the selected chat's captured text once",
   'A slash Quick Action replaces an existing unsent composer draft',
   'A listed skill command uses the same draft-replacing prefill path',
+  'Model search keeps focus while Page and modified Home or End navigate',
   'Return to editor replaces the existing draft before removing the queued row',
   'A safe fenced SVG is rendered as an isolated image by default',
  ]);

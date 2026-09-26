@@ -8361,6 +8361,194 @@ function declineComposeKey(event) {
   return event.defaultPrevented || event.isComposing || event.keyCode === 229 || event.repeat && (event.key === "Enter" || event.key === "Tab");
 }
 
+// web/src/ui/popup-typeahead.ts
+var POPUP_TYPEAHEAD_RESET_MS = 700;
+function normalize2(value) {
+  return String(value || "").toLowerCase().replace(/^@/, "").replace(/\s+/g, " ").trim();
+}
+function isPopupTypeaheadKey(event) {
+  if (!event)
+    return false;
+  if (event.isComposing)
+    return false;
+  if (event.ctrlKey || event.metaKey || event.altKey)
+    return false;
+  return typeof event.key === "string" && event.key.length === 1 && /\S/.test(event.key);
+}
+function updatePopupTypeaheadBuffer(previous, key, now = Date.now(), resetMs = POPUP_TYPEAHEAD_RESET_MS) {
+  const prior = previous && typeof previous === "object" ? previous : { value: "", updatedAt: 0 };
+  const char = String(key || "").trim().toLowerCase();
+  if (!char)
+    return { value: "", updatedAt: now };
+  const shouldReset = !prior.value || !Number.isFinite(prior.updatedAt) || now - prior.updatedAt > resetMs;
+  return {
+    value: shouldReset ? char : `${prior.value}${char}`,
+    updatedAt: now
+  };
+}
+function rotatedIndices(length, startIndex) {
+  const size = Math.max(0, Number(length) || 0);
+  if (size <= 0)
+    return [];
+  const start = Number.isInteger(startIndex) ? startIndex : 0;
+  const normalizedStart = (start % size + size) % size;
+  const out = [];
+  for (let i = 0;i < size; i += 1) {
+    out.push((normalizedStart + i) % size);
+  }
+  return out;
+}
+function findPopupTypeaheadMatch(items, query, startIndex = 0, getLabel = (item) => item) {
+  const normalizedQuery = normalize2(query);
+  if (!normalizedQuery)
+    return -1;
+  const list = Array.isArray(items) ? items : [];
+  const indices = rotatedIndices(list.length, startIndex);
+  const labels = list.map((item) => normalize2(getLabel(item)));
+  for (const idx of indices) {
+    if (labels[idx].startsWith(normalizedQuery))
+      return idx;
+  }
+  for (const idx of indices) {
+    if (labels[idx].includes(normalizedQuery))
+      return idx;
+  }
+  return -1;
+}
+
+// web/src/gi-session-typeahead.ts
+function sessionTypeahead(event, entries, previous) {
+  if (event.defaultPrevented || event.repeat || !isPopupTypeaheadKey(event) || event.target?.closest?.('input, textarea, select, [contenteditable="true"]'))
+    return null;
+  const buffer = updatePopupTypeaheadBuffer(previous, event.key);
+  const enabled = entries.map((entry, index) => ({ entry, index })).filter((item) => !item.entry.disabled);
+  const match = findPopupTypeaheadMatch(enabled, buffer.value, 0, (item) => item.entry.label);
+  return { buffer, index: match < 0 ? -1 : enabled[match].index };
+}
+
+// web/src/gi-model-picker.ts
+function filterModelOptions(options, query, label) {
+  const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  return options.filter((option) => terms.every((term) => label(option).toLowerCase().includes(term)));
+}
+function moveModelPickerIndex(current, length, key) {
+  if (length <= 0)
+    return -1;
+  if (key === "Home")
+    return 0;
+  if (key === "End")
+    return length - 1;
+  if (key === "ArrowDown")
+    return current < 0 ? 0 : Math.min(length - 1, current + 1);
+  if (key === "ArrowUp")
+    return current < 0 ? length - 1 : Math.max(0, current - 1);
+  if (key === "PageDown")
+    return current < 0 ? 0 : Math.min(length - 1, current + 7);
+  if (key === "PageUp")
+    return current < 0 ? length - 1 : Math.max(0, current - 7);
+  return current;
+}
+function modelPickerKey(event, entries, current, previous) {
+  if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey && event.metaKey)
+    return null;
+  const target = event.target;
+  const editing = Boolean(target?.closest?.('input, textarea, select, [contenteditable="true"]'));
+  const searchJump = Boolean(target?.matches?.('input[type="search"]')) && (event.ctrlKey || event.metaKey) && ["Home", "End"].includes(event.key);
+  if ((event.ctrlKey || event.metaKey) && !searchJump)
+    return null;
+  const nativeButton = target?.closest?.("button");
+  const focused = target?.closest?.("[data-model-index]")?.getAttribute("data-model-index");
+  const index = focused == null ? current : Number(focused);
+  const enabled = entries.map((entry, index) => ({ entry, index })).filter((item) => !item.entry.disabled);
+  const buffer = { value: "", updatedAt: 0 };
+  if (["ArrowDown", "ArrowUp", "PageDown", "PageUp"].includes(event.key) || (!editing || searchJump) && ["Home", "End"].includes(event.key)) {
+    const selected = enabled.findIndex((item) => item.index === index);
+    return { index: enabled[moveModelPickerIndex(selected, enabled.length, event.key)]?.index ?? -1, buffer, activate: false, focus: !editing };
+  }
+  if (event.key === "Enter") {
+    if (nativeButton && !event.repeat)
+      return null;
+    return { index, buffer, activate: !event.repeat && Boolean(entries[index] && !entries[index].disabled), focus: false };
+  }
+  const typed = sessionTypeahead(event, entries, previous);
+  return typed ? { ...typed, activate: false, focus: true } : null;
+}
+
+// web/src/gi-quick-actions.ts
+function settingsOwnsKeyboard(doc = document) {
+  return Boolean(doc.querySelector?.('.settings-dialog[aria-modal="true"]'));
+}
+function blocksQuickActions(event, ready) {
+  const target = event.target;
+  return !ready || event.defaultPrevented || event.repeat || Boolean(target?.closest?.('button, a, [role="button"], [role="menuitem"], .monaco-editor, .terminal-pane, .post-reply'));
+}
+
+// web/src/gi-context-usage.ts
+var known = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0;
+function formatContextCount(value) {
+  if (!known(value))
+    return "?";
+  if (value >= 1e6)
+    return `${(value / 1e6).toFixed(1)}M`;
+  if (value >= 1000)
+    return `${(value / 1000).toFixed(0)}K`;
+  return String(value);
+}
+function contextPresentation(usage, canCompact = false) {
+  const percent = known(usage?.percent) ? usage.percent : null;
+  const fill = percent == null ? 0 : Math.min(100, percent);
+  const label = `Context: ${formatContextCount(usage?.tokens)} / ${formatContextCount(usage?.contextWindow)} tokens (${percent == null ? "?" : percent.toFixed(0)}%)`;
+  const qualifier = usage?.source === "provider_request" ? " — latest measured provider request" : " — usage unavailable";
+  return {
+    fill,
+    label,
+    title: label + qualifier + (canCompact ? " — Compact context" : ""),
+    color: percent == null ? "var(--text-secondary)" : percent > 90 ? "var(--context-red, #ef4444)" : percent > 75 ? "var(--context-amber, #f59e0b)" : "var(--context-green, #22c55e)"
+  };
+}
+function modelContextBlocked(option, usage) {
+  return known(usage?.tokens) && known(option?.contextWindow) && option.contextWindow > 0 && usage.tokens > option.contextWindow;
+}
+
+// web/src/ui/agent-mentions.ts
+function normalizeAgentName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+function parseMentionAutocompleteQuery(value) {
+  const match = String(value || "").match(/^@([a-zA-Z0-9_-]*)$/);
+  if (!match)
+    return null;
+  return normalizeAgentName(match[1] || "");
+}
+function dedupeAgents(agents) {
+  const seen = new Set;
+  const result = [];
+  for (const agent of Array.isArray(agents) ? agents : []) {
+    const handle = normalizeAgentName(agent?.agent_name);
+    if (!handle || seen.has(handle))
+      continue;
+    seen.add(handle);
+    result.push(agent);
+  }
+  return result;
+}
+function filterMentionAgents(agents, value, options = {}) {
+  const prefix = parseMentionAutocompleteQuery(value);
+  if (prefix == null)
+    return [];
+  const currentChatJid = typeof options?.currentChatJid === "string" ? options.currentChatJid : null;
+  return dedupeAgents(agents).filter((agent) => {
+    if (currentChatJid && agent?.chat_jid === currentChatJid)
+      return false;
+    const handle = normalizeAgentName(agent?.agent_name);
+    return handle.startsWith(prefix);
+  });
+}
+function buildMentionValue(agentName) {
+  const handle = normalizeAgentName(agentName);
+  return handle ? `@${handle} ` : "";
+}
+
 // web/src/ui/compose-session-switcher.ts
 var SECTION_LABELS = {
   current: "Current",
@@ -8499,174 +8687,6 @@ function shouldOpenSessionSwitcherFromBlankCompose(event, value, options = {}) {
   if (event.key !== "@")
     return false;
   return String(value || "") === "";
-}
-
-// web/src/ui/popup-typeahead.ts
-var POPUP_TYPEAHEAD_RESET_MS = 700;
-function normalize2(value) {
-  return String(value || "").toLowerCase().replace(/^@/, "").replace(/\s+/g, " ").trim();
-}
-function isPopupTypeaheadKey(event) {
-  if (!event)
-    return false;
-  if (event.isComposing)
-    return false;
-  if (event.ctrlKey || event.metaKey || event.altKey)
-    return false;
-  return typeof event.key === "string" && event.key.length === 1 && /\S/.test(event.key);
-}
-function updatePopupTypeaheadBuffer(previous, key, now = Date.now(), resetMs = POPUP_TYPEAHEAD_RESET_MS) {
-  const prior = previous && typeof previous === "object" ? previous : { value: "", updatedAt: 0 };
-  const char = String(key || "").trim().toLowerCase();
-  if (!char)
-    return { value: "", updatedAt: now };
-  const shouldReset = !prior.value || !Number.isFinite(prior.updatedAt) || now - prior.updatedAt > resetMs;
-  return {
-    value: shouldReset ? char : `${prior.value}${char}`,
-    updatedAt: now
-  };
-}
-function rotatedIndices(length, startIndex) {
-  const size = Math.max(0, Number(length) || 0);
-  if (size <= 0)
-    return [];
-  const start = Number.isInteger(startIndex) ? startIndex : 0;
-  const normalizedStart = (start % size + size) % size;
-  const out = [];
-  for (let i = 0;i < size; i += 1) {
-    out.push((normalizedStart + i) % size);
-  }
-  return out;
-}
-function findPopupTypeaheadMatch(items, query, startIndex = 0, getLabel = (item) => item) {
-  const normalizedQuery = normalize2(query);
-  if (!normalizedQuery)
-    return -1;
-  const list = Array.isArray(items) ? items : [];
-  const indices = rotatedIndices(list.length, startIndex);
-  const labels = list.map((item) => normalize2(getLabel(item)));
-  for (const idx of indices) {
-    if (labels[idx].startsWith(normalizedQuery))
-      return idx;
-  }
-  for (const idx of indices) {
-    if (labels[idx].includes(normalizedQuery))
-      return idx;
-  }
-  return -1;
-}
-
-// web/src/gi-session-typeahead.ts
-function sessionTypeahead(event, entries, previous) {
-  if (event.defaultPrevented || event.repeat || !isPopupTypeaheadKey(event) || event.target?.closest?.('input, textarea, select, [contenteditable="true"]'))
-    return null;
-  const buffer = updatePopupTypeaheadBuffer(previous, event.key);
-  const enabled = entries.map((entry, index) => ({ entry, index })).filter((item) => !item.entry.disabled);
-  const match = findPopupTypeaheadMatch(enabled, buffer.value, 0, (item) => item.entry.label);
-  return { buffer, index: match < 0 ? -1 : enabled[match].index };
-}
-
-// web/src/gi-model-picker.ts
-function filterModelOptions(options, query, label) {
-  const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  return options.filter((option) => terms.every((term) => label(option).toLowerCase().includes(term)));
-}
-function modelPickerKey(event, entries, current, previous) {
-  if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey)
-    return null;
-  const target = event.target;
-  const editing = Boolean(target?.closest?.('input, textarea, select, [contenteditable="true"]'));
-  const nativeButton = target?.closest?.("button");
-  const focused = target?.closest?.("[data-model-index]")?.getAttribute("data-model-index");
-  const index = focused == null ? current : Number(focused);
-  const enabled = entries.map((entry, index) => ({ entry, index })).filter((item) => !item.entry.disabled);
-  const buffer = { value: "", updatedAt: 0 };
-  if (["ArrowDown", "ArrowUp", "PageDown", "PageUp"].includes(event.key) || !editing && ["Home", "End"].includes(event.key)) {
-    const selected = enabled.findIndex((item) => item.index === index);
-    return { index: enabled[moveSessionPickerIndex(selected, enabled.length, event.key)]?.index ?? -1, buffer, activate: false, focus: !editing };
-  }
-  if (event.key === "Enter") {
-    if (nativeButton && !event.repeat)
-      return null;
-    return { index, buffer, activate: !event.repeat && Boolean(entries[index] && !entries[index].disabled), focus: false };
-  }
-  const typed = sessionTypeahead(event, entries, previous);
-  return typed ? { ...typed, activate: false, focus: true } : null;
-}
-
-// web/src/gi-quick-actions.ts
-function settingsOwnsKeyboard(doc = document) {
-  return Boolean(doc.querySelector?.('.settings-dialog[aria-modal="true"]'));
-}
-function blocksQuickActions(event, ready) {
-  const target = event.target;
-  return !ready || event.defaultPrevented || event.repeat || Boolean(target?.closest?.('button, a, [role="button"], [role="menuitem"], .monaco-editor, .terminal-pane, .post-reply'));
-}
-
-// web/src/gi-context-usage.ts
-var known = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0;
-function formatContextCount(value) {
-  if (!known(value))
-    return "?";
-  if (value >= 1e6)
-    return `${(value / 1e6).toFixed(1)}M`;
-  if (value >= 1000)
-    return `${(value / 1000).toFixed(0)}K`;
-  return String(value);
-}
-function contextPresentation(usage, canCompact = false) {
-  const percent = known(usage?.percent) ? usage.percent : null;
-  const fill = percent == null ? 0 : Math.min(100, percent);
-  const label = `Context: ${formatContextCount(usage?.tokens)} / ${formatContextCount(usage?.contextWindow)} tokens (${percent == null ? "?" : percent.toFixed(0)}%)`;
-  const qualifier = usage?.source === "provider_request" ? " — latest measured provider request" : " — usage unavailable";
-  return {
-    fill,
-    label,
-    title: label + qualifier + (canCompact ? " — Compact context" : ""),
-    color: percent == null ? "var(--text-secondary)" : percent > 90 ? "var(--context-red, #ef4444)" : percent > 75 ? "var(--context-amber, #f59e0b)" : "var(--context-green, #22c55e)"
-  };
-}
-function modelContextBlocked(option, usage) {
-  return known(usage?.tokens) && known(option?.contextWindow) && option.contextWindow > 0 && usage.tokens > option.contextWindow;
-}
-
-// web/src/ui/agent-mentions.ts
-function normalizeAgentName(value) {
-  return String(value || "").trim().toLowerCase();
-}
-function parseMentionAutocompleteQuery(value) {
-  const match = String(value || "").match(/^@([a-zA-Z0-9_-]*)$/);
-  if (!match)
-    return null;
-  return normalizeAgentName(match[1] || "");
-}
-function dedupeAgents(agents) {
-  const seen = new Set;
-  const result = [];
-  for (const agent of Array.isArray(agents) ? agents : []) {
-    const handle = normalizeAgentName(agent?.agent_name);
-    if (!handle || seen.has(handle))
-      continue;
-    seen.add(handle);
-    result.push(agent);
-  }
-  return result;
-}
-function filterMentionAgents(agents, value, options = {}) {
-  const prefix = parseMentionAutocompleteQuery(value);
-  if (prefix == null)
-    return [];
-  const currentChatJid = typeof options?.currentChatJid === "string" ? options.currentChatJid : null;
-  return dedupeAgents(agents).filter((agent) => {
-    if (currentChatJid && agent?.chat_jid === currentChatJid)
-      return false;
-    const handle = normalizeAgentName(agent?.agent_name);
-    return handle.startsWith(prefix);
-  });
-}
-function buildMentionValue(agentName) {
-  const handle = normalizeAgentName(agentName);
-  return handle ? `@${handle} ` : "";
 }
 
 // web/src/ui/status-dot.js
@@ -19841,11 +19861,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-78fx6prv.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-fxe9dw8y.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-axv3z51d.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-9hsjxa4v.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-k35m18r5.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-gce7bw21.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-ey2dgjxf.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-a41ptkgt.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-4fahg3p3.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-gy9ag6j0.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -22629,5 +22649,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=8F50D70973D4A36064756E2164756E21
-//# sourceMappingURL=app-r5wpse0h.js.map
+//# debugId=EC8BAE9FFE4DFDA864756E2164756E21
+//# sourceMappingURL=app-az2a72hs.js.map

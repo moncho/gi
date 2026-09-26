@@ -45,11 +45,14 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Fourteen have qualified oracle/conflict/correction findings; 344 still await
-clause audit. Historical Classic canonical001–029 and shared1–42 also have
-qualified **group** reviews in `classic-canonical-review.md` and
-`shared-contract-review.md`; those do not convert unprobed clauses to current
-Piclaw 3.2.4 acceptance. `expanded-crosswalk.json` enumerates all 421 cases,
+Nineteen have qualified clause findings or source→test→Gi-code reviews; 339
+still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
+also have qualified **group** reviews in `classic-canonical-review.md` and
+`shared-contract-review.md`. `compose-stability-review.md` traces five
+additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
+Gi assertions and code; their Piclaw upload/failure backend was not run. These
+reviews do not convert unprobed clauses to current-oracle acceptance.
+`expanded-crosswalk.json` enumerates all 421 cases,
 including the 56-case pinned passkey criteria ledger. It finds 117 direct-tagged
 browser-test candidates; 248 have neither such a candidate nor passkey-ledger
 entry. **A direct tag is not behavioural acceptance**, and zero direct candidates
@@ -83,6 +86,12 @@ parse-checked versioned Gherkin cases at
 `tests/ux/features/oracle/piclaw-3.2.4-plan-sidebar.feature` (commit `3ef30aa`).
 They are not browser-executed or Gi parity; see `plan-oracle-gap.md`. Plan's
 Shared revision CAS and dirty-refresh confirmation exceed current add-on behaviour.
+
+Five tagged compose-stability cases (`@ux-compose-001`, `002`, `003`, `005`,
+`006`) passed 30/30 in the canonical disposable six-project browser fixture.
+The first unchanged run passed 29 and stalled on WebKit phone after reload at
+`Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
+queued return `004`, retains the no-loss policy conflict.
 
 The seven `features/tui/*.feature` files passed the canonical tmux Gherkin runner
 (10 scenarios). A first run with `BIN_DIR` overridden failed at launch because the

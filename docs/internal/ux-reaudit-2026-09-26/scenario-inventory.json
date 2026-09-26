@@ -14617,12 +14617,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "clause source→test→Gi code review in compose-stability-review.md; isolated Piclaw runtime only for queued return",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 compose-box source supports the frozen clause; a tagged Gi native browser journey checks its stated subset. Piclaw upload/failure/backend behaviour was not directly probed; see compose-stability-review.md.",
+      "evidence_link": "compose-stability-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14683,12 +14683,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "clause source→test→Gi code review in compose-stability-review.md; isolated Piclaw runtime only for queued return",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 compose-box source supports the frozen clause; a tagged Gi native browser journey checks its stated subset. Piclaw upload/failure/backend behaviour was not directly probed; see compose-stability-review.md.",
+      "evidence_link": "compose-stability-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14737,12 +14737,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "clause source→test→Gi code review in compose-stability-review.md; isolated Piclaw runtime only for queued return",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 compose-box source supports the frozen clause; a tagged Gi native browser journey checks its stated subset. Piclaw upload/failure/backend behaviour was not directly probed; see compose-stability-review.md.",
+      "evidence_link": "compose-stability-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14799,12 +14799,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
+      "review_status": "current Piclaw UI text/focus/removal probe; source media behavior; Gi no-loss policy conflict; compose-stability-review.md",
+      "oracle_status": "bounded-ui-return-compared",
       "audit_status": "oracle-confirmed",
       "priority": "P1",
       "finding": "Current Piclaw return-to-editor replaces text and clears media in source; fixture confirms text, focus, removal request but does not test media.",
-      "evidence_link": "oracle-deltas.md",
+      "evidence_link": "oracle-deltas.md; compose-stability-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "3.2.3 or pinned70d33bc as qualified"
     },
@@ -14872,12 +14872,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "clause source→test→Gi code review in compose-stability-review.md; isolated Piclaw runtime only for queued return",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 compose-box source supports the frozen clause; a tagged Gi native browser journey checks its stated subset. Piclaw upload/failure/backend behaviour was not directly probed; see compose-stability-review.md.",
+      "evidence_link": "compose-stability-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14930,12 +14930,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "clause source→test→Gi code review in compose-stability-review.md; isolated Piclaw runtime only for queued return",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 compose-box source supports the frozen clause; a tagged Gi native browser journey checks its stated subset. Piclaw upload/failure/backend behaviour was not directly probed; see compose-stability-review.md.",
+      "evidence_link": "compose-stability-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

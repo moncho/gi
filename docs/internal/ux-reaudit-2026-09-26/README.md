@@ -45,7 +45,7 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Twenty-two have qualified clause findings or source→test→Gi-code reviews; 336
+Twenty-three have qualified clause findings or source→test→Gi-code reviews; 335
 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
@@ -98,8 +98,12 @@ queued return `004`, retains the no-loss policy conflict.
 Three tagged workspace clauses (`@ux-workspace-004`, `008`, `011`) passed 18/18
 in the disposable six-project Gi browser fixture. The explorer module changed
 between frozen source and 3.2.4; the installed version was checked separately.
-The seven `features/tui/*.feature` files passed the canonical tmux Gherkin runner
-(10 scenarios). A first run with `BIN_DIR` overridden failed at launch because the
+A prior run of the seven `features/tui/*.feature` files passed the canonical
+tmux Gherkin runner (10 scenarios). The latest whole-suite invocation was
+aborted on `assistant_basics.feature` and is **not** a pass. A separate focused
+`keyboard_behavior.feature` run passed, as did `make test-tui-reading` at three
+terminal sizes. `tui-keyboard-review.md` separates screen-text checks from the
+stronger history-anchor/cursor checks. A first run with `BIN_DIR` overridden failed at launch because the
 shell runner hard-codes `bin/gi`; it is not a product failure. The target is not in
 whole-product CI and screen-text assertions do not establish physical/pixel parity.
 The 23 proposal-tagged `features/search/workspace-index.feature` cases are parsed

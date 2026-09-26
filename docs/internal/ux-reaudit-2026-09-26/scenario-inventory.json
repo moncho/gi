@@ -10359,12 +10359,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded current Piclaw source→tagged Gi native browser assertion→display handler review",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Current Piclaw 3.2.4 post/card source supports the frozen display clause, and a disposable Gi native browser journey passed six projects. Piclaw UI behaviour was not directly probed; no backend/control authority or physical acceptance. See recovery-card-review.md.",
+      "evidence_link": "recovery-card-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -10594,12 +10594,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded current Piclaw source→tagged Gi native browser assertion→display handler review",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Current Piclaw 3.2.4 post/card source supports the frozen display clause, and a disposable Gi native browser journey passed six projects. Piclaw UI behaviour was not directly probed; no backend/control authority or physical acceptance. See recovery-card-review.md.",
+      "evidence_link": "recovery-card-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -10666,12 +10666,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded current Piclaw source→tagged Gi native browser assertion→display handler review",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Current Piclaw 3.2.4 post/card source supports the frozen display clause, and a disposable Gi native browser journey passed six projects. Piclaw UI behaviour was not directly probed; no backend/control authority or physical acceptance. See recovery-card-review.md.",
+      "evidence_link": "recovery-card-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

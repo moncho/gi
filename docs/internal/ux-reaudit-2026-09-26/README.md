@@ -45,7 +45,7 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Twenty-three have qualified clause findings or source→test→Gi-code reviews; 335
+Twenty-six have qualified clause findings or source→test→Gi-code reviews; 332
 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
@@ -53,7 +53,9 @@ additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
 Gi assertions and code; their Piclaw upload/failure backend was not run. These
 `workspace-bounded-review.md` adds hidden-tree, preview and tab-store traces
 for three more clauses; their current Piclaw UI interactions were not run.
-These reviews do not convert unprobed clauses to current-oracle acceptance.
+`recovery-card-review.md` adds three source-backed, tagged native-display
+journeys. The Piclaw card/recovery UI itself was not exercised. These reviews
+do not convert unprobed clauses to current-oracle acceptance.
 `expanded-crosswalk.json` enumerates all 421 cases,
 including the 56-case pinned passkey criteria ledger. It finds 117 direct-tagged
 browser-test candidates; 248 have neither such a candidate nor passkey-ledger
@@ -95,6 +97,8 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+Three recovery/card clauses (`@ux-extra-003`, `012`, `013`) passed 18/18 in
+disposable Gi browser projects. Their current Piclaw UI was not probed.
 Three tagged workspace clauses (`@ux-workspace-004`, `008`, `011`) passed 18/18
 in the disposable six-project Gi browser fixture. The explorer module changed
 between frozen source and 3.2.4; the installed version was checked separately.

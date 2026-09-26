@@ -19,7 +19,7 @@ if((await fs.readFile(path.join(oracleRoot,'VERSION'),'utf8')).trim()!==oracleVe
 if(reference.release!==`piclaw-${oracleVersion}-linux-x64-baseline`)throw Error('Piclaw oracle reference version mismatch');
 const map=await fs.readFile(path.join(oracleRoot,'app/runtime/web/static/classic/dist/app.bundle.js.map'));
 if(createHash('sha256').update(map).digest('hex')!==reference.map.sha256)throw Error('Piclaw source map changed');
-const state=JSON.parse(await fs.readFile(path.join(root,'tests/ux/fixtures/compose-pixel-state.json'),'utf8'));state.theme='light';state.sessionId='web:default';
+const state=JSON.parse(await fs.readFile(path.join(root,'tests/ux/fixtures/compose-pixel-state.json'),'utf8'));state.theme='light';state.sessionId='web:default';state.commands.push({name:'/skill:proof',description:'Oracle skill fixture'});
 const browser=await ({chromium,webkit}[browserName]).launch({headless:true});const page=await browser.newPage({viewport:sizes[viewportName],serviceWorkers:'block'});
 const host=await installPixelHost({page,host:'piclaw',root:oracleRoot,state,reference});
 let queue=[{row_id:101,content:'QUEUED ORACLE TEXT',timestamp:state.now}];
@@ -69,6 +69,14 @@ try{
  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  results.checks.push({name:'Selected chat first send request',inputAfter:await input.inputValue(),messageRequests});
  if(messageRequests.length!==1||messageRequests[0].method!=='POST'||!messageRequests[0].url.includes('chat_jid=web%3Adefault')||messageRequests[0].data.content!=='ORACLE FIRST SEND')throw Error('First send request contract changed');
+ await input.fill('ORACLE SKILL DRAFT');await input.blur();
+ await page.locator('.timeline').click({position:{x:150,y:90}});await page.keyboard.press('p');
+ await page.locator('.timeline-quick-actions').waitFor();const skillQuery=page.locator('.timeline-quick-actions-input');await skillQuery.fill('/skill:proof');
+ const skillItem=page.locator('.timeline-quick-actions-item-slash').filter({hasText:'/skill:proof'});await skillItem.waitFor();await skillItem.click();
+ await page.locator('.timeline-quick-actions').waitFor({state:'hidden'});
+ await page.waitForFunction(()=>document.activeElement===document.querySelector('.compose-box textarea'));
+ results.checks.push({name:'Loaded skill Quick Action insertion',inputBefore:'ORACLE SKILL DRAFT',inputAfter:await input.inputValue(),focused:await input.evaluate(e=>document.activeElement===e),messageRequests:messageRequests.length});
+ if(results.checks.at(-1).inputAfter!=='/skill:proof'||!results.checks.at(-1).focused||messageRequests.length!==1)throw Error('Skill Quick Action oracle contract changed');
  results.failures=host.failures;results.calls=host.calls;results.assets=host.assets;
  host.assert();
 }catch(error){results.error=String(error);results.pageText=await page.locator('body').innerText();results.marked=await page.evaluate(()=>({marked:typeof window.marked,parse:typeof window.marked?.parse}));results.queueHTML=await page.locator('.compose-queue-stack').evaluateAll(els=>els.map(e=>e.outerHTML));results.failures=host.failures;results.calls=host.calls;await page.screenshot({path:out+'/probe-error.png'}).catch(()=>{});process.exitCode=1;}

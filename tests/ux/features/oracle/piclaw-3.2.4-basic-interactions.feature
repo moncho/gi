@@ -27,6 +27,16 @@ Feature: Observed basic Classic interactions in the shipped Piclaw 3.2.4 UI
     And no prompt submission request is made
     But the former unsent text is not preserved in the composer
 
+  @oracle-skill-prefill @conflicts-classic-008 @conflicts-shared-17
+  Scenario: A listed skill command uses the same draft-replacing prefill path
+    Given the isolated Quick Actions catalogue contains "/skill:proof"
+    And the composer contains "ORACLE SKILL DRAFT"
+    When I select "/skill:proof" in the Slash commands group
+    Then the composer contains exactly "/skill:proof" without the previous draft
+    And the composer receives focus
+    And no new prompt is submitted by selecting the command
+    But this fixture does not establish that a real skill is loaded or executes
+
   @oracle-queue-return @conflicts-shared-28
   Scenario: Return to editor replaces the existing draft before removing the queued row
     Given the composer contains "NEWER UNSENT TEXT"

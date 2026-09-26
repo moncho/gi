@@ -17,6 +17,7 @@ test('versioned oracle scenarios are parseable, isolated and intentionally outsi
  expect(pickles.map(p=>p.name)).toEqual([
   "A first Return sends the selected chat's captured text once",
   'A slash Quick Action replaces an existing unsent composer draft',
+  'A listed skill command uses the same draft-replacing prefill path',
   'Return to editor replaces the existing draft before removing the queued row',
   'A safe fenced SVG is rendered as an isolated image by default',
  ]);

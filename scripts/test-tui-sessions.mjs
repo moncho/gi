@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 
 const root = resolve(import.meta.dir, '..');
+const binary = process.env.GI_TUI_BIN || join(root, 'bin/gi');
 const artifacts = join(root, 'test-results/tui-sessions');
 const temp = mkdtempSync(join(tmpdir(), 'gi-tui-sessions-'));
 const db = join(temp, 'gi.db');
@@ -44,7 +45,7 @@ try {
   const settings=JSON.stringify({defaultProvider:'test',defaultModel:'test-model',defaultThinkingLevel:'low',enabledModels:['test/test-model','test/bootstrap','test/unavailable'],untouched:{flag:true}});
   writeFileSync(join(temp,'.pi/settings.json'),settings);
   const quote = text => `'${text.replaceAll("'", "'\\''")}'`;
-  tmux('new-session','-d','-x','100','-y','22','-s',session,`cd ${quote(root)} && ${quote(join(root,'bin/gi'))} -tui -db ${quote(db)} -workspace ${quote(temp)}`);
+  tmux('new-session','-d','-x','100','-y','22','-s',session,`cd ${quote(root)} && ${quote(binary)} -tui -db ${quote(db)} -workspace ${quote(temp)}`);
   await waitFor(()=>capture().includes('m0/t0'),'startup');
   await command('/fork @other');
   await waitFor(()=>sql('select count(*) from sessions;')==='2','native child fork');
@@ -141,7 +142,7 @@ try {
   }
   // Clean restart restores the selected model of the native main session.
   keys('C-d');await waitFor(()=>{try{tmux('has-session','-t',session);return false;}catch{return true;}},'clean exit');
-  tmux('new-session','-d','-x','100','-y','22','-s',session,`cd ${quote(root)} && ${quote(join(root,'bin/gi'))} -tui -db ${quote(db)} -workspace ${quote(temp)}`);
+  tmux('new-session','-d','-x','100','-y','22','-s',session,`cd ${quote(root)} && ${quote(binary)} -tui -db ${quote(db)} -workspace ${quote(temp)}`);
   await waitFor(()=>capture().includes('bootstrap')&&capture().includes('m0/t0'),'restart restores selected model');
   await snapshot('model-after-restart');
   assert(readFileSync(join(temp,'.pi/settings.json'),'utf8')===settings,'restart altered global config');

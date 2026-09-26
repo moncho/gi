@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 	"testing"
@@ -445,5 +446,79 @@ func TestTUIComposerDraftDispatchPreservesNewerEditsAndFencesRestart(t *testing.
 	rejected, err := s.FinishTUIComposerDraft(ctx, "A", token, true)
 	if err != nil || rejected.Text.Text != "new edit" || rejected.Text.Claim == nil || !rejected.Text.Claim.Rejected || rejected.Media.Claim == nil {
 		t.Fatal("dispatch reset newer-edit fence", rejected, err)
+	}
+}
+
+func TestTUIComposerDraftReleaseVersusDispatchOneWinner(t *testing.T) {
+	for i := 0; i < 8; i++ {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			s, path, saved, _ := composerDraftFixture(t)
+			ctx := context.Background()
+			claim := claimComposer(t, s, saved)
+			other, err := Open(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer other.Close()
+			start := make(chan struct{})
+			var wg sync.WaitGroup
+			var beginErr, releaseErr error
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				<-start
+				_, beginErr = s.BeginTUIComposerSubmission(ctx, "A", claim.Text.Claim.Token, claim.Text.Revision)
+			}()
+			go func() {
+				defer wg.Done()
+				<-start
+				_, releaseErr = other.ReleaseUnsubmittedTUIComposerDraft(ctx, "A", claim.Text.Claim.Token, claim.Text.Revision)
+			}()
+			close(start)
+			wg.Wait()
+			if (beginErr == nil) == (releaseErr == nil) {
+				t.Fatal("expected exactly one winner", beginErr, releaseErr)
+			}
+			loser := beginErr
+			if beginErr == nil {
+				loser = releaseErr
+			}
+			if !errors.Is(loser, ErrTUIDraftConflict) && !errors.Is(loser, ErrTUIDraftHeld) {
+				t.Fatal(loser)
+			}
+			pair, err := s.LoadTUIComposerDraft(ctx, "A")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if beginErr == nil {
+				if pair.Text.Claim == nil || !pair.Text.Claim.Dispatched || pair.Media.Claim == nil {
+					t.Fatal(pair)
+				}
+			} else {
+				if pair.Text.Claim != nil || pair.Text.Text != saved.Text || len(pair.Media.Pending) != 1 {
+					t.Fatal(pair)
+				}
+				if _, err = s.BeginTUIComposerSubmission(ctx, "A", claim.Text.Claim.Token, pair.Text.Revision); err == nil {
+					t.Fatal("released owner admitted")
+				}
+			}
+		})
+	}
+}
+
+func TestTUIComposerDraftEditorCheckRejectsNewerRevision(t *testing.T) {
+	s, _, saved, _ := composerDraftFixture(t)
+	ctx := context.Background()
+	claim := claimComposer(t, s, saved)
+	newer, err := s.SaveTUITextDraft(ctx, "A", claim.Text.Revision, TUITextSnapshot{Text: "external", Cursor: 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.ReconcileTUIComposerDraftAtRevision(ctx, "A", claim.Text.Claim.Token, claim.Text.Revision); !errors.Is(err, ErrTUIDraftConflict) {
+		t.Fatal(err)
+	}
+	pair, err := s.LoadTUIComposerDraft(ctx, "A")
+	if err != nil || !reflect.DeepEqual(pair.Text, newer) {
+		t.Fatal("check mutated external draft", pair, err)
 	}
 }

@@ -18400,12 +18400,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded source→Gi native gesture assertion; no physical-device acceptance",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw swipe helper is identical to frozen source; tagged Gi native browser gesture journey passed across six viewport projects. Current Piclaw UI and physical touch unprobed; see mobile-swipe-review.md.",
+      "evidence_link": "mobile-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -18485,12 +18485,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "seven real excluded-control examples not individually proved; partial input/settings evidence",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "verified-outline-test-gap",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Frozen seven-example exclusion outline has Piclaw/Gi source selectors but no tagged journey for all real controls; input/settings and some targets are tested elsewhere. Do not infer full acceptance from selectors or passing adjacent swipe tags.",
+      "evidence_link": "mobile-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -18555,12 +18555,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded source→Gi native gesture assertion; no physical-device acceptance",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw swipe helper is identical to frozen source; tagged Gi native browser gesture journey passed across six viewport projects. Current Piclaw UI and physical touch unprobed; see mobile-swipe-review.md.",
+      "evidence_link": "mobile-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -18629,12 +18629,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded source→Gi native gesture assertion; no physical-device acceptance",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw swipe helper is identical to frozen source; tagged Gi native browser gesture journey passed across six viewport projects. Current Piclaw UI and physical touch unprobed; see mobile-swipe-review.md.",
+      "evidence_link": "mobile-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -18695,12 +18695,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded source→Gi native gesture assertion; no physical-device acceptance",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw swipe helper is identical to frozen source; tagged Gi native browser gesture journey passed across six viewport projects. Current Piclaw UI and physical touch unprobed; see mobile-swipe-review.md.",
+      "evidence_link": "mobile-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -18761,12 +18761,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded source→Gi native gesture assertion; no physical-device acceptance",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw swipe helper is identical to frozen source; tagged Gi native browser gesture journey passed across six viewport projects. Current Piclaw UI and physical touch unprobed; see mobile-swipe-review.md.",
+      "evidence_link": "mobile-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

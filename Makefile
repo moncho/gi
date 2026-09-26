@@ -424,6 +424,11 @@ test-piclaw-oracle-basic:
 	$(BUN) test tests/ux/oracle/piclaw-basic-contract.test.mjs
 	$(BUN) tests/ux/oracle/piclaw-basic-probe.mjs
 
+.PHONY: test-piclaw-oracle-matrix
+test-piclaw-oracle-matrix:
+	$(BUN) test tests/ux/oracle/piclaw-basic-contract.test.mjs
+	@set -e; for browser in chromium webkit; do for viewport in phone tablet desktop; do ORACLE_BROWSER=$$browser ORACLE_VIEWPORT=$$viewport $(BUN) tests/ux/oracle/piclaw-basic-probe.mjs > test-results/ux-oracle-$$browser-$$viewport.log; done; done
+
 test-ux-parity:
 	@mkdir -p test-results/ux-parity/queue-gates
 	PATH="$(abspath tests/ux/shell):$$PATH" GI_UX_QUEUE_GATES="$(abspath test-results/ux-parity/queue-gates)" $(MAKE) --no-print-directory test-instance-start TEST_PORT=$(UX_PARITY_PORT) TEST_DIR=.gi-ux-parity TEST_ENABLED_MODELS='["test-model","bootstrap","test/unavailable-model"]'

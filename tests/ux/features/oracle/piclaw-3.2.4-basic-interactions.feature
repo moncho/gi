@@ -8,6 +8,15 @@ Feature: Observed basic Classic interactions in the shipped Piclaw 3.2.4 UI
     Given the shipped Classic UI assets with the server's default SVG sanitization flag
     And an isolated session "web:default" with no real chat or auth writes
 
+  @oracle-first-send @frontend-boundary
+  Scenario: A first Return sends the selected chat's captured text once
+    Given session "web:default" is selected and its composer is empty
+    When I type "ORACLE FIRST SEND" and press Enter
+    Then the Classic client posts one message request for "web:default"
+    And its request content is exactly "ORACLE FIRST SEND"
+    And the composer clears after capture
+    But the isolated fixture response does not prove a persisted native turn or provider reply
+
   @oracle-quick-actions @conflicts-classic-007 @conflicts-shared-16
   Scenario: A slash Quick Action replaces an existing unsent composer draft
     Given the composer contains "ORACLE EXISTING DRAFT"

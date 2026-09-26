@@ -2,12 +2,17 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
-import {chromium} from 'playwright';
+import {chromium, webkit} from 'playwright';
 import {installPixelHost} from '../support/pixel-adapter.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../..');
 const oracleRoot=path.resolve(process.env.PICLAW_ORACLE_ROOT||'/opt/piclaw/current');
 const oracleVersion=process.env.PICLAW_ORACLE_VERSION||'3.2.4';
-const out=path.resolve(root,process.env.ORACLE_OUTPUT||`test-results/ux-oracle/piclaw-${oracleVersion}`);
+const browserName=process.env.ORACLE_BROWSER||'chromium';
+if(!['chromium','webkit'].includes(browserName))throw Error('Unsupported oracle browser');
+const viewportName=process.env.ORACLE_VIEWPORT||'desktop';
+const sizes={phone:{width:390,height:844},tablet:{width:820,height:1180},desktop:{width:1440,height:900}};
+if(!sizes[viewportName])throw Error('Unsupported oracle viewport');
+const out=path.resolve(root,process.env.ORACLE_OUTPUT||`test-results/ux-oracle/piclaw-${oracleVersion}/${browserName}-${viewportName}`);
 await fs.mkdir(out,{recursive:true});
 const reference=JSON.parse(await fs.readFile(new URL(`./piclaw-${oracleVersion}-reference.json`,import.meta.url),'utf8'));
 if((await fs.readFile(path.join(oracleRoot,'VERSION'),'utf8')).trim()!==oracleVersion)throw Error('Piclaw oracle release version changed');
@@ -15,7 +20,7 @@ if(reference.release!==`piclaw-${oracleVersion}-linux-x64-baseline`)throw Error(
 const map=await fs.readFile(path.join(oracleRoot,'app/runtime/web/static/classic/dist/app.bundle.js.map'));
 if(createHash('sha256').update(map).digest('hex')!==reference.map.sha256)throw Error('Piclaw source map changed');
 const state=JSON.parse(await fs.readFile(path.join(root,'tests/ux/fixtures/compose-pixel-state.json'),'utf8'));state.theme='light';state.sessionId='web:default';
-const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:900},serviceWorkers:'block'});
+const browser=await ({chromium,webkit}[browserName]).launch({headless:true});const page=await browser.newPage({viewport:sizes[viewportName],serviceWorkers:'block'});
 const host=await installPixelHost({page,host:'piclaw',root:oracleRoot,state,reference});
 let queue=[{row_id:101,content:'QUEUED ORACLE TEXT',timestamp:state.now}];
 const posts=[{id:201,timestamp:state.now,data:{type:'agent_response',content:'```svg\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><title>Oracle SVG</title><rect width="120" height="60" fill="red"/></svg>\n```',agent_id:'default',is_bot_message:true}},{id:202,timestamp:state.now,data:{type:'agent_response',content:'```svg\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50" onload="window.oracleSvgExecuted=true"><title>Unsafe SVG</title><script>window.oracleSvgExecuted=true</script><image href="https://example.invalid/tracker"/><rect width="100" height="50" fill="blue"/></svg>\n```',agent_id:'default',is_bot_message:true}}];
@@ -25,9 +30,10 @@ const servedHTML=originalHTML.replaceAll('__PICLAW_SANITIZE_SVG_FENCES_FLAG__','
 await page.route(host.origin+'/',route=>route.fulfill({contentType:'text/html',body:servedHTML}));
 await page.route('**/agent/queue-state?*',route=>route.fulfill({json:{items:queue,count:queue.length}}));
 await page.route('**/timeline?*',route=>route.fulfill({json:{posts,has_more:false}}));
-const queueMutations=[];
+const queueMutations=[],messageRequests=[];
+await page.route('**/agent/default/message?*',async route=>{messageRequests.push({method:route.request().method(),url:route.request().url(),data:route.request().postDataJSON()});await route.fulfill({json:{ok:true,turn_id:'oracle-fixture-turn'}});});
 await page.route('**/agent/queue-remove',async route=>{queueMutations.push({method:route.request().method(),url:route.request().url(),data:route.request().postData()});queue=[];await route.fulfill({json:{ok:true}});});
-const results={release:reference.release,assetVersion:reference.assetVersion,scope:'real shipped UI assets with bounded mocked API fixtures and production-default sanitizeSvgFences template substitution; not native backend or physical acceptance',htmlTransform:{token:'__PICLAW_SANITIZE_SVG_FENCES_FLAG__',value:'1',source:'runtime/src/channels/web/http/static.ts:107 + runtime/src/core/config-web.ts:293'},checks:[]};
+const results={release:reference.release,assetVersion:reference.assetVersion,browserName,viewportName,scope:'real shipped UI assets with bounded mocked API fixtures and production-default sanitizeSvgFences template substitution; not native backend or physical acceptance',htmlTransform:{token:'__PICLAW_SANITIZE_SVG_FENCES_FLAG__',value:'1',source:'runtime/src/channels/web/http/static.ts:107 + runtime/src/core/config-web.ts:293'},checks:[]};
 try{
  await page.goto(host.origin);await page.locator('.compose-box textarea').waitFor();await host.connected();
  const input=page.locator('.compose-box textarea');await input.fill('ORACLE EXISTING DRAFT');await input.blur();
@@ -56,6 +62,13 @@ try{
  if(results.checks[1].inputAfter!=='QUEUED ORACLE TEXT'||!results.checks[1].focused||results.checks[1].queueMutations.length!==1||results.checks[1].promptRequests.length||!results.checks[1].queueMutations[0].data.includes('"row_id":101'))throw Error('Queue return oracle contract changed');
  if(results.checks[2].unsafePreviewCount!==0||!results.checks[2].unsafeSourceContainsScript||results.checks[2].hostileScriptExecuted||results.checks[2].inlineSVG||results.checks[2].sourceCopy!==1||results.checks[2].sourceCopyButton!==1||!results.checks[2].safeSourceDecoded.includes('<title>Oracle SVG</title>')||results.checks[2].externalRequests.length)throw Error('SVG sanitizer oracle contract changed');
  await page.screenshot({path:out+'/queue-svg-current-piclaw.png'});
+ await input.fill('ORACLE FIRST SEND');await input.press('Enter');
+ await page.waitForFunction(()=>document.querySelector('.compose-box textarea')?.value==='');
+ for(let n=0;n<60&&messageRequests.length===0;n++)await new Promise(resolve=>setTimeout(resolve,50));
+ await input.press('Enter');await input.press('Enter');
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ results.checks.push({name:'Selected chat first send request',inputAfter:await input.inputValue(),messageRequests});
+ if(messageRequests.length!==1||messageRequests[0].method!=='POST'||!messageRequests[0].url.includes('chat_jid=web%3Adefault')||messageRequests[0].data.content!=='ORACLE FIRST SEND')throw Error('First send request contract changed');
  results.failures=host.failures;results.calls=host.calls;results.assets=host.assets;
  host.assert();
 }catch(error){results.error=String(error);results.pageText=await page.locator('body').innerText();results.marked=await page.evaluate(()=>({marked:typeof window.marked,parse:typeof window.marked?.parse}));results.queueHTML=await page.locator('.compose-queue-stack').evaluateAll(els=>els.map(e=>e.outerHTML));results.failures=host.failures;results.calls=host.calls;await page.screenshot({path:out+'/probe-error.png'}).catch(()=>{});process.exitCode=1;}

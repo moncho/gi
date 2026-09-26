@@ -21,7 +21,7 @@ async function assertTurn(page,id,turnId,prompt){
  await expect(page.locator('.timeline .post.agent-post')).toHaveCount(1);
 }
 
-test('Clean browser boot focuses the composer and Return admits exactly one first turn',async({page},info)=>{
+test('@gi-basic-001 Clean browser boot focuses the composer and Return admits exactly one first turn',async({page},info)=>{
  const env=await journeyEnvironment(info);const admissions=[];
  page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/prompt'))admissions.push(r);});
  try{
@@ -33,7 +33,7 @@ test('Clean browser boot focuses the composer and Return admits exactly one firs
  }finally{await page.close();await env.close();}
 });
 
-test('First Return keeps its draft through failed admission and admits only one turn while pending',async({page},info)=>{
+test('@gi-basic-002 First Return keeps its draft through failed admission and admits only one turn while pending',async({page},info)=>{
  const env=await journeyEnvironment(info);let release=()=>{};let admissions=0;
  try{
   const id=await boot(page,env);await expect(composer(page)).toBeFocused();const prompt=`explicit retry ${info.project.name}`;await page.keyboard.type(prompt);

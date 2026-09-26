@@ -132,14 +132,14 @@
     {
       "key": "tests/ux/features/classic/canonical/canonical-ux.feature:205",
       "id": "@ux-original-021",
-      "assessment": "verified code and tagged-test gap",
+      "assessment": "verified code/tag gap corrected locally; current oracle acceptance pending",
       "evidence": [
         "docs/internal/ux-reaudit-2026-09-26/picker-keyboard-gap.md",
         "tests/ux/models.spec.mjs:46-72",
         "web/src/components/compose-box.ts:1491-1535"
       ],
-      "result": "Piclaw 3.2.4 model picker handles Page and Control/Meta+Home/End; Gi popup does not; tagged test asserts only stale-response isolation.",
-      "limit": "Session picker keys are not model picker evidence; avoid editing supplied component source. Change Gi adapter and exact native keyboard tests before claiming full clause."
+      "result": "Shipped Piclaw 3.2.4 isolated UI probe passed model search focus, Page and Control/Meta+Home/End, and Escape trigger focus in six browser projects. The former Gi tag asserted only stale-response isolation; Gi-owned modelPickerKey now handles modified Home/End only in search and clamps Arrow/seven-result Page navigation, while the corrected six-project native test asserts filtering, caret ownership, navigation, one Enter PATCH, Escape focus and no prompt. Shared34 six-project fixture tests disabled navigation. Supplied component is unchanged.",
+      "limit": "Frozen session-picker clauses, real oracle model mutation, physical-device acceptance, full CI/review and deployment remain separate. Historical mapping alone cannot stand in for current-version parity."
     }
   ]
 }

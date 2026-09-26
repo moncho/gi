@@ -5,8 +5,8 @@ historical report marks 33 mapped and nine unmapped (`8`, `16`, `18–22`, `40`,
 `41`). A mapping means a tagged Gi test exists; it does **not** establish current
 Piclaw 3.2.4 behaviour, physical-device acceptance or a full suite pass. The
 current oracle was directly probed only for first send, Quick Actions slash and
-fixture-listed skill insertion, queue return and SVG (six isolated browser
-projects). All other rows
+fixture-listed skill insertion, model-picker keys, queue return and SVG (six
+isolated browser projects). All other rows
 need current-release comparison before being called oracle-aligned.
 
 | IDs | Gi evidence / source | Current audit boundary |
@@ -19,7 +19,7 @@ need current-release comparison before being called oracle-aligned.
 | **18–22** | `plan-oracle-gap.md`; installed Plan-sidebar add-on 0.1.25 | **Unmapped:** Gi has no Plan store/tool/sidebar. Shared revision CAS and dirty-refresh confirmation are stronger than the installed add-on, which stores Markdown/`updated_at` and refreshes dirty text without confirmation. |
 | 23–26 | `tests/ux/session.spec.mjs` | Picker focus, session coherence and guarded mutations have native tests; seeded sessions and viewport projects do not prove current Piclaw pixel layout. |
 | 27–30 | `tests/ux/queue.spec.mjs`, `queue-return.spec.mjs`, `queue-steer.spec.mjs` | Gi queue IDs, return CAS, reorder, removal and exact-run Steer are tested. Shared28 deliberately prevents newer-draft loss, unlike Piclaw queued Return replacement. |
-| 31–35 | `tests/ux/models.spec.mjs`, `model-panel.spec.mjs`, `session-thinking.spec.mjs`, `context-meter.spec.mjs`, `compaction.spec.mjs` | Native model/estimate/thinking tests are bounded web evidence; Classic021's model-picker Page/Home/End code/test gap is **not** repaired by this group. |
+| 31–35 | `tests/ux/models.spec.mjs`, `model-panel.spec.mjs`, `session-thinking.spec.mjs`, `context-meter.spec.mjs`, `compaction.spec.mjs` | Native model/estimate/thinking tests are bounded web evidence; Classic021's model-picker Page/Home/End gap has a separately tested local audit-branch correction; this shared group alone does not earn the frozen Classic ID. An isolated six-project current Piclaw picker-key probe covers only search navigation and Escape. |
 | 36 | `tests/ux/reconnect.spec.mjs`, `docs/internal/web-stop-queue.md` | Captured web Stop and explicit Resume preserve queued work; generic/TUI cancellation differs. |
 | 37 | `tests/ux/shared-copy-delete.spec.mjs` | Bounded single-message copy/delete; does not earn Classic cascade-delete replies. |
 | 38 | `tests/ux/message-retrieval.spec.mjs`, `docs/internal/message-retrieval.md` | Durable numeric IDs and session-only model tool evidenced in six projects; Classic all-chat/family authorization remains unmapped. |
@@ -33,7 +33,9 @@ need current-release comparison before being called oracle-aligned.
 1. Do not merge draft-destructive Piclaw behaviour into Gi without explicit
    no-loss policy approval. Keep versioned oracle Gherkin separate from historical
    and strengthened safety contracts.
-2. Add model-picker keyboard acceptance for Classic021 and re-evaluate mapping.
+2. Review/CI the local Classic021 model-picker correction and check the frozen
+   session-picker half and native mutation separately. The isolated Piclaw
+   keyboard probe has no live backend.
 3. Implement revisioned Plan as a real native store/tool/UI subsystem only if
    Shared18–22 remain required; current Plan add-on behaviour is not a CAS oracle.
 4. Complete real contenteditable, accessible tool-pane and adversarial SVG

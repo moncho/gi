@@ -38,8 +38,8 @@ oracle is asset version `990f0c49a932` with the source-map hash pinned in
 byte-identical to the removed 3.2.3 release. `make test-piclaw-oracle-basic`
 passed against 3.2.4 with hash-checked UI assets, the production-default SVG
 flag substitution and isolated API fixtures. `make test-piclaw-oracle-matrix`
-passed five cases—including first selected-chat Return request and fixture-listed
-skill command prefill—across six Chromium/WebKit viewport projects. See
+passed six cases—including first selected-chat Return request, fixture-listed
+skill prefill and model-picker keys—across six Chromium/WebKit viewport projects. See
 `oracle-deltas.md` and
 `tests/ux/features/oracle/piclaw-3.2.4-basic-interactions.feature`. The older
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
@@ -62,9 +62,9 @@ six-project native browser test for model-switch reset passed; the earlier suppo
 thinking provider-request test is tagged. The broader thinking run was interrupted
 by the command harness after progress through 32/42 tests; its result is unknown.
 
-Three functional smoke assertions were strengthened without production changes:
-meters HUD visibility, exact session/turn SSE frames after composer submission and
-actual uncaught browser-error POST delivery. Their focused tests passed, and the
+A test-only commit strengthened three functional smoke assertions: visible
+meters, session/turn-specific SSE frames after composer submission, and an
+uncaught browser-error POST. Their focused tests passed, and the
 full functional suite passed 139 cases with 11 existing skips. The separate basic
 HTTP run had 31/32 passes, but Chromium initially stayed on Loading Gi because
 static requests failed with `net::ERR_NETWORK_CHANGED` before app boot.
@@ -113,12 +113,17 @@ by a contract test and supported by selected Go tests, not run as Gherkin steps.
   native identity/result, focus/caret, failure/retry and preservation assertions.
 
 These are source-backed audit leads, not an exhaustive defect list. The frozen
-Classic/shared specs, supplied components and Gi production source were not changed.
+Classic/shared specs and supplied component bytes were not changed. A Gi-owned
+production helper now handles the model-picker keyboard contract.
 Additive Gi Gherkin and functional tests were corrected on the audit branch.
-A verified Classic021 finding (`picker-keyboard-gap.md`) shows its tagged test
-checks stale model responses instead of the Piclaw keyboard contract, while Gi's
-model popup lacks Page and Control/Meta+Home/End handling. No mapping credit was
-added for this finding; historical mapping is explicitly disputed.
+A verified Classic021 finding (`picker-keyboard-gap.md`) showed its former
+tagged test checked stale model responses rather than the picker keyboard
+contract. Audit-branch commit `f5ad830` corrects the Gi-owned model helper
+and tagged test. Six focused Classic021 model journeys, six Shared34 browser
+cases, 42 model-panel cases and eight helper tests passed. The shipped 3.2.4 picker-key UI
+fixture also passed in six projects. Native oracle model mutation, frozen
+session-picker clauses, CI/review and deployment are separate. No blanket
+mapping credit was added.
 
 ## Resume
 

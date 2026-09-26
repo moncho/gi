@@ -4,7 +4,8 @@ Baseline: 24-file frozen Classic corpus from Piclaw `70d33bc`; current oracle is
 shipped Piclaw 3.2.4. This is a **qualified source/test review**, not a new full
 browser run, physical-device acceptance, or permission to rewrite frozen hashes.
 The installed 3.2.4 UI was directly probed only for slash/fixture-listed skill
-prefill, queued return, SVG and first-send request; all other current-oracle rows
+prefill, model-picker keys, queued return, SVG and first-send request; all other
+current-oracle rows
 remain provisional.
 `oracle-deltas.md`, `manual-findings.json`, and `picker-keyboard-gap.md` contain
 source locations and the focused discrepancies.
@@ -28,7 +29,7 @@ source locations and the focused discrepancies.
 | 018 | `queue.spec.mjs:126+` | Native queue reorder/removal and 409 refresh are tested; backend identity and unrelated-group invariants need their store tests, not the screenshot. |
 | 019 | Shared30 steering work is not full Classic policy | **Unmapped:** Classic allows backend to send immediately if the stream ended; Gi shared contract Steer requires matching active run. Requires policy review. |
 | 020 | `models.spec.mjs:20-45` | Native captured-chat PATCH, accepted context, rejected model, keyboard selection and no draft submission exercised. |
-| 021 | `models.spec.mjs:46-72`, `web/src/components/compose-box.ts:1491-1535` | **Verified test and code gap:** tagged test checks stale model replies rather than Page/Home/End keyboard clause; Gi popup lacks Page and Control/Meta+Home/End. Shipped Piclaw `model-picker.ts:75-103` has these keys. See `picker-keyboard-gap.md`. |
+| 021 | `models.spec.mjs:46+`, `web/src/gi-model-picker.ts`, `scripts/patch-model-picker.mjs` | **Locally corrected model half:** former tag tested stale model replies; a new tagged native browser journey now covers search, Arrow/Page, plain caret vs Control/Meta+Home/End, one Enter model PATCH, Escape focus and no prompt across six projects. Existing Shared34 six-project test skips disabled entries. The frozen session-picker half remains separate; a six-project isolated shipped Piclaw 3.2.4 keyboard probe covers model search focus, Page and modified Home/End, and Escape focus without model mutation. See `picker-keyboard-gap.md`. |
 | 022 | `models.spec.mjs:78+` | Sparse metadata/unknown context and stale catalogue test is bounded evidence; no inferred measured usage. |
 | 023 | `reconnect.spec.mjs:77+` | Native reconnect refresh and captured Stop evidence; keep generic/TUI cancellation distinct. |
 | 024 | `shared-copy-delete.spec.mjs:47+` covers narrower Shared37 | **Unmapped:** Classic cascade-confirmed replies require their own native case; single-message deletion/copy cannot be borrowed. |
@@ -42,9 +43,10 @@ source locations and the focused discrepancies.
 
 1. Keep frozen historical IDs/report stable while adding an explicit **current
    oracle** matrix. Do not advertise historical mappings as current-release parity.
-2. Correct Classic021 via a Gi-owned picker adapter (no supplied-component edit),
-   with actual Page, Control/Meta+Home/End, Arrow, Enter, Escape, focus, disabled
-   and no-submit browser assertions. Re-evaluate its mapping after full CI.
+2. Review and CI the local Classic021 Gi-owned picker correction without a
+   supplied-component edit. Six focused model and six Shared34 browser projects
+   passed; an isolated six-project Piclaw picker-key probe passed. Verify the
+   session-picker half and native mutation separately before full acceptance.
 3. Resolve destructive prefill/queued-return policies with the user. Versioned
    Piclaw oracle behaviour is proven; Gi's no-loss semantics are deliberate and
    should not be removed merely to raise historical counts.

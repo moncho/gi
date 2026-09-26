@@ -8522,10 +8522,10 @@
         }
       ],
       "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "verified-code-and-test-gap",
+      "oracle_status": "bounded-model-keyboard-fixture-compared",
+      "audit_status": "corrected-local",
       "priority": "P1",
-      "finding": "Tagged test checks stale model responses, not the frozen/current-oracle picker keyboard contract; Gi model popup lacks Page/Home/End, whereas shipped Piclaw supports Page and Ctrl/Meta+Home/End while search focused.",
+      "finding": "Former tag asserted stale model responses; Gi-owned picker now handles Ctrl/Meta+Home/End in focused search, clamps Arrow and pages seven enabled entries. Native tagged model journey and Shared34 disabled-entry test each passed six projects. Shipped Piclaw 3.2.4 isolated keyboard probe passed six projects; session-picker half, real oracle model mutation, CI/review and deployment remain separate.",
       "evidence_link": "picker-keyboard-gap.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "3.2.4"

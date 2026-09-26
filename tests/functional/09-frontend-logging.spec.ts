@@ -40,9 +40,19 @@ test.describe('Frontend logging', () => {
     expect(res.status()).toBe(400);
   });
 
-  test('window.onerror handler exists in page', async ({ page }) => {
+  test('an uncaught browser error reaches the native frontend log endpoint', async ({ page }) => {
     await page.goto(BASE_URL);
-    const hasHandler = await page.evaluate(() => typeof window.onerror === 'function');
-    expect(hasHandler).toBeTruthy();
+    const sentinel = `audit-browser-error-${Date.now()}`;
+    const delivered = page.waitForResponse(response =>
+      response.url().endsWith('/api/frontend/log') &&
+      response.request().method() === 'POST' &&
+      response.request().postData()?.includes(sentinel) === true,
+    );
+    await page.evaluate(message => setTimeout(() => { throw new Error(message); }, 0), sentinel);
+    const response = await delivered;
+    expect(response.ok()).toBe(true);
+    const payload = response.request().postDataJSON();
+    expect(payload.entries).toHaveLength(1);
+    expect(payload.entries[0]).toMatchObject({ level: 'error', message: `Uncaught Error: ${sentinel}` });
   });
 });

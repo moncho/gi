@@ -44,23 +44,39 @@ test.describe('SSE and streaming', () => {
     expect(connectionStatus).not.toContain('disconnected');
   });
 
-  test('sending a message triggers SSE events', async ({ page }) => {
+  test('sending from the selected composer yields exact session/turn SSE frames', async ({ page, request }) => {
+    const created = await request.post(`${BASE_URL}/api/sessions`, { data: { title: 'SSE compose', agent_id: `sse-compose-${Date.now()}` } });
+    expect(created.ok()).toBe(true);
+    const session = await created.json();
+    await page.addInitScript(id => localStorage.setItem('gi_session_id', id), session.id);
     await page.goto(BASE_URL);
     await waitForAppShell(page);
-    
-    await sendMessage(page, 'SSE trigger test');
-    await page.waitForTimeout(5000);
-    const session = await findSessionForMessage(page.request, 'SSE trigger test');
-    
-    // Verify the turn completed by checking API state
-    const turns = await page.evaluate(async (sessionId: string) => {
-      const r = await fetch(`/api/sessions/${sessionId}/turns`);
-      return r.json();
-    }, session.id);
-    
-    expect(turns.turns.length).toBeGreaterThan(0);
-    const lastTurn = turns.turns[turns.turns.length - 1];
-    expect(lastTurn.status).toBe('completed');
+    await page.evaluate(id => new Promise<void>((resolve, reject) => {
+      const source = new EventSource(`/sse/stream?chat_jid=gi:${id}`);
+      (window as any).__composeSse = source;
+      (window as any).__composeFrames = [];
+      for (const type of ['new_post', 'agent_response', 'agent_status']) {
+        source.addEventListener(type, (event: MessageEvent) => (window as any).__composeFrames.push({ type, data: JSON.parse(event.data) }));
+      }
+      source.addEventListener('connected', () => resolve(), { once: true });
+      source.onerror = () => reject(new Error('session SSE connection failed'));
+    }), session.id);
+    try {
+      const input = page.locator('.compose-box textarea');
+      await input.fill('SSE compose identity proof');
+      const acceptedResponse = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith(`/api/sessions/${session.id}/prompt`));
+      await input.press('Enter');
+      const accepted = await (await acceptedResponse).json();
+      expect(accepted.turn_id).toBeTruthy();
+      await expect.poll(() => page.evaluate(id => (window as any).__composeFrames.some((f:any) => f.type === 'new_post' && f.data.turn_id === id && f.data.is_bot_message), accepted.turn_id)).toBe(true);
+      const frames = await page.evaluate(() => (window as any).__composeFrames);
+      const reply = frames.find((f:any) => f.type === 'new_post' && f.data.turn_id === accepted.turn_id && f.data.is_bot_message);
+      expect(reply.data.chat_jid).toBe(`gi:${session.id}`);
+      await expect.poll(async () => (await apiGet(request, `/api/sessions/${session.id}/turns`)).turns.find((t:any) => t.id === accepted.turn_id)?.status).toBe('completed');
+      await expect(page.locator('.post').filter({ hasText: 'Gi received: SSE compose identity proof' })).toBeVisible();
+    } finally {
+      await page.evaluate(() => (window as any).__composeSse.close());
+    }
   });
 
   test('turn events are persisted for completed turns', async ({ page, request }) => {

@@ -13025,12 +13025,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded clause source→tagged native test→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw 3.2.4 source supports the frozen clause, and a focused Gi native browser journey passed six projects; no current Piclaw runtime, physical-device or pixel acceptance. See workspace-bounded-review.md.",
+      "evidence_link": "workspace-bounded-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -13321,12 +13321,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded clause source→tagged native test→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw 3.2.4 source supports the frozen clause, and a focused Gi native browser journey passed six projects; no current Piclaw runtime, physical-device or pixel acceptance. See workspace-bounded-review.md.",
+      "evidence_link": "workspace-bounded-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -13562,12 +13562,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded clause source→tagged native test→Gi handler review; current Piclaw UI not run",
+      "oracle_status": "source-backed-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw 3.2.4 source supports the frozen clause, and a focused Gi native browser journey passed six projects; no current Piclaw runtime, physical-device or pixel acceptance. See workspace-bounded-review.md.",
+      "evidence_link": "workspace-bounded-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

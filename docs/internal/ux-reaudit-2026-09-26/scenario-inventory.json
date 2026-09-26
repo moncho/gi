@@ -319,7 +319,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:16",
@@ -368,7 +369,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:24",
@@ -422,7 +424,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:33",
@@ -471,7 +474,8 @@
       "finding": "Default background refresh contradicts explicit read-only GET statements at lines199,211; Piclaw search can schedule background work, Gi GET rejects refresh. Clarify scope/policy.",
       "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "3.2.3 or pinned70d33bc as qualified"
+      "oracle_release": "3.2.3 or pinned70d33bc as qualified",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:41",
@@ -520,7 +524,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:49",
@@ -586,7 +591,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:61",
@@ -640,7 +646,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:70",
@@ -690,7 +697,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:78",
@@ -743,7 +751,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:87",
@@ -796,7 +805,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:96",
@@ -855,7 +865,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:106",
@@ -906,7 +917,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:114",
@@ -955,7 +967,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:122",
@@ -1004,7 +1017,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:130",
@@ -1061,7 +1075,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:140",
@@ -1118,7 +1133,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:150",
@@ -1179,7 +1195,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:161",
@@ -1244,7 +1261,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:173",
@@ -1325,7 +1343,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:189",
@@ -1382,7 +1401,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:199",
@@ -1447,7 +1467,8 @@
       "finding": "Explicit Reindex is compatible with immutable GET but conflicts with line33 default auto-refresh for absent/stale scopes.",
       "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "3.2.3 or pinned70d33bc as qualified"
+      "oracle_release": "3.2.3 or pinned70d33bc as qualified",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:211",
@@ -1516,7 +1537,8 @@
       "finding": "GET retains committed snapshot until explicit refresh by design; line33 requests refresh on search.",
       "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "3.2.3 or pinned70d33bc as qualified"
+      "oracle_release": "3.2.3 or pinned70d33bc as qualified",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/search/workspace-index.feature:224",
@@ -1590,7 +1612,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "proposal parser check only; native unit evidence selective, clause audit pending"
     },
     {
       "key": "features/tui/assistant_basics.feature:4",
@@ -1630,7 +1653,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/assistant_basics.feature:10",
@@ -1742,7 +1766,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/assistant_basics.feature:34",
@@ -1794,7 +1819,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/keyboard_behavior.feature:4",
@@ -1906,7 +1932,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/pi_like_workflows.feature:4",
@@ -1998,7 +2025,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/pi_like_workflows.feature:23",
@@ -2058,7 +2086,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/plugins.feature:4",
@@ -2106,7 +2135,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/session_workflows.feature:4",
@@ -2214,7 +2244,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/settings_and_approvals.feature:4",
@@ -2286,7 +2317,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "features/tui/tool_controls.feature:4",
@@ -2362,7 +2394,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "10-scenario tmux runner passed locally; not required CI, clause audit pending"
     },
     {
       "key": "tests/features/sessions/gi-preview.feature:6",
@@ -5059,7 +5092,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:40",
@@ -5132,7 +5166,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:52",
@@ -5209,7 +5244,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:65",
@@ -5289,7 +5325,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:80",
@@ -5343,7 +5380,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:87",
@@ -5408,7 +5446,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:97",
@@ -5491,7 +5530,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:112",
@@ -5568,7 +5608,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:125",
@@ -5629,7 +5670,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:136",
@@ -5698,7 +5740,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:147",
@@ -5756,7 +5799,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:155",
@@ -5817,7 +5861,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:164",
@@ -5896,7 +5941,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:178",
@@ -5957,7 +6003,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:187",
@@ -6022,7 +6069,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:197",
@@ -6105,7 +6153,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:212",
@@ -6189,7 +6238,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:230",
@@ -6281,7 +6331,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:247",
@@ -6369,7 +6420,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:269",
@@ -6453,7 +6505,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:285",
@@ -6515,7 +6568,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:298",
@@ -6635,7 +6689,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:318",
@@ -6698,7 +6753,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:327",
@@ -6756,7 +6812,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:335",
@@ -6811,7 +6868,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature:344",
@@ -6876,7 +6934,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "pinned passkey criteria ledger; formal mapping false, per-example disposition in expanded-crosswalk.json"
     },
     {
       "key": "tests/ux/features/classic/canonical/canonical-ux.feature:13",
@@ -6962,7 +7021,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7024,7 +7083,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7130,7 +7189,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7219,14 +7278,15 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "six outline examples not individually proved by injected DOM guard; real controls covered separately"
     },
     {
       "key": "tests/ux/features/classic/canonical/canonical-ux.feature:59",
@@ -7292,7 +7352,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7369,7 +7429,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7462,7 +7522,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "oracle-conflict",
       "priority": "P1",
@@ -7551,12 +7611,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
+      "oracle_status": "bounded-ui-prefill-compared",
+      "audit_status": "oracle-conflict",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Piclaw 3.2.4 fixture-listed /skill:proof replaces existing draft and focuses without POST; Gi Shared17 tagged test preserves draft. Only UI prefill is probed, not live skill discovery/loading/execution.",
+      "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -7617,7 +7677,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7679,7 +7739,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7741,7 +7801,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7807,7 +7867,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7881,7 +7941,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -7951,7 +8011,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8017,7 +8077,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8082,7 +8142,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8148,7 +8208,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "oracle-confirmed",
       "priority": "P1",
@@ -8227,7 +8287,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8286,7 +8346,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8370,7 +8430,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8461,14 +8521,14 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
-      "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "audit_status": "verified-code-and-test-gap",
+      "priority": "P1",
+      "finding": "Tagged test checks stale model responses, not the frozen/current-oracle picker keyboard contract; Gi model popup lacks Page/Home/End, whereas shipped Piclaw supports Page and Ctrl/Meta+Home/End while search focused.",
+      "evidence_link": "picker-keyboard-gap.md",
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "3.2.4"
     },
     {
       "key": "tests/ux/features/classic/canonical/canonical-ux.feature:219",
@@ -8542,7 +8602,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8638,7 +8698,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8747,7 +8807,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8825,7 +8885,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8909,7 +8969,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -8995,7 +9055,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -9089,7 +9149,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -9171,7 +9231,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
       "oracle_status": "not-yet-compared",
       "audit_status": "oracle-version-stale",
       "priority": "P1",
@@ -21443,7 +21503,8 @@
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "test.use hasTouch:true with trusted emulated touch, physical hardware excluded"
     },
     {
       "key": "tests/ux/features/classic/timeline/message-deletion.feature:12",
@@ -22299,7 +22360,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -22388,7 +22449,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -22501,7 +22562,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -22637,14 +22698,15 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
       "finding": null,
       "evidence_link": null,
       "test_candidates_kind": "lexical-only, not acceptance",
-      "oracle_release": "not-yet-compared"
+      "oracle_release": "not-yet-compared",
+      "harness_status": "contenteditable example @shared-8 has no direct tagged browser test; synthetic DOM guard is not real editor typing"
     },
     {
       "key": "tests/ux/features/shared-canonical-ux.feature:74",
@@ -22714,7 +22776,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -22852,7 +22914,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -22927,7 +22989,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "oracle-conflict",
       "priority": "P0",
@@ -23014,11 +23076,11 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
+      "oracle_status": "bounded-ui-prefill-compared",
       "audit_status": "oracle-conflict",
       "priority": "P1",
-      "finding": "Shared17 skill prefill preserves draft; shipped /model command replaces. Skill-specific behavior needs separate oracle proof; cannot generalize command probe.",
+      "finding": "Piclaw 3.2.4 fixture-listed /skill:proof replaces existing draft without POST; Gi Shared17 preserves it. UI prefill only: not live skill discovery, loading or execution.",
       "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "3.2.3 or pinned70d33bc as qualified"
@@ -23092,7 +23154,7 @@
       ],
       "expanded_count": 2,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23158,7 +23220,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23220,7 +23282,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23287,7 +23349,7 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23392,7 +23454,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23469,7 +23531,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23541,7 +23603,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23621,7 +23683,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23733,7 +23795,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "oracle-conflict",
       "priority": "P0",
@@ -23815,7 +23877,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -23937,7 +23999,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24042,7 +24104,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24168,7 +24230,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24273,7 +24335,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24373,7 +24435,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24488,7 +24550,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24583,7 +24645,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24663,7 +24725,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24764,7 +24826,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,
@@ -24843,7 +24905,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "oracle-conflict",
       "priority": "P1",
@@ -24924,7 +24986,7 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
+      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
       "oracle_status": "not-yet-compared",
       "audit_status": "awaiting-clause-audit",
       "priority": null,

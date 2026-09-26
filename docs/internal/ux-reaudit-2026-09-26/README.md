@@ -19,13 +19,15 @@ Classic/shared contracts—not only the web mapping catalogue.
 `scenario-inventory.json` preserves every definition, Background, step, outline row
 and expanded count. Test candidates are lexical links, NOT verified coverage.
 The test index cannot resolve every dynamic tag/title and test factory; a missing
-candidate is not proof that no test exists. All rows remain review-not-complete and
-oracle-not-yet-compared. These artifacts do not supersede prior accepted evidence.
+candidate is not proof that no test exists. The 14 qualified findings and 58
+group-reviewed Classic/Shared definitions remain short of complete current-oracle
+review. These artifacts do not supersede prior accepted evidence.
 
 Four broad and two smaller delegate attempts timed out without usable completed
 reviews. An empty partial JSON was excluded. Their work earns no review credit.
 The lead read the whole compact scenario corpus; clause-by-clause test/code/oracle
-verification remains unfinished. No new runtime pass or parity credit is claimed.
+verification remains unfinished. The focused passes below add evidence only for
+their stated interactions; they add no general parity credit.
 
 ## Work after maintenance clearance
 
@@ -35,13 +37,19 @@ oracle is asset version `990f0c49a932` with the source-map hash pinned in
 `tests/ux/oracle/piclaw-3.2.4-reference.json`. Relevant source-map modules are
 byte-identical to the removed 3.2.3 release. `make test-piclaw-oracle-basic`
 passed against 3.2.4 with hash-checked UI assets, the production-default SVG
-flag substitution and isolated API fixtures; see `oracle-deltas.md` and
+flag substitution and isolated API fixtures. `make test-piclaw-oracle-matrix`
+passed five cases—including first selected-chat Return request and fixture-listed
+skill command prefill—across six Chromium/WebKit viewport projects. See
+`oracle-deltas.md` and
 `tests/ux/features/oracle/piclaw-3.2.4-basic-interactions.feature`. The older
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Only 12 are currently annotated with qualified oracle/conflict/correction findings;
-346 still await clause audit. `expanded-crosswalk.json` enumerates all 421 cases,
+Fourteen have qualified oracle/conflict/correction findings; 344 still await
+clause audit. Historical Classic canonical001–029 and shared1–42 also have
+qualified **group** reviews in `classic-canonical-review.md` and
+`shared-contract-review.md`; those do not convert unprobed clauses to current
+Piclaw 3.2.4 acceptance. `expanded-crosswalk.json` enumerates all 421 cases,
 including the 56-case pinned passkey criteria ledger. It finds 117 direct-tagged
 browser-test candidates; 248 have neither such a candidate nor passkey-ledger
 entry. **A direct tag is not behavioural acceptance**, and zero direct candidates
@@ -54,15 +62,38 @@ six-project native browser test for model-switch reset passed; the earlier suppo
 thinking provider-request test is tagged. The broader thinking run was interrupted
 by the command harness after progress through 32/42 tests; its result is unknown.
 
-The basic HTTP run had 31/32 passes, but Chromium initially stayed on Loading Gi
-because static requests failed with `net::ERR_NETWORK_CHANGED` before app boot.
+Three functional smoke assertions were strengthened without production changes:
+meters HUD visibility, exact session/turn SSE frames after composer submission and
+actual uncaught browser-error POST delivery. Their focused tests passed, and the
+full functional suite passed 139 cases with 11 existing skips. The separate basic
+HTTP run had 31/32 passes, but Chromium initially stayed on Loading Gi because
+static requests failed with `net::ERR_NETWORK_CHANGED` before app boot.
 An unchanged rerun was interrupted at 21/32 by `make: wait: No child processes`.
 Neither run counts as a green gate. Traces and logs are under the local audit
 workspace; no assertion, timeout or production code was changed for that failure.
 
+`tests/features/sessions/gi-basic-send.feature` adds two derived Gi-native
+requirements without touching the frozen corpus. Their existing exact
+session/turn/reload and rejected-admission journeys are now tagged; 12 focused
+browser cases passed. The Piclaw oracle's first-send fixture proves only one
+selected-chat POST and composer clearing, not a native reply.
+
+The installed Piclaw Plan Sidebar add-on 0.1.25 has four source-reviewed,
+parse-checked versioned Gherkin cases at
+`tests/ux/features/oracle/piclaw-3.2.4-plan-sidebar.feature` (commit `3ef30aa`).
+They are not browser-executed or Gi parity; see `plan-oracle-gap.md`. Plan's
+Shared revision CAS and dirty-refresh confirmation exceed current add-on behaviour.
+
+The seven `features/tui/*.feature` files passed the canonical tmux Gherkin runner
+(10 scenarios). A first run with `BIN_DIR` overridden failed at launch because the
+shell runner hard-codes `bin/gi`; it is not a product failure. The target is not in
+whole-product CI and screen-text assertions do not establish physical/pixel parity.
+The 23 proposal-tagged `features/search/workspace-index.feature` cases are parsed
+by a contract test and supported by selected Go tests, not run as Gherkin steps.
+
 ## Initial concrete issues to verify against Piclaw
 
-- `tests/features/settings/gi-settings.feature:40` still says thinking is read-only;
+- The initial `tests/features/settings/gi-settings.feature:40` said thinking was read-only;
   `web/src/gi-settings-models.ts:270-305` exposes supported Apply-thinking controls.
   The tagged Settings tests use an unsupported model, so that contradiction can hide.
 - `features/search/workspace-index.feature:33` requests automatic background refresh;
@@ -81,8 +112,13 @@ workspace; no assertion, timeout or production code was changed for that failure
   rather than a complete human journey. Strengthen with actual trigger, exact
   native identity/result, focus/caret, failure/retry and preservation assertions.
 
-These are source-backed audit leads, not an exhaustive defect list. No frozen
-spec, test or production source was changed in this audit worktree.
+These are source-backed audit leads, not an exhaustive defect list. The frozen
+Classic/shared specs, supplied components and Gi production source were not changed.
+Additive Gi Gherkin and functional tests were corrected on the audit branch.
+A verified Classic021 finding (`picker-keyboard-gap.md`) shows its tagged test
+checks stale model responses instead of the Piclaw keyboard contract, while Gi's
+model popup lacks Page and Control/Meta+Home/End handling. No mapping credit was
+added for this finding; historical mapping is explicitly disputed.
 
 ## Resume
 
@@ -97,7 +133,9 @@ spec, test or production source was changed in this audit worktree.
 
 Shared40 WIP is separately checkpointed at500e02f on
 `wip/maintenance-tool-terminal-20260926`; it must not be deployed automatically.
-Live runtime remains05e287f on8090. TUI WIP2a87a79 remains local-only and untouched.
+The last known deployed Gi revision was 05e287f; port 8090 was absent after
+the Piclaw upgrade. Do not restart or redeploy Gi for this audit. TUI WIP2a87a79
+remains local-only and untouched.
 Maintenance hold is cleared. Continue from this branch without redoing completed
 Shared35/36/38 deployment or touching live data.
 

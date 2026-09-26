@@ -1,0 +1,145 @@
+{
+  "baseline": "5dc6bf77968a1c6da1c14292d2a894085012f7b1",
+  "oracle": "piclaw-3.2.4-linux-x64-baseline / asset 990f0c49a932",
+  "warning": "Each disposition is bounded to the listed clauses and evidence; no overall parity credit, native-backend oracle, physical hardware or full-suite claim.",
+  "findings": [
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:13",
+      "id": "@ux-original-001",
+      "assessment": "bounded evidence",
+      "evidence": [
+        "tests/ux/classic.spec.mjs:5-58",
+        "tests/ux/classic.spec.mjs:64-99"
+      ],
+      "result": "Native pointer/keyboard menu open and Escape/outside dismissal are exercised; shared tests additionally check enabled-item Tab traversal, focus and no underlying submission.",
+      "limit": "Fixture creates sessions through API; not fresh-browser startup or current Piclaw pixel equivalence."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:21",
+      "id": "@ux-original-002",
+      "assessment": "bounded evidence",
+      "evidence": [
+        "tests/ux/classic.spec.mjs:38-62",
+        "tests/ux/classic.spec.mjs:64-99"
+      ],
+      "result": "Native workspace toggle changes visibility twice, retains unsent text and session, and emits no prompt submission.",
+      "limit": "Does not establish complete workspace-file editing, narrow-screen focus or Piclaw pixel parity."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:30",
+      "id": "@ux-original-003",
+      "assessment": "test gap",
+      "evidence": [
+        "tests/ux/quick-actions.spec.mjs:20-34",
+        "web/src/components/timeline-quick-actions.ts:1-400"
+      ],
+      "result": "Real typing, grouped results, wrap, filtering and one Enter activation are tested.",
+      "limit": "The stated exact-title-before-prefix-before-first ranking is not asserted against competing real results in this tagged test. Test that ordering separately before crediting the entire clause."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:44",
+      "id": "@ux-original-004",
+      "assessment": "test gap; six outline examples",
+      "evidence": [
+        "tests/ux/quick-actions.spec.mjs:65-84",
+        "tests/ux/quick-actions.spec.mjs:149-218",
+        "web/src/ui/app-browser-events.ts:6-16"
+      ],
+      "result": "Several real controls receive trusted keys; Gi also guards isContentEditable and common selectors.",
+      "limit": "The broad injected-DOM loop does not prove a real contenteditable/CodeMirror editor or every six-example surface receives the character. Shared8 remains unmapped."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:59",
+      "id": "@ux-original-005",
+      "assessment": "bounded event-guard evidence",
+      "evidence": [
+        "tests/ux/quick-actions.spec.mjs:53-64",
+        "web/src/ui/app-browser-events.ts:119-159"
+      ],
+      "result": "Repeat/composition/prevented/modifier/whitespace guard branches and a positive subsequent real-key control are covered.",
+      "limit": "Synthetic KeyboardEvent is appropriate for the guard branch, not physical IME acceptance."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:65",
+      "id": "@ux-original-006",
+      "assessment": "bounded evidence",
+      "evidence": [
+        "tests/ux/quick-actions.spec.mjs:36-42",
+        "tests/ux/quick-actions.spec.mjs:238-275"
+      ],
+      "result": "Escape/outside dismissal, fresh query on reopen, no turn and unchanged draft are asserted; shared variants also verify focus and media/reference retention.",
+      "limit": "Does not prove every physical pointer type."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:72",
+      "id": "@ux-original-007",
+      "assessment": "current-oracle conflict",
+      "evidence": [
+        "tests/ux/quick-actions.spec.mjs:44-51",
+        "tests/ux/oracle/piclaw-basic-probe.mjs",
+        "test-results/ux-oracle/piclaw-3.2.4/*/browser-probe.json"
+      ],
+      "result": "Gi asserts '/model ' and passes its own adaptation. Piclaw 3.2.4 replaces the draft with exactly '/model', focuses and does not submit in six isolated browser projects. The old 70d33bc source also forwards commandName without appending a space.",
+      "limit": "Do not equate passing frozen Classic ID with current-release parity. Keep destructive replacement policy explicit before changing Gi."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:83",
+      "id": "@ux-original-008",
+      "assessment": "current-oracle UI-prefill conflict; skill loading unproven",
+      "evidence": [
+        "tests/ux/skills.spec.mjs:4-47",
+        "tests/ux/features/classic/canonical/canonical-ux.feature:83-91",
+        "tests/ux/oracle/piclaw-basic-probe.mjs",
+        "test-results/ux-oracle/piclaw-3.2.4/{browser}-{viewport}/browser-probe.json"
+      ],
+      "result": "Gi's Shared17 test preserves an existing draft, while the 3.2.4 Piclaw UI replaces it with exactly '/skill:proof' when that command is listed by the isolated Quick Actions fixture. All six browser/viewport projects saw focus and no prompt POST.",
+      "limit": "The fixture lists a command; it does not prove live skill discovery, loading or execution. The frozen Classic prefill path is closer, but its complete clauses are not accepted. Do not erase Gi drafts without a policy decision."
+    },
+    {
+      "key": "tests/ux/features/shared-canonical-ux.feature:57",
+      "id": "@shared-8",
+      "assessment": "real-editor acceptance gap",
+      "evidence": [
+        "tests/ux/quick-actions.spec.mjs:65-84",
+        "web/src/ui/app-browser-events.ts:6-16"
+      ],
+      "result": "Contenteditable guard has an artificial DOM probe, but no tagged real editable workspace surface that receives trusted text. The scenario stays unmapped.",
+      "limit": "A source selector is not end-to-end editor behavior."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:291",
+      "id": "@ux-original-029",
+      "assessment": "version-stale current-oracle contract",
+      "evidence": [
+        "tests/ux/rendering.spec.mjs:54-61",
+        "tests/ux/oracle/piclaw-basic-probe.mjs",
+        "docs/internal/ux-reaudit-2026-09-26/oracle-deltas.md"
+      ],
+      "result": "Gi and frozen Classic require source-only; Piclaw 3.2.4 defaults to safe fenced SVG as a data-URL image with source disclosure. Malicious script/external image remains escaped source, not a privileged DOM child.",
+      "limit": "Keep historical source-only test as historical evidence, not current Piclaw acceptance."
+    },
+    {
+      "key": "tests/ux/features/shared-canonical-ux.feature:326",
+      "id": "@shared-41",
+      "assessment": "oracle contract differs",
+      "evidence": [
+        "tests/ux/oracle/piclaw-basic-probe.mjs",
+        "tests/ux/features/oracle/piclaw-3.2.4-basic-interactions.feature:34-45"
+      ],
+      "result": "The current oracle uses a safe image data URL, not raw inline SVG; it leaves unsafe fences as inert source instead of stripping and rendering them. Gi has no safe inline-rendering path.",
+      "limit": "One hostile case is not a complete SVG security suite; no Shared41 credit."
+    },
+    {
+      "key": "tests/ux/features/classic/canonical/canonical-ux.feature:205",
+      "id": "@ux-original-021",
+      "assessment": "verified code and tagged-test gap",
+      "evidence": [
+        "docs/internal/ux-reaudit-2026-09-26/picker-keyboard-gap.md",
+        "tests/ux/models.spec.mjs:46-72",
+        "web/src/components/compose-box.ts:1491-1535"
+      ],
+      "result": "Piclaw 3.2.4 model picker handles Page and Control/Meta+Home/End; Gi popup does not; tagged test asserts only stale-response isolation.",
+      "limit": "Session picker keys are not model picker evidence; avoid editing supplied component source. Change Gi adapter and exact native keyboard tests before claiming full clause."
+    }
+  ]
+}

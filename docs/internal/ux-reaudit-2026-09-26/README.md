@@ -45,8 +45,8 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-One hundred and forty-seven have qualified clause findings or source→test→Gi-code
-reviews; 211 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
+One hundred and fifty-two have qualified clause findings or source→test→Gi-code
+reviews; 206 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
@@ -97,6 +97,10 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`core-interactions-gap.md` distinguishes five additional Classic BTW, card,
+widget and notification clauses: mounted gaps, source-only evidence, and an
+untagged 10-helper/24-browser notification run. It does not rescore the three
+previously reviewed card/recovery clauses.
 `annotation-highlights-gap.md` records twelve Classic image/text annotation
 clauses: eleven native capability gaps and one partial non-iPad lightbox
 journey. Metadata badges and search matches do not count as saved annotations.

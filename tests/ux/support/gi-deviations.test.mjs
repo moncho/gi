@@ -19,7 +19,7 @@ test('Gi-specific original behaviours parse and cannot count as Piclaw parity', 
   }
   for (const id of ['@ux-original-007','@ux-original-008','@ux-original-029']) expect(mappedIds.has(id)).toBe(false);
   for (const id of ['@shared-17','@shared-28','@shared-30']) expect(sharedMappedIds.has(id)).toBe(false);
-  expect(loadCorpus()).toHaveLength(256);
+  expect(loadCorpus()).toHaveLength(257);
   expect(loadCorpus('shared')).toHaveLength(42);
   const attachments = [];
   const info = {attach: async (name, attachment) => attachments.push({name, ...attachment})};

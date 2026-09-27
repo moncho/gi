@@ -25,12 +25,18 @@ Feature: Classic SSE reconnection and refresh
     And status, queue and context refresh still run
 
   @ux-reconnect-004
-  Scenario: Show version drift without automatically reloading
+  Scenario Outline: Show version drift without automatically reloading
     Given the server advertises a different UI asset version
+    And the composer is <composer state>
     When the client receives that version for the first time
     Then it shows the New UI available warning with a manual reload instruction
-    And it does not automatically reload even when editors and composer are clean
+    And it does not automatically reload
     And repeated notices for the same version are suppressed by the version guard
+
+    Examples:
+      | composer state |
+      | draft-filled   |
+      | clean          |
 
   @ux-reconnect-005
   Scenario: Avoid duplicate initial refresh after recent chat activation

@@ -28,16 +28,16 @@ The [contrast adaptation](../../docs/internal/compose-contrast.md) expands `make
 
 > **Audit warning (2026-09-24):** the historical passing totals below do not prove current Piclaw visual or interaction parity. See [the full UX test audit](../../docs/internal/ux-test-audit-2026-09-24.md) and its [per-file inventory](../../docs/internal/ux-test-audit-2026-09-24.csv). At the audit date CI ran no Playwright suites. CI now requires passkey and startup/picker/slash/workspace journey gates; `make check` still excludes this parity runner, and some specialised cases need manual environment flags. The current source maps 101 Classic / 30 shared IDs, with Classic 008's skill-prefill claim disputed. Composer/new-chat keyboard paths, picker/reference geometry and workspace transitions require revalidation before broader parity claims.
 
-Gi vendors the same frozen Classic Gherkin baseline used for the Tau/Vibes audit:
+Gi keeps historical Classic and Tau/Vibes Gherkin separate from editable Piclaw 3.2.4 contracts:
 
-- Piclaw commit `70d33bc93ab540845bbcf5f80503ca8125c71594`.
-- `features/classic/`: 24 byte-identical feature files, 236 unique scenario IDs, 256 expanded cases.
-- `features/shared-canonical-ux.feature`: byte-identical shared Tau/Vibes interaction contract, 42 expanded cases; SHA-256 `a08a623880c6f327bc051edc51bb2bbff2959aed86421b5227e61d5a92fc2441`.
-- Upstream file hashes and provenance are preserved in `upstream/`.
+- `upstream/classic-snapshot/`: 24 byte-identical Classic files from Piclaw commit `70d33bc93ab540845bbcf5f80503ca8125c71594`; 236 unique IDs and 256 expanded cases.
+- `upstream/shared-canonical-ux.gherkin`: original Tau/Vibes contract, 42 cases; SHA-256 `a08a623880c6f327bc051edc51bb2bbff2959aed86421b5227e61d5a92fc2441`.
+- `features/classic/`: active Piclaw 3.2.4 contracts, 236 unique IDs and 257 expanded cases. `features/shared-canonical-ux.feature` has 42 active cases.
+- `support/catalogue.mjs` verifies historical hashes. Active changes and evidence limits are recorded in `../../docs/internal/ux-reaudit-2026-09-26/gherkin-alignment.md`.
 
-The sources came from `/workspace/evidence/piclaw-classic-70d33bc93` and `/workspace/tau/tests/ux/features/canonical-ux.feature`. Tests do not depend on those paths after copying. Source-relative links inside frozen features refer to the original Piclaw checkout.
+The sources came from `/workspace/evidence/piclaw-classic-70d33bc93` and `/workspace/tau/tests/ux/features/canonical-ux.feature`. Tests do not depend on those paths after copying. Source-relative links inside historical snapshots refer to the original Piclaw checkout.
 
-The Classic and shared contracts differ in places, including command-prefill and idle-Steer safety semantics. Both are preserved. Passing a Classic case does not imply passing the stronger shared contract.
+Gi-only behaviours are tagged in `../features/ux/gi-deviations.feature`. A Gi-specific pass does not grant Classic or shared Piclaw parity.
 
 ## Current status (2026-09-26)
 

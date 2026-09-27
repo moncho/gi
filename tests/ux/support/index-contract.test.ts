@@ -15,6 +15,6 @@ test('derived index contract parses separately without adding frozen parity cred
  expect(new Set(ids).size).toBe(23);expect(ids.every(Boolean)).toBe(true);
  expect(pickles.every(p=>p.tags.some(t=>t.name==='@proposal'))).toBe(true);
  expect(pickles.some(p=>p.tags.some(t=>t.name.startsWith('@ux-')))).toBe(false);
- const classic=loadCorpus();expect(classic).toHaveLength(256);expect(new Set(classic.map(row=>row.id)).size).toBe(236);
+ const classic=loadCorpus();expect(classic).toHaveLength(257);expect(new Set(classic.map(row=>row.id)).size).toBe(236);
  expect(loadCorpus('shared')).toHaveLength(42);
 });

@@ -12,7 +12,7 @@ Conflicting historical contracts are preserved byte-for-byte; the active 3.2.4 e
 Initial clean source baseline: `5dc6bf77968a1c6da1c14292d2a894085012f7b1`.
 Its 37 tracked feature files, 358 scenario definitions and 421 expanded cases parsed
 successfully with Cucumber. This baseline is a historical snapshot; the separate oracle-only
-feature, corrected Gi settings scenarios and active Piclaw 3.2.4 edits came later. The historical Classic/shared hashes are verified under `tests/ux/upstream/`. A current staged-feature parse on `a6d6873` plus the active working tree has 42 files, 380 definitions and 443 expanded cases, including five Gi-specific deviation clauses. Includes
+feature, corrected Gi settings scenarios and active Piclaw 3.2.4 edits came later. The historical Classic/shared hashes are verified under `tests/ux/upstream/`. A current staged-feature parse on `a6d6873` plus the active working tree has 42 files, 380 definitions and 444 expanded cases, including five Gi-specific deviation clauses and the two-example active reconnect scenario. The previous 443-case parse is a pre-outline checkpoint. Includes
 native TUI/search, additive Gi settings/session specs, passkey additions and all
 Classic/shared contracts—not only the web mapping catalogue.
 

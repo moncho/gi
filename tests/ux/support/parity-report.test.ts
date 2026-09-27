@@ -224,11 +224,15 @@ test('parity report combines fit and follow-on classic slices with seeded shared
   execFileSync(process.execPath,[script,input,steer,fit,meter,compact],{cwd:dir});
   const withCompact=JSON.parse(readFileSync(join(dir,'test-results/ux-parity/matrix.json'),'utf8'));
   expect(withCompact.counts.pass).toBe(10);expect(withCompact.counts.unmapped).toBe(138);
-  const reconnect=join(dir,'reconnect.json');writeFileSync(reconnect,JSON.stringify({suites:[{specs:[spec('@ux-reconnect-002',6),spec('@ux-reconnect-003',6),spec('@ux-reconnect-004',6),spec('@ux-reconnect-005',6)]}]}));
+  const reconnect=join(dir,'reconnect.json');writeFileSync(reconnect,JSON.stringify({suites:[{specs:[spec('@ux-reconnect-002',6),spec('@ux-reconnect-003',6),spec('@ux-reconnect-004',6),spec('@ux-reconnect-004',6),spec('@ux-reconnect-005',6)]}]}));
   execFileSync(process.execPath,[script,reconnect],{cwd:dir});
   const reconnected=JSON.parse(readFileSync(join(dir,'test-results/ux-parity/matrix.json'),'utf8'));
   expect(reconnected.counts.pass).toBe(4);expect(reconnected.counts.unmapped).toBe(138);
+  expect(reconnected.rows.find((row:any)=>row.id==='@ux-reconnect-004').expandedCases).toBe(2);
   expect(reconnected.rows.find((row:any)=>row.id==='@ux-original-023').status).toBe('not-run');
+  writeFileSync(reconnect,JSON.stringify({suites:[{specs:[spec('@ux-reconnect-004',6)]}]}));
+  execFileSync(process.execPath,[script,reconnect],{cwd:dir});
+  expect(JSON.parse(readFileSync(join(dir,'test-results/ux-parity/matrix.json'),'utf8')).rows.find((row:any)=>row.id==='@ux-reconnect-004').status).toBe('partial-matrix');
   const stopped=join(dir,'reconnect-stop.json');writeFileSync(stopped,JSON.stringify({suites:[{specs:[spec('@ux-original-023',6)]}]}));
   execFileSync(process.execPath,[script,stopped],{cwd:dir});
   const stoppedReport=JSON.parse(readFileSync(join(dir,'test-results/ux-parity/matrix.json'),'utf8'));

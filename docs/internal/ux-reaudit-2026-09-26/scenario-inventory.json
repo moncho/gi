@@ -21638,7 +21638,7 @@
       "oracle_status": "installed-backend-function-probe-premise-mismatch-http-ui-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Installed Piclaw 3.2.4 in-memory backend-function probe returned 200 deleting the parent alone and leaving an unseen reply orphan; it did not emit Replies exist. Frozen backend-rejection premise fails at this boundary; HTTP/UI untested.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Installed Piclaw 3.2.4 in-memory backend-function probe returned 200 deleting the parent alone and leaving an unseen reply orphan; it did not emit Replies exist. Frozen backend-rejection premise fails at this boundary; HTTP/UI untested. Shipped Classic UI on Chromium/WebKit desktop executes the synthetic-409 follow-up branch in a disposable fixture; independent installed backend returns 200 instead. No integrated HTTP/UI pass.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
@@ -21685,7 +21685,7 @@
       "oracle_status": "installed-backend-function-probe-premise-mismatch-http-ui-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Installed Piclaw 3.2.4 in-memory backend-function probe returned 200 deleting the parent alone and leaving an unseen reply orphan; it did not emit Replies exist. Frozen backend-rejection premise fails at this boundary; HTTP/UI untested.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Installed Piclaw 3.2.4 in-memory backend-function probe returned 200 deleting the parent alone and leaving an unseen reply orphan; it did not emit Replies exist. Frozen backend-rejection premise fails at this boundary; HTTP/UI untested. Shipped Classic UI on Chromium/WebKit desktop executes the synthetic-409 follow-up branch in a disposable fixture; independent installed backend returns 200 instead. No integrated HTTP/UI pass.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
@@ -21740,7 +21740,7 @@
       "oracle_status": "current-oracle-backend-runtime-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Shipped Classic UI on Chromium/WebKit desktop passes bounded visible-reply dialog and confirm/cancel disposable fixtures; integrated backend/UI and Gi journey unverified.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
@@ -21795,7 +21795,7 @@
       "oracle_status": "current-oracle-backend-runtime-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Shipped Classic UI on Chromium/WebKit desktop passes bounded visible-reply dialog and confirm/cancel disposable fixtures; integrated backend/UI and Gi journey unverified.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
@@ -21846,7 +21846,7 @@
       "oracle_status": "current-oracle-backend-runtime-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Shipped Classic UI on Chromium/WebKit desktop passes bounded visible-reply dialog and confirm/cancel disposable fixtures; integrated backend/UI and Gi journey unverified.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"

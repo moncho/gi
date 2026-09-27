@@ -112,8 +112,10 @@ recovery over Classic draft replacement.
 `workspace-index-derived-review.md` traces the 23 derived index proposals to
 mounted scanner, store, worker, scheduler, HTTP and TUI assertions. Accepted
 Gi ADR-0046/0050/0051 make reads and native writes explicit-refresh only.
-The unimplemented `:33` Piclaw-derived search-triggered background refresh
-requires a deliberate policy change; `:199` and `:211` have bounded Gi findings.
+A pinned Piclaw 3.2.4 in-memory search-function probe returned committed hits
+and intercepted a background request on cold/stale searches; it launched no
+worker. Gi's unimplemented `:33` trigger needs a deliberate policy change;
+`:199` and `:211` have bounded explicit-only Gi findings.
 There is no complete derived-index acceptance.
 `tui-remaining-review.md` traces the final nine native TUI clauses against a
 fresh seven-feature disposable tmux run. Screen substring/SQLite checks are not

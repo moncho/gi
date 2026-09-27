@@ -45,8 +45,8 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Two hundred and thirty-five have qualified clause findings or source→test→Gi-code
-reviews; 123 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
+Two hundred and thirty-eight have qualified clause findings or source→test→Gi-code
+reviews; 120 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
@@ -97,6 +97,8 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`shared-model-review.md` traces Shared31–35 through scoped picker/model/thinking
+browser tests (12+6+6+6); current Piclaw backend and physical keys unprobed.
 `shared-queue-review.md` traces Shared27/29 (12/12) and Shared30 (6/6 after
 a test-only stale model-picker locator fix). Classic idle-Steer remains a
 separate policy conflict.

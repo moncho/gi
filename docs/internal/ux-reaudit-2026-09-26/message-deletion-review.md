@@ -34,9 +34,9 @@ confirmation retries with `cascade=true`. These fixture assertions exercise
 the shipped UI branch, not the installed backend. A third probe joins the
 shipped UI to installed `getTimelineResponse` and `deletePostResponse` through
 **disposable routes** and in-memory SQLite:
-`PICLAW_DB_IN_MEMORY=1 ORACLE_BROWSER=chromium|webkit bun
-tests/ux/oracle/piclaw-deletion-combined-probe.mjs` (run separately for each
-browser). Its deliberately restricted current view presents a real stored
+`PICLAW_DB_IN_MEMORY=1 ORACLE_BROWSER=chromium bun
+tests/ux/oracle/piclaw-deletion-combined-probe.mjs`; repeat with
+`ORACLE_BROWSER=webkit`. Its deliberately restricted current view presents a real stored
 parent while hiding a real stored reply. In both desktop browsers, clicking
 Delete sends `cascade=false`, shows no prompt, removes the parent from the UI
 and leaves the reply row orphaned (`thread_id` still points to the parent).

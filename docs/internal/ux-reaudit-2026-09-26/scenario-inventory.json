@@ -7021,12 +7021,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Piclaw pinned source→tagged Gi native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi menu/Quick Actions five tags passed 30/30 across six projects; no direct Piclaw 3.2.4 UI or physical acceptance.",
+      "evidence_link": "classic-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -7083,12 +7083,12 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Piclaw pinned source→tagged Gi native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi menu/Quick Actions five tags passed 30/30 across six projects; no direct Piclaw 3.2.4 UI or physical acceptance.",
+      "evidence_link": "classic-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -7189,12 +7189,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Piclaw pinned source→tagged Gi native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi menu/Quick Actions five tags passed 30/30 across six projects; no direct Piclaw 3.2.4 UI or physical acceptance.",
+      "evidence_link": "classic-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -7278,12 +7278,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "copied source target exclusions, but six real excluded surfaces not all asserted",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "verified-outline-test-gap",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Six-example excluded-target outline lacks tagged real-control journeys; artificial DOM and adjacent real controls do not earn full outline credit.",
+      "evidence_link": "classic-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared",
       "harness_status": "six outline examples not individually proved by injected DOM guard; real controls covered separately"
@@ -7352,12 +7352,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Piclaw pinned source→tagged Gi native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi menu/Quick Actions five tags passed 30/30 across six projects; no direct Piclaw 3.2.4 UI or physical acceptance.",
+      "evidence_link": "classic-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -7429,12 +7429,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Piclaw pinned source→tagged Gi native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi menu/Quick Actions five tags passed 30/30 across six projects; no direct Piclaw 3.2.4 UI or physical acceptance.",
+      "evidence_link": "classic-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

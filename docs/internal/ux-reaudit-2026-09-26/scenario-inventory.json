@@ -15946,12 +15946,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen source→tagged six-project Gi native send/refresh assertions→compose-box.ts/app.ts",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused 007–011 native browser run passed 30/30; Gi accepts/serializes/pairs/preserves/reconciles under disposable backend, not current Piclaw backend, live Gi or physical parity. See accepted-visibility-review.md.",
+      "evidence_link": "accepted-visibility-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -16015,12 +16015,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen source→tagged six-project Gi native send/refresh assertions→compose-box.ts/app.ts",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused 007–011 native browser run passed 30/30; Gi accepts/serializes/pairs/preserves/reconciles under disposable backend, not current Piclaw backend, live Gi or physical parity. See accepted-visibility-review.md.",
+      "evidence_link": "accepted-visibility-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -16084,12 +16084,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen source→tagged six-project Gi native send/refresh assertions→compose-box.ts/app.ts",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused 007–011 native browser run passed 30/30; Gi accepts/serializes/pairs/preserves/reconciles under disposable backend, not current Piclaw backend, live Gi or physical parity. See accepted-visibility-review.md.",
+      "evidence_link": "accepted-visibility-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -16153,12 +16153,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen source→tagged six-project Gi native send/refresh assertions→compose-box.ts/app.ts",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused 007–011 native browser run passed 30/30; Gi accepts/serializes/pairs/preserves/reconciles under disposable backend, not current Piclaw backend, live Gi or physical parity. See accepted-visibility-review.md.",
+      "evidence_link": "accepted-visibility-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -16222,12 +16222,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen source→tagged six-project Gi native send/refresh assertions→compose-box.ts/app.ts",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused 007–011 native browser run passed 30/30; Gi accepts/serializes/pairs/preserves/reconciles under disposable backend, not current Piclaw backend, live Gi or physical parity. See accepted-visibility-review.md.",
+      "evidence_link": "accepted-visibility-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

@@ -49,7 +49,7 @@ func TestTUIUnselectedModelLeavesLocalCommandsAvailable(t *testing.T) {
 	c.cfg.DefaultModel = ""
 	c.input.SetText("/where")
 	c.onSubmit("/where")
-	if c.input.text != "" || len(c.history) != 1 || c.history[0] != "/where" {
-		t.Fatal("slash command blocked")
+	if c.input.text != "" || len(c.history) != 0 {
+		t.Fatal("slash command blocked or added to prompt history")
 	}
 }

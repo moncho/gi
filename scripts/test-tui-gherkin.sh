@@ -180,7 +180,7 @@ MD
 wait_for_tui_ready() {
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     sleep 0.4
-    if capture_pane | grep -Fq "m0/t0"; then
+    if capture_pane | grep -Eq "m[0-9]+/t[0-9]+"; then
       return 0
     fi
   done
@@ -193,6 +193,26 @@ start_tui() {
   prepare_tui_workspace
   tmux new-session -d -x 120 -y 28 -s "$SESSION" "cd '$ROOT' && ./bin/gi -tui -db '$DB' -workspace '$WORKSPACE'"
   wait_for_tui_ready
+}
+
+restart_tui() {
+  tmux kill-session -t "$SESSION" >/dev/null 2>&1 || true
+  tmux new-session -d -x 120 -y 28 -s "$SESSION" "cd '$ROOT' && ./bin/gi -tui -db '$DB' -workspace '$WORKSPACE'"
+  wait_for_tui_ready
+}
+
+editor_should_contain() {
+  local expected="$1" line
+  for _ in 1 2 3 4 5; do
+    sleep 0.3
+    line=$(capture_pane | grep -F '▌' | tail -1 || true)
+    if [[ -n "$line" && "$line" == *"$expected"* ]]; then
+      return 0
+    fi
+  done
+  echo "editor did not contain: $expected (last editor line: $line)" >&2
+  capture_pane >&2 || true
+  exit 1
 }
 
 start_tui_default() {
@@ -221,6 +241,7 @@ press_key() {
     "Ctrl-D") tmux send-keys -t "$SESSION":0 C-d ;;
     "Ctrl-P") tmux send-keys -t "$SESSION":0 C-p ;;
     "Ctrl-N") tmux send-keys -t "$SESSION":0 C-n ;;
+    "Ctrl-U") tmux send-keys -t "$SESSION":0 C-u ;;
     *) tmux send-keys -t "$SESSION":0 "$key" ;;
   esac
   sleep 0.5
@@ -257,6 +278,11 @@ run_step() {
   case "$line" in
     "Given a fresh gi TUI workspace") ;;
     "When I start the gi TUI in tmux") start_tui ;;
+    "When I restart the TUI in the same workspace") restart_tui ;;
+    "When I type "*" without submitting"|"And I type "*" without submitting")
+      local text=${line#*I type \"}; text=${text%\" without submitting}; tmux send-keys -t "$SESSION":0 -l "$text"; sleep 0.3 ;;
+    "Then the editor should contain "*|"And the editor should contain "*)
+      local text=${line#*should contain \"}; text=${text%\"}; editor_should_contain "$text" ;;
     "When I start gi without arguments in tmux") start_tui_default ;;
     "Then the screen should contain "*|"And the screen should contain "*)
       local text=${line#*should contain \"}; text=${text%\"}; screen_should_contain "$text" ;;
@@ -287,6 +313,9 @@ rm -rf "$ARTIFACT_DIR"
 mkdir -p "$ARTIFACT_DIR"
 shopt -s nullglob
 features=("$FEATURE_DIR"/*.feature)
+if [[ -n "${FEATURE_FILE:-}" ]]; then
+  features=("$FEATURE_FILE")
+fi
 if [[ ${#features[@]} -eq 0 ]]; then
   echo "no feature files in $FEATURE_DIR" >&2
   exit 1

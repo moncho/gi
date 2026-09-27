@@ -57,7 +57,7 @@ endef
 	build-web build \
 	run start stop restart status logs \
 	test vet bun-checks check \
-	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-sessions test-tui-source-copy test-tui-markdown \
+	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-input-history test-tui-sessions test-tui-source-copy test-tui-markdown \
 	clean
 
 # ── Help and bootstrap ──────────────────────────────────────────────────
@@ -424,6 +424,9 @@ test-tui-outcomes: build
 
 test-tui-reading: build
 	$(BUN) scripts/test-tui-reading.mjs
+
+test-tui-input-history: build
+	FEATURE_FILE=$(abspath features/tui/input_history.feature) ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-input-history TEST_DIR=$(abspath $(TUI_TEST_DIR))-input-history scripts/test-tui-gherkin.sh
 
 test-tui-sessions: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-sessions.mjs

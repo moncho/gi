@@ -167,6 +167,9 @@ type chatTUI struct {
 	histIdx                     int
 	historySearchQuery          string
 	historySearchIdx            int
+	historyDraft                string
+	historyDraftCursor          int
+	historyApplying             bool
 	running                     bool
 	status                      string
 	compaction                  terminalCompaction
@@ -273,7 +276,16 @@ func (c *chatTUI) ensureInput() {
 }
 
 func (c *chatTUI) onInputChanged(string) {
-	c.saveDurableDraft()
+	if !c.historyApplying && !c.draftApplying {
+		c.histIdx = -1
+		c.historyDraft = ""
+		c.historyDraftCursor = 0
+		c.historySearchQuery = ""
+		c.historySearchIdx = -1
+	}
+	if !c.historyApplying {
+		c.saveDurableDraft()
+	}
 	// Editing is independent of transcript navigation. Only readers already
 	// following the newest edge should move when the editor changes height.
 	if c.stickToBottom {
@@ -2164,22 +2176,28 @@ func (c *chatTUI) loadCommandHistory() []string {
 	if c.store == nil || strings.TrimSpace(c.sessionID) == "" {
 		return nil
 	}
-	messages, err := c.store.ListMessages(context.Background(), c.sessionID)
+	history, err := c.store.ListTUIInputHistory(context.Background(), c.sessionID, c.currentHistoryLimit())
 	if err != nil {
 		return nil
 	}
-	history := make([]string, 0, len(messages))
-	for _, msg := range messages {
-		if msg.Role != "user" || strings.TrimSpace(msg.Content) == "" {
-			continue
-		}
-		history = append(history, strings.TrimSpace(msg.Content))
-	}
-	limit := c.currentHistoryLimit()
-	if limit > 0 && len(history) > limit {
-		history = history[len(history)-limit:]
-	}
 	return history
+}
+
+// Only prompts submitted to the turn engine belong in cursor history. Unsent
+// drafts, slash commands and local shell shortcuts are not prompts.
+func (c *chatTUI) recordInputHistory(text string) {
+	c.history = append(c.history, text)
+	c.applyHistoryLimit()
+	c.histIdx = -1
+	c.historyDraft = ""
+	c.historyDraftCursor = 0
+	c.historySearchIdx = -1
+	c.historySearchQuery = ""
+	if c.store != nil && c.sessionID != "" {
+		if err := c.store.RecordTUIInput(context.Background(), c.sessionID, text, c.currentHistoryLimit()); err != nil {
+			c.appendTranscript("warn: input history not saved: " + err.Error())
+		}
+	}
 }
 
 func (c *chatTUI) currentHistoryLimit() int {
@@ -2202,21 +2220,26 @@ func (c *chatTUI) searchHistoryBackward() {
 		return
 	}
 	query := strings.TrimSpace(c.input.Text())
+	start := len(c.history) - 1
+	if c.historySearchIdx >= 0 && c.historySearchIdx < len(c.history) &&
+		c.input.Text() == c.history[c.historySearchIdx] {
+		query = c.historySearchQuery
+		start = c.historySearchIdx - 1
+	}
 	if query == "" {
 		c.recallHistory(-1)
 		return
 	}
-	start := len(c.history) - 1
-	if c.historySearchQuery == query && c.historySearchIdx > 0 {
-		start = c.historySearchIdx - 1
-	}
 	needle := strings.ToLower(query)
-	for i := start; i >= 0; i-- {
+	for offset := 0; offset < len(c.history); offset++ {
+		i := (start - offset + len(c.history)*2) % len(c.history)
 		if strings.Contains(strings.ToLower(c.history[i]), needle) {
-			c.historySearchQuery = query
-			c.historySearchIdx = i
-			c.focusInput()
-			c.input.SetText(c.history[i])
+			if c.histIdx < 0 {
+				c.historyDraft, c.historyDraftCursor = c.input.Text(), c.input.cursorPos
+			}
+			c.historySearchQuery, c.historySearchIdx = query, i
+			c.histIdx = i
+			c.setHistoryInput(c.history[i], utf8.RuneCountInString(c.history[i]))
 			c.status = fmt.Sprintf("History match %d/%d", i+1, len(c.history))
 			return
 		}
@@ -2227,12 +2250,21 @@ func (c *chatTUI) searchHistoryBackward() {
 	}
 }
 
+func (c *chatTUI) setHistoryInput(text string, cursor int) {
+	c.historyApplying = true
+	c.focusInput()
+	c.input.SetText(text)
+	c.input.cursorPos = cursor
+	c.historyApplying = false
+}
+
 func (c *chatTUI) recallHistory(delta int) {
-	if c.input == nil || c.input.Text() != "" || len(c.history) == 0 {
+	if c.input == nil || len(c.history) == 0 {
 		return
 	}
 	if delta < 0 {
 		if c.histIdx < 0 {
+			c.historyDraft, c.historyDraftCursor = c.input.Text(), c.input.cursorPos
 			c.histIdx = len(c.history) - 1
 		} else if c.histIdx > 0 {
 			c.histIdx--
@@ -2244,12 +2276,17 @@ func (c *chatTUI) recallHistory(delta int) {
 		c.histIdx++
 		if c.histIdx >= len(c.history) {
 			c.histIdx = -1
-			c.input.SetText("")
+			c.setHistoryInput(c.historyDraft, c.historyDraftCursor)
+			c.historyDraft = ""
+			c.historyDraftCursor = 0
+			c.historySearchIdx = -1
+			c.historySearchQuery = ""
 			return
 		}
 	}
-	c.focusInput()
-	c.input.SetText(c.history[c.histIdx])
+	c.historySearchIdx = -1
+	c.historySearchQuery = ""
+	c.setHistoryInput(c.history[c.histIdx], utf8.RuneCountInString(c.history[c.histIdx]))
 }
 
 func (c *chatTUI) HandleMouse(me gotui.MouseEvent) bool {
@@ -2436,11 +2473,7 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 			return
 		}
 	}
-	c.history = append(c.history, text)
-	c.applyHistoryLimit()
-	c.histIdx = -1
-	c.historySearchIdx = -1
-	c.historySearchQuery = ""
+	historyPrompt := text
 	c.input.SetText("")
 	if strings.HasPrefix(text, "/skill:") {
 		c.appendTranscript(c.skillCommandLines(text)...)
@@ -2462,6 +2495,9 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 		}
 		text = fmt.Sprintf("Run this shell command and summarize the result: %s", cmd)
 	}
+	// Store the typed prompt (not its expansion) after validation. Accepted
+	// turns and queued follow-ups remain reachable after TUI restart.
+	c.recordInputHistory(historyPrompt)
 	scope := c.selectionScope()
 	if claim != nil {
 		merged := make(map[string]any, len(metadata)+2)
@@ -2783,7 +2819,7 @@ func (c *chatTUI) commandPaletteLines(query string) []string {
 		{"/thinking [level]", "show or set thinking level"},
 		{"/compact", "request context compaction"},
 		{"/scrollback [n]", "show or set transcript scrollback limit"},
-		{"/history-limit [n]", "show or set TUI command history limit"},
+		{"/history-limit [n]", "show or set per-session prompt history limit"},
 		{"/settings", "show grouped runtime settings"},
 		{"/cancel", "cancel latest active/queued turn"},
 		{"/agents", "list configured agents"},
@@ -2840,7 +2876,7 @@ func (c *chatTUI) helpLines() []string {
 		"/where     compact context",
 		"/attach    stage session media (up to 6)",
 		"/attachments | /detach <media:id|all|unresolved> list/remove pending refs",
-		"ctrl-r     search command history (current input is query)",
+		"ctrl-r     search submitted prompts (current input is query)",
 		"!cmd       ask model about shell · !!cmd run locally",
 	}
 }

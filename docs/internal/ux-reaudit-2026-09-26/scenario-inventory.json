@@ -23454,12 +23454,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen shared clause→tagged native six-project browser assertion→mounted selection/mutation guard",
+      "oracle_status": "current-oracle-session-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Shared23–26 focused Gi tests passed 18+6 across six projects; current Piclaw UI, physical input and unsupported actions unprobed.",
+      "evidence_link": "shared-session-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -23531,12 +23531,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen shared clause→tagged native six-project browser assertion→mounted selection/mutation guard",
+      "oracle_status": "current-oracle-session-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Shared23–26 focused Gi tests passed 18+6 across six projects; current Piclaw UI, physical input and unsupported actions unprobed.",
+      "evidence_link": "shared-session-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -23603,12 +23603,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen shared clause→tagged native six-project browser assertion→mounted selection/mutation guard",
+      "oracle_status": "current-oracle-session-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Shared23–26 focused Gi tests passed 18+6 across six projects; current Piclaw UI, physical input and unsupported actions unprobed.",
+      "evidence_link": "shared-session-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

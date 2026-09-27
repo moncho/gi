@@ -101,9 +101,11 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 queued return `004`, retains the no-loss policy conflict.
 
 `workspace-index-derived-review.md` traces the 23 derived index proposals to
-mounted scanner, store, worker, scheduler, HTTP and TUI assertions. The
-search-triggered versus explicit-only refresh policy conflicts at `:33`, `:199`
-and `:211` persist; there is no complete derived-index acceptance.
+mounted scanner, store, worker, scheduler, HTTP and TUI assertions. Accepted
+Gi ADR-0046/0050/0051 make reads and native writes explicit-refresh only.
+The unimplemented `:33` Piclaw-derived search-triggered background refresh
+requires a deliberate policy change; `:199` and `:211` have bounded Gi findings.
+There is no complete derived-index acceptance.
 `tui-remaining-review.md` traces the final nine native TUI clauses against a
 fresh seven-feature disposable tmux run. Screen substring/SQLite checks are not
 physical-terminal, accessibility or Piclaw parity acceptance.

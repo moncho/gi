@@ -36,6 +36,18 @@ passkeys, keyboard assistive technology or Gi's runtime.
 
 ## Other source-backed re-audit leads
 
+- Classic timeline `018`/`019` expect direct deletion to fail with `Replies exist`
+  when a stored reply is outside the loaded view. Pinned Piclaw 3.2.4
+  `deletePostResponse` instead returns 200 for a direct parent deletion.
+  `tests/ux/oracle/piclaw-deletion-combined-probe.mjs` connects shipped Classic
+  assets to installed backend functions through disposable HTTP fixtures and
+  an in-memory database. Chromium and WebKit desktop both sent `cascade=false`
+  without prompting, removed the parent from the UI and left the stored reply
+  orphaned. Separate synthetic-409 UI fixtures do exercise the dormant retry
+  branch; cascade deletes parent and direct replies in an isolated backend
+  probe. See `message-deletion-review.md`. The production Piclaw HTTP router,
+  authentication and live store were not exercised. Gi `018`–`022` remain
+  unmapped because Gi has no reply graph or cascade confirmation.
 - `tests/features/settings/gi-settings.feature:40` said thinking was read-only;
   `web/src/gi-settings-models.ts:117` and `tests/ux/session-thinking.spec.mjs:18-35`
   expose/apply native supported choices. The additive Gi feature is corrected with

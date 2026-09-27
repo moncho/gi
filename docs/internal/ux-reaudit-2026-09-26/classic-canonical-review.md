@@ -3,10 +3,12 @@
 Baseline: 24-file frozen Classic corpus from Piclaw `70d33bc`; current oracle is
 shipped Piclaw 3.2.4. This is a **qualified source/test review**, not a new full
 browser run, physical-device acceptance, or permission to rewrite frozen hashes.
-The installed 3.2.4 UI was directly probed only for slash/fixture-listed skill
-prefill, model-picker keys, queued return, SVG and first-send request; all other
-current-oracle rows
-remain provisional.
+Installed 3.2.4 UI probes cover slash/fixture-listed skill prefill, model-picker
+keys, queued return, SVG, first-send request and a bounded Plan add-on
+remote-update/Refresh slice. A separate disposable UI/backend-function deletion
+fixture covers reply prompts, cascade, cancellation and an unseen-reply orphan.
+All other current-oracle rows remain provisional; none of these probes is a
+production HTTP/auth/live or full combined-case acceptance.
 `oracle-deltas.md`, `manual-findings.json`, and `picker-keyboard-gap.md` contain
 source locations and the focused discrepancies.
 
@@ -20,7 +22,7 @@ source locations and the focused discrepancies.
 | 006 | `quick-actions.spec.mjs:36-42,237-275` | Escape/outside dismissal, no action, fresh query and draft/focus in shared variants. |
 | 007 | `quick-actions.spec.mjs:44-51` | **Current-oracle conflict.** Gi expects `/model `; shipped Piclaw 3.2.4 (all six isolated projects) produces `/model`, replaces draft, focuses and does not send. Historical Gherkin's trailing-space clause even appears unsupported by its own `70d33bc` source. Versioned oracle Gherkin records actual behaviour. |
 | 008 | `skills.spec.mjs:4-47`; `tests/ux/oracle/piclaw-basic-probe.mjs` | **Disputed mapping:** tagged Gi body preserves an existing draft. Shipped Piclaw 3.2.4 selects a fixture-listed `/skill:proof` in the Slash commands group and replaces the draft with exactly `/skill:proof` in six projects, no POST. This isolates the UI prefill path; the fixture does not prove real skill discovery, loading or execution. |
-| 009–012 | Installed `piclaw-addon-plan-sidebar` 0.1.25 source; no Gi Plan route/tool/sidebar located | Add-on-dependent Classic Plan clauses are historical reference only; no Gi implementation/mapping. See `plan-oracle-gap.md` for current add-on behaviour and Shared18–22 strengthening. |
+| 009–012 | Installed `piclaw-addon-plan-sidebar` 0.1.25 source; no Gi Plan route/tool/sidebar located | A shipped-Classic/add-on disposable browser probe in Chromium/WebKit covers only the 010 remote-update/explicit-Refresh slice: dirty text survives the event, then Refresh replaces it without confirmation. Save, Submit and tool clauses remain source-only; no Gi implementation/mapping. See `plan-oracle-gap.md` for Shared18–22 strengthening. |
 | 013 | `session.spec.mjs:9-76` | Native picker grouping, pointer/keyboard, search focus, Escape and exact trigger focus exercised; seeded sessions, not fresh boot. |
 | 014 | `session.spec.mjs:453-518` | Keyboard selection, session-scoped timeline/queue reads, held old response rejection and per-session drafts exercised. |
 | 015 | `session.spec.mjs:570-649` | Pin/rename/archive/restore success/error/capability gates, reload and draft/routing ownership exercised. |
@@ -32,7 +34,7 @@ source locations and the focused discrepancies.
 | 021 | `models.spec.mjs:46+`, `web/src/gi-model-picker.ts`, `scripts/patch-model-picker.mjs` | **Locally corrected model half:** former tag tested stale model replies; a new tagged native browser journey now covers search, Arrow/Page, plain caret vs Control/Meta+Home/End, one Enter model PATCH, Escape focus and no prompt across six projects. Existing Shared34 six-project test skips disabled entries. The frozen session-picker half remains separate; a six-project isolated shipped Piclaw 3.2.4 keyboard probe covers model search focus, Page and modified Home/End, and Escape focus without model mutation. See `picker-keyboard-gap.md`. |
 | 022 | `models.spec.mjs:78+` | Sparse metadata/unknown context and stale catalogue test is bounded evidence; no inferred measured usage. |
 | 023 | `reconnect.spec.mjs:77+` | Native reconnect refresh and captured Stop evidence; keep generic/TUI cancellation distinct. |
-| 024 | `shared-copy-delete.spec.mjs:47+` covers narrower Shared37 | **Unmapped:** Classic cascade-confirmed replies require their own native case; single-message deletion/copy cannot be borrowed. |
+| 024 | `shared-copy-delete.spec.mjs:47+` covers narrower Shared37 | **Unmapped Gi:** joined shipped-UI/installed-backend-function disposable fixtures in Chromium/WebKit confirm/cancel a visible parent+three-reply cascade but have no combined copy journey or production HTTP/auth/live acceptance. An unseen stored reply is orphaned on direct deletion. Gi still lacks a native reply graph and cascade controls; see `message-deletion-review.md`. |
 | 025 | `internal/tools/messages.go`, `docs/internal/message-retrieval.md` | **Unmapped:** current-session-only numeric-ID tool lacks Classic all-chat/family-owned authorization, despite complete Shared38 web mapping. |
 | 026 | `drafts.spec.mjs:542+` | Isolated native upload failure/retry preserves byte identity and blocks submission until media ID exists; browser physical file picker separate. |
 | 027 | `tool-activity.spec.mjs:7-35` | Status/timer and stale call identity shown. This is not Shared40 expandable output pane; pending terminal-provenance WIP500e02f is not deployed. |

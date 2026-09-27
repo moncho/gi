@@ -235,8 +235,10 @@ probe confirmed SSE delivery, one manual warning and no auto-navigation in
 Chromium and WebKit. The broader reconnect run timed out at 63/72 and is not
 a pass; current Piclaw backend and deployed Gi were not tested.
 `theme-command-gap.md` records fifteen Classic composer `/theme`/`/tint`
-scenarios unsupported by Gi's native command path. Browser-local Appearance
-Settings is separate and cannot earn their timeline/legacy-storage credit.
+scenarios unsupported by Gi's native command path. An installed 3.2.4
+parser-only probe passed nine bounded command cases; Piclaw composer/timeline,
+visual and reload behaviour were not tested. Browser-local Gi Appearance
+Settings cannot earn the command/legacy-storage credit.
 `context-compaction-review.md` traces thirteen context/compaction/model
 clauses through current source and focused Gi native tests; the broad
 compaction run was interrupted at 91/102 and is not a pass.

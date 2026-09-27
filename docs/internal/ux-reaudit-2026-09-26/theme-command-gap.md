@@ -18,8 +18,15 @@ tagged.
 | `006`–`009`, `012` | `/tint` sets named/hex colours, off, default-theme interaction, visual differences and refresh persistence through Classic command state. | Settings accepts `#RGB`/`#RRGGBB` for the default preset, not the full Classic command semantics or named-colour path. |
 
 This is a **native capability gap for all 15 frozen scenarios**. It does not
-negate `@gi-settings-009`/`010` or their own Appearance Settings tests. Piclaw
-3.2.4 theme-command UI was not separately probed here; the frozen Classic
-Gherkin is retained as historical contract, and implementation decisions must
-keep that version boundary explicit. No parity or physical/pixel credit follows
-from visual CSS variables or the Settings tests alone.
+negate `@gi-settings-009`/`010` or their own Appearance Settings tests.
+`tests/ux/oracle/piclaw-theme-command-probe.ts` pins the installed 3.2.4
+version and Classic source-map hash, then calls its
+`src/channels/web/theming/ui-theme-commands.ts` parser directly. Nine inputs
+cover theme list, ristretto/default, invalid `dark`, tint usage, hex/named/off
+and invalid tint. All parser status/message/payload assertions passed. The
+installed `src/channels/web/handlers/agent.ts` calls this parser, persists a
+successful theme payload via `setServerUiThemeConfig` and broadcasts
+`ui_theme`, but that handler path was only source-reviewed. Piclaw's composer,
+timeline, storage, reload and visual CSS were not exercised by the parser
+probe. The frozen Gherkin stays a historical contract; neither this probe nor
+Gi Settings grants command parity or physical/pixel credit.

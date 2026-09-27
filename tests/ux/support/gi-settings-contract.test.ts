@@ -13,6 +13,6 @@ test('Gi settings scenarios stay separate from the active Piclaw parity corpus',
   expect(new Set(ids).size).toBe(30);
   expect(cases.filter(row => row.tags.some(tag => tag.name === '@proposal'))).toHaveLength(1);
   expect(source).not.toMatch(/@ux-/);
-  expect(new Set(loadCorpus().map(row => row.id)).size).toBe(236);
+  expect(new Set(loadCorpus().map(row => row.id)).size).toBe(241);
   expect(loadCorpus('shared')).toHaveLength(42);
 });

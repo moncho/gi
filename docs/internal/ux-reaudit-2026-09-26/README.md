@@ -1,5 +1,10 @@
 # UX re-audit: maintenance checkpoint, not a completed audit
 
+**2026-09-27 correction:** this audit failed to capture the chat lifecycle.
+The user screenshot and read-only Gi probes disprove chat UX acceptance.
+The tool-footer mapping is withdrawn; historical counts below are superseded
+for current acceptance. See [chat UX recovery](../chat-ux-recovery-2026-09-27.md).
+
 User direction: audit all Gherkin for correct basic UX interactions, then cascade
 corrections to tests and code. Use Piclaw's actual behaviour and source as the oracle.
 Do not make the requirements merely describe current Gi code. Record the Piclaw

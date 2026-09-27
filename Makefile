@@ -428,6 +428,14 @@ test-ux-speech-contract:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_SPEECH=1' UX_LOCAL_SPEC='tests/ux/speech-contract.spec.mjs tests/ux/speech.spec.mjs tests/ux/message-copy.spec.mjs tests/ux/rendering.spec.mjs'
 	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
 
+.PHONY: capture-gi-chat-baseline
+capture-gi-chat-baseline:
+	$(BUN) tests/ux/oracle/gi-chat-baseline-probe.mjs
+
+.PHONY: test-piclaw-chat-lifecycle
+test-piclaw-chat-lifecycle:
+	$(BUN) tests/ux/oracle/piclaw-chat-lifecycle-probe.mjs
+
 .PHONY: test-piclaw-oracle-basic
 test-piclaw-oracle-basic:
 	$(BUN) test tests/ux/oracle/piclaw-basic-contract.test.mjs

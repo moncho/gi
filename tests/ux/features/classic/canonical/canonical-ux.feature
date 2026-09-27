@@ -270,14 +270,19 @@ Feature: Classic Piclaw interaction model
     # This does not promise server deduplication across upload retries or source deletion.
 
   @ux-original-027 @tools @pane @timer
-  Scenario: Display Classic tool execution status
-    Given tool status includes a call identity, state and available timing data
-    When the Classic status panel renders it
-    Then it displays the tool name, available preview and matching status presentation
-    And elapsed display updates on the client's one-second interval while applicable
-    And completed status uses its terminal timing data when supplied
-    And status-event routing distinguishes calls by identity rather than display name alone
-    # Full pane lifecycle reconstruction after reload and reduced-motion parity require separate evidence.
+  Scenario: Route tool execution through the Classic status and Output panes
+    Given the current turn starts a tool with a call identity and arguments
+    When tool execution updates include output text
+    Then the status identifies that call and the Output pane displays its preview
+    And no raw tool result is inserted as a user message in the conversation
+    When the last active tool finishes successfully
+    Then the activity phase changes to Waiting for model
+    And the completed call is metadata rather than a persistent Completed tool footer
+    And the draft and thought previews survive that intra-turn transition
+    When a terminal turn event is followed by an authoritative idle reload
+    Then active tool and preview panes are absent
+    # 2026-09-27: the former Gi tool-footer fixture did not exercise this contract.
+    # Timing, concurrent calls and reduced-motion parity need additional evidence.
 
   @ux-original-028 @copy @speech @capability
   Scenario: Copy code and transfer post speech ownership

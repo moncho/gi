@@ -1,5 +1,13 @@
 # Piclaw web interaction parity
 
+**2026-09-27 correction:** the prior audit missed the chat lifecycle and credited
+Gi's tool footer as Piclaw behaviour. Attribution, output routing and completion
+defects reproduce in Chromium and WebKit. See [chat UX recovery](../../docs/internal/chat-ux-recovery-2026-09-27.md).
+`@ux-original-027` and five new chat-lifecycle scenarios are unmapped. The active
+Classic inventory is 241 IDs / 262 cases, with 97 mapped and 144 unmapped.
+Historical totals below describe earlier runs, not current chat acceptance.
+Full chat parity and production acceptance are unverified.
+
 `make test-shared-message-evidence` runs race×3 native tests, six disposable-browser
 projects and mapping/report guards for Shared38. The combined native tool journey
 asserts exact 100-row cap/continuation, reversed multiple anchors and context union,

@@ -1,11 +1,11 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
-import {loadCorpus} from './support/catalogue.mjs';
 const gates=resolve('test-results/ux-parity/queue-gates');
 const inputName='Message (Enter to send, Shift+Enter for newline)...';
-test('@ux-original-027 native tool activity has owned preview, elapsed and terminal timing',async({page,request},info)=>{
- const scenario=loadCorpus().find(s=>s.id==='@ux-original-027');await info.attach('gherkin',{body:scenario.steps.join('\n'),contentType:'text/plain'});
+// Retained regression for the existing implementation, not an accepted Gi
+// deviation or Piclaw parity. User evidence invalidated the original mapping.
+test('Existing Gi tool footer has owned preview, elapsed and terminal timing (not Piclaw parity)',async({page,request},info)=>{
  test.setTimeout(45000);
  const token=`tools-${info.project.name}-${Date.now()}`;mkdirSync(gates,{recursive:true});
  const main=await(await request.post('/api/sessions',{data:{agent_id:token,title:token}})).json();const other=(await(await request.post(`/api/sessions/${main.id}/fork`,{data:{agent_id:token+'-other',title:token+'-other'}})).json()).branch.chat_jid.slice(3);

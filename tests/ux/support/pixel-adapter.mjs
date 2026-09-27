@@ -3,7 +3,7 @@ import {readFile,realpath} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {createHash} from 'node:crypto';
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.woff2':'font/woff2'};
-export async function installPixelHost({page,host,root,state,reference}){
+export async function installPixelHost({page,host,root,state,reference,allowPresenceBeacon=false}){
  if(!['gi','piclaw'].includes(host))throw Error(`Unknown pixel host: ${host}`);
  const failures=[],calls=[],assets={},streams=new Map(),streamAborts=[];
  const onError=e=>failures.push(`page: ${e.message}`);
@@ -14,7 +14,7 @@ export async function installPixelHost({page,host,root,state,reference}){
   failures.push(`network: ${r.url()} ${error}`);
  };
  page.on('pageerror',onError);page.on('requestfailed',onFailed);
- const server=createServer((req,res)=>{const u=new URL(req.url,'http://fixture');if(req.method!=='GET'||!['/sse/stream','/sse/topics'].includes(u.pathname)){failures.push(`Unexpected native request ${req.method} ${u.pathname}`);res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-store'});res.write(': pixel fixture\n\n');streams.set(res,u.pathname);res.on('close',()=>streams.delete(res));});
+ const server=createServer((req,res)=>{const u=new URL(req.url,'http://fixture');if(allowPresenceBeacon&&host==='piclaw'&&req.method==='POST'&&u.pathname==='/agent/push/presence'&&!u.search){calls.push({method:req.method,path:u.pathname,query:'',nativeBeacon:true});req.resume();res.writeHead(200,{'Content-Type':'application/json'});res.end('{"ok":true}');return;}if(req.method!=='GET'||!['/sse/stream','/sse/topics'].includes(u.pathname)){failures.push(`Unexpected native request ${req.method} ${u.pathname}`);res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-store'});res.write(': pixel fixture\n\n');streams.set(res,u.pathname);res.on('close',()=>streams.delete(res));});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
  const session={id:'main',title:state.sessionLabel,scope:{agent_id:'web'},state:{selected_model:state.model.current},created_at:state.now,updated_at:state.now,status:'idle',parent_session_id:null};
  const context={...state.model.context_usage,compact_command:'/compact'};

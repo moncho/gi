@@ -45,7 +45,7 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Eighty have qualified clause findings or source→test→Gi-code reviews; 278
+Ninety-five have qualified clause findings or source→test→Gi-code reviews; 263
 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
@@ -97,6 +97,9 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`theme-command-gap.md` records fifteen Classic composer `/theme`/`/tint`
+scenarios unsupported by Gi's native command path. Browser-local Appearance
+Settings is separate and cannot earn their timeline/legacy-storage credit.
 `context-compaction-review.md` traces thirteen context/compaction/model
 clauses through current source and focused Gi native tests; the broad
 compaction run was interrupted at 91/102 and is not a pass.

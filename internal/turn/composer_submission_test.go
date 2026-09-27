@@ -338,3 +338,54 @@ func TestTUIComposerSubmitMediaOnlyAdapterRejectsPairedAndWrongToken(t *testing.
 		t.Fatal("confirmed media claim reused")
 	}
 }
+
+func TestTUIComposerFollowUpDoesNotSteerActiveTurn(t *testing.T) {
+	for _, media := range []bool{false, true} {
+		t.Run(map[bool]string{false: "plain", true: "media"}[media], func(t *testing.T) {
+			e, s, _, pair := composerSubmitFixture(t, "durable β prompt", media)
+			activeComposerFixture(t, s)
+			result, settled, err := e.SubmitTUIComposerIntent(context.Background(), "A", pair.Text.Claim.Token, pair.Text.Revision, "bootstrap", "queue")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result == nil || result.TurnID == "active" || !result.Queued || result.Status != "queued" {
+				t.Fatalf("follow-up did not queue separately: %#v", result)
+			}
+			if settled.Text.Claim != nil || settled.Text.Text != "" {
+				t.Fatalf("claim did not settle %#v", settled.Text)
+			}
+			var n int
+			if err := s.DB().QueryRow(`select count(*) from steering_queue`).Scan(&n); err != nil || n != 0 {
+				t.Fatalf("steering=%d err=%v", n, err)
+			}
+			turn, err := s.GetTurn(context.Background(), result.TurnID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if turn.SessionID != "A" || turn.Prompt != "durable β prompt" || turn.Metadata["intent"] != "queue" || turn.Metadata["model"] != "bootstrap" {
+				t.Fatalf("wrong follow-up %#v", turn)
+			}
+			if media && (turn.Metadata["media"] == nil || turn.Metadata["tui_media_claim"] != pair.Text.Claim.Token) {
+				t.Fatal("follow-up lost captured media/receipt", turn.Metadata)
+			}
+			if _, _, err := e.SubmitTUIComposerIntent(context.Background(), "A", pair.Text.Claim.Token, pair.Text.Revision, "bootstrap", "prompt"); err == nil {
+				t.Fatal("settled follow-up replayed as steering")
+			}
+		})
+	}
+}
+
+func TestTUIComposerRejectsUnknownDeliveryBeforeClaimMutation(t *testing.T) {
+	e, s, _, pair := composerSubmitFixture(t, "durable β prompt", false)
+	_, _, err := e.SubmitTUIComposerIntent(context.Background(), "A", pair.Text.Claim.Token, pair.Text.Revision, "bootstrap", "invalid")
+	if err == nil {
+		t.Fatal("accepted arbitrary intent")
+	}
+	after, err := s.LoadTUIComposerDraft(context.Background(), "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Text.Revision != pair.Text.Revision || after.Text.Claim == nil || after.Text.Claim.Dispatched {
+		t.Fatal("invalid delivery modified durable claim")
+	}
+}

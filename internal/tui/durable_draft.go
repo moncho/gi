@@ -104,6 +104,10 @@ func (c *chatTUI) saveDurableDraft() bool {
 }
 
 func (c *chatTUI) submitDurableDraft(text string) {
+	c.submitDurableDraftWithIntent(text, "prompt")
+}
+
+func (c *chatTUI) submitDurableDraftWithIntent(text, intent string) {
 	d := c.textDrafts[c.sessionID]
 	if d == nil {
 		c.draftNotice("journal unavailable; text retained")
@@ -152,7 +156,7 @@ func (c *chatTUI) submitDurableDraft(text string) {
 	// Do not introduce an in-memory-only successor draft while a submit callback
 	// races journal settlement. The native turn executes asynchronously.
 	ctx, cancel = c.draftContext()
-	result, settled, err := c.engine.SubmitTUIComposer(ctx, scope.id, token, pair.Text.Revision, model)
+	result, settled, err := c.engine.SubmitTUIComposerIntent(ctx, scope.id, token, pair.Text.Revision, model, intent)
 	cancel()
 	if err == nil && result != nil {
 		c.recordInputHistory(text)

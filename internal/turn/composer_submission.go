@@ -34,8 +34,17 @@ func (e *Engine) SubmitTUIMediaPrompt(ctx context.Context, in RunInput, token st
 }
 
 // SubmitTUIComposer accepts no caller prompt/media/metadata. Only the persisted
-// claim is sent. This session-local adapter is not wired to the TUI yet.
+// claim is sent, using ordinary prompt admission (steering when already active).
 func (e *Engine) SubmitTUIComposer(ctx context.Context, sessionID, token string, expected int64, model string) (*SubmitResult, store.TUIComposerDraft, error) {
+	return e.SubmitTUIComposerIntent(ctx, sessionID, token, expected, model, "prompt")
+}
+
+// SubmitTUIComposerIntent adds only a validated delivery choice to the stored
+// claim. Follow-ups queue behind active work; ordinary prompts may steer it.
+func (e *Engine) SubmitTUIComposerIntent(ctx context.Context, sessionID, token string, expected int64, model, intent string) (*SubmitResult, store.TUIComposerDraft, error) {
+	if intent != "prompt" && intent != "queue" {
+		return nil, store.TUIComposerDraft{}, fmt.Errorf("composer: unsupported delivery intent %q", intent)
+	}
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
 	if opCtx == nil {
 		return nil, store.TUIComposerDraft{}, context.Canceled
@@ -90,7 +99,7 @@ func (e *Engine) SubmitTUIComposer(ctx context.Context, sessionID, token string,
 		metadata["media"] = state.Media.Claim.Refs
 		mediaToken = token
 	}
-	result, submitErr := e.submitPrompt(opCtx, RunInput{SessionID: sessionID, Prompt: body, Intent: "prompt", Model: model, Metadata: metadata}, nil, token, mediaToken)
+	result, submitErr := e.submitPrompt(opCtx, RunInput{SessionID: sessionID, Prompt: body, Intent: intent, Model: model, Metadata: metadata}, nil, token, mediaToken)
 	// Only this dispatch owner may prove rejection. A settlement failure must
 	// retain the durable claim; returning an error never invites implicit resend.
 	settled, settleErr := e.store.FinishTUIComposerDraft(opCtx, sessionID, token, submitErr != nil)

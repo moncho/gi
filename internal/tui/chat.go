@@ -272,6 +272,7 @@ func (c *chatTUI) ensureInput() {
 	}
 	c.input = newMultilineInput(80, "Send a message…", c.onSubmit, c.onInputChanged)
 	c.input.onRestoreQueued = c.restoreQueuedDraft
+	c.input.onFollowUp = c.onFollowUp
 	c.input.onComplete = c.completeInputPath
 	c.input.onEscape = c.handleTranscriptEscape
 	c.bindTranscriptNavigation()
@@ -2434,7 +2435,15 @@ func (c *chatTUI) onSubmit(text string) {
 	c.submitWithMetadata(text, nil)
 }
 
+func (c *chatTUI) onFollowUp(text string) {
+	c.submitWithIntent(text, nil, "queue")
+}
+
 func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
+	c.submitWithIntent(text, metadata, "prompt")
+}
+
+func (c *chatTUI) submitWithIntent(text string, metadata map[string]any, intent string) {
 	if c.workspaceIndex.active {
 		return
 	}
@@ -2458,7 +2467,7 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 		return
 	}
 	if c.durableDrafts && ordinaryMediaPrompt(text) {
-		c.submitDurableDraft(text)
+		c.submitDurableDraftWithIntent(text, intent)
 		return
 	}
 	if c.durableDrafts && strings.HasPrefix(text, "/") {
@@ -2540,7 +2549,7 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 		merged["media"], merged["tui_media_claim"] = claim.refs, claim.token
 		metadata = merged
 	}
-	input := turn.RunInput{SessionID: scope.id, Prompt: text, Intent: "prompt", Model: c.cfg.DefaultModel, Metadata: metadata}
+	input := turn.RunInput{SessionID: scope.id, Prompt: text, Intent: intent, Model: c.cfg.DefaultModel, Metadata: metadata}
 	if c.running {
 		c.queuedDrafts = append(c.queuedDrafts, text)
 		c.appendUserPrompt(text, true)

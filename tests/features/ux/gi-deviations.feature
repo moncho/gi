@@ -27,7 +27,9 @@ Feature: Gi behaviour retained where installed Piclaw 3.2.4 differs
     Then the SVG remains escaped source code and no image preview appears
     And the source can still be copied
 
-  @gi-ux-004
+  # Existing-code regression only; not an accepted clone deviation.
+  # User direction on 2026-09-27 requires Piclaw's queue return semantics.
+  @gi-ux-004 @migration-gap
   Scenario: Queue return recovers text alongside a newer draft without losing media
     Given a queued item and a newer editor draft with references or media
     When I return the queued item to Gi's editor
@@ -35,7 +37,9 @@ Feature: Gi behaviour retained where installed Piclaw 3.2.4 differs
     And recovery is persisted before the queued row is removed
     And failure or reload retains a recoverable item without duplicate recovery
 
-  @gi-ux-005
+  # Existing-code regression only; not an accepted clone deviation.
+  # Installed Piclaw can send this content when the run is already idle.
+  @gi-ux-005 @migration-gap
   Scenario: Gi Steer requires a matching active run
     Given a queued item associated with a session and an active run
     When I steer it in Gi

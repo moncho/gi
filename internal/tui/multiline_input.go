@@ -23,6 +23,7 @@ type multilineInput struct {
 	autoFocus        bool
 	suspended        bool
 	onSubmit         func(string)
+	onFollowUp       func(string)
 	onShiftEnter     func()
 	onNewline        func()
 	onRestoreQueued  func()
@@ -464,6 +465,10 @@ func (m *multilineInput) enter(ke gotui.KeyEvent) {
 			return
 		}
 		m.insertLiteral('\n')
+		return
+	}
+	if ke.Mod&gotui.ModAlt != 0 && m.onFollowUp != nil {
+		m.onFollowUp(m.text)
 		return
 	}
 	if m.onSubmit != nil {

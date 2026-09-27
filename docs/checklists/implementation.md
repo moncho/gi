@@ -4,6 +4,8 @@ Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-27
 
+- [-] Clone Pi0.87.1 terminal interaction/presentation and Piclaw3.2.4 queue/steer lifecycle in detail. Installed-method oracle8cases; first native fix separates Alt+Enter follow-up from Enter steering through stored composer claims. Race×3 and two native admission PTYs pass; restore-all/abort/media, exact tool-boundary ordering, queue display and web idle-Steer remain gaps. Gi queue deviations004/005 are migration gaps, not acceptance. [Contract](../internal/pi-tui-piclaw-queue-contract.md).
+
 - [x] Screenshot3139 inline-prose regression: retained gi-integrated reorders/clips inline path prose in 6/6 stored tmux cases; fresh main passes6/6 at60/100/140 columns, fullscreen/regular, resize+draft. Existing41f87fc rendering correction covers this fixture; new Gherkin/PTY gate added. Exact screenshot executable unconfirmed; no old binary replacement or broad TUI acceptance. [Evidence](../internal/tui-inline-prose-2026-09-27.md).
 
 - [x] Screenshot3137 bounded fixes: Codex request omits unsupported max_output_tokens after existing payload hooks; TUI system_message stays system-role and deduplicates streamed provider error. Native local wire test + live/reload projection regression, race×3 and make check (139 functional/11 skips) pass. No running TUI upgrade; stray fragment/layout remains open. [Evidence](../internal/tui-codex-regression-2026-09-27.md).

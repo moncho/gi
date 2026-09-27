@@ -437,6 +437,10 @@ test-ux-speech-contract:
 capture-gi-chat-baseline:
 	$(BUN) tests/ux/oracle/gi-chat-baseline-probe.mjs
 
+.PHONY: test-pi-piclaw-queue-oracle
+test-pi-piclaw-queue-oracle:
+	$(BUN) tests/ux/oracle/pi-piclaw-queue-probe.mjs
+
 .PHONY: test-piclaw-chat-lifecycle
 test-piclaw-chat-lifecycle:
 	$(BUN) tests/ux/oracle/piclaw-chat-lifecycle-probe.mjs
@@ -469,6 +473,17 @@ test-tui-compaction:
 
 test-tui-scrollbar: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-scrollbar.mjs
+
+.PHONY: test-tui-queue-input test-tui-queue-input-core test-tui-queue-input-binary
+test-tui-queue-input: build
+	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-input.mjs
+
+test-tui-queue-input-binary:
+	$(BUN) scripts/test-tui-queue-input.mjs
+
+test-tui-queue-input-core:
+	$(GO) test -race -count=3 ./internal/tui -run 'TestPiEnter|TestPiFollowUp'
+	$(GO) test -race -count=3 ./internal/turn -run 'TestTUIComposerFollowUp|TestTUIComposerRejectsUnknownDelivery|TestTUIComposerSubmit'
 
 .PHONY: test-tui-inline-prose test-tui-inline-prose-binary
 test-tui-inline-prose: build

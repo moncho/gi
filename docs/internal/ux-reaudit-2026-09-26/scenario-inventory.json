@@ -8808,10 +8808,10 @@
         }
       ],
       "review_status": "frozen combined copy/cascade clause→Gi copy/direct-delete assertions→native cascade rejection",
-      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "oracle_status": "partial-installed-cascade-function-and-shipped-ui-fixtures-production-http-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Markdown/code copy and direct delete exist, but Gi rejects cascade=true and has no replies confirmation/cancellation/removal journey.",
+      "finding": "Markdown/code copy and direct delete exist, but Gi rejects cascade=true and has no replies confirmation/cancellation/removal journey. Installed Piclaw 3.2.4 cascade function removes parent+3 direct replies in memory, and shipped Classic UI fixture confirms visible replies; combined copy/delete journey and production HTTP/auth/live behavior untested. Joined hidden-reply fixture leaves orphan, so no broad deletion credit.",
       "evidence_link": "classic-copy-delete-retrieval-gap.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"

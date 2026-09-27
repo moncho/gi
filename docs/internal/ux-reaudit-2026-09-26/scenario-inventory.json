@@ -7941,12 +7941,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "pinned picker source→Gi tagged six-project browser assertion→mounted session selection/mutation handler",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi picker013–015 passed 18/18; current Piclaw 3.2.4 browser and physical keyboard acceptance unprobed.",
+      "evidence_link": "classic-picker-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -8011,12 +8011,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "pinned picker source→Gi tagged six-project browser assertion→mounted session selection/mutation handler",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi picker013–015 passed 18/18; current Piclaw 3.2.4 browser and physical keyboard acceptance unprobed.",
+      "evidence_link": "classic-picker-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -8077,12 +8077,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "pinned picker source→Gi tagged six-project browser assertion→mounted session selection/mutation handler",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi picker013–015 passed 18/18; current Piclaw 3.2.4 browser and physical keyboard acceptance unprobed.",
+      "evidence_link": "classic-picker-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

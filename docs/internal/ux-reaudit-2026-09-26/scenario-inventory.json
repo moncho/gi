@@ -22989,11 +22989,11 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "oracle-conflict",
+      "review_status": "frozen Shared16→mounted /model prefill→Classic007 empty-draft test→Piclaw replacement probe",
+      "oracle_status": "bounded-piclaw-3.2.4-model-prefill-replaces-draft",
+      "audit_status": "mounted-general-command-draft-loss-gap",
       "priority": "P0",
-      "finding": "Shared16 requires draft preservation, but shipped Piclaw slash insertion replaces it. This is destructive; choose versioned compatibility policy before changing Gi.",
+      "finding": "Shared16 requires draft-preserving supported command insertion. Mounted /model sets command text and replaces a nonempty draft; Classic007 tests empty draft only. Skill-specific build adapter does not fix general command. Piclaw also replaces. Shared16 remains unmapped; no Gi safety credit.",
       "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "3.2.3 or pinned70d33bc as qualified"
@@ -23076,11 +23076,11 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "bounded-ui-prefill-compared",
-      "audit_status": "oracle-conflict",
+      "review_status": "frozen Shared17→build.js skill adapter→focused skills.spec Chromium-phone3/3→Piclaw fixture-only prefill",
+      "oracle_status": "bounded-piclaw-3.2.4-skill-prefill-replaces-draft",
+      "audit_status": "bounded-skill-safety-oracle-deviation",
       "priority": "P1",
-      "finding": "Piclaw 3.2.4 fixture-listed /skill:proof replaces existing draft without POST; Gi Shared17 preserves it. UI prefill only: not live skill discovery, loading or execution.",
+      "finding": "Built canonical /skill:<name> adapter preserves existing text and media; focused loaded-skill fixture checks execution in captured Gi session (3/3 Chromium-phone recheck). Piclaw fixture-listed skill prefill replaces text without testing execution. Bounded Gi safety difference, not Piclaw parity or general-command preservation.",
       "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "3.2.3 or pinned70d33bc as qualified"

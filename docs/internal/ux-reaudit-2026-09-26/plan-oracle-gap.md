@@ -6,7 +6,8 @@ not assumed to be part of every portable Piclaw installation. Its source is
 `/workspace/.pi/extensions/node_modules/@rcarmo/piclaw-addon-plan-sidebar/`.
 The versioned source-reviewed Gherkin is
 `tests/ux/features/oracle/piclaw-3.2.4-plan-sidebar.feature`. It has four
-parse-checked scenarios, **no browser execution yet**.
+parse-checked scenarios; only the **remote-update/explicit-Refresh slice**
+was exercised in a browser fixture. The other clauses have no browser run.
 
 The add-on stores per-chat Markdown and `updated_at` (`index.ts`), and the web
 editor posts `{chat_jid,markdown}`. It clears dirty state only if the editor still
@@ -18,6 +19,18 @@ checklist to the captured chat in auto mode (`web/index.ts:520-556`). The model
 `plan` tool reads and writes Markdown with parsed checklist items; this add-on
 has no server-side compare-and-swap revision token, although the editor tracks
 local `editRevision` to reject stale UI responses.
+
+`tests/ux/oracle/piclaw-plan-sidebar-ui-probe.mjs` pins Piclaw 3.2.4 assets
+and the installed add-on package version 0.1.25, loads that add-on's unmodified
+`web/index.ts` on the shipped Classic shell, and supplies a disposable Plan
+API. Chromium and WebKit desktop both retained unsaved Markdown after a
+same-chat `plan.changes` event and displayed the remote-change warning.
+Clicking Refresh then made one GET, replaced the dirty editor text with the
+fixture's remote Markdown and made no POST. No discard confirmation was shown.
+This is the observed add-on behaviour in a fixture, not production API
+acceptance or Gi parity. It supports only the corresponding slice of the
+second oracle scenario; Save, Submit, and Plan tool journeys remain
+source-reviewed.
 
 | Frozen scenarios | Oracle/implementation disposition |
 |---|---|

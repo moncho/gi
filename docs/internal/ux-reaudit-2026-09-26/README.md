@@ -91,9 +91,13 @@ selected-chat POST and composer clearing, not a native reply.
 The installed Piclaw Plan Sidebar add-on 0.1.25 has four source-reviewed,
 parse-checked versioned Gherkin cases at
 `tests/ux/features/oracle/piclaw-3.2.4-plan-sidebar.feature` (commit `3ef30aa`).
-They are not browser-executed or Gi parity; see `plan-oracle-gap.md`. Gi's
-implementation target keeps Shared revision CAS and dirty-refresh confirmation
-as a no-loss deviation from the installed add-on.
+A shipped-Classic/add-on browser fixture in Chromium and WebKit desktop
+exercised only same-chat remote-update warning followed by explicit Refresh:
+unsaved text survived the remote event, then Refresh replaced it without a
+discard confirmation. Save, Submit and Plan tool clauses remain source-only.
+None is Gi parity; see `plan-oracle-gap.md`. Gi's implementation target keeps
+Shared revision CAS and dirty-refresh confirmation as a no-loss deviation
+from the installed add-on.
 
 Five tagged compose-stability cases (`@ux-compose-001`, `002`, `003`, `005`,
 `006`) passed 30/30 in the canonical disposable six-project browser fixture.

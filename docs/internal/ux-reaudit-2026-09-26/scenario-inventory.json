@@ -23221,10 +23221,10 @@
       "expanded_count": 1,
       "test_candidates": [],
       "review_status": "frozen-shared-no-loss-requirement-chosen-as-gi-target; installed addon and mounted Gi compared",
-      "oracle_status": "installed-plan-addon-source-reviewed-unconfirmed-refresh-vs-gi-confirmation-target",
+      "oracle_status": "installed-plan-addon-0.1.25-shipped-ui-remote-refresh-fixture-unconfirmed-discard",
       "audit_status": "policy-deviation-gi-plan-unimplemented",
       "priority": null,
-      "finding": "Gi has no Plan store/tool/sidebar. Shared20 confirm-before-discard is the Gi target, deliberately stronger than installed Plan add-on 0.1.25 explicit Refresh; no native journey, browser oracle or parity credit.",
+      "finding": "Gi has no Plan store/tool/sidebar. Installed Piclaw 3.2.4 add-on 0.1.25 shipped-Classic browser fixture in Chromium/WebKit desktop preserved dirty text on remote plan.changes, then explicit Refresh replaced it without discard confirmation. Shared20 confirm-before-discard is a stronger Gi target; no native Gi journey or production Plan API acceptance.",
       "evidence_link": "plan-oracle-gap.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"

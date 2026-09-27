@@ -66,9 +66,22 @@ func (c *chatTUI) attachCommand(text string, fields []string) []string {
 	}
 	prompt := strings.TrimSpace(strings.TrimPrefix(text, fields[0]+" "+fields[1]))
 	if prompt != "" {
-		c.submitWithMetadata(prompt, nil)
+		c.submitAttachmentPrompt(prompt)
 	}
 	return []string{fmt.Sprintf("attach: %s as %s (%s, %d bytes); staged for prompt admission", filename, ref.ID, contentType, len(raw))}
+}
+
+// Optional attachment prompts must not overwrite another unsent draft.
+func (c *chatTUI) submitAttachmentPrompt(prompt string) {
+	if c.durableDrafts {
+		d := c.textDrafts[c.sessionID]
+		if d == nil || d.local.Text != "" || d.err != nil || d.frozen || d.pair.Text.Claim != nil {
+			c.draftNotice("attachment staged; existing draft retained; send from editor")
+			return
+		}
+		c.input.SetText(prompt)
+	}
+	c.submitWithMetadata(prompt, nil)
 }
 
 // pasteImageCommand reads an image from the system clipboard, stores it in the
@@ -116,7 +129,7 @@ func (c *chatTUI) pasteImageCommand(text string, fields []string) []string {
 	}
 	prompt := strings.TrimSpace(strings.TrimPrefix(text, fields[0]))
 	if prompt != "" {
-		c.submitWithMetadata(prompt, nil)
+		c.submitAttachmentPrompt(prompt)
 	}
 	return []string{fmt.Sprintf("paste-image: %s as %s (%s, %d bytes); staged for prompt admission", filename, ref.ID, contentType, len(raw))}
 }

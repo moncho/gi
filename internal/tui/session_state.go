@@ -115,6 +115,7 @@ func (c *chatTUI) saveSessionEditor() {
 		return
 	}
 	c.ensureInput()
+	c.saveDurableDraft()
 	if c.sessionEditors == nil {
 		c.sessionEditors = map[string]sessionEditorState{}
 	}
@@ -133,6 +134,7 @@ func (c *chatTUI) restoreSessionEditor() {
 	if !ok {
 		state = sessionEditorState{history: c.loadCommandHistory(), histIdx: -1, historySearchIdx: -1}
 	}
+	c.draftApplying = true
 	c.input.SetText(state.text)
 	c.input.cursorPos = min(max(0, state.cursor), utf8.RuneCountInString(c.input.Text()))
 	c.input.undoText, c.input.undoCursor, c.input.hasUndo = state.undoText, state.undoCursor, state.hasUndo
@@ -140,6 +142,8 @@ func (c *chatTUI) restoreSessionEditor() {
 	c.history = append([]string(nil), state.history...)
 	c.histIdx, c.historySearchIdx, c.historySearchQuery = state.histIdx, state.historySearchIdx, state.historySearchQuery
 	c.queuedDrafts = append([]string(nil), state.queuedDrafts...)
+	c.draftApplying = false
+	c.loadDurableDraft()
 }
 
 // Guard UI completions at application time too: QueueUpdate may run after a

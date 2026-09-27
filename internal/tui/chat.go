@@ -88,6 +88,7 @@ func runWithEngineMode(s *store.Store, engine *turn.Engine, cfg config.RuntimeCo
 		cfg:           cfg,
 		transcriptRef: gotui.NewRef(),
 		stickToBottom: true,
+		durableDrafts: true,
 		regularMode:   regular,
 	}
 
@@ -177,6 +178,9 @@ type chatTUI struct {
 	sessionGeneration           uint64
 	subscriptionCancel          context.CancelFunc
 	sessionEditors              map[string]sessionEditorState
+	durableDrafts               bool
+	draftApplying               bool
+	textDrafts                  map[string]*terminalDraftState
 	sessionModelDefaults        *[3]string
 	subscribedCh                chan map[string]any
 	topicUnsubscribe            func()
@@ -269,6 +273,7 @@ func (c *chatTUI) ensureInput() {
 }
 
 func (c *chatTUI) onInputChanged(string) {
+	c.saveDurableDraft()
 	// Editing is independent of transcript navigation. Only readers already
 	// following the newest edge should move when the editor changes height.
 	if c.stickToBottom {
@@ -498,6 +503,7 @@ func (c *chatTUI) Init() func() {
 		c.transcript = append(c.transcript, c.firstUseModelPromptLines()...)
 	}
 	c.ensureInput()
+	c.loadDurableDraft()
 	c.scrollTranscriptToBottom()
 
 	if c.app != nil {
@@ -554,6 +560,7 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 		watchers = append(watchers, gotui.NewChannelWatcher(c.topicEventCh, c.handleSessionTopicEvent))
 	}
 	watchers = append(watchers, gotui.OnTimer(80*time.Millisecond, c.tickTranscriptSelection))
+	watchers = append(watchers, gotui.OnTimer(120*time.Millisecond, func() { c.saveDurableDraft() }))
 	watchers = append(watchers, gotui.OnTimer(120*time.Millisecond, func() {
 		if c.hasRunningTranscriptBlock() && c.app != nil {
 			c.app.MarkDirty()
@@ -2380,6 +2387,32 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 		}
 		return
 	}
+	if c.durableDrafts && ordinaryMediaPrompt(text) {
+		c.submitDurableDraft(text)
+		return
+	}
+	if c.durableDrafts && strings.HasPrefix(text, "/") {
+		if strings.Fields(text)[0] == "/draft" {
+			c.showQueueCommand(c.draftCommand(strings.Fields(text)))
+			if c.input.Text() == text {
+				if d := c.textDrafts[c.sessionID]; d != nil {
+					c.applyDraftSnapshot(d.local)
+				}
+			}
+			return
+		}
+		origin := c.sessionID
+		c.draftApplying = true
+		c.input.SetText("")
+		c.draftApplying = false
+		c.handleCommand(text)
+		if c.sessionID == origin && !c.editorAskActive && c.input.Text() == "" {
+			if d := c.textDrafts[origin]; d != nil {
+				c.applyDraftSnapshot(d.local)
+			}
+		}
+		return
+	}
 	var claim *mediaClaim
 	if ordinaryMediaPrompt(text) {
 		if err := c.refreshPendingMedia(); err != nil {
@@ -2662,7 +2695,7 @@ func (c *chatTUI) handleCommand(text string) {
 		if lines, handled := c.extensionCommandLines(text, fields); handled {
 			c.appendTranscript(lines...)
 		} else {
-			c.appendTranscript("sys: commands: /help, /hotkeys, /commands [query], /session, /sessions, /new, /name <name>, /resume [index|session_id], /clone [@agentN], /copy [--osc52|--native|--auto|--fallback], /attach <path> [prompt], /attachments, /detach <media:id|all|unresolved>, /reload, /tools [query|active|activate|reset], /skills [query], /skill:name [args], /model [name], /scoped-models [add|remove|set], /thinking [level], /compact, /scrollback [n], /history-limit [n], /settings, /approvals, /queue [page|remove|steer|move], /retry [page|check|run|release], /cancel, /agents, /tree, /plugins, /fork [@agentN], /switch @agent|session_id, /send @agent message, /where, !cmd, !!cmd")
+			c.appendTranscript("sys: commands: /help, /hotkeys, /commands [query], /session, /sessions, /new, /name <name>, /resume [index|session_id], /clone [@agentN], /copy [--osc52|--native|--auto|--fallback], /attach <path> [prompt], /attachments, /detach <media:id|all|unresolved>, /reload, /tools [query|active|activate|reset], /skills [query], /skill:name [args], /model [name], /scoped-models [add|remove|set], /thinking [level], /compact, /scrollback [n], /history-limit [n], /settings, /approvals, /queue [page|remove|steer|move], /draft [reload|check|release|restore|discard], /retry [page|check|run|release], /cancel, /agents, /tree, /plugins, /fork [@agentN], /switch @agent|session_id, /send @agent message, /where, !cmd, !!cmd")
 		}
 	}
 	c.running = false
@@ -2733,6 +2766,7 @@ func (c *chatTUI) commandPaletteLines(query string) []string {
 		{"/clone [@agentN]", "clone active branch/session"},
 		{"/copy [--osc52|--native|--auto|--fallback]", "copy last assistant message with opt-in target"},
 		{"/attach <path> [prompt]", "stage up to six session media refs for next prompt"},
+		{"/draft [reload|check|release|restore|discard]", "inspect/recover durable drafts; never auto resend"},
 		{"/retry [page|check|run|release]", "inspect held failures; full ID/token guarded actions"},
 		{"/queue [page|remove|steer|move]", "inspect durable queue; mutate by full turn IDs"},
 		{"/attachments", "list durable refs / held admissions"},

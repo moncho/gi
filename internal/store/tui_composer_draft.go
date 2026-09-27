@@ -92,6 +92,47 @@ func (s *Store) BeginTUIComposerSubmission(ctx context.Context, sessionID, token
 	})
 }
 
+// Release only a provably unstarted dispatch. The writer lock and exact
+// revision fence out a caller paused between preflight and BeginSubmission.
+func (s *Store) ReleaseUnsubmittedTUIComposerDraft(ctx context.Context, sessionID, token string, expected int64) (TUIComposerDraft, error) {
+	return s.updateTUIComposerDraft(ctx, sessionID, func(tx *sql.Tx, text *TUITextDraft, media *TUIMediaDraft) error {
+		if err := checkTUIComposerClaim(text, media, token); err != nil {
+			return err
+		}
+		if text.Revision != expected {
+			return ErrTUIDraftConflict
+		}
+		if text.Claim.Dispatched {
+			return ErrTUIDraftHeld
+		}
+		possible, err := tuiTextAdmitted(ctx, tx, sessionID, token, true)
+		if err != nil {
+			return err
+		}
+		if text.Claim.Media {
+			yes, err := tuiMediaAdmitted(ctx, tx, sessionID, token)
+			if err != nil {
+				return err
+			}
+			possible = possible || yes
+		}
+		if possible {
+			return ErrTUIDraftHeld
+		}
+		if text.Revision == text.Claim.Revision {
+			text.TUITextSnapshot = text.Claim.TUITextSnapshot
+			if text.Claim.Media {
+				media.Pending = append(media.Claim.Refs, media.Pending...)
+				media.Claim = nil
+			}
+			text.Claim = nil
+		} else {
+			text.Claim.Rejected = true
+		}
+		return nil
+	})
+}
+
 func checkTUIComposerClaim(text *TUITextDraft, media *TUIMediaDraft, token string) error {
 	if text.Claim == nil || text.Claim.Token != token {
 		return ErrTUIDraftConflict
@@ -119,10 +160,13 @@ func tuiComposerAdmitted(ctx context.Context, tx *sql.Tx, sessionID, token strin
 	return admitted, err
 }
 
-func (s *Store) settleTUIComposerDraft(ctx context.Context, sessionID, token string, returned, rejected bool) (TUIComposerDraft, error) {
+func (s *Store) settleTUIComposerDraft(ctx context.Context, sessionID, token string, returned, rejected bool, expected *int64) (TUIComposerDraft, error) {
 	return s.updateTUIComposerDraft(ctx, sessionID, func(tx *sql.Tx, text *TUITextDraft, media *TUIMediaDraft) error {
 		if err := checkTUIComposerClaim(text, media, token); err != nil {
 			return err
+		}
+		if expected != nil && text.Revision != *expected {
+			return ErrTUIDraftConflict
 		}
 		admitted, err := tuiComposerAdmitted(ctx, tx, sessionID, token, text.Claim.Media, returned && !rejected)
 		if err != nil {
@@ -167,12 +211,18 @@ func (s *Store) settleTUIComposerDraft(ctx context.Context, sessionID, token str
 }
 
 func (s *Store) ReconcileTUIComposerDraft(ctx context.Context, sessionID, token string) (TUIComposerDraft, error) {
-	return s.settleTUIComposerDraft(ctx, sessionID, token, false, false)
+	return s.settleTUIComposerDraft(ctx, sessionID, token, false, false, nil)
+}
+
+// Editor reconciliation must fence the editable revision too, not just the
+// claim token, so it cannot adopt another terminal's revision for later saves.
+func (s *Store) ReconcileTUIComposerDraftAtRevision(ctx context.Context, sessionID, token string, expected int64) (TUIComposerDraft, error) {
+	return s.settleTUIComposerDraft(ctx, sessionID, token, false, false, &expected)
 }
 
 // Only the original caller after synchronous submission returns may Finish.
 func (s *Store) FinishTUIComposerDraft(ctx context.Context, sessionID, token string, rejected bool) (TUIComposerDraft, error) {
-	return s.settleTUIComposerDraft(ctx, sessionID, token, true, rejected)
+	return s.settleTUIComposerDraft(ctx, sessionID, token, true, rejected, nil)
 }
 
 // ResolveRejected performs explicit restore (blank editor only) or discard of

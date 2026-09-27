@@ -490,9 +490,16 @@ test-tui-reading: build
 	$(BUN) scripts/test-tui-reading.mjs
 
 test-tui-sessions: build
-	$(BUN) scripts/test-tui-sessions.mjs
+	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-sessions.mjs
 
 .PHONY: test-tui-pending-media
+.PHONY: test-tui-durable-draft test-tui-durable-draft-pty
+test-tui-durable-draft-pty: build
+	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-durable-draft.mjs
+
+test-tui-durable-draft:
+	$(GO) test -race -count=3 ./internal/tui -run DurableDraft
+
 .PHONY: test-tui-text-journal test-concurrent-session-submit
 test-concurrent-session-submit:
 	$(GO) test -race -count=10 ./internal/turn -run '^TestConcurrentSubmitDifferentSessionsRunsConcurrently$$'

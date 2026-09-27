@@ -49,6 +49,14 @@ passkeys, keyboard assistive technology or Gi's runtime.
   `message-deletion-review.md`. The production Piclaw HTTP router,
   authentication and live store were not exercised. Gi `018`–`022` remain
   unmapped because Gi has no reply graph or cascade confirmation.
+- Installed Piclaw 3.2.4 theme/tint parser checks passed nine exact command
+  cases. A shipped-Classic UI fixture in Chromium/WebKit desktop sent
+  `/theme ristretto` and `/tint #e11d48` through the composer, applied
+  fixture `ui_theme` events to root attributes and localStorage, and displayed
+  a tint response in the fixture timeline (`theme-command-gap.md`). The
+  installed server handler, persistence, reload and pixel colours were not
+  exercised; Gi has no `/theme` or `/tint` composer-command path, leaving all
+  fifteen Classic command scenarios unmapped.
 - `tests/features/settings/gi-settings.feature:40` said thinking was read-only;
   `web/src/gi-settings-models.ts:117` and `tests/ux/session-thinking.spec.mjs:18-35`
   expose/apply native supported choices. The additive Gi feature is corrected with

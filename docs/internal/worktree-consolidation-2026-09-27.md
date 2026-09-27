@@ -33,4 +33,20 @@ Markdown PTY assertions now compare visible words across intervening foreground/
 
 The final combined invocation completed `make check`, Markdown, scrollbar and source-copy tests before exposing incorrect environment forwarding in the input-history target. That target was corrected and passed independently. An independent review attempt timed out; there is no independent approval claim.
 
+## Follow-up and cleanup
+
+`41f87fc` published the initial consolidation. `93fe374` restricts recall history to accepted prompts; `9d6ba09` merges the source worktree's later `098fe8a` commit. `d0470da` fixes the screenshot's Codex request rejection and TUI system-message attribution, with separate evidence in [TUI Codex regression](tui-codex-regression-2026-09-27.md).
+
+After the user's deletion request, 23 redundant temporary worktrees were removed, two stale registrations pruned, and five fully merged local branches deleted. Before removal, every candidate was checked for merged ancestry, archived changes and active processes. No remote branches were deleted.
+
+Recovery files under `/workspace/tmp/gi-worktree-consolidation/cleanup/`:
+
+- `all-refs-final.bundle`: verified Git bundle containing all refs before deletion.
+- `retired-worktrees.tar.zst`: verified 276 MB archive with 51,841 entries, including changed sources, generated assets and test evidence. Build binaries, node_modules and .git pointers were excluded.
+- `archive-list.txt`, `inventory.json`, `removed.json` and per-worktree patches.
+
+The first gzip archive was interrupted and failed verification. It was replaced by the verified zstd archive before any worktree deletion, then removed.
+
+Two worktrees remain: `/workspace/projects/gi-main` on main and `/workspace/projects/gi`, the Git common-directory owner and working directory of the existing live TUI. The latter and its checked-out branch were retained to avoid disrupting the running session. Their committed source is included in main.
+
 This consolidation does not fix the outstanding web chat UX or establish Piclaw parity. No production database migration, restart or deployment was performed.

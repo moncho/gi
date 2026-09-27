@@ -9299,12 +9299,12 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi server and frontend single-user only; no family browser journey",
+      "oracle_status": "frozen-family-branch-native-unsupported",
+      "audit_status": "verified-native-family-auth-gap",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Gi auth status advertises single-user and policy parser rejects family-shared; no username/TOTP family flow. Single-user 002 test cannot establish this scope.",
+      "evidence_link": "auth-basic-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -9371,12 +9371,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "focused six-project native browser journey; current Piclaw UI unprobed",
+      "oracle_status": "frozen-source-current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Tagged Gi native auth browser journey passed six projects; Piclaw 3.2.4 login UI/backend not directly probed; see auth-basic-review.md.",
+      "evidence_link": "auth-basic-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -9507,12 +9507,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "focused six-project native browser journey; current Piclaw UI unprobed",
+      "oracle_status": "frozen-source-current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Tagged Gi native auth browser journey passed six projects; Piclaw 3.2.4 login UI/backend not directly probed; see auth-basic-review.md.",
+      "evidence_link": "auth-basic-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

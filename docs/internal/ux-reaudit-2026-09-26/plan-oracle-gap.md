@@ -23,13 +23,15 @@ local `editRevision` to reject stale UI responses.
 |---|---|
 | Classic009–012 | Add-on-dependent clauses broadly correspond to the installed add-on. Gi does not expose a native Plan API/tool/sidebar; they remain unmapped. Do not infer presence from streamed `agentPlan` text in `web/src/app.ts`. |
 | Shared18–19 | Requires revision 1→2 and a native Plan tool. The installed add-on uses `updated_at` without server revision CAS; Gi lacks the feature. The shared contract is a strengthening, not current oracle parity. |
-| Shared20 | Requires confirmation before discarding dirty Plan text. Installed add-on Refresh does not confirm; it deliberately loads stored Markdown. This is a destructive-policy difference requiring an explicit decision, not a passing shared clause. |
+| Shared20 | Requires confirmation before discarding dirty Plan text. Installed add-on Refresh does not confirm; it deliberately loads stored Markdown. Gi will retain the frozen no-loss requirement: an explicit Refresh must offer cancellation and must not overwrite dirty text until discard is confirmed. This is a deliberate deviation from the installed add-on and no shared-case pass. |
 | Shared21 | Save-before-submit/captured chat are source-backed in the add-on; Gi lacks the Plan workflow. |
 | Shared22 | Checklist Markdown/tool semantics exist in the add-on, but Gi has no canonical Plan store/tool/sidebar or revision. No Shared22 credit. |
 
-Next implementation slice, only after policy choice: native per-session Markdown with
-monotonic revision CAS, bounded Plan tool using runtime-owned scope, browser editor
-with dirty-change and explicit discard handling, save-before-submit against captured
-session, and cross-tab/reload tests. Preserve the shared no-loss contract rather than
-silently copying the add-on's destructive Refresh. No production changes were made
-in this audit.
+The Gi target uses monotonic per-session revision CAS, a bounded Plan tool with
+runtime-owned scope and a browser editor that keeps local text during remote
+updates. For explicit Refresh while dirty, cancel leaves both editor text and
+revision unchanged; confirmed discard loads the latest stored Markdown and
+revision. Save-before-submit must target the captured session; cross-tab and
+reload checks are required. These requirements follow the frozen shared no-loss
+contract. The installed add-on's destructive Refresh and timestamp-only storage
+remain oracle differences. No Plan production changes were made in this audit.

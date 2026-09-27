@@ -91,8 +91,9 @@ selected-chat POST and composer clearing, not a native reply.
 The installed Piclaw Plan Sidebar add-on 0.1.25 has four source-reviewed,
 parse-checked versioned Gherkin cases at
 `tests/ux/features/oracle/piclaw-3.2.4-plan-sidebar.feature` (commit `3ef30aa`).
-They are not browser-executed or Gi parity; see `plan-oracle-gap.md`. Plan's
-Shared revision CAS and dirty-refresh confirmation exceed current add-on behaviour.
+They are not browser-executed or Gi parity; see `plan-oracle-gap.md`. Gi's
+implementation target keeps Shared revision CAS and dirty-refresh confirmation
+as a no-loss deviation from the installed add-on.
 
 Five tagged compose-stability cases (`@ux-compose-001`, `002`, `003`, `005`,
 `006`) passed 30/30 in the canonical disposable six-project browser fixture.
@@ -136,9 +137,10 @@ separate policy conflict.
 `shared-session-review.md` traces Shared23–26 through picker focus, coherent
 cross-session refresh and native mutations (18+6 focused passes); current
 Piclaw UI remains unprobed.
-Shared Plan definitions at lines 117, 131, 141 and 150 are now inventoried
-against `plan-oracle-gap.md`: no mounted Gi Plan workflow, stronger revision
-requirements, and unresolved dirty-Refresh confirmation policy.
+Shared Plan definitions at lines 117, 131, 141 and 150 are inventoried
+against `plan-oracle-gap.md`: Gi has no mounted Plan workflow. Shared20's
+confirm-before-discard behavior is the Gi target despite the installed add-on's
+unconfirmed explicit Refresh; it earns no parity credit.
 `shared-shell-quick-actions-review.md` traces six shared definitions/first
 fifteen cases: 14 cases passed across six projects (84/84); Shared8 still
 lacks a real contenteditable editor journey.

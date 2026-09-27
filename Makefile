@@ -57,7 +57,7 @@ endef
 	build-web build \
 	run start stop restart status logs \
 	test vet bun-checks check \
-	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-sessions test-tui-source-copy test-tui-markdown \
+	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-sessions test-tui-source-copy test-tui-markdown test-tui-scrollbar \
 	clean
 
 # ── Help and bootstrap ──────────────────────────────────────────────────
@@ -462,6 +462,9 @@ test-tui-compaction:
 	$(GO) test -c -o bin/gi-tui-compaction-test ./internal/tui
 	$(BUN) scripts/test-tui-compaction.mjs
 
+test-tui-scrollbar: build
+	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-scrollbar.mjs
+
 test-tui-markdown: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-markdown.mjs
 
@@ -556,7 +559,11 @@ test-tui-smoke: build
 	chmod +x scripts/test-tui-smoke.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
 
-test-tui-gherkin: build test-tui-markdown
+.PHONY: test-tui-input-history
+test-tui-input-history: build
+	FEATURE_FILE=$(abspath features/tui/input_history.feature) ARTIFACT_DIR=$(abspath test-results/tui-input-history) TEST_DIR=$(abspath .gi-tui-input-history) bash scripts/test-tui-gherkin.sh
+
+test-tui-gherkin: build test-tui-markdown test-tui-scrollbar
 	chmod +x scripts/test-tui-gherkin.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin scripts/test-tui-gherkin.sh
 

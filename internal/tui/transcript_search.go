@@ -56,8 +56,11 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 	refs := c.transcriptBlockRefs
 	defer func() { c.transcriptBlockRefs = refs }()
 	var rows []transcriptSearchRow
+	previousKind := ""
 	for _, block := range c.buildTranscriptRenderableBlocks(c.visibleTranscript()) {
-		el := c.renderTranscriptBlock(block)
+		gap := assistantGapBefore(previousKind, block.Kind)
+		el := c.renderTranscriptBlockAfter(block, previousKind)
+		previousKind = block.Kind
 		height := max(1, el.HeightForWidth(width))
 		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(height))
 		root.AddChild(el)
@@ -81,10 +84,10 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 			}
 			key := ""
 			separator, _, _ := transcriptSpacing(block.Kind)
-			if y >= separator && (len(block.Body) > 0 || block.Subheader != "") && block.Kind != "user" && block.Kind != "assistant" {
+			if y >= separator+gap && (len(block.Body) > 0 || block.Subheader != "") && block.Kind != "user" && block.Kind != "assistant" {
 				key = block.Key
 			}
-			rows = append(rows, transcriptSearchRow{text: strings.TrimRight(text.String(), " "), spans: spans, prompt: block.Kind == "user" && y == 1, blockKey: key})
+			rows = append(rows, transcriptSearchRow{text: strings.TrimRight(text.String(), " "), spans: spans, prompt: block.Kind == "user" && y == 1+gap, blockKey: key})
 		}
 		for _, run := range transcriptWrapRuns(el, rows[baseRow:]) {
 			for i := range run.cells {

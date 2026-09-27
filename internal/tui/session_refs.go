@@ -3,8 +3,10 @@ package tui
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rcarmo/gi/internal/store"
 )
@@ -59,12 +61,59 @@ func (c *chatTUI) switchSession(sessionID string) bool {
 	c.restoreSessionModel(session.State)
 	status, _ := session.State["status"].(string)
 	c.running = status == "running" || status == "queued"
+	c.restoreActiveSessionWork()
 	c.status = fmt.Sprintf("%s · %s", c.cfg.AssistantName, c.cfg.DefaultModel)
 	c.restoreSessionEditor()
 	c.stickToBottom = true
 	c.scrollTranscriptToBottom()
 	c.focusInput()
 	return true
+}
+
+// restoreActiveSessionWork rehydrates the transient progress indicator after a
+// switch. Subscriptions only deliver future events, so an already-running turn
+// will otherwise appear idle until its next event (or another /switch).
+func (c *chatTUI) restoreActiveSessionWork() {
+	if c.store == nil || c.sessionID == "" {
+		return
+	}
+	active, err := c.hasActiveSessionWork()
+	if err == nil && active {
+		c.markRunning()
+		c.showThinkingIndicator(time.Time{})
+	}
+}
+
+func (c *chatTUI) hasActiveSessionWork() (bool, error) {
+	turnID, _, err := c.store.GetSessionActiveTurn(context.Background(), c.sessionID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	turn, err := c.store.GetTurn(context.Background(), turnID)
+	if err != nil {
+		return false, err
+	}
+	return turn.Status == "running", nil
+}
+
+// A switched-in session may be run by another process, which cannot publish
+// completion events to this TUI's in-memory subscriptions. Retire its spinner
+// when the durable active claim disappears.
+func (c *chatTUI) refreshActiveSessionIndicator() {
+	if c.thinkingIndicatorKey == "" || c.store == nil {
+		return
+	}
+	active, err := c.hasActiveSessionWork()
+	if err == nil && !active {
+		c.clearThinkingIndicator()
+		c.running = false
+		if c.app != nil {
+			c.app.MarkDirty()
+		}
+	}
 }
 
 func (c *chatTUI) listAgentLines() []string {

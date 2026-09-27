@@ -103,6 +103,13 @@ func initSchema(db *sql.DB) error {
 		`create index if not exists idx_messages_payload_kind on messages(json_extract(payload_json, '$.kind'));`,
 		`create index if not exists idx_messages_payload_intent on messages(json_extract(payload_json, '$.intent'));`,
 
+		`create table if not exists tui_input_history (
+			id integer primary key autoincrement,
+			session_id text not null references sessions(id) on delete cascade,
+			content text not null
+		);`,
+		`create index if not exists idx_tui_input_history_session on tui_input_history(session_id, id desc);`,
+
 		`create table if not exists context_checkpoints (
 			session_id text primary key references sessions(id) on delete cascade,
 			version integer not null,

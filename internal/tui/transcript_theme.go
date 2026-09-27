@@ -2,32 +2,17 @@ package tui
 
 import gotui "github.com/grindlemire/go-tui"
 
-// Pi 0.85.1 built-in dark theme. Bands describe content/outcomes, not alternating
-// row numbers. Keep these values independent of the terminal's ANSI palette.
+// The user message alone gets a background; transcript output stays on the
+// terminal background. Keep the user color independent of the ANSI palette.
 var (
-	piUserBg        = gotui.RGBColor(0x34, 0x35, 0x41)
-	piToolPendingBg = gotui.RGBColor(0x28, 0x28, 0x32)
-	piToolSuccessBg = gotui.RGBColor(0x28, 0x32, 0x28)
-	piToolErrorBg   = gotui.RGBColor(0x3c, 0x28, 0x28)
-	piText          = gotui.RGBColor(0xd4, 0xd4, 0xd4)
-	piError         = gotui.RGBColor(0xf4, 0x87, 0x71)
+	piUserBg = gotui.RGBColor(0x34, 0x35, 0x41)
+	piText   = gotui.RGBColor(0xd4, 0xd4, 0xd4)
+	piError  = gotui.RGBColor(0xf4, 0x87, 0x71)
 )
 
 func transcriptBand(kind, status string) (gotui.Color, bool) {
-	switch kind {
-	case "user":
+	if kind == "user" {
 		return piUserBg, true
-	case "error":
-		return piToolErrorBg, true
-	case "tool", "bash", "local":
-		switch status {
-		case "ok", "completed", "success":
-			return piToolSuccessBg, true
-		case "error", "failed", "cancelled", "aborted":
-			return piToolErrorBg, true
-		default:
-			return piToolPendingBg, true
-		}
 	}
 	return gotui.Color{}, false
 }
@@ -75,17 +60,16 @@ func (c *chatTUI) setTranscriptPosition(row int) {
 	}
 }
 
-// Match Pi's message-level spacing: user Box(outputPad,1); assistant
-// Spacer(1)+Markdown(outputPad,0); default tools Spacer(1)+Box(1,1).
-// The external spacer is deliberately not part of the outcome background.
+// Only user messages have a padded background. All other transcript content
+// has a separating blank row, but no boxed padding or background.
 func transcriptSpacing(kind string) (separator, vertical, horizontal int) {
 	switch kind {
 	case "user":
 		return 0, 1, 1
 	case "assistant":
 		return 1, 0, 1
-	case "tool", "bash", "local", "error":
-		return 1, 1, 1
+	case "tool", "bash", "local", "error", "thought", "thinking", "thinking_indicator", "hook", "route", "dispatcher", "subturn", "compact":
+		return 1, 0, 1
 	default:
 		return 0, 0, 0
 	}
@@ -105,5 +89,27 @@ func padTranscriptBlock(content *gotui.Element, block transcriptRenderableBlock)
 	wrapper := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
 	wrapper.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(separator)))
 	wrapper.AddChild(band)
+	return wrapper
+}
+
+// Pi inserts a Spacer(1) before a subsequent user message. An assistant
+// already has a leading spacer; only add one after it when the next block
+// does not provide its own separation. Keep it outside the next message band.
+func assistantGapBefore(previousKind, nextKind string) int {
+	separator, _, _ := transcriptSpacing(nextKind)
+	if previousKind == "assistant" && separator == 0 {
+		return 1
+	}
+	return 0
+}
+
+func (c *chatTUI) renderTranscriptBlockAfter(block transcriptRenderableBlock, previousKind string) *gotui.Element {
+	content := c.renderTranscriptBlock(block)
+	if assistantGapBefore(previousKind, block.Kind) == 0 {
+		return content
+	}
+	wrapper := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
+	wrapper.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(1)))
+	wrapper.AddChild(content)
 	return wrapper
 }

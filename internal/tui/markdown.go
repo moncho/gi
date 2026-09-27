@@ -362,43 +362,37 @@ func wrapParagraph(text string, width int) []string {
 	return lines
 }
 
+// markdownParagraphTokens keeps inline-code spans and their adjacent punctuation
+// in the same word. A style boundary is not a whitespace boundary: adding a
+// separator at `code`, or between `code` and punctuation, changes the message.
 func markdownParagraphTokens(text string) []string {
 	var tokens []string
+	var word strings.Builder
+	flush := func() {
+		if word.Len() > 0 {
+			tokens = append(tokens, word.String())
+			word.Reset()
+		}
+	}
 	for i := 0; i < len(text); {
-		for i < len(text) {
-			r, size := utf8.DecodeRuneInString(text[i:])
-			if !isMarkdownTokenSpace(r) {
-				break
-			}
-			i += size
-		}
-		if i >= len(text) {
-			break
-		}
 		if strings.HasPrefix(text[i:], markdownInlineCodeStart) {
 			end := strings.Index(text[i+len(markdownInlineCodeStart):], markdownInlineCodeEnd)
 			if end >= 0 {
 				endPos := i + len(markdownInlineCodeStart) + end + len(markdownInlineCodeEnd)
-				tokens = append(tokens, text[i:endPos])
+				word.WriteString(text[i:endPos])
 				i = endPos
 				continue
 			}
 		}
-		start := i
-		for i < len(text) {
-			if strings.HasPrefix(text[i:], markdownInlineCodeStart) && i > start {
-				break
-			}
-			r, size := utf8.DecodeRuneInString(text[i:])
-			if isMarkdownTokenSpace(r) {
-				break
-			}
-			i += size
+		r, size := utf8.DecodeRuneInString(text[i:])
+		if isMarkdownTokenSpace(r) {
+			flush()
+		} else {
+			word.WriteString(text[i : i+size])
 		}
-		if i > start {
-			tokens = append(tokens, text[start:i])
-		}
+		i += size
 	}
+	flush()
 	return tokens
 }
 

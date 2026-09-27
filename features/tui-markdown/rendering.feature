@@ -47,3 +47,18 @@ Feature: Stored assistant Markdown in a real terminal
       | regular    | 60x18  |
       | regular    | 100x22 |
       | regular    | 140x36 |
+
+  Scenario Outline: Plain assistant and tool output at <mode> <size>
+    Given a stored assistant Markdown fixture "plain-output"
+    When I open the transcript in <mode> at <size>
+    Then assistant and tool output have no boxes or outcome backgrounds
+    And the Markdown remains readable after a resize with an unsent draft
+
+    Examples:
+      | mode       | size   |
+      | fullscreen | 60x18  |
+      | fullscreen | 100x22 |
+      | fullscreen | 140x36 |
+      | regular    | 60x18  |
+      | regular    | 100x22 |
+      | regular    | 140x36 |

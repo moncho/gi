@@ -1336,7 +1336,7 @@ function ToolActivity({ tool }) {
   }, [tool?.turn_id, tool?.start_seq, tool?.state]);
   if (!tool)
     return null;
-  const label = { running: "Running", completed: "Completed", failed: "Failed", interrupted: "Interrupted" }[tool.state] || "Unknown";
+  const label = { running: "Running", completed: "Completed", failed: "Failed", cancelled: "Cancelled", aborted: "Aborted", interrupted: "Interrupted" }[tool.state] || "Unknown";
   const terminal = tool.state !== "running";
   return fe`<div class="agent-status-panel gi-tool-activity" data-tool-call-id=${tool.tool_call_id} data-tool-state=${tool.state} data-turn-id=${tool.turn_id}>
         <span class=${terminal ? "gi-tool-glyph" : "spinner"} aria-hidden="true">${terminal ? tool.state === "completed" ? "✓" : "✕" : ""}</span>
@@ -3891,7 +3891,7 @@ class PaneRegistryImpl {
 var paneRegistry = new PaneRegistryImpl;
 // web/src/panes/editor-popout-transfer.ts
 var EDITOR_POPOUT_STATE_TTL_MS = 5 * 60 * 1000;
-// ../../projects/gi/node_modules/@assemblyscript/loader/index.js
+// node_modules/@assemblyscript/loader/index.js
 var ARRAYBUFFERVIEW = 1 << 0;
 var ARRAY = 1 << 1;
 var STATICARRAY = 1 << 2;
@@ -19861,11 +19861,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-gce7bw21.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-ey2dgjxf.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-a41ptkgt.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-4fahg3p3.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-gy9ag6j0.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-erg2wmvw.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-1pttekg2.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-7t78gx7r.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-r56ck38x.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-qqncv3fv.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -22649,5 +22649,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=EC8BAE9FFE4DFDA864756E2164756E21
-//# sourceMappingURL=app-az2a72hs.js.map
+//# debugId=3FA67660585BDB2A64756E2164756E21
+//# sourceMappingURL=app-fn5ked4f.js.map

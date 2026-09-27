@@ -291,3 +291,55 @@ func TestSessionPickerUsesFullIdentityAndWraps(t *testing.T) {
 		t.Fatal("selection failed")
 	}
 }
+
+func TestSwitchSessionRestoresActiveThinkingIndicator(t *testing.T) {
+	c := sessionTestChat(t)
+	ctx := context.Background()
+	if _, err := c.store.CreateTurn(ctx, "working-B", "B", "prompt", nil); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := c.store.ClaimSessionActiveTurn(ctx, "B", "working-B", "external", "claim-B"); err != nil || !ok {
+		t.Fatalf("claim B: %v, %v", ok, err)
+	}
+	if !c.switchSession("B") || !c.running || c.thinkingIndicatorKey == "" {
+		t.Fatal("switching into active B should show Thinking...", c.running, c.thinkingIndicatorKey)
+	}
+	if blocks := c.buildTranscriptRenderableBlocks(c.transcript); len(blocks) == 0 || blocks[len(blocks)-1].Header != "Thinking..." {
+		t.Fatal("thinking spinner missing from B timeline", blocks)
+	}
+	if !c.switchSession("A") || c.thinkingIndicatorKey != "" {
+		t.Fatal("B's spinner leaked to idle A")
+	}
+	c.switchSession("B")
+	if c.thinkingIndicatorKey == "" {
+		t.Fatal("active B did not restore spinner on return")
+	}
+	if err := c.store.ReleaseSessionActiveTurn(ctx, "B", "claim-B"); err != nil {
+		t.Fatal(err)
+	}
+	c.refreshActiveSessionIndicator()
+	if c.thinkingIndicatorKey != "" || c.running {
+		t.Fatal("spinner remained after external turn released claim")
+	}
+	c.switchSession("A")
+	c.switchSession("B")
+	if c.thinkingIndicatorKey != "" {
+		t.Fatal("completed session reactivated spinner")
+	}
+}
+
+func TestInitialSessionRestoresActiveThinkingIndicator(t *testing.T) {
+	c := sessionTestChat(t)
+	ctx := context.Background()
+	if _, err := c.store.CreateTurn(ctx, "working-A", "A", "prompt", nil); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := c.store.ClaimSessionActiveTurn(ctx, "A", "working-A", "external", "claim-A"); err != nil || !ok {
+		t.Fatalf("claim A: %v, %v", ok, err)
+	}
+	cleanup := c.Init()
+	defer cleanup()
+	if !c.running || c.thinkingIndicatorKey == "" {
+		t.Fatal("opening an active session should show its thinking spinner")
+	}
+}

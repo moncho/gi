@@ -167,6 +167,9 @@ type chatTUI struct {
 	histIdx                     int
 	historySearchQuery          string
 	historySearchIdx            int
+	historyDraft                string
+	historyDraftCursor          int
+	historyApplying             bool
 	running                     bool
 	status                      string
 	compaction                  terminalCompaction
@@ -187,6 +190,8 @@ type chatTUI struct {
 	input                       *multilineInput
 	search                      transcriptSearch
 	textSelection               transcriptSelection
+	scrollbarDragging           bool
+	scrollbarGrab               int
 	selectionClicks             transcriptClickSequence
 	selectionClickSnapshot      transcriptSelection
 	nativeSelectionCopyPending  bool
@@ -273,7 +278,16 @@ func (c *chatTUI) ensureInput() {
 }
 
 func (c *chatTUI) onInputChanged(string) {
-	c.saveDurableDraft()
+	if !c.historyApplying && !c.draftApplying {
+		c.histIdx = -1
+		c.historyDraft = ""
+		c.historyDraftCursor = 0
+		c.historySearchQuery = ""
+		c.historySearchIdx = -1
+	}
+	if !c.historyApplying {
+		c.saveDurableDraft()
+	}
 	// Editing is independent of transcript navigation. Only readers already
 	// following the newest edge should move when the editor changes height.
 	if c.stickToBottom {
@@ -498,6 +512,7 @@ func (c *chatTUI) Init() func() {
 	c.transcript = c.loadTranscript()
 	c.reindexTranscriptBlocks()
 	c.draftLineIndex = -1
+	c.restoreActiveSessionWork()
 	if strings.TrimSpace(c.cfg.DefaultModel) == "" {
 		c.status = "Select a model with /model <name>"
 		c.transcript = append(c.transcript, c.firstUseModelPromptLines()...)
@@ -567,6 +582,7 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 		}
 	}))
 	watchers = append(watchers, gotui.OnTimer(time.Second, func() {
+		c.refreshActiveSessionIndicator()
 		if c.compaction.active {
 			c.syncCompactionActivity()
 		}
@@ -916,22 +932,25 @@ func (c *chatTUI) updateDraftTranscriptLine() {
 	c.draftLineCount = len(lines)
 }
 
+// Render local submissions through the same Markdown path as stored messages.
+// Otherwise the user's prompt remains raw until a session reload.
+func (c *chatTUI) appendUserPrompt(text string, queued bool) {
+	prefix := "you: "
+	if queued {
+		prefix = "you [queued]: "
+	}
+	c.appendTranscript(renderMarkdownTranscript(prefix, text, c.transcriptRenderWidth())...)
+}
+
+// Reproject the entire accumulated draft on every delta. Markdown structures
+// (notably tables, emphasis and fences) may become valid only after a later
+// token; a one-time looksLikeMarkdown check leaves the live preview raw.
 func (c *chatTUI) renderStreamingDraftLines() []string {
-	text := c.draft
-	if strings.TrimSpace(text) == "" {
-		return []string{fmt.Sprintf("%s: %s", c.cfg.AssistantName, text)}
-	}
-	if looksLikeMarkdown(text) {
-		return renderMarkdownTranscript(c.cfg.AssistantName+": ", text, c.transcriptRenderWidth())
-	}
-	return []string{fmt.Sprintf("%s: %s", c.cfg.AssistantName, text)}
+	return renderMarkdownTranscript(c.cfg.AssistantName+": ", c.draft, c.transcriptRenderWidth())
 }
 
 func (c *chatTUI) finalizeDraftTranscript(text string) {
 	lines := renderMarkdownTranscript(c.cfg.AssistantName+": ", text, c.transcriptRenderWidth())
-	if !looksLikeMarkdown(text) {
-		lines = []string{fmt.Sprintf("%s: %s", c.cfg.AssistantName, text)}
-	}
 	if c.draftLineIndex >= 0 && c.draftLineIndex < len(c.transcript) {
 		end := c.draftLineIndex + c.draftLineCount
 		if c.draftLineCount <= 0 || end > len(c.transcript) {
@@ -1051,8 +1070,8 @@ func (c *chatTUI) latestToolResultBody(turnID, toolCallID, toolName string) []st
 				continue
 			}
 		}
-		trimmed := strings.TrimSpace(msg.Content)
-		if trimmed == "" {
+		trimmed := strings.TrimRight(plainTerminalOutput(msg.Content), "\r\n")
+		if strings.TrimSpace(trimmed) == "" {
 			return []string{"(empty)"}
 		}
 		parts := strings.Split(trimmed, "\n")
@@ -1077,7 +1096,7 @@ func (c *chatTUI) markRunning() {
 }
 
 func (c *chatTUI) showThinkingIndicator(ts time.Time) {
-	if strings.TrimSpace(c.draft) != "" || strings.TrimSpace(c.thinkingText) != "" || strings.TrimSpace(c.thinkingBlockKey) != "" {
+	if strings.TrimSpace(c.draft) != "" || strings.TrimSpace(c.thinkingText) != "" || strings.TrimSpace(c.thinkingBlockKey) != "" || c.toolIsRunning() {
 		return
 	}
 	c.ensureTranscriptBlockState()
@@ -1091,6 +1110,21 @@ func (c *chatTUI) showThinkingIndicator(ts time.Time) {
 	} else {
 		c.appendTranscriptBlock(meta, nil)
 	}
+}
+
+// A running tool has its own spinner; never add a second Thinking spinner
+// while waiting for that tool to finish (including on repeated status events).
+func (c *chatTUI) toolIsRunning() bool {
+	for _, key := range c.transcriptToolBlocks {
+		span, ok := c.transcriptBlockSpans[key]
+		if !ok || span.HeaderIndex < 0 || span.HeaderIndex >= len(c.transcript) {
+			continue
+		}
+		if meta, ok := parseTranscriptBlockMarker(c.transcript[span.HeaderIndex]); ok && meta.Status == "running" {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *chatTUI) clearThinkingIndicator() {
@@ -1387,8 +1421,8 @@ func (c *chatTUI) toolResultBody(payload map[string]any, turnID, toolCallID, too
 }
 
 func toolOutputBodyLines(text string) []string {
-	text = strings.TrimSpace(text)
-	if text == "" {
+	text = strings.TrimRight(plainTerminalOutput(text), "\r\n")
+	if strings.TrimSpace(text) == "" {
 		return []string{"(empty)"}
 	}
 	parts := strings.Split(text, "\n")
@@ -2164,22 +2198,28 @@ func (c *chatTUI) loadCommandHistory() []string {
 	if c.store == nil || strings.TrimSpace(c.sessionID) == "" {
 		return nil
 	}
-	messages, err := c.store.ListMessages(context.Background(), c.sessionID)
+	history, err := c.store.ListTUIInputHistory(context.Background(), c.sessionID, c.currentHistoryLimit())
 	if err != nil {
 		return nil
 	}
-	history := make([]string, 0, len(messages))
-	for _, msg := range messages {
-		if msg.Role != "user" || strings.TrimSpace(msg.Content) == "" {
-			continue
-		}
-		history = append(history, strings.TrimSpace(msg.Content))
-	}
-	limit := c.currentHistoryLimit()
-	if limit > 0 && len(history) > limit {
-		history = history[len(history)-limit:]
-	}
 	return history
+}
+
+// Commands and shell shortcuts are inputs too; neither belongs in the
+// conversation message log.
+func (c *chatTUI) recordInputHistory(text string) {
+	c.history = append(c.history, text)
+	c.applyHistoryLimit()
+	c.histIdx = -1
+	c.historyDraft = ""
+	c.historyDraftCursor = 0
+	c.historySearchIdx = -1
+	c.historySearchQuery = ""
+	if c.store != nil && c.sessionID != "" {
+		if err := c.store.RecordTUIInput(context.Background(), c.sessionID, text, c.currentHistoryLimit()); err != nil {
+			c.appendTranscript("warn: input history not saved: " + err.Error())
+		}
+	}
 }
 
 func (c *chatTUI) currentHistoryLimit() int {
@@ -2202,21 +2242,26 @@ func (c *chatTUI) searchHistoryBackward() {
 		return
 	}
 	query := strings.TrimSpace(c.input.Text())
+	start := len(c.history) - 1
+	if c.historySearchIdx >= 0 && c.historySearchIdx < len(c.history) &&
+		c.input.Text() == c.history[c.historySearchIdx] {
+		query = c.historySearchQuery
+		start = c.historySearchIdx - 1
+	}
 	if query == "" {
 		c.recallHistory(-1)
 		return
 	}
-	start := len(c.history) - 1
-	if c.historySearchQuery == query && c.historySearchIdx > 0 {
-		start = c.historySearchIdx - 1
-	}
 	needle := strings.ToLower(query)
-	for i := start; i >= 0; i-- {
+	for offset := 0; offset < len(c.history); offset++ {
+		i := (start - offset + len(c.history)*2) % len(c.history)
 		if strings.Contains(strings.ToLower(c.history[i]), needle) {
-			c.historySearchQuery = query
-			c.historySearchIdx = i
-			c.focusInput()
-			c.input.SetText(c.history[i])
+			if c.histIdx < 0 {
+				c.historyDraft, c.historyDraftCursor = c.input.Text(), c.input.cursorPos
+			}
+			c.historySearchQuery, c.historySearchIdx = query, i
+			c.histIdx = i
+			c.setHistoryInput(c.history[i], utf8.RuneCountInString(c.history[i]))
 			c.status = fmt.Sprintf("History match %d/%d", i+1, len(c.history))
 			return
 		}
@@ -2227,12 +2272,21 @@ func (c *chatTUI) searchHistoryBackward() {
 	}
 }
 
+func (c *chatTUI) setHistoryInput(text string, cursor int) {
+	c.historyApplying = true
+	c.focusInput()
+	c.input.SetText(text)
+	c.input.cursorPos = cursor
+	c.historyApplying = false
+}
+
 func (c *chatTUI) recallHistory(delta int) {
-	if c.input == nil || c.input.Text() != "" || len(c.history) == 0 {
+	if c.input == nil || len(c.history) == 0 {
 		return
 	}
 	if delta < 0 {
 		if c.histIdx < 0 {
+			c.historyDraft, c.historyDraftCursor = c.input.Text(), c.input.cursorPos
 			c.histIdx = len(c.history) - 1
 		} else if c.histIdx > 0 {
 			c.histIdx--
@@ -2244,12 +2298,17 @@ func (c *chatTUI) recallHistory(delta int) {
 		c.histIdx++
 		if c.histIdx >= len(c.history) {
 			c.histIdx = -1
-			c.input.SetText("")
+			c.setHistoryInput(c.historyDraft, c.historyDraftCursor)
+			c.historyDraft = ""
+			c.historyDraftCursor = 0
+			c.historySearchIdx = -1
+			c.historySearchQuery = ""
 			return
 		}
 	}
-	c.focusInput()
-	c.input.SetText(c.history[c.histIdx])
+	c.historySearchIdx = -1
+	c.historySearchQuery = ""
+	c.setHistoryInput(c.history[c.histIdx], utf8.RuneCountInString(c.history[c.histIdx]))
 }
 
 func (c *chatTUI) HandleMouse(me gotui.MouseEvent) bool {
@@ -2261,6 +2320,9 @@ func (c *chatTUI) HandleMouse(me gotui.MouseEvent) bool {
 		return true
 	}
 	if c.workspaceIndex.active {
+		return true
+	}
+	if c.handleTranscriptScrollbar(me) {
 		return true
 	}
 	if c.handleTranscriptSelection(me) {
@@ -2405,6 +2467,7 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 		c.draftApplying = true
 		c.input.SetText("")
 		c.draftApplying = false
+		c.recordInputHistory(text)
 		c.handleCommand(text)
 		if c.sessionID == origin && !c.editorAskActive && c.input.Text() == "" {
 			if d := c.textDrafts[origin]; d != nil {
@@ -2436,11 +2499,7 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 			return
 		}
 	}
-	c.history = append(c.history, text)
-	c.applyHistoryLimit()
-	c.histIdx = -1
-	c.historySearchIdx = -1
-	c.historySearchQuery = ""
+	c.recordInputHistory(text)
 	c.input.SetText("")
 	if strings.HasPrefix(text, "/skill:") {
 		c.appendTranscript(c.skillCommandLines(text)...)
@@ -2474,7 +2533,7 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 	input := turn.RunInput{SessionID: scope.id, Prompt: text, Intent: "prompt", Model: c.cfg.DefaultModel, Metadata: metadata}
 	if c.running {
 		c.queuedDrafts = append(c.queuedDrafts, text)
-		c.appendTranscript(fmt.Sprintf("you [queued]: %s", text))
+		c.appendUserPrompt(text, true)
 		if c.stickToBottom {
 			c.scrollTranscriptToBottom()
 		}
@@ -2503,7 +2562,7 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 	c.draft = ""
 	c.draftLineIndex = -1
 	c.draftLineCount = 0
-	c.appendTranscript(fmt.Sprintf("you: %s", text))
+	c.appendUserPrompt(text, false)
 	c.showThinkingIndicator(time.Now())
 	if c.stickToBottom {
 		c.scrollTranscriptToBottom()
@@ -3011,7 +3070,7 @@ func (c *chatTUI) localShellShortcutLines(command string) []string {
 // and a footer pointing at a full-output file when the output is truncated.
 func (c *chatTUI) bashBlockLines(command, output, status string, runErr error, startedAt, endedAt time.Time) []string {
 	const maxBodyLines = 500
-	text := strings.ReplaceAll(output, "\r\n", "\n")
+	text := strings.ReplaceAll(plainTerminalOutput(output), "\r\n", "\n")
 	text = strings.ReplaceAll(text, "\r", "\n")
 	text = strings.TrimRight(text, "\n")
 	var rawLines []string
@@ -4042,8 +4101,10 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	} else if c.search.active {
 		c.renderTranscriptSearchRows(transcript)
 	} else {
+		previousKind := ""
 		for _, block := range blocks {
-			transcript.AddChild(c.renderTranscriptBlock(block))
+			transcript.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
+			previousKind = block.Kind
 		}
 	}
 	if c.stickToBottom {
@@ -4658,18 +4719,31 @@ func parseTUIInlineSegments(line string) []tuiInlineSegment {
 }
 
 func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.Element {
+	// go-tui word wrapping discards leading whitespace in rich text. Keep it
+	// as element padding so fenced code indentation survives the PTY renderer.
+	leading := len(line) - len(strings.TrimLeft(line, " "))
+	// Table cells and preformatted code require literal padding. go-tui's
+	// rich-text word wrapper otherwise folds their ASCII spaces.
+	preformatted := leading > 0 || strings.HasPrefix(line, "|") || strings.HasPrefix(line, "+")
+	line = line[leading:]
 	segments := parseTUIInlineSegments(line)
-	if len(segments) == 1 && !segments[0].Code {
-		return gotui.New(
-			gotui.WithWidthPercent(100),
-			gotui.WithRichText(transcriptLinkSpans(segments[0].Text, style)...),
-		)
+	options := []gotui.Option{gotui.WithWidthPercent(100)}
+	if leading > 0 {
+		options = append(options, gotui.WithPaddingTRBL(0, 0, 0, leading))
 	}
-	row := gotui.New(
-		gotui.WithDirection(gotui.Row),
-		gotui.WithWidthPercent(100),
-		gotui.WithHeight(1),
-	)
+	if len(segments) == 1 && !segments[0].Code {
+		spans := transcriptLinkSpans(segments[0].Text, style)
+		if preformatted {
+			for i := range spans {
+				spans[i].Text = strings.ReplaceAll(spans[i].Text, " ", "\u00a0")
+			}
+		}
+		return gotui.New(append(options, gotui.WithRichText(spans...))...)
+	}
+	// A row of child Elements lays each styled fragment out independently. At
+	// narrow widths it can put the highlighted word on a different line and
+	// drop following text. One rich-text element wraps the entire styled run.
+	spans := make([]gotui.TextSpan, 0, len(segments))
 	for _, seg := range segments {
 		if seg.Text == "" {
 			continue
@@ -4677,14 +4751,22 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 		segStyle := style
 		if seg.Code {
 			segStyle = gotui.NewStyle().Foreground(gotui.BrightBlack).Dim()
+			// go-tui's rich-text word wrapper collapses ASCII spaces in
+			// spans, including the space following an ANSI style change.
+			// Non-breaking spaces keep code's exact visual width and prevent
+			// the following word from being pulled into the code span.
+			spans = append(spans, gotui.TextSpan{Text: strings.ReplaceAll(seg.Text, " ", "\u00a0"), Style: segStyle})
+		} else {
+			parts := transcriptLinkSpans(seg.Text, segStyle)
+			if preformatted {
+				for i := range parts {
+					parts[i].Text = strings.ReplaceAll(parts[i].Text, " ", "\u00a0")
+				}
+			}
+			spans = append(spans, parts...)
 		}
-		spans := []gotui.TextSpan{{Text: seg.Text, Style: segStyle}}
-		if !seg.Code {
-			spans = transcriptLinkSpans(seg.Text, segStyle)
-		}
-		row.AddChild(gotui.New(gotui.WithRichText(spans...)))
 	}
-	return row
+	return gotui.New(append(options, gotui.WithRichText(spans...))...)
 }
 
 func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRenderableBlock {
@@ -4697,12 +4779,16 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 			body := make([]string, 0, 4)
 			j := i + 1
 			for j < len(lines) && strings.HasPrefix(lines[j], "│ ") {
-				body = append(body, strings.TrimPrefix(lines[j], "│ "))
+				part := strings.TrimPrefix(lines[j], "│ ")
+				if meta.Kind == "tool" || meta.Kind == "bash" {
+					part = plainTerminalOutput(part)
+				}
+				body = append(body, part)
 				j++
 			}
 			expanded := c.transcriptExpanded[meta.Key]
 			headStyle, bodyStyle, hintStyle, borderStyle, border := transcriptBlockPalette(meta.Kind, meta.Status, c.selectedTranscriptBlock == meta.Key)
-			header := meta.Title
+			header := plainTerminalOutput(meta.Title)
 			subheader := ""
 			if meta.Kind == "tool" {
 				if elapsed := formatBlockElapsed(meta.StartedAt, meta.EndedAt); elapsed != "" {
@@ -4754,7 +4840,7 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 			j := i + 1
 			for j < len(lines) {
 				if strings.HasPrefix(lines[j], "│ ") {
-					body = append(body, strings.TrimPrefix(lines[j], "│ "))
+					body = append(body, plainTerminalOutput(strings.TrimPrefix(lines[j], "│ ")))
 					j++
 					continue
 				}
@@ -4796,6 +4882,9 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 				// Markdown projection indents continuation rows by its speaker
 				// prefix. Keep one message band, not padding around every row.
 				prefix := "you: "
+				if strings.HasPrefix(line, "you [queued]: ") {
+					prefix = "you [queued]: "
+				}
 				if kind == "assistant" {
 					prefix = c.cfg.AssistantName + ": "
 				}
@@ -4933,8 +5022,8 @@ func transcriptBlockPalette(kind, status string, selected bool) (gotui.Style, go
 			body = gotui.NewStyle().Dim()
 		}
 	}
-	if _, banded := transcriptBand(kind, status); banded {
-		// Pi keeps tool text neutral; the full-width band carries the outcome.
+	if kind == "user" || kind == "tool" || kind == "bash" || kind == "local" || kind == "error" {
+		// Output stays neutral on the terminal background; errors use text color.
 		head = gotui.NewStyle().Foreground(piText).Bold()
 		body = gotui.NewStyle().Foreground(piText)
 		if kind == "error" || status == "error" || status == "failed" {
@@ -4966,9 +5055,23 @@ func (c *chatTUI) renderTranscriptBlock(block transcriptRenderableBlock) *gotui.
 func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) *gotui.Element {
 	if block.Kind == "user" || block.Kind == "assistant" {
 		message := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
-		message.AddChild(c.renderInlineStyledLine(block.Header, block.HeaderStyle))
+		// Speaker prefixes remain in the transcript for message boundaries,
+		// but are not part of the visible Markdown. Remove only the projector's
+		// continuation indent; preserve real indentation inside code blocks.
+		prefix := "you: "
+		if block.Kind == "assistant" {
+			prefix = c.cfg.AssistantName + ": "
+		} else if strings.HasPrefix(block.Header, "you [queued]: ") {
+			prefix = "you [queued]: "
+		}
+		prefixed := strings.HasPrefix(block.Header, prefix)
+		if !prefixed {
+			prefix = ""
+		}
+		message.AddChild(c.renderInlineStyledLine(strings.TrimPrefix(block.Header, prefix), block.HeaderStyle))
+		indent := strings.Repeat(" ", utf8.RuneCountInString(prefix))
 		for _, line := range block.Body {
-			message.AddChild(c.renderInlineStyledLine(line, block.BodyStyle))
+			message.AddChild(c.renderInlineStyledLine(strings.TrimPrefix(line, indent), block.BodyStyle))
 		}
 		return message
 	}
@@ -4976,9 +5079,6 @@ func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) 
 		container := gotui.New(
 			gotui.WithDirection(gotui.Column),
 			gotui.WithWidthPercent(100),
-			gotui.WithBorder(block.Border),
-			gotui.WithBorderStyle(block.BorderStyle),
-			gotui.WithPaddingTRBL(0, 1, 0, 1),
 		)
 		ref := gotui.NewRef()
 		ref.Set(container)
@@ -5005,12 +5105,6 @@ func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) 
 		gotui.WithDirection(gotui.Column),
 		gotui.WithWidthPercent(100),
 	)
-	// Outcome bands get their padding from the outer message wrapper.
-	if _, banded := transcriptBand(block.Kind, block.Status); !banded {
-		container.SetBorder(block.Border)
-		container.SetBorderStyle(block.BorderStyle)
-		gotui.WithPaddingTRBL(0, 1, 0, 1)(container)
-	}
 	ref := gotui.NewRef()
 	ref.Set(container)
 	c.transcriptBlockRefs = append(c.transcriptBlockRefs, transcriptBlockHitTarget{Key: block.Key, Ref: ref})
@@ -5107,7 +5201,7 @@ func (c *chatTUI) renderMessageLines(m store.Message, width int) []string {
 	case "system":
 		prefix = "sys: "
 	}
-	if looksLikeMarkdown(m.Content) {
+	if m.Role == "user" || m.Role == "assistant" || looksLikeMarkdown(m.Content) {
 		return renderMarkdownTranscript(prefix, m.Content, width)
 	}
 	return []string{c.renderMessageLine(m)}
@@ -5123,15 +5217,15 @@ func (c *chatTUI) renderToolResultLines(m store.Message) []string {
 	if isErr {
 		status = "error"
 	}
-	trimmed := strings.TrimSpace(m.Content)
+	trimmed := strings.TrimRight(plainTerminalOutput(m.Content), "\r\n")
 	meta := transcriptBlockMeta{Key: "msg:" + m.ID, Kind: "tool", Title: toolName, Status: status, StartedAt: strings.TrimSpace(m.CreatedAt), EndedAt: strings.TrimSpace(m.CreatedAt)}
-	if trimmed == "" {
+	if strings.TrimSpace(trimmed) == "" {
 		return []string{encodeTranscriptBlockMarker(meta), "│ (empty)"}
 	}
 	parts := strings.Split(trimmed, "\n")
 	lines := []string{encodeTranscriptBlockMarker(meta)}
 	if len(parts) == 1 {
-		lines = append(lines, "│ "+truncate(strings.Join(strings.Fields(parts[0]), " "), 200))
+		lines = append(lines, "│ "+truncate(parts[0], 200))
 		return lines
 	}
 	for _, part := range parts {
@@ -5161,7 +5255,7 @@ func (c *chatTUI) renderMessageLine(m store.Message) string {
 		if isErr {
 			status = "error"
 		}
-		return fmt.Sprintf("tool[%s/%s]: %s", toolName, status, foldedContentSummary(m.Content, 160))
+		return fmt.Sprintf("tool[%s/%s]: %s", toolName, status, foldedContentSummary(plainTerminalOutput(m.Content), 160))
 	}
 	prefix := "you"
 	switch m.Role {

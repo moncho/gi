@@ -44,10 +44,10 @@ func TestTranscriptSelectionWideCellsReverseDragAndCopyPolicy(t *testing.T) {
 			var clipboard bytes.Buffer
 			c.osc52Writer = &clipboard
 			send(gotui.MousePress, 1, 1)
-			send(gotui.MouseDrag, 27, 4)
-			send(gotui.MouseRelease, 27, 4)
+			send(gotui.MouseDrag, 22, 4)
+			send(gotui.MouseRelease, 22, 4)
 			selected := c.textSelection.text()
-			if !strings.Contains(selected, "row-00 中文🙂 e\u0301\n\n\n you: row-01 中文🙂 e\u0301") {
+			if !strings.Contains(selected, "row-00 中文🙂 e\u0301\n\n\n row-01 中文🙂 e\u0301") {
 				t.Fatal("wide/combining rows damaged", selected)
 			}
 			if clipboard.Len() != 0 || !strings.Contains(c.textSelection.notice, "Clipboard off") {
@@ -59,7 +59,7 @@ func TestTranscriptSelectionWideCellsReverseDragAndCopyPolicy(t *testing.T) {
 			if err != nil || clipboard.String() != seq {
 				t.Fatal("OSC 52 selection mismatch")
 			}
-			send(gotui.MousePress, 27, 4)
+			send(gotui.MousePress, 22, 4)
 			send(gotui.MouseDrag, 1, 1)
 			send(gotui.MouseRelease, 1, 1)
 			if c.textSelection.text() != selected {
@@ -76,9 +76,9 @@ func TestTranscriptSelectionWideCellsReverseDragAndCopyPolicy(t *testing.T) {
 				t.Fatal("selection highlight missing")
 			}
 			c.clearTranscriptSelection()
-			send(gotui.MousePress, 14, 1)
-			send(gotui.MouseDrag, 15, 1)
-			send(gotui.MouseRelease, 15, 1)
+			send(gotui.MousePress, 9, 1)
+			send(gotui.MouseDrag, 10, 1)
+			send(gotui.MouseRelease, 10, 1)
 			if c.textSelection.text() != "中" {
 				t.Fatal("half-wide selection split glyph", c.textSelection.text())
 			}
@@ -379,23 +379,23 @@ func TestTranscriptMultiClickWordLineDragAndInvalidation(t *testing.T) {
 		c.validateTranscriptSelection(60, 18)
 	}
 	// Same word, different cell: 500ms sequence follows word bounds, not pixels.
-	click(7, 1)
-	click(8, 1)
+	click(2, 1)
+	click(3, 1)
 	if got := c.textSelection.text(); got != "row-00" || c.textSelection.granularity != 1 {
 		t.Fatalf("double:%q %#v", got, c.selectionClicks)
 	}
 	if !strings.Contains(c.textSelection.notice, "Clipboard off") {
 		t.Fatal("clipboard policy")
 	}
-	click(8, 1)
+	click(3, 1)
 	if got := c.textSelection.text(); got != c.textSelection.rows[1].text || c.textSelection.granularity != 2 {
 		t.Fatalf("triple:%q", got)
 	}
 	c.clearTranscriptSelection()
-	click(7, 7)
-	mouse(c, gotui.MousePress, 8, 7)
-	mouse(c, gotui.MouseDrag, 8, 1)
-	mouse(c, gotui.MouseRelease, 8, 1)
+	click(2, 7)
+	mouse(c, gotui.MousePress, 3, 7)
+	mouse(c, gotui.MouseDrag, 3, 1)
+	mouse(c, gotui.MouseRelease, 3, 1)
 	if got := c.textSelection.text(); !strings.HasPrefix(got, "row-00") || !strings.HasSuffix(got, "row-02") {
 		t.Fatalf("reverse word drag:%q", got)
 	}
@@ -479,10 +479,10 @@ func TestTranscriptWordSelectionWideHalfAndEdgeDrag(t *testing.T) {
 		c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: action, X: x, Y: y})
 	}
 	// First and second cells of the same CJK word segment identify one click unit.
-	event(gotui.MousePress, 13, 1)
-	event(gotui.MouseRelease, 13, 1)
-	event(gotui.MousePress, 14, 1)
-	event(gotui.MouseRelease, 14, 1)
+	event(gotui.MousePress, 8, 1)
+	event(gotui.MouseRelease, 8, 1)
+	event(gotui.MousePress, 9, 1)
+	event(gotui.MouseRelease, 9, 1)
 	if got := c.textSelection.text(); got != "中" {
 		t.Fatalf("wide selection:%q", got)
 	}

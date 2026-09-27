@@ -36,6 +36,8 @@ type sessionEditorState struct {
 	histIdx            int
 	historySearchQuery string
 	historySearchIdx   int
+	historyDraft       string
+	historyDraftCursor int
 	queuedDrafts       []string
 }
 
@@ -124,6 +126,7 @@ func (c *chatTUI) saveSessionEditor() {
 		undoText: c.input.undoText, undoCursor: c.input.undoCursor, hasUndo: c.input.hasUndo, yank: c.input.yankText,
 		history: append([]string(nil), c.history...), histIdx: c.histIdx,
 		historySearchQuery: c.historySearchQuery, historySearchIdx: c.historySearchIdx,
+		historyDraft: c.historyDraft, historyDraftCursor: c.historyDraftCursor,
 		queuedDrafts: append([]string(nil), c.queuedDrafts...),
 	}
 }
@@ -141,6 +144,7 @@ func (c *chatTUI) restoreSessionEditor() {
 	c.input.yankText = state.yank
 	c.history = append([]string(nil), state.history...)
 	c.histIdx, c.historySearchIdx, c.historySearchQuery = state.histIdx, state.historySearchIdx, state.historySearchQuery
+	c.historyDraft, c.historyDraftCursor = state.historyDraft, state.historyDraftCursor
 	c.queuedDrafts = append([]string(nil), state.queuedDrafts...)
 	c.draftApplying = false
 	c.loadDurableDraft()

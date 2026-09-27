@@ -143,11 +143,7 @@ func (c *chatTUI) submitDurableDraft(text string) {
 	d.local = pair.Text.TUITextSnapshot
 	c.applyDraftSnapshot(d.local)
 	c.applyMediaDraft(scope.id, pair.Media)
-	c.history = append(c.history, text)
-	c.applyHistoryLimit()
-	c.histIdx = -1
-	c.historySearchIdx = -1
-	c.historySearchQuery = ""
+	c.recordInputHistory(text)
 	c.queueSnapshot = nil
 	wasRunning := c.running
 	c.appendTranscript("you: " + text)

@@ -55,12 +55,14 @@ func (c *chatTUI) flushRegularTranscript() {
 	lines := c.transcript[c.regularPrinted:end]
 	root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
 	// Print complete retained output. Baked scrollback cannot later expand in place.
+	previousKind := c.regularPreviousKind()
 	for _, block := range c.buildTranscriptRenderableBlocks(lines) {
 		if block.Kind == "thinking_indicator" {
 			continue
 		}
 		block.Expanded = true
-		root.AddChild(c.renderTranscriptBlock(block))
+		root.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
+		previousKind = block.Kind
 	}
 	c.regularPrinted = end
 	c.app.PrintAboveElement(root)
@@ -132,8 +134,10 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	c.transcriptBlockRefs = nil
 	if previewHeight > 0 {
 		preview := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100), gotui.WithHeight(previewHeight), gotui.WithScrollable(gotui.ScrollVertical))
+		previousKind := c.regularPreviousKind()
 		for _, block := range c.buildTranscriptRenderableBlocks(pending) {
-			preview.AddChild(c.renderTranscriptBlock(block))
+			preview.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
+			previousKind = block.Kind
 		}
 		preview.ScrollToBottom()
 		root.AddChild(preview)
@@ -184,4 +188,20 @@ func (c *chatTUI) regularStableEnd() int {
 		}
 	}
 	return max(c.regularPrinted, end)
+}
+
+// Regular mode prints one stable slice at a time. Preserve message spacing
+// even when the assistant response was printed in an earlier slice.
+func (c *chatTUI) regularPreviousKind() string {
+	if c.regularPrinted <= 0 {
+		return ""
+	}
+	end := min(c.regularPrinted, len(c.transcript))
+	blocks := c.buildTranscriptRenderableBlocks(c.transcript[:end])
+	for i := len(blocks) - 1; i >= 0; i-- {
+		if blocks[i].Kind != "thinking_indicator" {
+			return blocks[i].Kind
+		}
+	}
+	return ""
 }

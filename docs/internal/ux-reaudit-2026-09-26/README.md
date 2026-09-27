@@ -45,8 +45,8 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Two hundred and one have qualified clause findings or source→test→Gi-code
-reviews; 157 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
+Two hundred and five have qualified clause findings or source→test→Gi-code
+reviews; 153 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
@@ -97,6 +97,10 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+Classic009–012 are now inventoried against `plan-oracle-gap.md`: the
+installed Piclaw Plan add-on is source-reviewed and Gi has no mounted Plan
+store/tool/sidebar. Piclaw browser execution and Shared revision policy remain
+open.
 `classic-shell-quick-actions-review.md` traces Classic001–006: five tagged
 menu/Quick Actions cases passed 30/30; the six-example excluded-target outline
 004 still lacks a real-control journey for every surface.

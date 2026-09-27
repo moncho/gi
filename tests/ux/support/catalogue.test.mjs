@@ -21,9 +21,11 @@ test('imported Piclaw component sources retain their upstream hashes', () => {
 
 test('all active Piclaw 3.2.4 scenarios and outline examples are inventoried, not just mapped tests', () => {
   const cases = loadCorpus();
-  expect(cases).toHaveLength(257);
+  expect(cases).toHaveLength(262);
   expect(cases.filter(row => row.id === '@ux-reconnect-004').map(row => row.steps[1])).toEqual(['the composer is draft-filled', 'the composer is clean']);
-  expect(new Set(cases.map(item => item.id)).size).toBe(236);
+  expect(new Set(cases.map(item => item.id)).size).toBe(241);
+  expect(mappedIds.has('@ux-original-027')).toBe(false);
+  for (const row of cases.filter(row => row.id.startsWith('@ux-chat-lifecycle-'))) expect(mappedIds.has(row.id)).toBe(false);
   for (const id of mappedIds) expect(cases.some(item => item.id === id)).toBe(true);
   expect(cases.find(row => row.id === '@ux-compaction-006')?.name).toBe('Check model context compatibility before switching');
   expect(cases.find(row => row.id === '@ux-compaction-007')?.name).toBe('Refresh model information after an accepted switch');

@@ -10,5 +10,5 @@ test('native preview lifecycle criteria do not expand the frozen corpus', () => 
     const cases = document.feature.children.filter(child => child.scenario).map(child => child.scenario);
     expect(cases).toHaveLength(3); expect(text).not.toContain('@ux-');
     expect(cases.map(row => row.tags.find(tag => tag.name.startsWith('@gi-preview-')).name)).toEqual(['@gi-preview-001','@gi-preview-002','@gi-preview-003']);
-    expect(new Set(loadCorpus().map(row=>row.id)).size).toBe(236);
+    expect(new Set(loadCorpus().map(row=>row.id)).size).toBe(241);
 });

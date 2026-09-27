@@ -39,6 +39,23 @@ test('expected stream abort is recorded but cannot replace a live stream',()=>fi
  expect(a.streamAborts).toHaveLength(1);expect(a.failures).toEqual([]);expect(()=>a.assert()).toThrow('No connected fixture stream');
  page.emit('requestfailed',{url:()=>a.origin+'/sse/stream',failure:()=>({errorText:'net::ERR_ABORTED'})});expect(a.failures).toHaveLength(1);
 }));
+test('native unload-beacon bypass is opt-in; existing routed presence and visibility calls stay explicit',async()=>{
+ for(const allowPresenceBeacon of [false,true]){
+  const page=new Page(),a=await installPixelHost({page,host:'piclaw',root:process.cwd(),state,reference,allowPresenceBeacon});
+  try{
+   const res=await fetch(a.origin+'/agent/push/presence',{method:'POST',body:'{}'});
+   expect(res.status).toBe(allowPresenceBeacon?200:404);
+   expect((await fetch(a.origin+'/agent/default/message',{method:'POST',body:'{}'})).status).toBe(404);
+   expect(a.calls.filter(c=>c.nativeBeacon)).toHaveLength(allowPresenceBeacon?1:0);
+   // Normal routed presence is an existing fixture API allowance. This option
+   // only admits unload sendBeacon calls that bypass Playwright routing.
+   expect((await page.request(a.origin,'/agent/push/presence','POST')).response.json).toEqual({ok:true});
+   expect((await page.request(a.origin,'/workspace/visibility','POST')).response.json).toEqual({ok:true});
+   expect((await page.request(a.origin,'/agent/default/message','POST')).response.status).toBe(500);
+  }finally{await a.dispose();}
+ }
+});
+
 test('Piclaw stream and topic aborts are never waived',async()=>{
  for(const host of ['piclaw','gi'])await fixture(host,async(page,a)=>{
   page.emit('requestfailed',{url:()=>a.origin+'/sse/topics',failure:()=>({errorText:'net::ERR_ABORTED'})});

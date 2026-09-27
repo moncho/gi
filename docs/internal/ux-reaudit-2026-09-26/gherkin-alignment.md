@@ -1,5 +1,12 @@
 # Active Gherkin alignment with Piclaw 3.2.4
 
+**2026-09-27 correction:** the previous alignment missed message attribution,
+status/output routing and terminal behaviour. `@ux-original-027` is rewritten
+from installed Piclaw evidence and its Gi-footer mapping is removed. Five new
+active chat-lifecycle scenarios are unmapped. Current inventory: 241 IDs / 262
+Classic cases, 97 mapped / 144 unmapped. The prior matrix below is historical;
+it cannot establish current chat parity. See [evidence and blockers](../chat-ux-recovery-2026-09-27.md).
+
 The editable contracts describe observed installed Piclaw 3.2.4 behaviour. Historical Classic bytes from `70d33bc93ab540845bbcf5f80503ca8125c71594` and the original shared contract are in `tests/ux/upstream/`; `tests/ux/support/catalogue.mjs` verifies their hashes. The release has no asserted source commit. `tests/ux/oracle/piclaw-3.2.4-reference.json` pins its source-map hash. Neither historical hashes nor scenario IDs were changed. Gi's retained behaviours have their own five tagged scenarios in `tests/features/ux/gi-deviations.feature`, attached by the corresponding browser specs. Those tags cannot enter either Piclaw mapping set.
 
 | Active file and clauses | Correction and evidence limit | Gi status |

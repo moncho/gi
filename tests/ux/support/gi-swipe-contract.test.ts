@@ -10,5 +10,5 @@ test('Gi activation swipe contract is separate from frozen browser and terminal 
     const cases = document.feature.children.filter(child => child.scenario).map(child => child.scenario);
     expect(cases).toHaveLength(3);
     expect(cases.map(row => row.tags.find(tag => tag.name.startsWith('@gi-swipe-')).name)).toEqual(['@gi-swipe-001', '@gi-swipe-002', '@gi-swipe-003']);
-    expect(text).not.toContain('@ux-'); expect(new Set(loadCorpus().map(row => row.id)).size).toBe(236);
+    expect(text).not.toContain('@ux-'); expect(new Set(loadCorpus().map(row => row.id)).size).toBe(241);
 });

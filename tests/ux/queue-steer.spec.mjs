@@ -77,7 +77,7 @@ test('@shared-30 Steer only a matching active run',async({page,request},info)=>{
   await page.reload();await expect(idleRow.getByRole('button',{name:steerName})).toBeDisabled();expect(idleCalls).toBe(0);
   await expect(page.getByRole('alert').filter({hasText:'will not auto-send'})).toBeVisible();
   await page.getByRole('button',{name:'Open model picker',exact:true}).click();
-  await page.getByRole('menu',{name:'Model picker',exact:true}).getByRole('menuitem').filter({hasText:'ux-local/gate'}).click();
+  await page.getByRole('listbox',{name:'Models',exact:true}).getByRole('option').filter({hasText:'ux-local/gate'}).click();
   const newToken=`resume-${token}`;await input.fill(`UX steer gate:${newToken}`);await input.press('Enter');
   const retry=idleRow.getByRole('button',{name:steerName});await expect(retry).toBeEnabled();
   const freshRun=(await turns()).find(t=>t.status==='running');expect(freshRun.id).not.toBe(shell.turn_id);

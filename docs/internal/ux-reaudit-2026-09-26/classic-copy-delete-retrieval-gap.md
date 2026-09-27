@@ -11,8 +11,13 @@ single-user scopes and family-owned authorisation.
 | `024` | `tests/ux/shared-copy-delete.spec.mjs` checks post Markdown and code text copying, then a single idle direct delete. `message-deletion-review.md` records 017 direct delete at 6/6. | `web/src/app.ts` always calls `deletePost(id,false,originChat)`; `internal/web/message_delete.go` rejects `cascade=true` with HTTP 400. No reply count/prompt/cancel or accepted parent-and-replies removal. The combined frozen case cannot pass from separate copy and direct-delete tests. |
 | `025` | The native `messages` tool has durable numeric row IDs, explicit anchors, context and windows, bounded output, missing-row reporting and session isolation. `docs/internal/message-retrieval.md` records the accepted Shared38 current-session web mapping. | The tool accepts no `session_id` or all-chat scope and has no family-owned authorisation mode. Its strict current-session boundary deliberately excludes the wider Classic request. Shared38 cannot count as Classic025. |
 
-These are **policy/capability gaps**, not a failure of the narrower accepted
-native journeys. The installed Piclaw 3.2.4 cascade backend and scoped
-message-tool runtime were not probed here. The family/all-chat extension and
-reply graph need independent identity and safety decisions; no production code
+These are **policy/capability gaps** in the combined cases; the narrower native
+journeys retain their bounded evidence. `message-deletion-review.md` now
+records pinned Piclaw 3.2.4 backend-function and shipped-UI fixture probes.
+An isolated in-memory cascade deletes a parent and three direct replies; a
+joined shipped-UI/backend-function disposable fixture deletes a parent with an
+unseen stored reply directly and leaves that reply orphaned. The production
+Piclaw HTTP router/authentication, live deletion, and scoped message-tool
+runtime were not probed. The family/all-chat extension and Gi reply graph
+need separate identity and destructive-action decisions. No production code
 or frozen contract changed.

@@ -9149,12 +9149,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen combined clause→tagged Gi browser copy/speech assertion→mounted post/speech controller",
+      "oracle_status": "current-oracle-speech-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi code-copy/speech ownership passed 6/6 with stubbed synthesis; current Piclaw UI and audible/physical acceptance unprobed.",
+      "evidence_link": "classic-copy-speech-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

@@ -1,9 +1,10 @@
 // Shipped Classic UI + installed backend functions, joined by disposable HTTP fixtures.
 // Run with PICLAW_DB_IN_MEMORY=1. Never reaches Piclaw's live HTTP server or store.
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
+import {tmpdir} from 'node:os';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {chromium,webkit} from 'playwright';
 import {installPixelHost} from '../support/pixel-adapter.mjs';
@@ -19,6 +20,8 @@ const map=await readFile(path.join(oracleRoot,'app/runtime/web/static/classic/di
 assert.equal(createHash('sha256').update(map).digest('hex'),reference.map.sha256);
 const state=JSON.parse(await readFile(path.join(root,'tests/ux/fixtures/compose-pixel-state.json'),'utf8'));
 state.sessionId='web:default'; // The pinned Classic fixture uses this selected chat.
+const workspace=await mkdtemp(path.join(tmpdir(),'piclaw-delete-combined-'));
+process.env.PICLAW_WORKSPACE=workspace;
 const source=file=>pathToFileURL(path.join(oracleRoot,'app/runtime/src',file)).href;
 const connection=await import(source('db/connection.ts'));
 const {storeChatMetadata,storeMessage}=await import(source('db/messages.ts'));
@@ -71,4 +74,4 @@ try{
  console.log(JSON.stringify({browserName,version:'3.2.4',mapSha256:reference.map.sha256,
   scope:'shipped Classic UI and installed backend functions joined by disposable routes and in-memory SQLite; no live HTTP or store',
   requests,dialogs,parentRemovedFromUI:true,orphanReply:remaining[0]},null,2));
-}finally{await host.dispose();await context.close();await browser.close();connection.closeDatabase();}
+}finally{await host.dispose();await context.close();await browser.close();connection.closeDatabase();await rm(workspace,{recursive:true,force:true});}

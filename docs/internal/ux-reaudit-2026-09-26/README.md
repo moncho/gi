@@ -300,9 +300,11 @@ by a contract test and supported by selected Go tests, not run as Gherkin steps.
   `web/src/gi-settings-models.ts:270-305` exposes supported Apply-thinking controls.
   The tagged Settings tests use an unsupported model, so that contradiction can hide.
 - `features/search/workspace-index.feature:33` requests automatic background refresh;
-  later clauses at199/211 require read-only GET and explicit refresh. Production
-  `internal/web/workspace_index.go:138-141` rejects GET refresh. Choose one explicit
-  contract, informed by the user's intended Piclaw parity and safety requirements.
+  later clauses at199/211 require read-only GET and explicit refresh. Pinned Piclaw
+  3.2.4 search-function probe intercepted the default cold/stale background request;
+  Gi `internal/web/workspace_index.go:138-141` rejects GET refresh. Decide whether
+  to adopt Piclaw's trigger while keeping bounded asynchronous indexing and safe
+  read semantics. No worker completion or production HTTP was tested.
 - Classic queue-return `@ux-original-017`/`@ux-compose-004` replaces draft and clears
   media; Shared28 preserves/merges latest draft/media before deletion. ADR-0017
   accepts Gi's no-loss recovery; Classic replacement remains unmapped.

@@ -71,11 +71,16 @@ passkeys, keyboard assistive technology or Gi's runtime.
   explicit choice and model-switch reset clauses; the six-project focused test
   for `@gi-settings-029` passed. This does **not** alter frozen Classic/shared files.
 - `features/search/workspace-index.feature:33` asks a default background refresh,
-  whereas lines `199,211` require GET to stay read-only. Gi
-  `internal/web/workspace_index.go:138-141` rejects `GET ?refresh=...`; Piclaw
-  `runtime/src/workspace-search.ts:101-120` requests background work by default.
-  This is a policy conflict across native search and web contracts. Do not
-  silently make GET mutating or weaken the transactional-index safeguards.
+  whereas lines `199,211` require GET to stay read-only. Pinned Piclaw 3.2.4
+  `searchWorkspace()` with isolated in-memory SQLite returned a committed hit
+  and requested background refresh for cold/stale notes scopes; ready and blank
+  searches requested none. The requester was intercepted before child launch
+  (`piclaw-workspace-search-trigger-probe.ts`). Gi
+  `internal/web/workspace_index.go:138-141` rejects `GET ?refresh=...` and does
+  not request background work. This is a policy conflict across native search
+  and web contracts; worker completion and production HTTP are untested.
+  Do not silently make GET synchronously mutating or weaken transactional-index
+  safeguards.
 - A six-project Playwright matrix uses viewport sizes, not physical touch, iPad,
   hardware passkey or actual reduced-motion preference by default
   (`playwright.ux.config.mjs:3-10`). Individual `test.use({hasTouch:true})`

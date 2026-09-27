@@ -98,7 +98,10 @@ as a no-loss deviation from the installed add-on.
 Five tagged compose-stability cases (`@ux-compose-001`, `002`, `003`, `005`,
 `006`) passed 30/30 in the canonical disposable six-project browser fixture.
 The first unchanged run passed 29 and stalled on WebKit phone after reload at
-`Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
+`Loading Gi…`; the unchanged rerun passed. Its trace was overwritten; cause
+unknown. `loading-stall-investigation.md` records a later exact-case 4/5
+WebKit-phone repeat with a separate `page.reload()` internal navigation error
+and retained trace. No assertion or timeout was relaxed. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
 `workspace-index-derived-review.md` traces the 23 derived index proposals to

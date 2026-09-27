@@ -22,7 +22,11 @@ UX_PARITY_ARGS='tests/ux/drafts.spec.mjs --grep "@ux-compose-00[12356]"'`
 passed **30/30** on an unchanged second run. The first run passed 29 and timed
 out on WebKit phone `@ux-compose-001`: after `page.reload()`, the page showed
 only `Loading Gi…` and `.post-time` never appeared. The second run did not
-change code, fixtures, assertion or timeout; the cause remains unknown. The
-five tagged native cases bound the test evidence above, not physical-device
+change code, fixtures, assertion or timeout; the original trace was later
+overwritten and the loading-only cause remains unknown. A separate bounded
+WebKit-phone repeat (four passes, one failure) hit an internal `page.reload()`
+navigation error before compose actions; see `loading-stall-investigation.md`.
+Its preserved trace cannot establish the earlier `Loading Gi…` cause. The five
+tagged native cases bound the test evidence above, not physical-device
 acceptance. `@ux-compose-004` remains a source/UI conflict with Gi's deliberate
 no-loss policy.

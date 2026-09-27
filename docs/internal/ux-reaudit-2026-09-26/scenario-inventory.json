@@ -8142,12 +8142,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen Classic queue clause→tagged native browser assertion→mounted queue handler/API",
+      "oracle_status": "current-oracle-queue-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused native queue016/018 passed 12/12 across six projects; current Piclaw runtime unprobed.",
+      "evidence_link": "classic-queue-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -8287,12 +8287,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen Classic queue clause→tagged native browser assertion→mounted queue handler/API",
+      "oracle_status": "current-oracle-queue-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused native queue016/018 passed 12/12 across six projects; current Piclaw runtime unprobed.",
+      "evidence_link": "classic-queue-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -8346,12 +8346,12 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen Classic steer path→Gi shared-active-turn gate; no tagged Classic journey",
+      "oracle_status": "frozen-Classic-idle-steer-versus-Gi-active-run-policy",
+      "audit_status": "policy-conflict",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Classic permits backend immediate send after stream end; Gi requires matching active turn and Shared30 test cannot substitute. Policy decision needed.",
+      "evidence_link": "classic-queue-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

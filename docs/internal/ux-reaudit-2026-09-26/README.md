@@ -45,7 +45,7 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Sixty-two have qualified clause findings or source→test→Gi-code reviews; 296
+Sixty-seven have qualified clause findings or source→test→Gi-code reviews; 291
 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
@@ -97,6 +97,9 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`thoughts-panel-review.md` traces five frozen disclosure clauses through the
+installed status component and native streamed tests. The first focused run
+was aborted at 28/30; an unchanged rerun passed 30/30. Piclaw UI was not run.
 `lightbox-dismissal-review.md` traces four stored-image lightbox clauses. Gi
 browser tests passed 24/24, including trusted emulated touch; Piclaw UI and
 physical-device acceptance were not run.

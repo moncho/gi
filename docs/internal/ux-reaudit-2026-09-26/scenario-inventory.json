@@ -17468,12 +17468,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 status source→tagged Gi native stream/overflow test→Gi handler",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw status.ts identical to frozen source; tagged Gi native thought/draft browser test passed six projects after interrupted first run. Current Piclaw UI and physical acceptance unprobed; see thoughts-panel-review.md.",
+      "evidence_link": "thoughts-panel-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -17533,12 +17533,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 status source→tagged Gi native stream/overflow test→Gi handler",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw status.ts identical to frozen source; tagged Gi native thought/draft browser test passed six projects after interrupted first run. Current Piclaw UI and physical acceptance unprobed; see thoughts-panel-review.md.",
+      "evidence_link": "thoughts-panel-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -17606,12 +17606,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 status source→tagged Gi native stream/overflow test→Gi handler",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw status.ts identical to frozen source; tagged Gi native thought/draft browser test passed six projects after interrupted first run. Current Piclaw UI and physical acceptance unprobed; see thoughts-panel-review.md.",
+      "evidence_link": "thoughts-panel-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -17675,12 +17675,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 status source→tagged Gi native stream/overflow test→Gi handler",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw status.ts identical to frozen source; tagged Gi native thought/draft browser test passed six projects after interrupted first run. Current Piclaw UI and physical acceptance unprobed; see thoughts-panel-review.md.",
+      "evidence_link": "thoughts-panel-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -17744,12 +17744,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 status source→tagged Gi native stream/overflow test→Gi handler",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw status.ts identical to frozen source; tagged Gi native thought/draft browser test passed six projects after interrupted first run. Current Piclaw UI and physical acceptance unprobed; see thoughts-panel-review.md.",
+      "evidence_link": "thoughts-panel-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

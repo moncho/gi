@@ -153,8 +153,9 @@ terminal provenance acceptance remain separate.
 failure, retained draft and explicit retry (6/6); Piclaw backend and media
 cleanup/deduplication remain unprobed.
 `classic-reconnect-stop-review.md` traces Classic023 through a real-SSE
-Gi reconnect and exact-turn Stop journey (6/6), apart from the unresolved
-version-drift policy.
+Gi reconnect and exact-turn Stop journey (6/6). Shipped Piclaw 3.2.4 Classic
+source and frozen `@ux-reconnect-004` both require manual reload; installed
+browser warning and current-backend acceptance remain unverified.
 `classic-model-review.md` traces Classic020/022 through focused Gi model
 selection and sparse-metadata tests (12/12); Piclaw backend switching remains
 unprobed.
@@ -205,12 +206,13 @@ cascade deletion. Piclaw's current backend was not exercised.
 `shell-layout-review.md` traces nine Classic menu/layout clauses: four tagged
 native cases passed 24/24, while hamburger New file dispatch and terminal/VNC
 callbacks remain native gaps; safe-area, scale and inline-code checks are bounded.
-`reconnect-version-review.md` traces five SSE reconnect clauses through the
-copied Piclaw source, focused Gi browser assertions and Gi's mounted entry
-point. The frozen clean-state no-auto-reload clause conflicts with the pinned
-3.2.4 helper's 350 ms auto-reload path; current Piclaw runtime and policy
-resolution are still outstanding. The filtered Gi runs passed 6/6 and 30/30;
-the broader reconnect run timed out at 63/72 and is not a pass.
+`reconnect-version-review.md` corrects an earlier source-provenance error:
+the installed 3.2.4 Classic source map disables auto-reload; a divergent
+checkout and copied unmounted Gi helper still schedule it after 350 ms. The
+frozen clean-state manual-reload clause agrees with the shipped source.
+Filtered Gi runs passed 6/6 and 30/30. A disposable shipped-asset browser
+probe did not confirm warning delivery; the broader reconnect run timed out at
+63/72 and is not a pass.
 `theme-command-gap.md` records fifteen Classic composer `/theme`/`/tint`
 scenarios unsupported by Gi's native command path. Browser-local Appearance
 Settings is separate and cannot earn their timeline/legacy-storage credit.

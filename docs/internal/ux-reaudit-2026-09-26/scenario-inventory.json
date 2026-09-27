@@ -16524,11 +16524,11 @@
           "skipped": false
         }
       ],
-      "review_status": "frozen clause→copied 3.2.4 source→focused Gi browser assertions→mounted Gi app.ts; current Piclaw UI not run",
-      "oracle_status": "frozen-source-clean-reload-conflicts-with-clause-runtime-unprobed",
-      "audit_status": "oracle-conflict",
+      "review_status": "frozen-clause→installed-map-sha256→Gi-focused-browser→mounted-app; disposable-oracle-event-not-proven-delivered",
+      "oracle_status": "installed-3.2.4-classic-source-manual-reload-shipped-browser-warning-unprobed",
+      "audit_status": "source-aligned-runtime-warning-unverified",
       "priority": null,
-      "finding": "Frozen clean-state no-auto-reload conflicts with pinned Piclaw 3.2.4 helper auto-reload; mounted Gi manual warning passes dirty and clean native browser cases. Current Piclaw runtime and policy unresolved.",
+      "finding": "Installed Piclaw 3.2.4 Classic map disables auto-reload and asks manual reload; frozen clause aligns. Divergent checkout/copied unmounted helper auto-reloads clean state. Gi scoped tests pass; shipped browser warning, current backend and deployed Gi not accepted.",
       "evidence_link": "reconnect-version-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"

@@ -102,7 +102,8 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 unknown. `loading-stall-investigation.md` records a later exact-case 4/5
 WebKit-phone repeat with a separate `page.reload()` internal navigation error
 and retained trace. No assertion or timeout was relaxed. The sixth clause,
-queued return `004`, retains the no-loss policy conflict.
+queued return `004`, remains uncredited: accepted ADR-0017 chooses Gi's no-loss
+recovery over Classic draft replacement.
 
 `workspace-index-derived-review.md` traces the 23 derived index proposals to
 mounted scanner, store, worker, scheduler, HTTP and TUI assertions. Accepted
@@ -282,8 +283,8 @@ by a contract test and supported by selected Go tests, not run as Gherkin steps.
   `internal/web/workspace_index.go:138-141` rejects GET refresh. Choose one explicit
   contract, informed by the user's intended Piclaw parity and safety requirements.
 - Classic queue-return `@ux-original-017`/`@ux-compose-004` replaces draft and clears
-  media; Shared28 preserves/merges latest draft/media before deletion. These are
-  conflicting policies, not interchangeable test mappings.
+  media; Shared28 preserves/merges latest draft/media before deletion. ADR-0017
+  accepts Gi's no-loss recovery; Classic replacement remains unmapped.
 - Classic007 replaces Quick Actions prefill; Shared16/17 preserve the existing draft.
 - Classic029 keeps fenced SVG as source; Shared41 renders sanitized inline SVG.
 - `features/tui/keyboard_behavior.feature:4` bundles focus, history, scrolling,

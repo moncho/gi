@@ -14799,11 +14799,11 @@
           "skipped": false
         }
       ],
-      "review_status": "current Piclaw UI text/focus/removal probe; source media behavior; Gi no-loss policy conflict; compose-stability-review.md",
+      "review_status": "shipped Piclaw text/focus/removal fixture; ADR-0017 accepted no-loss Gi path; no Classic Gi mapping",
       "oracle_status": "bounded-ui-return-compared",
-      "audit_status": "oracle-confirmed",
+      "audit_status": "oracle-confirmed-gi-safety-deviation",
       "priority": "P1",
-      "finding": "Current Piclaw return-to-editor replaces text and clears media in source; fixture confirms text, focus, removal request but does not test media.",
+      "finding": "Shipped Piclaw returns queued text by replacing draft (fixture text/focus/removal only; media source-backed). ADR-0017 selects Gi durable no-loss merge before DELETE. Classic replacement remains unmapped; no full parity credit.",
       "evidence_link": "oracle-deltas.md; compose-stability-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "3.2.3 or pinned70d33bc as qualified"
@@ -23795,11 +23795,11 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "oracle-conflict",
+      "review_status": "frozen Shared28→ADR-0017 accepted policy→queue-return.spec.mjs scoped six-project journey→mounted app",
+      "oracle_status": "shipped-piclaw-text-replacement-fixture-vs-gi-adopted-no-loss",
+      "audit_status": "accepted-no-loss-policy-deviation",
       "priority": "P0",
-      "finding": "Shared28 protects concurrent draft/media before delete; shipped Piclaw return replaces text. Gi stronger safety contract differs from oracle. Do not drop data without explicit decision.",
+      "finding": "ADR-0017 adopts Shared28 durable recovery/CAS/merge before DELETE to preserve concurrent draft, media and refs. Shipped Piclaw text-replacing Edit differs; oracle fixture omits media/failure. Shared Gi test remains bounded, not current-oracle replacement parity.",
       "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "3.2.3 or pinned70d33bc as qualified"

@@ -43,8 +43,50 @@ test('@ux-original-020 Select a model for the captured chat without submitting i
  const{turns}=await(await request.get(`/api/sessions/${main.id}/turns`)).json();expect(turns||[]).toHaveLength(0);
 });
 
-test('@ux-original-021 Do not apply stale model responses to another chat',async({page,request},info)=>{
- const scenario=loadCorpus().find(row=>row.id==='@ux-original-021');await info.attach('gherkin',{body:scenario.steps.join('\n'),contentType:'text/plain'});
+test('@ux-original-021 Navigate the native model picker with search, paging and modified Home/End',async({page,request},info)=>{
+ const scenario=loadCorpus().find(row=>row.id==='@ux-original-021');expect(scenario).toBeTruthy();
+ await info.attach('gherkin',{body:scenario.steps.join('\n'),contentType:'text/plain'});
+ const{main,input,modelButton}=await setup(page,request,info);
+ const selected=await model(request,main.id);
+ await input.fill('model picker unsent draft Ω');
+ const writes=[];
+ await page.route(`**/api/sessions/${main.id}/model`,async route=>{
+  if(route.request().method()!=='GET'){writes.push(route.request().method());return route.continue();}
+  const response=await route.fetch(),data=await response.json();
+  const extra=Array.from({length:12},(_,index)=>({label:`ux-local/page-${String(index).padStart(2,'0')}`,id:`page-${index}`,name:`Page model ${index}`,provider:'ux-local',context_window:32768}));
+  await route.fulfill({response,json:{...data,model_options:[...data.model_options,...extra]}});
+ });
+ try{
+  await modelButton.click();
+  const search=page.getByRole('combobox',{name:'Search models',exact:true}),list=page.getByRole('listbox',{name:'Models',exact:true}),active=list.locator('[data-model-index].active');
+  await expect(search).toBeFocused();await expect(list).toHaveAttribute('aria-busy','false');
+  await search.fill('ux-local/page-');await expect(list.getByRole('option')).toHaveCount(12);
+  await expect(active).toHaveAttribute('data-model-index','0');
+  await search.press('PageDown');await expect(active).toHaveAttribute('data-model-index','7');await expect(search).toBeFocused();
+  await search.press('PageUp');await expect(active).toHaveAttribute('data-model-index','0');
+  await search.press('ArrowDown');await expect(active).toHaveAttribute('data-model-index','1');
+  await search.press('ArrowUp');await expect(active).toHaveAttribute('data-model-index','0');
+  await search.press('ArrowUp');await expect(active).toHaveAttribute('data-model-index','0');
+  const first=await active.getAttribute('id');
+  await search.evaluate(el=>el.setSelectionRange(2,2));await search.press('End');
+  expect(await search.evaluate(el=>el.selectionStart)).toBe('ux-local/page-'.length);await expect(active).toHaveAttribute('id',first);
+  await search.press('Home');expect(await search.evaluate(el=>el.selectionStart)).toBe(0);await expect(active).toHaveAttribute('id',first);
+  await search.press('Control+End');await expect(active).toHaveAttribute('data-model-index','11');await expect(search).toBeFocused();
+  await search.press('Control+Home');await expect(active).toHaveAttribute('data-model-index','0');
+  await search.press('Meta+End');await expect(active).toHaveAttribute('data-model-index','11');
+  await search.press('Meta+Home');await expect(active).toHaveAttribute('data-model-index','0');
+  await search.fill(selected);await expect(list.getByRole('option')).toHaveCount(1);
+  const patch=page.waitForResponse(res=>res.url().endsWith(`/api/sessions/${main.id}/model`)&&res.request().method()==='PATCH');
+  await search.press('Enter');expect((await patch).status()).toBe(200);
+  await expect(list).toHaveCount(0);await expect(modelButton).toHaveText(selected);
+  await expect(input).toHaveValue('model picker unsent draft Ω');expect(writes).toEqual(['PATCH']);
+  await modelButton.click();await expect(search).toBeFocused();await search.press('Escape');
+  await expect(list).toHaveCount(0);await expect(modelButton).toBeFocused();
+  expect((await(await request.get(`/api/sessions/${main.id}/turns`)).json()).turns||[]).toEqual([]);
+ }finally{await page.unroute(`**/api/sessions/${main.id}/model`);}
+});
+
+test('Gi does not apply stale model responses to another chat',async({page,request},info)=>{
  const{main,child,input,modelButton,option,switchTo}=await setup(page,request,info);
  await input.fill('main draft');
  let release,held=false,done;const gate=new Promise(resolve=>{release=resolve;});const delivered=new Promise(resolve=>{done=resolve;});

@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {loadCorpus} from './support/catalogue.mjs';
+import {attachGiDeviation} from './support/gi-deviations.mjs';
 const inputName='Message (Enter to send, Shift+Enter for newline)...';
 async function evidence(info,id){const s=loadCorpus().find(s=>s.id===id);await info.attach('gherkin',{body:s.steps.join('\n'),contentType:'text/plain'});}
 async function fixture(page,request,info,markdown){
@@ -51,8 +52,8 @@ test('@ux-timeline-024 Code-copy control copies native code text from the top-ri
  await expect(input).toHaveValue('rendering draft retained');
 });
 
-test('@ux-original-029 Fenced SVG remains source code and copies without becoming a diagram',async({page,request},info)=>{
- await evidence(info,'@ux-original-029');await observeClipboard(page);
+test('Gi deviation: fenced SVG remains source code instead of Piclaw sanitized image',async({page,request},info)=>{
+ await attachGiDeviation(info,'@gi-ux-003');await observeClipboard(page);
  const svg='<svg xmlns="http://www.w3.org/2000/svg" aria-label="source-only"><text x="2" y="12">SVG & text</text></svg>\n';
  const {post,input}=await fixture(page,request,info,'```svg\n'+svg+'```');
  const block=post.locator('.post-code-block');await expect(block.locator('pre code')).toHaveText(svg);

@@ -1,8 +1,9 @@
-@canonical @piclaw-baseline
+@canonical @piclaw-3.2.4
 Feature: Piclaw-compatible interaction model
-  Both ports expose the same observable user flows as Piclaw through native UI and APIs.
-  Unsupported capabilities fail their tagged scenario rather than being simulated.
-  Safety deviations are explicit and require alignment instead of weakening safeguards.
+  Installed Piclaw 3.2.4 is the behavioral oracle. The original Tau/Vibes
+  contract is preserved under tests/ux/upstream/shared-canonical-ux.gherkin.
+  Unsupported Gi capabilities remain gaps; deliberate safety deviations are
+  documented separately and do not earn Piclaw parity credit.
 
   Background:
     Given an isolated canonical database
@@ -99,7 +100,7 @@ Feature: Piclaw-compatible interaction model
     Then the older result cannot replace or activate an action in "research"
     And failed activation keeps Quick actions open with recoverable input and an error
     And unsupported commands and workspace actions are absent rather than simulated
-    And command insertion preserves the existing composer draft and does not submit it
+    And selecting a slash command replaces the existing composer draft with its exact command text without submitting it
 
   @quick-actions @skills @commands @scope
   Scenario: Discover loaded skills through canonical slash commands
@@ -109,52 +110,53 @@ Feature: Piclaw-compatible interaction model
     And skill commands are searchable by name and description in the Slash commands group
     And no separate Skills group or synthetic skill action is added
     When I activate one skill command
-    Then "/skill:<name> " is inserted without submitting or erasing the existing composer draft
-    And execution expands only the skill loaded by the captured session
-    And an unknown or stale skill command fails recoverably without invoking another skill
+    Then the composer replaces its existing draft with exactly "/skill:<name>"
+    And it receives focus without submitting a prompt
+    # A fixture-listed skill demonstrates UI prefill only. Loading, execution
+    # and stale-command errors require an authenticated backend journey.
 
-  @plan @pointer @keyboard
-  Scenario Outline: Open Plan and edit the loaded revision
-    Given session "main" has the canonical Plan at revision 1
+  @plan @addon-dependent @pointer @keyboard
+  Scenario Outline: Open Plan and edit the stored Markdown
+    Given the installed Plan sidebar add-on has stored Markdown for session "main"
     When I open Plan using <input>
-    Then its editor and real checklist progress are visible
-    When I edit the Plan and save revision 1
-    Then the native Plan tool reads the saved text at revision 2
-    And a reload preserves that text and revision
+    Then its editor and checklist progress are visible
+    When I edit and Save the Plan
+    Then the add-on posts the captured chat identifier and Markdown
+    And a successful response updates its saved timestamp
+    And a reload loads the saved text for that chat
 
     Examples:
       | input    |
       | pointer  |
       | keyboard |
 
-  @plan @race @failure
-  Scenario: Preserve a dirty Plan across a remote update
-    Given the open Plan editor has unsaved local text
-    When the native Plan tool writes different text with the loaded revision
-    Then the remote text is stored and emits a session-scoped update
-    And the editor retains its local text
-    And the UI reports that refresh is required
-    When I refresh the dirty Plan
-    Then I must confirm before discarding local text
+  @plan @addon-dependent @race @failure
+  Scenario: Preserve dirty Plan text on a remote update until explicit Refresh
+    Given the installed Plan add-on editor has unsaved local text
+    When a same-chat plan.changes event reports different stored Markdown
+    Then the editor retains its local text and warns about the remote change
+    When I activate Refresh explicitly
+    Then an applicable stored Markdown response replaces the unsaved text
+    And no additional discard confirmation is shown
+    # The installed add-on uses updated_at and local edit guards, not server CAS.
 
-  @plan @scope @submit
-  Scenario: Submit Plan to the captured session
-    Given Plan and composer both contain unsent content
+  @plan @addon-dependent @scope @submit
+  Scenario: Submit Plan to the captured chat
+    Given the installed Plan add-on editor and composer both contain unsent content
     When I choose "Submit to model"
-    Then Plan is saved before it is sent
-    And normal send or queue policy targets session "main"
-    And composer text, media and references remain unchanged
-    And switching sessions cannot retarget the pending submission
+    Then the add-on saves its Markdown for the captured chat before submission
+    And it sends a nonempty saved checklist prompt to that chat in auto mode
+    And save failure, empty saved text or a changed selected chat prevents submission
+    And the composer draft is not used as the Plan submission text
 
-  @plan @tool @model @truthful-ui
-  Scenario: Expose canonical Plan Markdown and the native Plan tool to the model
+  @plan @addon-dependent @tool @model @truthful-ui
+  Scenario: Expose stored Plan Markdown through the installed add-on tool
     Given session "main" has checklist items in pending, in-progress and completed states
-    Then Plan renders them as "- [ ]", "- [-]" and "- [x]" Markdown
-    And headings and non-checklist Markdown remain editable without fabricated progress
-    And the model tool catalogue contains one session-scoped "plan" tool
-    When the model reads and updates Plan through that tool
-    Then the sidebar and tool return the same canonical Markdown and revision
-    And another session's Plan is unchanged
+    Then Plan interprets "- [ ]", "- [-]" and "- [x]" as checklist states
+    And headings and non-checklist Markdown remain editable
+    When the installed "plan" tool reads or updates that chat's Plan
+    Then it uses stored Markdown and updated_at rather than a server CAS revision
+    And an update notifies the matching sidebar without changing another chat's Plan
 
   @session-picker @pointer @keyboard
   Scenario Outline: Open, search and dismiss the session picker
@@ -193,14 +195,15 @@ Feature: Piclaw-compatible interaction model
     And session "research" is unchanged
 
   @queue @return @race @failure
-  Scenario: Return a queued item to the latest editor draft
-    Given the composer draft changes while return-to-editor is pending
-    When I return the selected queue item to the editor
-    Then its recovery record and merged origin-session draft persist before DELETE
-    And the latest concurrent draft text is retained
-    And media and references are retained
-    And retrying a partial failure creates no duplicate
-    And a storage failure prevents DELETE
+  Scenario: Return a queued item by replacing the Classic editor draft
+    Given the composer contains newer unsent text and media
+    And a queued item contains text and serialised references
+    When I activate Return to editor for that item
+    Then the client replaces the composer text and references with queued content
+    And it clears the composer's media list and submission notices
+    And it schedules focus at the end of the restored text and row removal
+    # A disposable UI fixture confirms text replacement and the removal
+    # request; media, failure/retry and backend deletion still need coverage.
 
   @queue @remove @reorder @scope
   Scenario: Reorder and remove by durable identity
@@ -210,17 +213,14 @@ Feature: Piclaw-compatible interaction model
     Then the selected row remains or reconciles to authoritative consumed state
     And no other session or composer draft changes
 
-  @queue @steer @safety-deviation
-  Scenario: Steer only a matching active run
-    Given activity is idle or unknown
-    Then Steer is disabled and sends no request
-    Given session "main" has a matching active run and queued item
-    When I activate Steer twice
-    Then the original queued ID is consumed at most once
-    And delivery targets only that run and session
-    And failure leaves the item queued
-    # Piclaw currently enables idle Steer. Both ports must converge on this safer outcome;
-    # visual equality must not be achieved by enabling an unsafe action.
+  @queue @steer @current-behavior
+  Scenario: Let the backend steer or send a queued item after the stream ends
+    Given the Classic follow-up stack offers Steer for a queued item
+    When I activate Steer
+    Then the client calls the backend with the row and chat identifiers
+    And the backend decides whether to steer an active run or send immediately after it ends
+    And a failed request warns and refreshes the queue
+    # Exact once-only consumption and idle-run ownership need a backend test.
 
   @model-picker @pointer @keyboard
   Scenario Outline: Search and select a model authoritatively
@@ -323,14 +323,15 @@ Feature: Piclaw-compatible interaction model
     And reduced-motion mode preserves state meaning without requiring animation
 
   @timeline @svg @security @accessibility
-  Scenario: Render model-generated SVG inline without page privileges
-    Given an assistant message contains a fenced "svg" block with safe vector geometry
-    Then the timeline renders it inline as an accessible image that fits the message width
-    And ordinary raw HTML remains escaped
-    When the SVG also contains scripts, event handlers, foreign objects or external references
-    Then unsafe elements and attributes are removed before rendering
-    And the SVG cannot execute code, navigate, fetch external resources or inspect the page DOM
-    And malformed or oversized SVG remains visible as inert source rather than trusted markup
+  Scenario: Render safe fenced SVG as an isolated image with source fallback
+    Given an assistant message contains a fenced "svg" block with safe vector geometry and a title
+    When the shipped Classic renderer processes it with sanitization enabled
+    Then the timeline displays a data:image/svg+xml image with accessible title
+    And source remains available for code copy without privileged inline SVG DOM
+    When a fence contains a script, event handler and external image reference
+    Then it stays visible as escaped source with no preview image
+    And it cannot run script or fetch that external reference
+    # Additional hostile categories, malformed and oversized SVG need separate tests.
 
   @copy @speech @capability
   Scenario: Copy and read assistant content truthfully

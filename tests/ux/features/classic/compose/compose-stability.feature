@@ -1,6 +1,7 @@
-@classic @source-reviewed
+@classic @piclaw-3.2.4 @source-reviewed
 Feature: Classic composer draft and queue behavior
-  Source: runtime/web/src/components/compose-box.ts.
+  Installed Piclaw 3.2.4 is the oracle. Historical source is preserved under
+  tests/ux/upstream/classic-snapshot/compose/compose-stability.gherkin.
 
   @ux-compose-001
   Scenario: Clear captured content while allowing a new draft
@@ -28,10 +29,14 @@ Feature: Classic composer draft and queue behavior
   @ux-compose-004
   Scenario: Return a queued message replaces the current editor draft
     Given a queued follow-up contains text and serialised references
-    When I return it to the editor
-    Then the client restores its text and references and clears the editor media list
+    And the composer contains a newer unsent draft
+    When I return the queued item to the editor
+    Then the client replaces the newer text and references with the queued content
+    And it clears the editor media list and submission notices
     And it schedules queued-item removal after updating the editor
     And the text area receives focus and its cursor moves to the restored text's end
+    # Fixture evidence covers text replacement and removal request; attached-media
+    # and failure/retry behavior still need a current-backend journey.
 
   @ux-compose-005
   Scenario: Keep upload progress separate from sending state

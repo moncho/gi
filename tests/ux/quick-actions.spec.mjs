@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {loadCorpus} from './support/catalogue.mjs';
+import {attachGiDeviation} from './support/gi-deviations.mjs';
 const inputName='Message (Enter to send, Shift+Enter for newline)...';
 async function fixture(page,request,info){
  const key=`quick-${info.project.name}-${Date.now()}`;
@@ -39,8 +40,8 @@ test('@ux-original-006 Escape and outside pointer dismiss without running an act
  await open('m');await expect(query).toHaveValue('m');await query.press('Escape');await expect(input).toHaveValue('untouched draft');expect(await turns()).toEqual([]);
 });
 
-test('@ux-original-007 Native slash actions prefill the captured composer with a trailing space, focus and end cursor without sending',async({page,request},info)=>{
- await evidence(info,'@ux-original-007');const {main,child,input,palette,query,open,turns}=await fixture(page,request,info);
+test('Gi deviation: slash actions append a space instead of Piclaw exact-command prefill',async({page,request},info)=>{
+ await attachGiDeviation(info,'@gi-ux-001');const {main,child,input,palette,query,open,turns}=await fixture(page,request,info);
  await page.locator('.compose-box input[type=file]').setInputFiles({name:'kept.txt',mimeType:'text/plain',buffer:Buffer.from('kept bytes')});
  await open('m');await query.fill('/model');await expect(palette.locator('.timeline-quick-actions-item-slash')).toHaveCount(1);await expect(page.locator('.timeline-quick-actions-item.active .timeline-quick-actions-item-title')).toHaveText('/model');await page.waitForTimeout(150);await query.press('Enter');
  await expect(palette).toHaveCount(0);await expect(input).toHaveValue('/model ');await expect(input).toBeFocused();expect(await input.evaluate(el=>[el.selectionStart,el.selectionEnd])).toEqual([7,7]);

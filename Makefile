@@ -304,12 +304,15 @@ test-ux-reconnect: build-web
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
 	GI_UX_RECONNECT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/reconnect.spec.mjs $(UX_PARITY_ARGS)
 
-.PHONY: test-ux-status-swipes test-ux-thoughts
+.PHONY: test-ux-status-swipes test-ux-mobile-exclusions test-ux-thoughts
 test-ux-thoughts:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV=GI_UX_THOUGHTS=1 UX_LOCAL_SPEC=tests/ux/thoughts.spec.mjs
 
 test-ux-status-swipes:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV=GI_UX_STATUS_SWIPES=1 UX_LOCAL_SPEC=tests/ux/status-swipes.spec.mjs
+
+test-ux-mobile-exclusions:
+	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_REJECTION=1 GI_UX_MOBILE_EXCLUSIONS=1' UX_LOCAL_SPEC=tests/ux/mobile-exclusions.spec.mjs
 
 test-ux-compaction:
 	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_COMPACTION=1 UX_LOCAL_SPEC=tests/ux/compaction.spec.mjs
@@ -418,6 +421,16 @@ test-ux-links:
 test-ux-speech-contract:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_SPEECH=1' UX_LOCAL_SPEC='tests/ux/speech-contract.spec.mjs tests/ux/speech.spec.mjs tests/ux/message-copy.spec.mjs tests/ux/rendering.spec.mjs'
 	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+
+.PHONY: test-piclaw-oracle-basic
+test-piclaw-oracle-basic:
+	$(BUN) test tests/ux/oracle/piclaw-basic-contract.test.mjs
+	$(BUN) tests/ux/oracle/piclaw-basic-probe.mjs
+
+.PHONY: test-piclaw-oracle-matrix
+test-piclaw-oracle-matrix:
+	$(BUN) test tests/ux/oracle/piclaw-basic-contract.test.mjs
+	@set -e; for browser in chromium webkit; do for viewport in phone tablet desktop; do ORACLE_BROWSER=$$browser ORACLE_VIEWPORT=$$viewport $(BUN) tests/ux/oracle/piclaw-basic-probe.mjs > test-results/ux-oracle-$$browser-$$viewport.log; done; done
 
 test-ux-parity:
 	@mkdir -p test-results/ux-parity/queue-gates

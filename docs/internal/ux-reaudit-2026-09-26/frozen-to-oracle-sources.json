@@ -1,0 +1,1418 @@
+{
+  "baseline": "70d33bc93ab540845bbcf5f80503ca8125c71594",
+  "oracle": "piclaw-3.2.4-linux-x64-baseline",
+  "assetVersion": "990f0c49a932",
+  "sourceMapSHA256": "c53092cfb75415f30b4c6b16b758cab68fed9bbc546953e5916a91b382acb32b",
+  "counts": {
+    "changed": 50,
+    "identical": 166,
+    "new-in-oracle": 18
+  },
+  "warning": "Source drift triage only; unchanged source does not prove behaviour, changed source does not prove regression.",
+  "rows": [
+    {
+      "path": "runtime/web/src/ui/model-catalogue-preferences.ts",
+      "oracleSHA256": "a69754ea1052e3f9ae83c49de26345d88122ff345fbc957d4ce8a3baf275077a",
+      "baselineSHA256": "fb6ae19c6db4b2b7e0edb6a71195e737d13efc002977f30918338f41979bf82d",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-perf-tracing.ts",
+      "oracleSHA256": "5679d33589f6f127ad15de3cad4b377929fcf6986fa6240bd1ce547b5d4ec582",
+      "baselineSHA256": "5679d33589f6f127ad15de3cad4b377929fcf6986fa6240bd1ce547b5d4ec582",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/screen-size-hint.ts",
+      "oracleSHA256": "ecad5638f542c2b6316ad2abb6029876690d178f9f1d312a4fe817f7b52687d1",
+      "baselineSHA256": "ecad5638f542c2b6316ad2abb6029876690d178f9f1d312a4fe817f7b52687d1",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/chat-project-state.ts",
+      "oracleSHA256": "aafe69f41152e33b619fb424ee475fd274138ca769180096338f28b7256ac073",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/agent-ui-snapshot.ts",
+      "oracleSHA256": "41b0099be02718b878eb33c05693cd4e0f3831db9ebec6f20a3a7477ef2c1566",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/upload-transfers.ts",
+      "oracleSHA256": "6baa3e41289a98bebda31b349389359d6893ebce3b410757a889edcd3a9360e4",
+      "baselineSHA256": "6baa3e41289a98bebda31b349389359d6893ebce3b410757a889edcd3a9360e4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/api.ts",
+      "oracleSHA256": "de62dae20e143f272ac279402d1a31d18636d4a12a877e8b7b6f4f04bf18adb9",
+      "baselineSHA256": "6438bb62c4c3ac83257ab40d5edd7861a302a41093c53ad0aec15a3cda39eb71",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/utils/storage.ts",
+      "oracleSHA256": "097d6a67bb97f18df4eab2b0594d914a29b941f1f157e0581cce359899d2edc7",
+      "baselineSHA256": "097d6a67bb97f18df4eab2b0594d914a29b941f1f157e0581cce359899d2edc7",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings-dialog-events.ts",
+      "oracleSHA256": "da768dba52da0904504bc867a11e4c429d0e6709116f93a085d455d1477b83f4",
+      "baselineSHA256": "f459cea9722a36172e76c52446a0961dd4cfc7145a64cc8af10111b6ca5d53c0",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/utils/i18n.ts",
+      "oracleSHA256": "c6c18ca9d13a2606f9bdca01328cae53c8e5d72c0372fd3b4157639cfb5cb276",
+      "baselineSHA256": "e3b0b75ec9764e3f2beaa055dc1e147c1ce7f162e301b4205eb1bab71aae3e5e",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/body-portal.ts",
+      "oracleSHA256": "cada5ba02d051668accb96adde62bdd97a00118700609e6d74c481ee1b0a27f7",
+      "baselineSHA256": "cada5ba02d051668accb96adde62bdd97a00118700609e6d74c481ee1b0a27f7",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/pane-registry.ts",
+      "oracleSHA256": "bd4aca4c4e41ba3183930a102ad3d99f8b1cbd7826afe99a9fd4e97dfc187e80",
+      "baselineSHA256": "bd4aca4c4e41ba3183930a102ad3d99f8b1cbd7826afe99a9fd4e97dfc187e80",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/meters.ts",
+      "oracleSHA256": "8c5ed6a711506ec9087dc5290e039a1e90896dcf5a7fbfdf3b31473f0c9b4dfa",
+      "baselineSHA256": "8c5ed6a711506ec9087dc5290e039a1e90896dcf5a7fbfdf3b31473f0c9b4dfa",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/number-stepper.ts",
+      "oracleSHA256": "8f9b3c4a1ef71a4371c54a4e654a55b68d5b5a3dacf72fcba3c9c02b478c69e4",
+      "baselineSHA256": "2bf527c1187fe7903e18342969be3729588ddfbcc4882e711f594da71936de9e",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/settings/general.ts",
+      "oracleSHA256": "48ac25179c38db681e11bbcfb5155ac83997129614877153e92d88e16f4548a1",
+      "baselineSHA256": "ef240b182f520891732c6e7f18cddf144bf0c5cd1cf1b76bb7d5e5ebdcb6a986",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/settings/api-access.ts",
+      "oracleSHA256": "585f62776e65d0aa4e19e928ef477ed19ad7fa78156363dda262f09eae0b22dd",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/components/settings/authentication.ts",
+      "oracleSHA256": "28ce654346b9642bfe46bb8e7f6eadefd1b277936b2d3577d924297bfacf445b",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/components/settings/sessions.ts",
+      "oracleSHA256": "23b3c5f7dcc53d6ac2521cf5251c862a8a9a41a1e3f4ebbf7d963fc5dc664521",
+      "baselineSHA256": "07b21e0bc6c50dd58ee53029b0b81c26ee41265bb1ffb5737c3367c310f5a6c6",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/settings/recordings.ts",
+      "oracleSHA256": "fbbc4bad895b541eec736ff46bbe97d6fbe62cc8578cdb373e0e5d391d1321b3",
+      "baselineSHA256": "fbbc4bad895b541eec736ff46bbe97d6fbe62cc8578cdb373e0e5d391d1321b3",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/model-catalogue.ts",
+      "oracleSHA256": "6a1bba4f685e8423d8b23c32a625f7161d9c2f79ba243d85d63b0a3e9edc2697",
+      "baselineSHA256": "6a1bba4f685e8423d8b23c32a625f7161d9c2f79ba243d85d63b0a3e9edc2697",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/compaction.ts",
+      "oracleSHA256": "9be7948dcc739c55716f2d55a5a7a6f26f66aeac36a8dff35afb24ef39af93bf",
+      "baselineSHA256": "9be7948dcc739c55716f2d55a5a7a6f26f66aeac36a8dff35afb24ef39af93bf",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/budget-settings-model.ts",
+      "oracleSHA256": "1379f51e10d964bd59309d721ab1e9c86ff8c22cbdee3d99153b4e3834655764",
+      "baselineSHA256": "1379f51e10d964bd59309d721ab1e9c86ff8c22cbdee3d99153b4e3834655764",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/budget.ts",
+      "oracleSHA256": "e181120bbf92fc850d07b3562965bd3b4c64a9ab16f533dd834805944d1914d8",
+      "baselineSHA256": "e181120bbf92fc850d07b3562965bd3b4c64a9ab16f533dd834805944d1914d8",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/keyboard-shortcuts.ts",
+      "oracleSHA256": "54dd9a91e6e90e7f25b7e6f524a2acc67fabb6cc27c29ad2c87f3acfd7504ccb",
+      "baselineSHA256": "54dd9a91e6e90e7f25b7e6f524a2acc67fabb6cc27c29ad2c87f3acfd7504ccb",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/keyboard-shortcut-settings.ts",
+      "oracleSHA256": "444d5008da024a9bd38edebe38f8ccdd74c4f2c01712662a522f04e34e48f24d",
+      "baselineSHA256": "444d5008da024a9bd38edebe38f8ccdd74c4f2c01712662a522f04e34e48f24d",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/keyboard.ts",
+      "oracleSHA256": "9dc54bdf7def6c3787a6e70689a5417d97902c8cbf5a2124828ebf8b4fb2239f",
+      "baselineSHA256": "9dc54bdf7def6c3787a6e70689a5417d97902c8cbf5a2124828ebf8b4fb2239f",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/workspace-settings.ts",
+      "oracleSHA256": "45caefe64207a445e4d0e29acbe978b7bc458867f27341ab6280252ea5cc9dbe",
+      "baselineSHA256": "45caefe64207a445e4d0e29acbe978b7bc458867f27341ab6280252ea5cc9dbe",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/workspace.ts",
+      "oracleSHA256": "a09c1dff076e361ed1672727c41d8ac59e9c0e82a791368ff93ca14ecf604bc6",
+      "baselineSHA256": "f3cb08a1dcd4b41cfa1f0ee9cc7ccadfbc0cfa01b79d59d9d474f8dba094a823",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/settings/environment.ts",
+      "oracleSHA256": "15a33d590385cd807e1f41862fc0430ba49e14d0884eba8ef8ba48009b3e2072",
+      "baselineSHA256": "15a33d590385cd807e1f41862fc0430ba49e14d0884eba8ef8ba48009b3e2072",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/providers.ts",
+      "oracleSHA256": "4d4b7b223c0a544c7d163953aaa72bb9952100805dcf67c07d0a0fb2a3b88aaa",
+      "baselineSHA256": "4d4b7b223c0a544c7d163953aaa72bb9952100805dcf67c07d0a0fb2a3b88aaa",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/visible-interval.ts",
+      "oracleSHA256": "37adeb32079556584479faa88cf8c33bd78038226ee0f004e43cec69f11f5823",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/model-settings-catalogue.ts",
+      "oracleSHA256": "08d5a96f75dd5764e1cdb970638caeb9690a9162d17f0b272c9e724caaa430d0",
+      "baselineSHA256": "08d5a96f75dd5764e1cdb970638caeb9690a9162d17f0b272c9e724caaa430d0",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/models.ts",
+      "oracleSHA256": "77fb87a7a01e75eb38e1696ca804c29c93352ffa26da4d173c7cd14a0fb63f72",
+      "baselineSHA256": "9b2acd34b73420fe075d224c6a7cb255bcac5542b2fb9b029bced74ab52ea996",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/theme-palette.ts",
+      "oracleSHA256": "7f42c9e7ab42a1a714a649124cbc3d1fd972e93cd5b5c0c6aec646e4dbe77eba",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/theme-chrome.ts",
+      "oracleSHA256": "e091ad79b7d51801eb75f2decc3b3cfa251e7c3e4592c9e9705fb89816521bb5",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/theme.ts",
+      "oracleSHA256": "94d3e28b56cc2f391756758ea4f27e1d3ee99c45dff01c44546707c51dd4919f",
+      "baselineSHA256": "8bb3a431cd8173c0e86afe7ee3c326d18926a947775a3d71d831138e70c69040",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/language-switcher.ts",
+      "oracleSHA256": "07aa10a3cb583f7739e126c24d491411c36e11059e2b3c27b746eeaf13639f6e",
+      "baselineSHA256": "07aa10a3cb583f7739e126c24d491411c36e11059e2b3c27b746eeaf13639f6e",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/appearance.ts",
+      "oracleSHA256": "16a5dfab6796753d6cf7f307716045b343685cecb57b8423d4b6ff44f1b82a4c",
+      "baselineSHA256": "c199f38ce3c1c6f73cac94f6524e63ac8fb61e6573206cecf1c77a6163697a7a",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/settings/scheduled-tasks.ts",
+      "oracleSHA256": "9c8dd948feaf9615832b8a4b81fb745f1a472e0dbe7d2478006becaa43f4ed02",
+      "baselineSHA256": "6cebe628d86d1a82f0f30480d46b11a5e6b963b11ac1d0e9c6d8121e0732fceb",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/timeline-quick-actions.ts",
+      "oracleSHA256": "a075535cc44169938fbfd648cce0c458b49c1cd3e33390b238b633b023a1c27c",
+      "baselineSHA256": "a075535cc44169938fbfd648cce0c458b49c1cd3e33390b238b633b023a1c27c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/quick-actions.ts",
+      "oracleSHA256": "6f013ee100f4c7f400c40abe08dea6d0b7c4a90fcac9786d2b88c47a528e9f10",
+      "baselineSHA256": "6f013ee100f4c7f400c40abe08dea6d0b7c4a90fcac9786d2b88c47a528e9f10",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/keychain.ts",
+      "oracleSHA256": "60c943d51b4238946ede10630fcf81a898a4ceb3fda3681e6be2027157c60c8e",
+      "baselineSHA256": "1f14e74990b7af9a06eb165d85a1793664b2dcfca355ea233fa87416ce34e1ae",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/settings/tools.ts",
+      "oracleSHA256": "2dfb4a7e55625e7c546044d13d8d27837c4fb7cbfd2d7d1b74dc4678e08a59f6",
+      "baselineSHA256": "2dfb4a7e55625e7c546044d13d8d27837c4fb7cbfd2d7d1b74dc4678e08a59f6",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/addons.ts",
+      "oracleSHA256": "a634b514164754a00f42fef8f53f9884e6f0733141a24ff469aa088a0b969594",
+      "baselineSHA256": "a634b514164754a00f42fef8f53f9884e6f0733141a24ff469aa088a0b969594",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/editor-settings.ts",
+      "oracleSHA256": "3f35b69128857275e41f302b90a8361e273dde1c50e15f03a02774595a541565",
+      "baselineSHA256": "3f35b69128857275e41f302b90a8361e273dde1c50e15f03a02774595a541565",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings/developer-settings.ts",
+      "oracleSHA256": "9d390342e5e910391f888779a48a7db8671f70d749247a5df1f6f91d8bea0f67",
+      "baselineSHA256": "9d390342e5e910391f888779a48a7db8671f70d749247a5df1f6f91d8bea0f67",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings-dialog.ts",
+      "oracleSHA256": "b7a7426b86115bb9dd965f6a855c83366570dcde5eeef80dd9e726a3f84a265f",
+      "baselineSHA256": "dd4da55337d3ed8880b996245e744951241a69b90020012ac8c37998707dda13",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/picker-pin-sync.ts",
+      "oracleSHA256": "ff0e5061afa388cb2037615926305c9cc98519b3990db9f273d5c6a31a7af1b6",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/session-picker-preferences.ts",
+      "oracleSHA256": "1d59ad1a5087930373b2107c538da0500996017341f51f22d39c05c56d5cf169",
+      "baselineSHA256": "4b17071df4fc814d3e148ff671532116e9cf6788d6cb0753267528af19c38282",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/app.ts",
+      "oracleSHA256": "49c8fa4851bd6aa1bb41b087c0a5f1a229609e0e3f1b5bb285423cb419b5db87",
+      "baselineSHA256": "15d9cf064924ef8b03b10ed558d139730fd860365756b0c087a1ace7385fbdbc",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/panes/addon-unavailable.ts",
+      "oracleSHA256": "4b51ec7713db1262dc9acf30ea2b2ff7ce429fcbf91b36ad977189b242014d1a",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/panes/pane-registry.ts",
+      "oracleSHA256": "7fdc55946d7caa7cd205798bd6c5aa84f319747dc0a658221e484fd6f357a3b3",
+      "baselineSHA256": "2989bff19935bb6a526255ef3f2b5da5b0ebdc85bf6fee402098a8ccf08d9241",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/panes/editor-loader.ts",
+      "oracleSHA256": "8f82dabdb863f7f59bb971efa962f8a5a25c5414318ea5bc8764b2411a0185d0",
+      "baselineSHA256": "8f82dabdb863f7f59bb971efa962f8a5a25c5414318ea5bc8764b2411a0185d0",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/terminal-pane.ts",
+      "oracleSHA256": "2ce9c33afa3a98405814450ea5ceb557b4e14735cc95ebe41c50d22d996e55df",
+      "baselineSHA256": "f3a7f3c0b9c997dd94087665fdae01797d9777685feced051bc6306989d3fd0d",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/panes/remote-display-socket.ts",
+      "oracleSHA256": "6b8cc8dd7917e95be63e40249d0d8a6e7c6bcf8e1fe60ac507da01a919a53b50",
+      "baselineSHA256": "6b8cc8dd7917e95be63e40249d0d8a6e7c6bcf8e1fe60ac507da01a919a53b50",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/pane-runtime-safety.ts",
+      "oracleSHA256": "4e447151398c9aaf8725cd726612a3f393f045dca00da7a69563990ac3c6483c",
+      "baselineSHA256": "4e447151398c9aaf8725cd726612a3f393f045dca00da7a69563990ac3c6483c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/remote-display-gc.ts",
+      "oracleSHA256": "ec17808e057e70be3576ca3b58ee9e642d626e898ec5e11dae8f8e8d463cae88",
+      "baselineSHA256": "ec17808e057e70be3576ca3b58ee9e642d626e898ec5e11dae8f8e8d463cae88",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/remote-display-decoder.ts",
+      "oracleSHA256": "7801ae782aae11a83966b5272fd1e1f24b981475e89c6b053c215189429cedb3",
+      "baselineSHA256": "7801ae782aae11a83966b5272fd1e1f24b981475e89c6b053c215189429cedb3",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/vnc-input.ts",
+      "oracleSHA256": "b934894f6f7b4e8381091e193d4797fed7c502398346891e9a8556cb9c40a026",
+      "baselineSHA256": "b934894f6f7b4e8381091e193d4797fed7c502398346891e9a8556cb9c40a026",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/vnc-auth.ts",
+      "oracleSHA256": "420680e78bfaf300a680d3bc6409429875387fb9a9fc198a5eeefae46aa00371",
+      "baselineSHA256": "420680e78bfaf300a680d3bc6409429875387fb9a9fc198a5eeefae46aa00371",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/remote-display-vnc.ts",
+      "oracleSHA256": "554b4617c55178cb7f857b260154c231a0d95aa6400ef96d442830b78fccde84",
+      "baselineSHA256": "554b4617c55178cb7f857b260154c231a0d95aa6400ef96d442830b78fccde84",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/vnc-viewer-ui.ts",
+      "oracleSHA256": "70da87c793b25bfadcda5ae26567d51617a18e94584577156181d2649df278c8",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/panes/vnc-history.ts",
+      "oracleSHA256": "deb42ce7ada2325771f12e0d48e25f923f8a6a9d285138cf7f8bec8eb76a69dd",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/panes/vnc-pane.ts",
+      "oracleSHA256": "d3fc9562f247385b68f4a2e812b786f8f0c0f32eb9cb75a5a2701ef7f369980c",
+      "baselineSHA256": "10cc3843adc9d458723eaecdc03b9bbf69e8e0b9c7e10a2496a5ee2bd78572e4",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/utils/code-highlighting.ts",
+      "oracleSHA256": "4591dbe987d92c173c73fced2984dbb76bebf4a7958f2c588b6549435130b424",
+      "baselineSHA256": "9c397b0497fda0e9987f568f8bc40483a132b6c94b9f910b0c15825f26ef6b4e",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/svg-theme.ts",
+      "oracleSHA256": "ec0cf66d39b0cffdf61eed8959eb7ea4ec4feb717f965608e316ba5d3ec80cfb",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/utils/svg-images.ts",
+      "oracleSHA256": "d3377411259e5f39b587e7c611464ddabd59c894b1deb8ee30f41026f020a969",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/chat-reference-links.ts",
+      "oracleSHA256": "da5f3768a48685774e15217e5c6eb1744449bf4a82b76e77360a27ce90c5b6ac",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/markdown.ts",
+      "oracleSHA256": "e912590096fe92cf510e06922e7a148fbc8818cfcac0b1809d4806906b4c2161",
+      "baselineSHA256": "a23b94c2b5f266ae5ccc20558ac58264d9169171000e186ca95c4bdb62d5daa6",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/panes/workspace-preview-pane.ts",
+      "oracleSHA256": "6cf0814ff2c66237f85f3afedecd7c05d31b6a4997edd8034a0932e5d3227ba6",
+      "baselineSHA256": "6cf0814ff2c66237f85f3afedecd7c05d31b6a4997edd8034a0932e5d3227ba6",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/utils/format.ts",
+      "oracleSHA256": "461d8e3c75d8b80ac19421f136af7a650cc4ffb00195ec392d0d49a8cd23347c",
+      "baselineSHA256": "461d8e3c75d8b80ac19421f136af7a650cc4ffb00195ec392d0d49a8cd23347c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/workspace-markdown-image.ts",
+      "oracleSHA256": "c1912af490597c900105f06f49fc0bf9b0a2e58b3406c01ca736a6c87ff79757",
+      "baselineSHA256": "c1912af490597c900105f06f49fc0bf9b0a2e58b3406c01ca736a6c87ff79757",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/office-viewer-pane.ts",
+      "oracleSHA256": "fb487f35c1b6faca6757245b7c874904906c25b5a5b2723dace4c38b2f92ca5b",
+      "baselineSHA256": "fb487f35c1b6faca6757245b7c874904906c25b5a5b2723dace4c38b2f92ca5b",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/data-viewer-pane.ts",
+      "oracleSHA256": "a5c4fb2c1954330fb02c33ff40c94dc8daced6f4dd04d5ae46231e4f7262c565",
+      "baselineSHA256": "a5c4fb2c1954330fb02c33ff40c94dc8daced6f4dd04d5ae46231e4f7262c565",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/web-viewer-pane.ts",
+      "oracleSHA256": "2813c0bfbe84d1ec327070896b21b3779879c6032121e5b00589f0d5c3b65719",
+      "baselineSHA256": "2813c0bfbe84d1ec327070896b21b3779879c6032121e5b00589f0d5c3b65719",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/highlight-previewer-pane.ts",
+      "oracleSHA256": "bc7f33d242a524a973afd1ece66234a1378329c19b3d90f9d10b9173d66ddbeb",
+      "baselineSHA256": "bc7f33d242a524a973afd1ece66234a1378329c19b3d90f9d10b9173d66ddbeb",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/tab-store.ts",
+      "oracleSHA256": "338d6f17167d6a7d9612d95b49e2499df383770d5d22f6af2beaf3524fb397c0",
+      "baselineSHA256": "338d6f17167d6a7d9612d95b49e2499df383770d5d22f6af2beaf3524fb397c0",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/timeline-utils.ts",
+      "oracleSHA256": "c418147c30069f3363625901723486fa1fd799aa791f603209f105e789851e4f",
+      "baselineSHA256": "c418147c30069f3363625901723486fa1fd799aa791f603209f105e789851e4f",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/use-agent-state.ts",
+      "oracleSHA256": "f50a2cd33221e08de5de7283dc96ec978744dad28e64024f5f4c24f1eb141f7f",
+      "baselineSHA256": "f50a2cd33221e08de5de7283dc96ec978744dad28e64024f5f4c24f1eb141f7f",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/use-splitters.ts",
+      "oracleSHA256": "c21585c4ab617ee4c989ec9a9d31f9127bab4f0fa827e8c77bb908f0ef6c3172",
+      "baselineSHA256": "c21585c4ab617ee4c989ec9a9d31f9127bab4f0fa827e8c77bb908f0ef6c3172",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-helpers.ts",
+      "oracleSHA256": "912025d1e891881a748f299e70e46e41a63c332b6a6dc9eb8dbf49fd091b3a8d",
+      "baselineSHA256": "912025d1e891881a748f299e70e46e41a63c332b6a6dc9eb8dbf49fd091b3a8d",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/status-duration.ts",
+      "oracleSHA256": "e7b172f51c937f75c4aea5d9dfff94840cfa9da52186e9d4ee8cbe02df0849a5",
+      "baselineSHA256": "e7b172f51c937f75c4aea5d9dfff94840cfa9da52186e9d4ee8cbe02df0849a5",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/settings-dialog-loader.ts",
+      "oracleSHA256": "a1ce9b0c63ab352b13156adbd1a80ad2b8ef2c542e86dec3b76b6645bac19a4c",
+      "baselineSHA256": "a1ce9b0c63ab352b13156adbd1a80ad2b8ef2c542e86dec3b76b6645bac19a4c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-location-navigation.ts",
+      "oracleSHA256": "9337fd10af610d124de9d7582650db7eeeba85d2dd74f6a8c463905346f42481",
+      "baselineSHA256": "9337fd10af610d124de9d7582650db7eeeba85d2dd74f6a8c463905346f42481",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/chat-window.ts",
+      "oracleSHA256": "68f24e5842127e64c70e16ab52cd5fd0ded70b6895a87c5c74a04375ba40e63c",
+      "baselineSHA256": "68f24e5842127e64c70e16ab52cd5fd0ded70b6895a87c5c74a04375ba40e63c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-shell-state.ts",
+      "oracleSHA256": "7bc94e94c4b84dbc16f3f40ed9cc6ca2733612501b9dff2f92f301e7dde16641",
+      "baselineSHA256": "7bc94e94c4b84dbc16f3f40ed9cc6ca2733612501b9dff2f92f301e7dde16641",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-pane-mode-render.ts",
+      "oracleSHA256": "7b311cefc6ebbbd0dd9b1c5b9f89fb1b28b174688a04455fd85de17888bce2a5",
+      "baselineSHA256": "7b311cefc6ebbbd0dd9b1c5b9f89fb1b28b174688a04455fd85de17888bce2a5",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/markdown-preview.ts",
+      "oracleSHA256": "1d8d6b29fefc837bfc7f77e027fa0c1768afcb674d820357bfb7ad2678c485e9",
+      "baselineSHA256": "1d8d6b29fefc837bfc7f77e027fa0c1768afcb674d820357bfb7ad2678c485e9",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/markdown-preview-storage.ts",
+      "oracleSHA256": "2ce6bd7c7e7c45bc37cbc482139140df3f28bc33ac6c5e6e34ec4839b7a2db73",
+      "baselineSHA256": "2ce6bd7c7e7c45bc37cbc482139140df3f28bc33ac6c5e6e34ec4839b7a2db73",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-shell-render.ts",
+      "oracleSHA256": "a49accc21ba67ab2ab153a6eb986f891daab8704c9d95f79da9b52421a004e6e",
+      "baselineSHA256": "09b1f750dff506ee7c5fe717d4dcdfe4d5916af9346551b00784f3cf6c6f2650",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/oobe-panel.ts",
+      "oracleSHA256": "d34136391ec9ebec842b6412f1f205abdf370568db1a9f7934b58ab78b6d74c4",
+      "baselineSHA256": "d34136391ec9ebec842b6412f1f205abdf370568db1a9f7934b58ab78b6d74c4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/chat-surface.ts",
+      "oracleSHA256": "ffe4209177d61c08461f178b91bc523a0f69c99eb4f7fed15afb7a9a520e9460",
+      "baselineSHA256": "c4f5b25c99c77709666ecf04bbcdd56d85f9928b73d35d5adfd8b6f571d52401",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/attachment-preview-modal.ts",
+      "oracleSHA256": "b0965af55c34a0fefc27410c52219f181279a723e2c2c29a32a0e4c4ebd40357",
+      "baselineSHA256": "f9c5134d7cee0ac136332503df14f5bb131ee798f3e305bd03438b134bc3a3cc",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/addon-workspace-actions.ts",
+      "oracleSHA256": "fcb2b842c6dbf88db4bb8a2c61332fc4ce0ee027ac153835f61dfa85b35d6227",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/addon-web-extensions.ts",
+      "oracleSHA256": "ae2b2e945894aab7e2f1e1307b3aaa6e00fbecbeec1aa128d9fdb308248ff2bf",
+      "baselineSHA256": "9045eb1228342101ffc68eec63f44c60e20878f0b9a0eb167b1cea0570d468ab",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/delimited-preview.ts",
+      "oracleSHA256": "fd0a9d6a42e29661ffc2ae297d5f3aa8ca7093f7251f175fd81ec79262926096",
+      "baselineSHA256": "fd0a9d6a42e29661ffc2ae297d5f3aa8ca7093f7251f175fd81ec79262926096",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/attachment-preview.ts",
+      "oracleSHA256": "ac3e2de83ff907dcc5396587969a1f0b3aa0faad80fe8dd6d9e9aaf8d8a9521a",
+      "baselineSHA256": "f068383c13bf53c9cd485deb6d66bdee1ad1e9b1e6da74f79b3b6217b274e8e3",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/zip-preview.ts",
+      "oracleSHA256": "de25c21b2570ceda3166d0bb1bd8e6e8681c9356d42c083682a827ff13498008",
+      "baselineSHA256": "de25c21b2570ceda3166d0bb1bd8e6e8681c9356d42c083682a827ff13498008",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/btw-panel.ts",
+      "oracleSHA256": "371a7bac825370a341676f994bd352cc1c6e712e40ee26fe28871403240b875b",
+      "baselineSHA256": "371a7bac825370a341676f994bd352cc1c6e712e40ee26fe28871403240b875b",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/btw.ts",
+      "oracleSHA256": "b6ac62a67f31f2dbe72640b0c1abf4c68d3ea90c5c3ca405e408189e9f8bdb64",
+      "baselineSHA256": "b6ac62a67f31f2dbe72640b0c1abf4c68d3ea90c5c3ca405e408189e9f8bdb64",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/compose-box.ts",
+      "oracleSHA256": "b41875fadee2c60fa538174eb13fda6da6afe495135807d28c9c35c6d58e5dea",
+      "baselineSHA256": "6a73d53b8cf684a3e8115a7a9063b4597dd95f33020c76a588b57e58bb0769d6",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/popup-typeahead.ts",
+      "oracleSHA256": "c30d25a3c35565b13534b26471d85b745ec3c2b4cff10c1dad0a206798cafebd",
+      "baselineSHA256": "c30d25a3c35565b13534b26471d85b745ec3c2b4cff10c1dad0a206798cafebd",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/agent-mentions.ts",
+      "oracleSHA256": "98b3f79ea840256265a5ea5e885a634495d363e2af735595b534af3e263852a3",
+      "baselineSHA256": "98b3f79ea840256265a5ea5e885a634495d363e2af735595b534af3e263852a3",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/compose-session-switcher.ts",
+      "oracleSHA256": "2bccb9a846617ba02e7902227bc77165cbb00d1e5712276279e2cc6f7055fe95",
+      "baselineSHA256": "2bccb9a846617ba02e7902227bc77165cbb00d1e5712276279e2cc6f7055fe95",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/branch-lifecycle.ts",
+      "oracleSHA256": "0d693b2b6c904d6e076664eef7f613333260d757b243806a12efa4ca22dadc8f",
+      "baselineSHA256": "0d693b2b6c904d6e076664eef7f613333260d757b243806a12efa4ca22dadc8f",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/status-dot.js",
+      "oracleSHA256": "ef940775325c0ba9e084dd0e43fa63683b1b7af505162c5858c908e10f1f6b20",
+      "baselineSHA256": "ef940775325c0ba9e084dd0e43fa63683b1b7af505162c5858c908e10f1f6b20",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/connection-status.ts",
+      "oracleSHA256": "00f8f1972dda7e7a3d97dbe1edd2c19087ee17966b7f7accbbd243de3d376db9",
+      "baselineSHA256": "00f8f1972dda7e7a3d97dbe1edd2c19087ee17966b7f7accbbd243de3d376db9",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/file-pill.ts",
+      "oracleSHA256": "1391f194168c637e5ab7652ba130f3f84228034b334daddcd9d3662a4c4d181c",
+      "baselineSHA256": "1391f194168c637e5ab7652ba130f3f84228034b334daddcd9d3662a4c4d181c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/compose-model-refresh.ts",
+      "oracleSHA256": "c0f70b4d40737c27c45f50b1d2813b413701afa06992cf60e97f42d608a11f2c",
+      "baselineSHA256": "c0f70b4d40737c27c45f50b1d2813b413701afa06992cf60e97f42d608a11f2c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/model-picker.ts",
+      "oracleSHA256": "c74464a48dc8d3290dff6547a736d6b2f83ed0cf200849297bd458feb4a9fe07",
+      "baselineSHA256": "c74464a48dc8d3290dff6547a736d6b2f83ed0cf200849297bd458feb4a9fe07",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/compose-speech.ts",
+      "oracleSHA256": "541bb66ff4b8f5b8ec6b6de21d8ad5faeef936a0a65d3d8412085f8aa8eb258b",
+      "baselineSHA256": "541bb66ff4b8f5b8ec6b6de21d8ad5faeef936a0a65d3d8412085f8aa8eb258b",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/floating-widget-pane.ts",
+      "oracleSHA256": "142c982833b911e26566d32cda43704057e48a617b46dd5b24f6114ca8c31afd",
+      "baselineSHA256": "142c982833b911e26566d32cda43704057e48a617b46dd5b24f6114ca8c31afd",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/generated-widget-host-bridge.ts",
+      "oracleSHA256": "52ebb7d6abfa133bc38bb41dc7d70fef8d69a97ee13dd0c258f37d1aa4079908",
+      "baselineSHA256": "52ebb7d6abfa133bc38bb41dc7d70fef8d69a97ee13dd0c258f37d1aa4079908",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/generated-widget.ts",
+      "oracleSHA256": "7ca73c1bd43621bdee02f0da30b1a78300dc9ac4c851fccd449b531c0b347a14",
+      "baselineSHA256": "2fc9ca9a3083465044aa8b3163b9169b3c8b15521fdd4c9c3a140daf0568cfe5",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/status.ts",
+      "oracleSHA256": "07b0b1a174d7289a72de569dda7b76c61a1dd38477efb6d903a52ed7722d5e18",
+      "baselineSHA256": "07b0b1a174d7289a72de569dda7b76c61a1dd38477efb6d903a52ed7722d5e18",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/agent-utils.ts",
+      "oracleSHA256": "1bd8941e7ac8e465f4313e72ba7922c5f0d744415daf238d0ac8e0c2580b05a4",
+      "baselineSHA256": "1bd8941e7ac8e465f4313e72ba7922c5f0d744415daf238d0ac8e0c2580b05a4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/tool-git-context.ts",
+      "oracleSHA256": "a63c0b42da8d5dfb12593052aa6665c3c51c98d27baa950667afca0a68ec9f93",
+      "baselineSHA256": "a63c0b42da8d5dfb12593052aa6665c3c51c98d27baa950667afca0a68ec9f93",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/disclosure-triangle.ts",
+      "oracleSHA256": "1ac546bd05447324dde266e2c6e1a3795a002db8cb063bda50b91b023ae255ca",
+      "baselineSHA256": "1ac546bd05447324dde266e2c6e1a3795a002db8cb063bda50b91b023ae255ca",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/timeline.ts",
+      "oracleSHA256": "465f800fd040966afe839ccb7371dbcd98d040623342d1b5a053a1f567687fbb",
+      "baselineSHA256": "465f800fd040966afe839ccb7371dbcd98d040623342d1b5a053a1f567687fbb",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/post.ts",
+      "oracleSHA256": "54af5bf6847fbda73812e042bcda560302139e3b5de8283e701c69de3426a9cf",
+      "baselineSHA256": "7a2a10688ec2f78568ccef49b98e1b6d75f6d500755d1a60c5a20ed8ce592387",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/use-chat-project.ts",
+      "oracleSHA256": "887139e5e3b546d49959cc31160bee5902c1b4b37602f9088ee2ff14d8bfd55e",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/adaptive-card-submission.ts",
+      "oracleSHA256": "092d980778992145aa734d1c90974398fbcbe6f6cb62f4eea2dc3a3920a08311",
+      "baselineSHA256": "092d980778992145aa734d1c90974398fbcbe6f6cb62f4eea2dc3a3920a08311",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/utils/post-copy-markdown.ts",
+      "oracleSHA256": "fa5afe3f0ed263aeed12a43ed37559493a91ce24c9d1f161173ac999f5488ef1",
+      "baselineSHA256": "fa5afe3f0ed263aeed12a43ed37559493a91ce24c9d1f161173ac999f5488ef1",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/adaptive-card-input-lock.ts",
+      "oracleSHA256": "a9ba1952a42b8a01de11b79360581d9989dcdbf9feb8768076984b9f61bc5007",
+      "baselineSHA256": "a9ba1952a42b8a01de11b79360581d9989dcdbf9feb8768076984b9f61bc5007",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/adaptive-card-host-config.ts",
+      "oracleSHA256": "864eefbfb3a57f1911b25a12b232fe411add70815503a1ce2adac248467cc59c",
+      "baselineSHA256": "864eefbfb3a57f1911b25a12b232fe411add70815503a1ce2adac248467cc59c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/adaptive-card-renderer.ts",
+      "oracleSHA256": "c38b33becbc03c6de5b21ccb702c9174dbbcd4d46efb84e07b7b84b2ef6cea3c",
+      "baselineSHA256": "c38b33becbc03c6de5b21ccb702c9174dbbcd4d46efb84e07b7b84b2ef6cea3c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/scroll-anchor.ts",
+      "oracleSHA256": "c4b4510ab4aadb8d45cad142892943f7bbe180069010c690bb563589a59f380e",
+      "baselineSHA256": "c4b4510ab4aadb8d45cad142892943f7bbe180069010c690bb563589a59f380e",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/image-modal.ts",
+      "oracleSHA256": "d592bc89bbaf78062a560c73c57eb3fb6b4fd137025acd544f26cd362fbf14e6",
+      "baselineSHA256": "d592bc89bbaf78062a560c73c57eb3fb6b4fd137025acd544f26cd362fbf14e6",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/image-annotator.ts",
+      "oracleSHA256": "aafc28a6758aa9400b859ba71c598dbf9cadb1496a43ec4f74f01c597e46e6f4",
+      "baselineSHA256": "aafc28a6758aa9400b859ba71c598dbf9cadb1496a43ec4f74f01c597e46e6f4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/post-highlights.ts",
+      "oracleSHA256": "8480b4e3da668c30cd41c922ead8b4bb0db85a589008f3ef2049231e442d3341",
+      "baselineSHA256": "8480b4e3da668c30cd41c922ead8b4bb0db85a589008f3ef2049231e442d3341",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/post-speech.ts",
+      "oracleSHA256": "0e5b12bfe85ae50c6532e1ab6f3fdd10b90f46d707c6876d05659c697592d61b",
+      "baselineSHA256": "0e5b12bfe85ae50c6532e1ab6f3fdd10b90f46d707c6876d05659c697592d61b",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/post-runtime-safety.ts",
+      "oracleSHA256": "c292500d4e89238269cf1946232b00eb2774edd0ce3907a6810ee11dfc0016d4",
+      "baselineSHA256": "c292500d4e89238269cf1946232b00eb2774edd0ce3907a6810ee11dfc0016d4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/timeline-quick-actions.ts",
+      "oracleSHA256": "809acb9f348d17f669d65ad7df01bc140a321801fc4392398a5851f1a47676c0",
+      "baselineSHA256": "809acb9f348d17f669d65ad7df01bc140a321801fc4392398a5851f1a47676c0",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/timeline-menu.ts",
+      "oracleSHA256": "cb9857dad677eff568cbee5496ffde169729aaf5ae9e03368462701d20f8cad8",
+      "baselineSHA256": "87b15ddbf0351141e146d14866a82e178c350b166f3dc609efed42a6d0605084",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/pwa-display-scale.ts",
+      "oracleSHA256": "694dd9f545383c3efde66c63f89f1ca8645496a9340d2f2423393ed6d5344d34",
+      "baselineSHA256": "694dd9f545383c3efde66c63f89f1ca8645496a9340d2f2423393ed6d5344d34",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/recent-files.ts",
+      "oracleSHA256": "8470f85e7a5cfeca0120d3d6472653672fe05d831d2084fb034fab8ca2ec913f",
+      "baselineSHA256": "bca7d4f290737a24036325bf50149f6ebb9e61a5b6b3bd52756a12f9d0f37361",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/components/workspace-explorer.ts",
+      "oracleSHA256": "1b099b01626dab6068e210a5e14e0ffc47eb9053c12ebb178d9a2e5a77e1e4ef",
+      "baselineSHA256": "3b17d7e2fb8cbf5cd54714cc4cc0e76f9919eb636a130690129c3983db4f306d",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/workspace-chart-colors.ts",
+      "oracleSHA256": "b1c1155f0f00f9c19b605e2457404e61a35dac94462d5832bb9f682898f6afb0",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/components/input-focus-safety.ts",
+      "oracleSHA256": "bec879377a2cc904190dcf6433b922aec35ad4ff28058dd599064e2e85d225aa",
+      "baselineSHA256": "bec879377a2cc904190dcf6433b922aec35ad4ff28058dd599064e2e85d225aa",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/workspace-scale.ts",
+      "oracleSHA256": "ed66d8675357402b1ef7c3fbc9331634aa10cc4016fcb68771adb4c7438d00ef",
+      "baselineSHA256": "ed66d8675357402b1ef7c3fbc9331634aa10cc4016fcb68771adb4c7438d00ef",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/workspace-auto-open.ts",
+      "oracleSHA256": "2d780657e1bb2064f6d43fbe13234a06a66de390b706e8e7779d48ece78b455b",
+      "baselineSHA256": "2d780657e1bb2064f6d43fbe13234a06a66de390b706e8e7779d48ece78b455b",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/tab-strip.ts",
+      "oracleSHA256": "a2a2dfd3c1f14134e2483d8947e3514cd8416b19c124ae835d9355d39ad894fe",
+      "baselineSHA256": "a2a2dfd3c1f14134e2483d8947e3514cd8416b19c124ae835d9355d39ad894fe",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/tab-source-editor.ts",
+      "oracleSHA256": "5b471e3136564f7f54d13e78b5927c3d8efba3851a3fd825f1bfa1d1d9edebfd",
+      "baselineSHA256": "5b471e3136564f7f54d13e78b5927c3d8efba3851a3fd825f1bfa1d1d9edebfd",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/tab-compare-saved.ts",
+      "oracleSHA256": "0959983b78cd1cf2996b686591a2b52105b366fbd76310e23896973fa42703c5",
+      "baselineSHA256": "0959983b78cd1cf2996b686591a2b52105b366fbd76310e23896973fa42703c5",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/components/system-meters-hud.ts",
+      "oracleSHA256": "a2f16d19948e041be73a9802b95d6802a8c021b1962073086b8bfdad5ef09010",
+      "baselineSHA256": "69078116536e33bb75b2a3e5d1ca55f4356ffdcda5e840a589271579c6b9d7e2",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-shell-render-router.ts",
+      "oracleSHA256": "c7744204511a1e532e5cc56e26c76f83ba9abe8d34ea16fddb6f07c1f78b39d2",
+      "baselineSHA256": "c7744204511a1e532e5cc56e26c76f83ba9abe8d34ea16fddb6f07c1f78b39d2",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-pane-state.ts",
+      "oracleSHA256": "0559c07d11b80e420f9df0358037658aa8ef348b9f50542e01082781d0f11d55",
+      "baselineSHA256": "0559c07d11b80e420f9df0358037658aa8ef348b9f50542e01082781d0f11d55",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-shell-bootstrap.ts",
+      "oracleSHA256": "04eeb47a5e12869f9eda48bb9ea1a9f7fb29907e9c1b456fa5b898857fbba8ee",
+      "baselineSHA256": "b097975ce35b723c6d82682ec329029d214233fd4da0d5c9e85e209352ac5e77",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/optional-api.ts",
+      "oracleSHA256": "12e9905ddf9a3f7ee0075444d96502e150b4e3087916bd031446397b909a8577",
+      "baselineSHA256": "12e9905ddf9a3f7ee0075444d96502e150b4e3087916bd031446397b909a8577",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-shell-composition.ts",
+      "oracleSHA256": "077e3b28a525b9312d96c639ab5f93c8e6b3e0f3cd6b599d670d17df905c9a82",
+      "baselineSHA256": "19be16b41ef22109eb9d7ede9f983e35e357a3e036234ab0b525e7488b374560",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-render-composition.ts",
+      "oracleSHA256": "917bcc43f146b1c680143dd929da2341d5639e97164353091314e7890d478b50",
+      "baselineSHA256": "f03b1ac2102708a9f88168f4e2e30024b644316a6ef2b3ab236f884500c36529",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/instance-branding.ts",
+      "oracleSHA256": "95c9662265b7cf98fd7089f8588ca0cff20fec327eccaddf0d7aae11af5f7ea2",
+      "baselineSHA256": null,
+      "state": "new-in-oracle"
+    },
+    {
+      "path": "runtime/web/src/ui/app-shell-environment-effects.ts",
+      "oracleSHA256": "b4d659a1d5a2ccedb86f41d486a59353491741e47c8c2190cb755c9c086dc24a",
+      "baselineSHA256": "3471ed447594a64a90109f0a44f8833dc443c705e5055a757ccd40ee3a467e60",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/workspace-visibility.ts",
+      "oracleSHA256": "ec7a0227c10cc131514b6a189277a7273e1d2058848a052272adaeab4ad8ddd4",
+      "baselineSHA256": "ec7a0227c10cc131514b6a189277a7273e1d2058848a052272adaeab4ad8ddd4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-resume.ts",
+      "oracleSHA256": "b3c5fe14a2dc2b159cf4c296164f04b2f4a0cb5270f352fe73f1ef3829ac7838",
+      "baselineSHA256": "b3c5fe14a2dc2b159cf4c296164f04b2f4a0cb5270f352fe73f1ef3829ac7838",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/mobile-viewport.ts",
+      "oracleSHA256": "a6ef478e93f92d1b5e4ed7b5c5291aa5f477d0856bacdf83257ef62944f071ed",
+      "baselineSHA256": "a6ef478e93f92d1b5e4ed7b5c5291aa5f477d0856bacdf83257ef62944f071ed",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/browser-title.ts",
+      "oracleSHA256": "ba32e645e5d33d203ff829e6bc1365863fbf0a7f450ae77df4ca34baa9dac6cf",
+      "baselineSHA256": "ba32e645e5d33d203ff829e6bc1365863fbf0a7f450ae77df4ca34baa9dac6cf",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-compose-reference-orchestration.ts",
+      "oracleSHA256": "ec984fd1805cf13145b5c04876e3a5d0eeaa49f42a8f1384fad48c94b5ccae41",
+      "baselineSHA256": "904f6cdabef9378911688ae2e756ee8fd7e7f90a101724d80dc3ad575322ec8c",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/file-pill-open.ts",
+      "oracleSHA256": "ae3c3ba0ec61af542406121f339714eb478cb5ac1e68fdad6a2c7a5d3dcfcfdc",
+      "baselineSHA256": "ae3c3ba0ec61af542406121f339714eb478cb5ac1e68fdad6a2c7a5d3dcfcfdc",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-shell-ref-utils.ts",
+      "oracleSHA256": "90fa83f3b9588a6f4377842ad4f7446e9d0bda38e90ed11ec1d25bd1e0e9385e",
+      "baselineSHA256": "90fa83f3b9588a6f4377842ad4f7446e9d0bda38e90ed11ec1d25bd1e0e9385e",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-timeline-actions.ts",
+      "oracleSHA256": "131a5bab37182b8a6ac78bc28dbaf5bbbae0e3b29c8991b8690e60a0327a5e6c",
+      "baselineSHA256": "131a5bab37182b8a6ac78bc28dbaf5bbbae0e3b29c8991b8690e60a0327a5e6c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/editor-file-reference.ts",
+      "oracleSHA256": "1a77a85bb2babb45d777f2f72f9f8d73e13f116295029a61f46d597009de7f0c",
+      "baselineSHA256": "1a77a85bb2babb45d777f2f72f9f8d73e13f116295029a61f46d597009de7f0c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-agent-activity-orchestration.ts",
+      "oracleSHA256": "c68d2edcaefc31adfa63cfb23c9c785c545d9086edff35e48348692099160aea",
+      "baselineSHA256": "c68d2edcaefc31adfa63cfb23c9c785c545d9086edff35e48348692099160aea",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-agent-panel-toggle.ts",
+      "oracleSHA256": "e02e83c8c48e4b4c64c62cc3aa34c51629fceae86f12fb8e29c11ae5c289ca7a",
+      "baselineSHA256": "e02e83c8c48e4b4c64c62cc3aa34c51629fceae86f12fb8e29c11ae5c289ca7a",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-chat-pane-runtime-orchestration.ts",
+      "oracleSHA256": "ec8058a346bb48fa012b8c9acf68fbcdad2b33996978e388c604e2ada90359fe",
+      "baselineSHA256": "ec8058a346bb48fa012b8c9acf68fbcdad2b33996978e388c604e2ada90359fe",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-extension-status.ts",
+      "oracleSHA256": "e14a061c33eaec449d5da630d9246c5fb514d24771ab473652a7b574fbd22ed0",
+      "baselineSHA256": "e14a061c33eaec449d5da630d9246c5fb514d24771ab473652a7b574fbd22ed0",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-followup-queue.ts",
+      "oracleSHA256": "8abcecbfffd0cb77741481f10e87fe0472a41a0a5eedd647fbd0a64b83ad8e41",
+      "baselineSHA256": "8abcecbfffd0cb77741481f10e87fe0472a41a0a5eedd647fbd0a64b83ad8e41",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-realtime-timeline.ts",
+      "oracleSHA256": "b9b8c2b7d606a00355e19f605456bc1c9e9fc2d5f40da641dee592ea4fe72b37",
+      "baselineSHA256": "b9b8c2b7d606a00355e19f605456bc1c9e9fc2d5f40da641dee592ea4fe72b37",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-status-refresh-orchestration.ts",
+      "oracleSHA256": "d141634d72ca023cd585b9003d35b54e23e3dc08ceca10011afe2f05bcbf90d1",
+      "baselineSHA256": "ca81d47aaa95a8f2c310686cd0b332dcf914d71115542a683e51f7e5f4f9be53",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-chat-pane-state.ts",
+      "oracleSHA256": "b36ac6a96af15039ed3080cabfdb7d8e2e5a2a5aba80fb613a849de1824fa9f5",
+      "baselineSHA256": "b36ac6a96af15039ed3080cabfdb7d8e2e5a2a5aba80fb613a849de1824fa9f5",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/queue-state.ts",
+      "oracleSHA256": "3d11f3f09cd47451195621264458758c3bc34fa4c6a189126a0d838143ee56d1",
+      "baselineSHA256": "3d11f3f09cd47451195621264458758c3bc34fa4c6a189126a0d838143ee56d1",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-runtime-callbacks.ts",
+      "oracleSHA256": "03cdf1eb9e1dbd16a04ea7e783f9ca280f3bf315b55acefd87afedb10f75612b",
+      "baselineSHA256": "03cdf1eb9e1dbd16a04ea7e783f9ca280f3bf315b55acefd87afedb10f75612b",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-agent-status-refresh.ts",
+      "oracleSHA256": "607319b7fc8ff40ebcaa3ca2139a53d524741537099bf7af4df97d5e5e21762c",
+      "baselineSHA256": "607319b7fc8ff40ebcaa3ca2139a53d524741537099bf7af4df97d5e5e21762c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/thought-stream-reconciliation.ts",
+      "oracleSHA256": "7cc64aa7e428054c89d39c1c55cad495c2ed4293c5946e4bd392c802263b1c17",
+      "baselineSHA256": "7cc64aa7e428054c89d39c1c55cad495c2ed4293c5946e4bd392c802263b1c17",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-agent-previews.ts",
+      "oracleSHA256": "4cf4f08386f19c67b1cd282ea8dd89860c71c081b2022d2e1fb0e2034fdbb118",
+      "baselineSHA256": "4cf4f08386f19c67b1cd282ea8dd89860c71c081b2022d2e1fb0e2034fdbb118",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-agent-status-orchestration.ts",
+      "oracleSHA256": "532f0d7680cb49295f333f8e58a2f7e5624d647cb384baa1e45da23add4d3692",
+      "baselineSHA256": "532f0d7680cb49295f333f8e58a2f7e5624d647cb384baa1e45da23add4d3692",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-interaction-composition.ts",
+      "oracleSHA256": "171d323fe9ddb13a1d06404316ff85e830d04b4afbe83ac00e92a7e584a24943",
+      "baselineSHA256": "40f6d26d924a356593427ed45042c98020021efc76f87cef42fbcce0f913de61",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-timeline-composition.ts",
+      "oracleSHA256": "d41e94055dca01ca763a0cc2feea1b3e976b4b0877dfdc485ddd2f9f3760997f",
+      "baselineSHA256": "d41e94055dca01ca763a0cc2feea1b3e976b4b0877dfdc485ddd2f9f3760997f",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/use-timeline.ts",
+      "oracleSHA256": "cf91eb6849d5afb30cd57f47084abd3746471c176bb658dd7143cb2346732099",
+      "baselineSHA256": "cf91eb6849d5afb30cd57f47084abd3746471c176bb658dd7143cb2346732099",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-timeline-cache.ts",
+      "oracleSHA256": "07b539778395f3f22a81d192ecf92e05994aca12ea2aea2189a2b5e77dc711a0",
+      "baselineSHA256": "07b539778395f3f22a81d192ecf92e05994aca12ea2aea2189a2b5e77dc711a0",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-timeline-scroll-orchestration.ts",
+      "oracleSHA256": "f1f30d606e2e0f796ba80c67d14904597f8d73835e9c50689d37c897e58305b7",
+      "baselineSHA256": "f1f30d606e2e0f796ba80c67d14904597f8d73835e9c50689d37c897e58305b7",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-timeline-view-actions.ts",
+      "oracleSHA256": "9d8291749a686f83c5ba44d082427e43ca7bdbdc70e746e9cb6ab0a2a6547379",
+      "baselineSHA256": "9d8291749a686f83c5ba44d082427e43ca7bdbdc70e746e9cb6ab0a2a6547379",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-agent-status-lifecycle.ts",
+      "oracleSHA256": "0fbdb67a332597f82ee7b23395e228ca3ee22d0580e2aa72d0313a4efcf17575",
+      "baselineSHA256": "0fbdb67a332597f82ee7b23395e228ca3ee22d0580e2aa72d0313a4efcf17575",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-refresh-coordination.ts",
+      "oracleSHA256": "c6affee2a78f918ea2491746767c0a2bd0d4e54b8155467e28f354c3fd6ce9d4",
+      "baselineSHA256": "c6affee2a78f918ea2491746767c0a2bd0d4e54b8155467e28f354c3fd6ce9d4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-connection-lifecycle.ts",
+      "oracleSHA256": "d559a0daa9f43bb65c182e089629312c1dc38e722f375055d4e9b6c83477bcfe",
+      "baselineSHA256": "d559a0daa9f43bb65c182e089629312c1dc38e722f375055d4e9b6c83477bcfe",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-chat-refresh-lifecycle.ts",
+      "oracleSHA256": "ce978404fecf341e259b8c11788091869b099e22c7716094d6293464648b97aa",
+      "baselineSHA256": "06eabce38d06ae2e9b527b4891024e37bff0b21cb50a5833018fbd31450f48bb",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-chat-agents.ts",
+      "oracleSHA256": "3ab5ceed790d6ad3fc1c4ac17f7207fbf4a99c344dd2e9721bc8a8a2c7fe39fd",
+      "baselineSHA256": "3ab5ceed790d6ad3fc1c4ac17f7207fbf4a99c344dd2e9721bc8a8a2c7fe39fd",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-model-state.ts",
+      "oracleSHA256": "b1fbf006e045d401935c0ef48344739313d0250226652cd5f98a33ee63b5e076",
+      "baselineSHA256": "4c98398bb00cf9a50728dcd81a40ac5abd63cdac4e2f3aab7d8357bc273959fe",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-profile-events.ts",
+      "oracleSHA256": "dba0a8ec2e0d1e988ab2e105a330a46daee38916037cb838d5aae67992abf3a4",
+      "baselineSHA256": "dba0a8ec2e0d1e988ab2e105a330a46daee38916037cb838d5aae67992abf3a4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-auth-bootstrap.ts",
+      "oracleSHA256": "0d5b38e18a8d9cb5470fb145a2b55ae0c62919ea8f739e2b5045c7ea57b4c263",
+      "baselineSHA256": "397e47ba61645351df44680a74643010653c35b2aae18ce895438caf6516c07b",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-boot-load-orchestration.ts",
+      "oracleSHA256": "f4872fa2b10cb5536b090604e34965cd2698161737ba5c83489b43eafc409d3b",
+      "baselineSHA256": "f4872fa2b10cb5536b090604e34965cd2698161737ba5c83489b43eafc409d3b",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-view-refresh-lifecycle.ts",
+      "oracleSHA256": "e7cab4e1258e70ea06d9c2b777407063621322ab4f194cb97b4160bb003af97c",
+      "baselineSHA256": "e7cab4e1258e70ea06d9c2b777407063621322ab4f194cb97b4160bb003af97c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-floating-widget.ts",
+      "oracleSHA256": "d23522b0adea667449f286929b233c177c6ec569e0017c4f991a6c1b68924e6d",
+      "baselineSHA256": "d23522b0adea667449f286929b233c177c6ec569e0017c4f991a6c1b68924e6d",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-realtime-lifecycle-orchestration.ts",
+      "oracleSHA256": "be57f34d15ec31b4b5c93b2ae1bbb8769d337e869f4a876ad95c98597d2089dd",
+      "baselineSHA256": "7a3396ee732d811fe4d80e6bb0b206f15d2b623c82b59ce90ae7294c76723198",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/use-sse-connection.ts",
+      "oracleSHA256": "90f7bde6c0409651cf1110a1486761bf1658a7609baa3634c6e4dcf07bebc332",
+      "baselineSHA256": "90f7bde6c0409651cf1110a1486761bf1658a7609baa3634c6e4dcf07bebc332",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-sse-events.ts",
+      "oracleSHA256": "706a3e174057578f4f55aff88d468ac859f7116b52c7ab8408bf381b7cd9d6b3",
+      "baselineSHA256": "f39b68628a8abaef14c1525cd48fef98bb2e8d4735f67a2e66aa61d5bc30b0ff",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-agent-turn-events.ts",
+      "oracleSHA256": "f94f41c4ca92279561a261dc59c73c090dd01139d24473c61032178807825897",
+      "baselineSHA256": "f94f41c4ca92279561a261dc59c73c090dd01139d24473c61032178807825897",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-generated-widget-events.ts",
+      "oracleSHA256": "61be082c267c2c4f5aa0f0ef41ce0a2673a7fb9907cdcd2a8a8d1af2c3b496ae",
+      "baselineSHA256": "61be082c267c2c4f5aa0f0ef41ce0a2673a7fb9907cdcd2a8a8d1af2c3b496ae",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-followup-actions.ts",
+      "oracleSHA256": "67c52b36aa2ff5ece45f46c425e7d87fe9f5873d5d8ce01bdd60853bda277c87",
+      "baselineSHA256": "67c52b36aa2ff5ece45f46c425e7d87fe9f5873d5d8ce01bdd60853bda277c87",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-extension-ui-sse.ts",
+      "oracleSHA256": "ca025faf1c59e5995cdff6e0c827d6b7f0cfe2e7dbf20b41ae4bbb092ae82ec8",
+      "baselineSHA256": "ca025faf1c59e5995cdff6e0c827d6b7f0cfe2e7dbf20b41ae4bbb092ae82ec8",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/extension-ui-events.ts",
+      "oracleSHA256": "16037ff6dde7eca43d85e83d21802c25dc254f8675133cb77ee27a0210b73ea8",
+      "baselineSHA256": "16037ff6dde7eca43d85e83d21802c25dc254f8675133cb77ee27a0210b73ea8",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-sse-event-routing.ts",
+      "oracleSHA256": "80d8d9522be1fc1ad205f454cb9f50daf773498b3a35a82391bdc3b68238de6a",
+      "baselineSHA256": "80d8d9522be1fc1ad205f454cb9f50daf773498b3a35a82391bdc3b68238de6a",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-lifecycle-composition.ts",
+      "oracleSHA256": "7d340a4f2ffc9aba40e4ad89eeb256bdbd2e582111fd72a4acaaba7f4ff3c45d",
+      "baselineSHA256": "7d340a4f2ffc9aba40e4ad89eeb256bdbd2e582111fd72a4acaaba7f4ff3c45d",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-branch-pane-lifecycle-actions.ts",
+      "oracleSHA256": "98b29a334ed76fe5d8478151000fb6327084089bc8cf0a9f4f9be12a11240bf0",
+      "baselineSHA256": "98b29a334ed76fe5d8478151000fb6327084089bc8cf0a9f4f9be12a11240bf0",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/editor-popout-transfer.ts",
+      "oracleSHA256": "93b64d2dd3e8363dfaefc6d674b8e835f875850ad57338f6c6289c6536f12744",
+      "baselineSHA256": "93b64d2dd3e8363dfaefc6d674b8e835f875850ad57338f6c6289c6536f12744",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/pane-host-transfer.ts",
+      "oracleSHA256": "05e01ea181af9f4b870ba21a639b4d55ccab18fd95fba998f48b952f151c4f95",
+      "baselineSHA256": "05e01ea181af9f4b870ba21a639b4d55ccab18fd95fba998f48b952f151c4f95",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/pane-live-transfer.ts",
+      "oracleSHA256": "0173877985aa949ef961478b2d21b6fed86ad2843de584e74ee8962daba0dddf",
+      "baselineSHA256": "0173877985aa949ef961478b2d21b6fed86ad2843de584e74ee8962daba0dddf",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-browser-events.ts",
+      "oracleSHA256": "a1e4f9497f00de9e5d45211dc090628cb12bc4124b9b42adf430f52d4c4eec94",
+      "baselineSHA256": "a1e4f9497f00de9e5d45211dc090628cb12bc4124b9b42adf430f52d4c4eec94",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-branch-actions.ts",
+      "oracleSHA256": "f7d8b0f0f92351c2542eece01a3286be5c46c680424ac2c8c0fe8fc6520572df",
+      "baselineSHA256": "f7d8b0f0f92351c2542eece01a3286be5c46c680424ac2c8c0fe8fc6520572df",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-branch-pane-orchestration.ts",
+      "oracleSHA256": "793cb88df4f7b88a70644bea06d178df525403fe0a5d3f34fd5a5d965d7fab8e",
+      "baselineSHA256": "793cb88df4f7b88a70644bea06d178df525403fe0a5d3f34fd5a5d965d7fab8e",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-window-actions.ts",
+      "oracleSHA256": "e3422dc8e70048ef310ce746f765159e67bff312494ccb2701f985d4c903f2b8",
+      "baselineSHA256": "e3422dc8e70048ef310ce746f765159e67bff312494ccb2701f985d4c903f2b8",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-followup-actions-orchestration.ts",
+      "oracleSHA256": "15ffaaf93fc25ae7fa010038e120a3b4b2351799bde18ea3281cb4d931dd5140",
+      "baselineSHA256": "15ffaaf93fc25ae7fa010038e120a3b4b2351799bde18ea3281cb4d931dd5140",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-floating-widget-dashboard.ts",
+      "oracleSHA256": "6a69708de40fe7387b3136be5239ec3c3495a8ae6bc43c2be6247e29403ccfb1",
+      "baselineSHA256": "6a69708de40fe7387b3136be5239ec3c3495a8ae6bc43c2be6247e29403ccfb1",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-floating-widget-events.ts",
+      "oracleSHA256": "9b17576819805b8246567c83ae310cb2fad5ffbfd28b669e8ad2b0e96ea48079",
+      "baselineSHA256": "9b17576819805b8246567c83ae310cb2fad5ffbfd28b669e8ad2b0e96ea48079",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-floating-widget-followup.ts",
+      "oracleSHA256": "425988ea2899c8185f9c756e4e4830b3ba69883e8de05cd7b0ce52f0037f8b9c",
+      "baselineSHA256": "425988ea2899c8185f9c756e4e4830b3ba69883e8de05cd7b0ce52f0037f8b9c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-sidepanel-orchestration.ts",
+      "oracleSHA256": "009120511ec09a2cdb4a4df7a0c7a3db1fba3719bca60ee5b434b4c7be76fb81",
+      "baselineSHA256": "009120511ec09a2cdb4a4df7a0c7a3db1fba3719bca60ee5b434b4c7be76fb81",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-btw-orchestration.ts",
+      "oracleSHA256": "6828f4ab1894e5e4511f20090445caa7d52c68da668c67b98446e9b9190b8751",
+      "baselineSHA256": "6828f4ab1894e5e4511f20090445caa7d52c68da668c67b98446e9b9190b8751",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-shell-shortcuts.ts",
+      "oracleSHA256": "ede7f4ae083d2f14c2cd2c6ee5d322a3ebf15b480f3d12c6875f11361d57458c",
+      "baselineSHA256": "ede7f4ae083d2f14c2cd2c6ee5d322a3ebf15b480f3d12c6875f11361d57458c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/chat-swipe-navigation.ts",
+      "oracleSHA256": "838c027deb49c4ff34e0cbdfbdeba82a82f3a586a852ae731c160d9e11011019",
+      "baselineSHA256": "838c027deb49c4ff34e0cbdfbdeba82a82f3a586a852ae731c160d9e11011019",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-action-composition.ts",
+      "oracleSHA256": "d6d74fe4735ec3b1353ccaef949253a6de8e31498978f58292183e81535bc93c",
+      "baselineSHA256": "d6d74fe4735ec3b1353ccaef949253a6de8e31498978f58292183e81535bc93c",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-orchestration-composition.ts",
+      "oracleSHA256": "4e75ac4e11308374a83863ae3f6348730ee7da763104e1a719825f3c9217ac3b",
+      "baselineSHA256": "f3d903f84228daca7e55f5f296ccc15541726594a92f434e989d4302bbf5fbc0",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-surface-state.ts",
+      "oracleSHA256": "3edbfe0fa033c505d48fda292cd79df115924bedeba3efae4955ab98297535f4",
+      "baselineSHA256": "3edbfe0fa033c505d48fda292cd79df115924bedeba3efae4955ab98297535f4",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/use-notifications.ts",
+      "oracleSHA256": "7f72c19cf4841ff5dffac2b6ca94be0d7f02c925eb3206830030da439de12289",
+      "baselineSHA256": "7f72c19cf4841ff5dffac2b6ca94be0d7f02c925eb3206830030da439de12289",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/notification-focus.ts",
+      "oracleSHA256": "b266ff5ee6fabd15db96b93e4a4c0514d0c5e87731da3fce4427906570e3cde2",
+      "baselineSHA256": "b266ff5ee6fabd15db96b93e4a4c0514d0c5e87731da3fce4427906570e3cde2",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/notification-delivery-coordinator.ts",
+      "oracleSHA256": "2177ae6f670b23c21011c9059e672a14e1b26de1d2ba2948dad299780312dfa2",
+      "baselineSHA256": "2177ae6f670b23c21011c9059e672a14e1b26de1d2ba2948dad299780312dfa2",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-main-pane-composition.ts",
+      "oracleSHA256": "53cefff7ca3b5373108515d5ac2c21a5884ef2ce9f22478530faacbb221db0ab",
+      "baselineSHA256": "b87a77b71219a3c8e5c17678b2fc13318ac17a03f0bc020f975ca4dc2344b292",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/use-editor-state.ts",
+      "oracleSHA256": "94869a27258ca585113517a1aad9bceb50efa72a931895f62e687264510de3fe",
+      "baselineSHA256": "ae945eee21a4b2f97507c99cd28aabc4d0ecb7b54130404fa223d16b7884f084",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/ui/app-pane-runtime-orchestration.ts",
+      "oracleSHA256": "0f5c9d22fe652d1fa36ddd9cb3dd3a3f3c657c47698a0e4067ffd2b8fcb7615c",
+      "baselineSHA256": "0500bc4d62b1a00d4e6ab75ab4713b90042666d138511a1a395eda2e3bef5e23",
+      "state": "changed"
+    },
+    {
+      "path": "runtime/web/src/panes/pane-detach-transfer.ts",
+      "oracleSHA256": "abd0a957b8f07e9f23e4fb5cbe7625c3695c11cf517ee12c5b0516291f4a0ba3",
+      "baselineSHA256": "abd0a957b8f07e9f23e4fb5cbe7625c3695c11cf517ee12c5b0516291f4a0ba3",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/pane-detach-state.ts",
+      "oracleSHA256": "2836557a2d4d45b8d42e62f756098366d91957e1fdab0ecda5d177a676a1c1fa",
+      "baselineSHA256": "2836557a2d4d45b8d42e62f756098366d91957e1fdab0ecda5d177a676a1c1fa",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/panes/retained-pane-cache.ts",
+      "oracleSHA256": "614b51a684b00ec343c03b502d9732606bf3ea3ee69a069a83fa8e1761f2c101",
+      "baselineSHA256": "614b51a684b00ec343c03b502d9732606bf3ea3ee69a069a83fa8e1761f2c101",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/window-bridge-safety.ts",
+      "oracleSHA256": "db1a5b2dc80e5c29926c0596018147ff28f386e903402d27e4286fe8e0141915",
+      "baselineSHA256": "db1a5b2dc80e5c29926c0596018147ff28f386e903402d27e4286fe8e0141915",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/app-extension-ui-browser-actions.ts",
+      "oracleSHA256": "c4c52f3be3313684dbfb9cfcf5d77c3ecc2b6bec70350488f0b482d7e4653ff1",
+      "baselineSHA256": "c4c52f3be3313684dbfb9cfcf5d77c3ecc2b6bec70350488f0b482d7e4653ff1",
+      "state": "identical"
+    },
+    {
+      "path": "runtime/web/src/ui/oobe-state.ts",
+      "oracleSHA256": "1a2dddc55a9d0b4e4b7c1c2a1eba4b9073a2b00ee389ebfff19bb8f0ab46bec0",
+      "baselineSHA256": "9d8179357235e05f288be071e09c5b8e1804516053df35c4fae2583661d7c66e",
+      "state": "changed"
+    }
+  ]
+}

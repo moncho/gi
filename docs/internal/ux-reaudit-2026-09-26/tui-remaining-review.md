@@ -1,0 +1,19 @@
+# Nine remaining TUI clauses: native tmux evidence
+
+The nine clauses in six `features/tui/*.feature` files have bounded native Gi findings. A fresh `make test-tui-gherkin` run passed all seven feature files in the disposable tmux fixture on 27 September 2026 (`test-results/tui-gherkin/report.md`); the seventh file is the separately reviewed keyboard scenario. `scripts/test-tui-gherkin.sh` launches the built Gi binary with isolated workspace, home and SQLite state. It types real tmux keys, checks visible screen substrings and selected database message counts/content, then saves pane captures and database dumps. The earlier aborted full run remains an aborted run, not an additional pass. No physical terminal, screen-reader, current Piclaw or deployed Gi acceptance is included.
+
+`internal/tui/chat.go` mounts the `/` command dispatcher, `!!` local shell path and native editor/session handling. The feature runner's `Given` steps establish isolated fixtures; `Then the screen should contain` waits for text presence, not its exact position, focus, colour, line wrapping or accessibility announcement. A shell shortcut checks visible output, not absence of every possible side effect. Features do not gain parity credit from command names alone.
+
+| Feature/scenario key | Direct assertions in the fresh tmux run | Mounted path and limit |
+|---|---|---|
+| `assistant_basics.feature:4` | No-argument `gi` under isolated HOME/XDG starts and shows `(no messages yet)` and `m0/t0`. | `scripts/test-tui-gherkin.sh` invokes `bin/gi` without flags; proves fixture startup, not installed-user defaults. |
+| `assistant_basics.feature:10` | `/help`, `/compact info`, model and thinking selection, idle `/cancel`, `/tools rtk`, then one exact database assistant response and visible user prompt. | `internal/tui/chat.go` dispatches commands and input; the test model/provider is a local fixture, not a live provider or full tool execution check. |
+| `assistant_basics.feature:34` | Unknown model prints `unknown model` with zero stored messages, followed by valid model selection. | Native model command rejects this unconfigured fixture name; no provider catalogue acceptance. |
+| `pi_like_workflows.feature:4` | Help and command palette strings, model picker/Escape, then `!!printf local-ok` shows local shell command/output. | `chat.go` routes `!!` to local shell. Exact screen text is checked; no shell sandbox or exhaustive side-effect assertion. |
+| `pi_like_workflows.feature:23` | Resize to 60×18 keeps tmux alive; `/settings` displays session/discovery/compaction strings. | One narrow size, string presence only; no cursor, scrollback, clipping or multi-size parity from this feature. |
+| `plugins.feature:4` | `/plugins` shows `plugins: extensions:` and `plugins: hooks:`. | Command visibility in a fresh fixture; no loaded third-party extension/hook lifecycle or provider execution. |
+| `session_workflows.feature:4` | `/agents`, `/where`, fork/tree/switch and `/send` show expected agent/session labels and delivery text. | Native dispatcher and session store; this feature does not assert peer receipt contents or delivery after restart. |
+| `settings_and_approvals.feature:4` | `/settings`, Home/End and `/approvals` display model/editor/scrollback and the explicit `no approval gates are configured in gi yet` message. | Disclosure of missing approval gates is a bounded finding, not an approval workflow. Home/End text presence does not prove viewport/reader position. |
+| `tool_controls.feature:4` | `/tools active`, activate `read shell`, re-list and reset show exact tool names and registry reset text. | Active-tool visibility and selection in the fixture; no tool invocation, authorisation or persistence acceptance. |
+
+These scenarios describe native Gi workflows, not frozen Piclaw Classic/shared parity. The separate local-only TUI/autosave WIP remains outside this checkout and is not published or deployed by these findings.

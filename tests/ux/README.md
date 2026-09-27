@@ -28,23 +28,26 @@ The [contrast adaptation](../../docs/internal/compose-contrast.md) expands `make
 
 > **Audit warning (2026-09-24):** the historical passing totals below do not prove current Piclaw visual or interaction parity. See [the full UX test audit](../../docs/internal/ux-test-audit-2026-09-24.md) and its [per-file inventory](../../docs/internal/ux-test-audit-2026-09-24.csv). At the audit date CI ran no Playwright suites. CI now requires passkey and startup/picker/slash/workspace journey gates; `make check` still excludes this parity runner, and some specialised cases need manual environment flags. The current source maps 101 Classic / 30 shared IDs, with Classic 008's skill-prefill claim disputed. Composer/new-chat keyboard paths, picker/reference geometry and workspace transitions require revalidation before broader parity claims.
 
-Gi vendors the same frozen Classic Gherkin baseline used for the Tau/Vibes audit:
+Gi keeps historical Classic and Tau/Vibes Gherkin separate from editable Piclaw 3.2.4 contracts:
 
-- Piclaw commit `70d33bc93ab540845bbcf5f80503ca8125c71594`.
-- `features/classic/`: 24 byte-identical feature files, 236 unique scenario IDs, 256 expanded cases.
-- `features/shared-canonical-ux.feature`: byte-identical shared Tau/Vibes interaction contract, 42 expanded cases; SHA-256 `a08a623880c6f327bc051edc51bb2bbff2959aed86421b5227e61d5a92fc2441`.
-- Upstream file hashes and provenance are preserved in `upstream/`.
+- `upstream/classic-snapshot/`: 24 byte-identical Classic files from Piclaw commit `70d33bc93ab540845bbcf5f80503ca8125c71594`; 236 unique IDs and 256 expanded cases.
+- `upstream/shared-canonical-ux.gherkin`: original Tau/Vibes contract, 42 cases; SHA-256 `a08a623880c6f327bc051edc51bb2bbff2959aed86421b5227e61d5a92fc2441`.
+- `features/classic/`: active Piclaw 3.2.4 contracts, 236 unique IDs and 257 expanded cases. `features/shared-canonical-ux.feature` has 42 active cases.
+- `support/catalogue.mjs` verifies historical hashes. Active changes and evidence limits are recorded in `../../docs/internal/ux-reaudit-2026-09-26/gherkin-alignment.md`.
 
-The sources came from `/workspace/evidence/piclaw-classic-70d33bc93` and `/workspace/tau/tests/ux/features/canonical-ux.feature`. Tests do not depend on those paths after copying. Source-relative links inside frozen features refer to the original Piclaw checkout.
+The sources came from `/workspace/evidence/piclaw-classic-70d33bc93` and `/workspace/tau/tests/ux/features/canonical-ux.feature`. Tests do not depend on those paths after copying. Source-relative links inside historical snapshots refer to the original Piclaw checkout.
 
-The Classic and shared contracts differ in places, including command-prefill and idle-Steer safety semantics. Both are preserved. Passing a Classic case does not imply passing the stronger shared contract.
+Gi-only behaviours are tagged in `../features/ux/gi-deviations.feature`. A Gi-specific pass does not grant Classic or shared Piclaw parity.
 
-## Current status (2026-09-26)
+## Current status (2026-09-27)
 
 The [feature and parity matrix](../../docs/feature-parity.md) separates shipped
-behaviour, known gaps and planned integrations. Source mappings are 101/236
-Classic IDs and 33/42 shared cases; they are not a full-suite pass. Classic008 is
-disputed. All 26 separately pinned passkey Settings scenarios/outlines are unmapped;
+behaviour, known gaps and planned integrations. Active Piclaw 3.2.4 mappings are
+98/236 Classic IDs and 30/42 shared cases. The six-project fixture-backed
+matrix reports those mapped IDs as passed; it does not establish production,
+physical-device or full requirement acceptance. The conflicting Classic008
+skill-prefill behaviour is captured separately as `@gi-ux-002` and has no Piclaw
+parity credit. All 26 separately pinned passkey Settings scenarios/outlines are unmapped;
 `make test-ux-passkeys` verifies native APIs and Settings/login journeys using real
 Chromium WebAuthn and virtual authenticators. Full per-case mapping, Visual-skin
 and physical-device evidence are outstanding.
@@ -321,7 +324,7 @@ Latest: **216/216 browser executions** (192 + 12 + 12), **70/70 functional**, **
 
 ## Shared run-bound queue Steer: 2026-09-22
 
-`queue-steer.spec.mjs` maps `@shared-30`; the catalogue test pins its title. Run `make test-ux-steer` for the isolated Go server and local streaming provider. Native API/SSE, SQLite and inference checkpoints are unchanged. The fixture uses temporary credentials/workspace, binds to loopback and closes on exit. No paid provider, forced clicks, retries or fabricated timeline events are used.
+`queue-steer.spec.mjs` tests `@gi-ux-005`, Gi's run-bound safety deviation; `@shared-30` was unmapped after the Piclaw 3.2.4 alignment. The catalogue test pins the active scenario title. Run `make test-ux-steer` for the isolated Go server and local streaming provider. Native API/SSE, SQLite and inference checkpoints are unchanged. The fixture uses temporary credentials/workspace, binds to loopback and closes on exit. No paid provider, forced clicks, retries or fabricated timeline events are used.
 
 The six-project suite verifies idle/unknown disabled controls (real SSE disconnection), run/session ownership, failed admission, duplicate activation, actual second-request delivery, held recovery/reload, retry into a new run and stale replies after switching sessions. Native Go tests cover atomic rollback, media projection, persistence failure and at-most-once acknowledgement.
 
@@ -337,7 +340,7 @@ The combined report has **15/236 Classic** and **2/42 shared** passes (221 and 4
 
 ## Shared durable queue return: 2026-09-22
 
-`queue-return.spec.mjs` maps `@shared-28` (the immutable shared corpus's ordinal ID), with a name assertion preventing mapping drift. Return merges the latest origin draft/media/refs and persists recovery before DELETE. Tests hold real media responses, inspect committed state at DELETE, inject quota/transport failures, reload/retry and verify no duplicate recovery. Separate regressions cover already-consumed items and session switches.
+`queue-return.spec.mjs` tests `@gi-ux-004`, Gi's no-loss deviation; `@shared-28` was unmapped after the Piclaw 3.2.4 alignment. The catalogue test pins the active scenario title. Return merges the latest origin draft/media/refs and persists recovery before DELETE. Tests hold real media responses, inspect committed state at DELETE, inject quota/transport failures, reload/retry and verify no duplicate recovery. Separate regressions cover already-consumed items and session switches.
 
 The report now includes separate shared rows/counts. Full matrix: **192/192** executions; Classic **15/236** passing (221 unmapped), shared **1/42** passing (41 unmapped). Classic `017` and compose `004` prescribe replacement/media clearing and remain unmapped; their frozen assertions were not weakened. See [ADR-0017](../../docs/adr/0017-durable-queue-return.md).
 

@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
+import {attachGiDeviation} from './support/gi-deviations.mjs';
 import {mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {resolve} from 'node:path';
-import {loadCorpus} from './support/catalogue.mjs';
 import {createServer, request as httpRequest} from 'node:http';
 async function sseProxy(page){
  let blocked=false;const connections=new Set();
@@ -34,8 +34,8 @@ async function fixture(page,request,info){
  return{main,child,active,queued,row,button,input,turns,release,token};
 }
 
-test('@shared-30 Steer only a matching active run',async({page,request},info)=>{
- const scenario=loadCorpus('shared').find(x=>x.id==='@shared-30');await info.attach('gherkin',{body:scenario.steps.join('\n'),contentType:'text/plain'});
+test('Gi safety deviation: Steer only a matching active run',async({page,request},info)=>{
+ await attachGiDeviation(info,'@gi-ux-005');
  const proxy=await sseProxy(page);
  const f=await fixture(page,request,info);const{main,child,active,queued,row,button,input,turns,release,token}=f;
  const url=`/api/sessions/${main.id}/queue/${queued.turn_id}/steer`;let calls=0,unblock,held=false;const gate=new Promise(r=>unblock=r);
@@ -77,7 +77,7 @@ test('@shared-30 Steer only a matching active run',async({page,request},info)=>{
   await page.reload();await expect(idleRow.getByRole('button',{name:steerName})).toBeDisabled();expect(idleCalls).toBe(0);
   await expect(page.getByRole('alert').filter({hasText:'will not auto-send'})).toBeVisible();
   await page.getByRole('button',{name:'Open model picker',exact:true}).click();
-  await page.getByRole('menu',{name:'Model picker',exact:true}).getByRole('menuitem').filter({hasText:'ux-local/gate'}).click();
+  await page.getByRole('listbox',{name:'Models',exact:true}).getByRole('option').filter({hasText:'ux-local/gate'}).click();
   const newToken=`resume-${token}`;await input.fill(`UX steer gate:${newToken}`);await input.press('Enter');
   const retry=idleRow.getByRole('button',{name:steerName});await expect(retry).toBeEnabled();
   const freshRun=(await turns()).find(t=>t.status==='running');expect(freshRun.id).not.toBe(shell.turn_id);
@@ -109,8 +109,8 @@ test('Gi display-idle admission queues a distinct prompt until the completed cla
  const token=`completed-${info.project.name}-${Date.now()}`,gate=resolve('test-results/ux-parity/queue-gates',token);
  mkdirSync(resolve(gate,'..'),{recursive:true});
  const session=await(await request.post('/api/sessions',{data:{agent_id:token,title:token}})).json();
- await request.patch(`/api/sessions/${session.id}/model`,{data:{model:'test-model'}});
- const first=await(await request.post(`/api/sessions/${session.id}/prompt`,{data:{prompt:`UX completed claim:${token}`,model:'test-model'}})).json();
+ await request.patch(`/api/sessions/${session.id}/model`,{data:{model:'ux-local/gate'}});
+ const first=await(await request.post(`/api/sessions/${session.id}/prompt`,{data:{prompt:`UX completed claim:${token}`,model:'ux-local/gate'}})).json();
  try {
   await expect.poll(()=>existsSync(gate+'.held')).toBe(true);
   const activity=await(await request.get(`/api/sessions/${session.id}/activity`)).json();expect(activity.status).toBe('idle');expect(activity.turn_id).toBe(first.turn_id);

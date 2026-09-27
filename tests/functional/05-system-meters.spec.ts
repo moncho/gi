@@ -53,15 +53,18 @@ test.describe('System meters', () => {
     expect(typeof metrics.ram_percent).toBe('number');
   });
 
-  test('system meters HUD renders in the UI', async ({ page }) => {
+  test('enabled system meters HUD is visible and exposes live CPU and RAM', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('piclaw_system_meters_enabled', 'true');
+      localStorage.setItem('piclaw_system_meters_collapsed', 'false');
+    });
     await page.goto(BASE_URL);
     await waitForAppShell(page);
-    // Wait for meters to load (they poll on an interval)
-    await page.waitForTimeout(4000);
-    // The HUD should be visible as an overlay
     const hud = page.locator('.system-meters-hud');
-    // It may or may not be visible depending on localStorage, but the element should exist
-    const count = await hud.count();
-    expect(count).toBeGreaterThanOrEqual(0); // exists in DOM
+    await expect(hud).toBeVisible();
+    await expect(hud.getByRole('button', { name: /System meters/i })).toHaveAttribute('aria-expanded', 'true');
+    await expect(hud.locator('.system-meters-row.cpu')).toContainText('CPU');
+    await expect(hud.locator('.system-meters-row.ram')).toContainText('RAM');
+    await expect(hud.locator('.system-meters-row.cpu .system-meters-value')).toContainText('%');
   });
 });

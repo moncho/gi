@@ -1,8 +1,9 @@
-@derived-index @proposal
+@derived-index @proposal @piclaw-3.2.4
 Feature: Scoped workspace indexing lifecycle
-  This is a Gi implementation target derived from pinned source implementations.
-  It is not part of the frozen Classic/shared corpus and has no runtime pass credit.
-  Provenance and intentional differences are in docs/internal/search/indexing-lineage-20260922.md.
+  Piclaw 3.2.4 is the lifecycle oracle; Gi-specific safeguards are tagged
+  separately and do not earn Piclaw parity by themselves. This proposed feature
+  is outside Classic/shared and has no runtime pass credit. Provenance and
+  deliberate differences are in docs/internal/search/indexing-lineage-20260922.md.
 
   @index-derived-001 @piclaw
   Scenario: Resolve configured workspace roots and supported file types
@@ -30,12 +31,14 @@ Feature: Scoped workspace indexing lifecycle
     And the unrelated scope retains its documents and status
 
   @index-derived-004 @piclaw
-  Scenario: Search does not await a background refresh by default
+  Scenario: Search requests background indexing without awaiting it
     Given the selected scope is missing or stale
-    When a search without explicit refresh is requested
-    Then it returns the currently committed matching hits within the query bounds
-    And requests one bounded background refresh for that workspace
+    When a nonempty search without explicit refresh is requested
+    Then it returns currently committed matching hits within the query bounds
+    And requests background refresh for that scope without awaiting its completion
     And it does not label the stale snapshot as freshly indexed
+    # The installed function/request hook is probed; child execution, deduplication
+    # and bounded worker completion need a separate runtime journey.
 
   @index-derived-005 @piclaw
   Scenario: Explicit refresh waits for indexing to finish
@@ -198,7 +201,10 @@ Feature: Scoped workspace indexing lifecycle
   @index-derived-021 @gi-strengthening
   Scenario: Explicit web refresh shares application-owned work
     Given application startup owns the configured scope scheduler
-    Then startup and GET status or search do not scan or request refresh
+    Then startup and GET status do not scan or request refresh
+    And Gi GET search does not request refresh under its explicit-only policy
+    # Piclaw 3.2.4 search requests background work for cold/stale scopes;
+    # derived scenario 004 tracks that Gi parity gap.
     When concurrent authenticated Reindex requests wait for the same scope
     Then they share a bounded refresh batch
     And disconnecting one caller cancels only its wait
@@ -215,7 +221,9 @@ Feature: Scoped workspace indexing lifecycle
     And a second bounded notification follows an attempted write even after caller cancellation
     And later publication cannot acknowledge a revision captured before that second notification
     And unrelated scopes and VFS writes do not advance filesystem index revisions
-    And GET queries retain the committed snapshot until explicit refresh
+    And Gi GET queries retain the committed snapshot until explicit refresh
+    # Piclaw may request background work on search; this Gi-only delivery
+    # choice is not Piclaw's indexing lifecycle.
     When post-notification fails
     Then the error reports that bytes may have changed and explicit reindex is required
     And this protocol does not claim crash-atomic filesystem and database mutation

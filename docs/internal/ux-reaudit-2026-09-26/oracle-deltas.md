@@ -43,9 +43,10 @@ passkeys, keyboard assistive technology or Gi's runtime.
   assets to installed backend functions through disposable HTTP fixtures and
   an in-memory database. Chromium and WebKit desktop both sent `cascade=false`
   without prompting, removed the parent from the UI and left the stored reply
-  orphaned. Separate synthetic-409 UI fixtures do exercise the dormant retry
-  branch; cascade deletes parent and direct replies in an isolated backend
-  probe. See `message-deletion-review.md`. The production Piclaw HTTP router,
+  orphaned. The joined fixture also confirms a visible-reply cascade removing
+  all four stored rows, or cancels without deletion. Separate synthetic-409 UI
+  fixtures exercise the dormant hidden-reply retry branch. See
+  `message-deletion-review.md`. The production Piclaw HTTP router,
   authentication and live store were not exercised. Gi `018`–`022` remain
   unmapped because Gi has no reply graph or cascade confirmation.
 - `tests/features/settings/gi-settings.feature:40` said thinking was read-only;

@@ -8811,7 +8811,7 @@
       "oracle_status": "partial-installed-cascade-function-and-shipped-ui-fixtures-production-http-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Markdown/code copy and direct delete exist, but Gi rejects cascade=true and has no replies confirmation/cancellation/removal journey. Installed Piclaw 3.2.4 cascade function removes parent+3 direct replies in memory, and shipped Classic UI fixture confirms visible replies; combined copy/delete journey and production HTTP/auth/live behavior untested. Joined hidden-reply fixture leaves orphan, so no broad deletion credit.",
+      "finding": "Markdown/code copy and direct delete exist, but Gi rejects cascade=true and has no replies confirmation/cancellation/removal journey. Joined shipped Classic UI/installed backend-function disposable fixture confirms or cancels deletion of parent+3 stored replies; combined copy/delete journey and production HTTP/auth/live behavior untested. Joined hidden-reply fixture leaves orphan, so no broad deletion credit.",
       "evidence_link": "classic-copy-delete-retrieval-gap.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
@@ -21737,10 +21737,10 @@
         }
       ],
       "review_status": "Piclaw 3.2.4 cascade source→Gi handler/server lacks required reply-aware path",
-      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "oracle_status": "joined-disposable-ui-backend-function-visible-reply-branch-production-http-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Shipped Classic UI on Chromium/WebKit desktop passes bounded visible-reply dialog and confirm/cancel disposable fixtures; integrated backend/UI and Gi journey unverified.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Joined shipped Classic UI/installed backend-function disposable in-memory fixture passes visible-reply prompt and confirm/cancel in Chromium/WebKit desktop, including stored rows; production HTTP/auth/live and Gi journey unverified.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
@@ -21792,10 +21792,10 @@
       "expanded_count": 1,
       "test_candidates": [],
       "review_status": "Piclaw 3.2.4 cascade source→Gi handler/server lacks required reply-aware path",
-      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "oracle_status": "joined-disposable-ui-backend-function-visible-reply-branch-production-http-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Shipped Classic UI on Chromium/WebKit desktop passes bounded visible-reply dialog and confirm/cancel disposable fixtures; integrated backend/UI and Gi journey unverified.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Joined shipped Classic UI/installed backend-function disposable in-memory fixture passes visible-reply prompt and confirm/cancel in Chromium/WebKit desktop, including stored rows; production HTTP/auth/live and Gi journey unverified.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
@@ -21843,10 +21843,10 @@
       "expanded_count": 1,
       "test_candidates": [],
       "review_status": "Piclaw 3.2.4 cascade source→Gi handler/server lacks required reply-aware path",
-      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "oracle_status": "joined-disposable-ui-backend-function-visible-reply-branch-production-http-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Shipped Classic UI on Chromium/WebKit desktop passes bounded visible-reply dialog and confirm/cancel disposable fixtures; integrated backend/UI and Gi journey unverified.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Joined shipped Classic UI/installed backend-function disposable in-memory fixture passes visible-reply prompt and confirm/cancel in Chromium/WebKit desktop, including stored rows; production HTTP/auth/live and Gi journey unverified.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"

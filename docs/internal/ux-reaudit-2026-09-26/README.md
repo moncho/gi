@@ -219,8 +219,10 @@ Independent shipped-UI disposable-fixture checks passed Chromium/WebKit
 desktop visible-reply prompt/cancel/cascade and synthetic `Replies exist`
 retry/cancel branches. A joined shipped-UI/installed-backend-function
 in-memory fixture in both browsers deletes a parent with an unseen stored
-reply without prompting and leaves that reply orphaned. The production Piclaw
-HTTP router/authentication and live acceptance were not exercised.
+reply without prompting and leaves that reply orphaned. With three visible
+stored replies, joined confirmation deletes all four rows; cancellation keeps
+them. The production Piclaw HTTP router/authentication and live acceptance
+were not exercised.
 `shell-layout-review.md` traces nine Classic menu/layout clauses: four tagged
 native cases passed 24/24, while hamburger New file dispatch and terminal/VNC
 callbacks remain native gaps; safe-area, scale and inline-code checks are bounded.

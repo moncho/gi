@@ -15,9 +15,10 @@ These are **policy/capability gaps** in the combined cases; the narrower native
 journeys retain their bounded evidence. `message-deletion-review.md` now
 records pinned Piclaw 3.2.4 backend-function and shipped-UI fixture probes.
 An isolated in-memory cascade deletes a parent and three direct replies; a
-joined shipped-UI/backend-function disposable fixture deletes a parent with an
-unseen stored reply directly and leaves that reply orphaned. The production
-Piclaw HTTP router/authentication, live deletion, and scoped message-tool
-runtime were not probed. The family/all-chat extension and Gi reply graph
+joined shipped-UI/backend-function disposable fixture confirms and deletes
+three visible replies with their parent, or cancels and retains all four.
+With an unseen stored reply, the same fixture deletes its parent directly and
+leaves the reply orphaned. The production Piclaw HTTP router/authentication,
+live deletion, and scoped message-tool runtime were not probed. The family/all-chat extension and Gi reply graph
 need separate identity and destructive-action decisions. No production code
 or frozen contract changed.

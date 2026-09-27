@@ -14083,12 +14083,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14141,12 +14141,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14210,12 +14210,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14268,12 +14268,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14337,12 +14337,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14417,12 +14417,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14497,12 +14497,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -14555,12 +14555,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15021,12 +15021,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15079,12 +15079,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15167,12 +15167,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15229,12 +15229,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15313,12 +15313,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded 3.2.4 source→Gi native context/compaction browser assertion→Gi handler; no Piclaw backend",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi native browser tests check context or compaction clauses; current Piclaw compaction UI/backend unprobed. Shared tagged bodies and interrupted broad gate are qualified in context-compaction-review.md.",
+      "evidence_link": "context-compaction-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

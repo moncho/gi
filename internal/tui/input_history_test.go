@@ -22,23 +22,23 @@ func historyKey(c *chatTUI, key gotui.Key) {
 
 func TestCursorHistoryRoundTripAndSessionPersistence(t *testing.T) {
 	c := sessionTestChat(t)
-	for _, input := range []string{"/where", "/help", "!!echo hello"} {
+	for _, input := range []string{"first prompt", "second prompt", "third prompt"} {
 		c.recordInputHistory(input)
 	}
 	c.input.SetText("draft 中文🙂")
 	c.input.cursorPos = 5
 	historyKey(c, gotui.KeyUp)
-	if c.input.Text() != "!!echo hello" {
+	if c.input.Text() != "third prompt" {
 		t.Fatal("Up did not recall newest entry")
 	}
 	historyKey(c, gotui.KeyUp)
 	historyKey(c, gotui.KeyUp)
 	historyKey(c, gotui.KeyUp) // clamp to oldest
-	if c.input.Text() != "/where" {
+	if c.input.Text() != "first prompt" {
 		t.Fatalf("oldest history: %q", c.input.Text())
 	}
 	historyKey(c, gotui.KeyDown)
-	if c.input.Text() != "/help" {
+	if c.input.Text() != "second prompt" {
 		t.Fatal("Down did not advance")
 	}
 	historyKey(c, gotui.KeyDown)
@@ -56,7 +56,7 @@ func TestCursorHistoryRoundTripAndSessionPersistence(t *testing.T) {
 		t.Fatal("editing recalled entry did not leave history navigation")
 	}
 	historyKey(c, gotui.KeyDown)
-	if c.input.Text() != "!!echo hello!" {
+	if c.input.Text() != "third prompt!" {
 		t.Fatalf("edited entry replaced: %q", c.input.Text())
 	}
 	c.input.SetText("A scratch")
@@ -67,28 +67,28 @@ func TestCursorHistoryRoundTripAndSessionPersistence(t *testing.T) {
 	if len(c.history) != 0 || c.input.Text() != "" {
 		t.Fatal("A history leaked to B")
 	}
-	c.recordInputHistory("B command")
+	c.recordInputHistory("B prompt")
 	historyKey(c, gotui.KeyUp)
-	if c.input.Text() != "B command" {
+	if c.input.Text() != "B prompt" {
 		t.Fatal("B history missing")
 	}
 	if !c.switchSession("A") {
 		t.Fatal("switch A")
 	}
-	if c.input.Text() != "!!echo hello" || c.historyDraft != "A scratch" {
+	if c.input.Text() != "third prompt" || c.historyDraft != "A scratch" {
 		t.Fatalf("A navigation lost across switch: %q / %q", c.input.Text(), c.historyDraft)
 	}
 	historyKey(c, gotui.KeyDown)
 	if c.input.Text() != "A scratch" {
 		t.Fatal("A draft not restored after switch")
 	}
-	if !reflect.DeepEqual(c.loadCommandHistory(), []string{"/where", "/help", "!!echo hello"}) {
+	if !reflect.DeepEqual(c.loadCommandHistory(), []string{"first prompt", "second prompt", "third prompt"}) {
 		t.Fatal("A history not persisted")
 	}
 	if !c.switchSession("B") {
 		t.Fatal("switch B again")
 	}
-	if !reflect.DeepEqual(c.loadCommandHistory(), []string{"B command"}) {
+	if !reflect.DeepEqual(c.loadCommandHistory(), []string{"B prompt"}) {
 		t.Fatal("B history not persisted")
 	}
 }
@@ -138,4 +138,25 @@ func TestHistoryReloadAndSearchCycle(t *testing.T) {
 	if c.input.Text() != "alpha" {
 		t.Fatal("search draft not restored")
 	}
+}
+
+func TestDurableHistoryDoesNotRecordRejectedRoute(t *testing.T) {
+	c := durableTestChat(t)
+	child, err := c.engine.ResolveOrCreatePeerSessionID(context.Background(), "A", "other")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !c.switchSession(child) {
+		t.Fatal("switch peer")
+	}
+	c.input.SetText("unroutable peer prompt")
+	c.onSubmit(c.input.Text()) // unsupported cross-session routing rejects the claim
+	if len(c.history) != 0 {
+		t.Fatalf("rejected prompt entered history: %v", c.history)
+	}
+	stored, err := c.store.ListTUIInputHistory(context.Background(), child, 10000)
+	if err != nil || len(stored) != 0 {
+		t.Fatalf("rejected prompt stored: %v %v", stored, err)
+	}
+
 }

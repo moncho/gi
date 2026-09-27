@@ -2205,8 +2205,8 @@ func (c *chatTUI) loadCommandHistory() []string {
 	return history
 }
 
-// Commands and shell shortcuts are inputs too; neither belongs in the
-// conversation message log.
+// Only prompts submitted to the turn engine belong in cursor history. Unsent
+// drafts, slash commands and local shell shortcuts are not prompts.
 func (c *chatTUI) recordInputHistory(text string) {
 	c.history = append(c.history, text)
 	c.applyHistoryLimit()
@@ -2467,7 +2467,6 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 		c.draftApplying = true
 		c.input.SetText("")
 		c.draftApplying = false
-		c.recordInputHistory(text)
 		c.handleCommand(text)
 		if c.sessionID == origin && !c.editorAskActive && c.input.Text() == "" {
 			if d := c.textDrafts[origin]; d != nil {
@@ -2499,7 +2498,7 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 			return
 		}
 	}
-	c.recordInputHistory(text)
+	historyPrompt := text
 	c.input.SetText("")
 	if strings.HasPrefix(text, "/skill:") {
 		c.appendTranscript(c.skillCommandLines(text)...)
@@ -2521,6 +2520,9 @@ func (c *chatTUI) submitWithMetadata(text string, metadata map[string]any) {
 		}
 		text = fmt.Sprintf("Run this shell command and summarize the result: %s", cmd)
 	}
+	// Store the typed prompt (not its expansion) after validation. Accepted
+	// turns and queued follow-ups remain reachable after TUI restart.
+	c.recordInputHistory(historyPrompt)
 	scope := c.selectionScope()
 	if claim != nil {
 		merged := make(map[string]any, len(metadata)+2)
@@ -2842,7 +2844,7 @@ func (c *chatTUI) commandPaletteLines(query string) []string {
 		{"/thinking [level]", "show or set thinking level"},
 		{"/compact", "request context compaction"},
 		{"/scrollback [n]", "show or set transcript scrollback limit"},
-		{"/history-limit [n]", "show or set TUI command history limit"},
+		{"/history-limit [n]", "show or set per-session prompt history limit"},
 		{"/settings", "show grouped runtime settings"},
 		{"/cancel", "cancel latest active/queued turn"},
 		{"/agents", "list configured agents"},
@@ -2899,7 +2901,7 @@ func (c *chatTUI) helpLines() []string {
 		"/where     compact context",
 		"/attach    stage session media (up to 6)",
 		"/attachments | /detach <media:id|all|unresolved> list/remove pending refs",
-		"ctrl-r     search command history (current input is query)",
+		"ctrl-r     search submitted prompts (current input is query)",
 		"!cmd       ask model about shell · !!cmd run locally",
 	}
 }

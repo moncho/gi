@@ -143,7 +143,6 @@ func (c *chatTUI) submitDurableDraft(text string) {
 	d.local = pair.Text.TUITextSnapshot
 	c.applyDraftSnapshot(d.local)
 	c.applyMediaDraft(scope.id, pair.Media)
-	c.recordInputHistory(text)
 	c.queueSnapshot = nil
 	wasRunning := c.running
 	c.appendTranscript("you: " + text)
@@ -156,6 +155,7 @@ func (c *chatTUI) submitDurableDraft(text string) {
 	result, settled, err := c.engine.SubmitTUIComposer(ctx, scope.id, token, pair.Text.Revision, model)
 	cancel()
 	if err == nil && result != nil {
+		c.recordInputHistory(text)
 		if wasRunning {
 			c.queuedDrafts = append(c.queuedDrafts, text)
 		}

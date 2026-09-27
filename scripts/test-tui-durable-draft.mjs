@@ -28,7 +28,10 @@ for(const mode of ['fullscreen','regular'])for(const[width,height]of[[60,18],[10
   const unstarted={text:'',cursor:0,revision:nextRevision,claim:{text:'released exact 中文🙂',cursor:4,token:releaseToken,revision:nextRevision}};
   sql(`update kv_store set value='${JSON.stringify(unstarted)}' where namespace='tui_text_draft_v1' and key='${id}'`);
   launch();await wait(()=>all().includes('held submission recovered'),'unstarted recovery');await command('/draft');
-  await wait(()=>all().replaceAll('\n','').replaceAll(' ','').includes(releaseToken),'full token visible');
+  // tmux capture includes the TUI's right-hand border between wrapped token rows.
+  // Inspect only the held-token block, stripping layout glyphs and whitespace.
+  const visibleToken=()=>{const screen=all(),start=screen.lastIndexOf('token (join wrapped lines):');if(start<0)return '';const end=screen.indexOf('draft: /draft',start);return screen.slice(start,end<0?undefined:end).replace(/[\s│█]/g,'');};
+  await wait(()=>visibleToken().includes(releaseToken),'full token visible');
   await command('/draft release '+releaseToken);await wait(()=>!journal().claim&&journal().text==='released exact 中文🙂','explicit release restored');
   assert(journal().cursor===4,'release cursor changed');assert(sql('select count(*) from turns')==='1','release submitted');shot('release');
   assert(readFileSync(join(dir,'.pi/settings.json'),'utf8')===settings,'settings changed');if(mode==='regular')assert(tm('display-message','-p','-t',pane,'#{alternate_on} #{mouse_any_flag}').trim()==='0 0','regular ownership');

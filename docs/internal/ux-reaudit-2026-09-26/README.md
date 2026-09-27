@@ -45,12 +45,12 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Fifty-two have qualified clause findings or source→test→Gi-code reviews; 306
+Fifty-eight have qualified clause findings or source→test→Gi-code reviews; 300
 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
-Gi assertions and code; their Piclaw upload/failure backend was not run. These
+Gi assertions and code; their Piclaw upload/failure backend was not run.
 `workspace-bounded-review.md` adds hidden-tree, preview and tab-store traces
 for three more clauses; their current Piclaw UI interactions were not run.
 `recovery-card-review.md` adds three source-backed, tagged native-display
@@ -97,6 +97,10 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`gi-preview-swipe-review.md` covers six Gi-only preview/swipe clauses:
+three preview tags passed 18/18 on a scoped rerun, rapid reverse swipe 6/6
+and status-panel variants 12/12. A broad thoughts run failed 1/48 during
+`Loading Gi…`; its cause remains unknown. These are not Piclaw oracle claims.
 `auth-basic-review.md` distinguishes the missing family username/TOTP branch
 from two single-user native auth journeys (12/12 focused browser cases); the
 full auth run was interrupted at 105/120 and has no green result.

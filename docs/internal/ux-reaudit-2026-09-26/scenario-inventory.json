@@ -2472,12 +2472,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native preview/swipe assertions and Gi handlers; no physical-device or Piclaw parity credit",
+      "oracle_status": "gi-addition-not-piclaw-oracle",
+      "audit_status": "gi-native-journey-qualified",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Gi-specific scenario has tagged native browser journey across six viewport projects; startup Loading Gi failure on broad thoughts run resolved only by scoped rerun, cause unknown. See gi-preview-swipe-review.md.",
+      "evidence_link": "gi-preview-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -2552,12 +2552,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native preview/swipe assertions and Gi handlers; no physical-device or Piclaw parity credit",
+      "oracle_status": "gi-addition-not-piclaw-oracle",
+      "audit_status": "gi-native-journey-qualified",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Gi-specific scenario has tagged native browser journey across six viewport projects; startup Loading Gi failure on broad thoughts run resolved only by scoped rerun, cause unknown. See gi-preview-swipe-review.md.",
+      "evidence_link": "gi-preview-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -2632,12 +2632,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native preview/swipe assertions and Gi handlers; no physical-device or Piclaw parity credit",
+      "oracle_status": "gi-addition-not-piclaw-oracle",
+      "audit_status": "gi-native-journey-qualified",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Gi-specific scenario has tagged native browser journey across six viewport projects; startup Loading Gi failure on broad thoughts run resolved only by scoped rerun, cause unknown. See gi-preview-swipe-review.md.",
+      "evidence_link": "gi-preview-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -2708,12 +2708,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native preview/swipe assertions and Gi handlers; no physical-device or Piclaw parity credit",
+      "oracle_status": "gi-addition-not-piclaw-oracle",
+      "audit_status": "gi-native-journey-qualified",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Gi-specific scenario has tagged native browser journey across six viewport projects; startup Loading Gi failure on broad thoughts run resolved only by scoped rerun, cause unknown. See gi-preview-swipe-review.md.",
+      "evidence_link": "gi-preview-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -2784,12 +2784,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native preview/swipe assertions and Gi handlers; no physical-device or Piclaw parity credit",
+      "oracle_status": "gi-addition-not-piclaw-oracle",
+      "audit_status": "gi-native-journey-qualified",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Gi-specific scenario has tagged native browser journey across six viewport projects; startup Loading Gi failure on broad thoughts run resolved only by scoped rerun, cause unknown. See gi-preview-swipe-review.md.",
+      "evidence_link": "gi-preview-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -2864,12 +2864,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native preview/swipe assertions and Gi handlers; no physical-device or Piclaw parity credit",
+      "oracle_status": "gi-addition-not-piclaw-oracle",
+      "audit_status": "gi-native-journey-qualified",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Gi-specific scenario has tagged native browser journey across six viewport projects; startup Loading Gi failure on broad thoughts run resolved only by scoped rerun, cause unknown. See gi-preview-swipe-review.md.",
+      "evidence_link": "gi-preview-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

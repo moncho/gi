@@ -57,7 +57,7 @@ endef
 	build-web build \
 	run start stop restart status logs \
 	test vet bun-checks check \
-	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-sessions test-tui-source-copy \
+	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-sessions test-tui-source-copy test-tui-markdown \
 	clean
 
 # ── Help and bootstrap ──────────────────────────────────────────────────
@@ -90,6 +90,7 @@ help:
 		"  make test-ux          Run Playwright tests against an isolated instance" \
 		"  make test-tui-smoke   Run the tmux-based TUI smoke harness" \
 		"  make test-tui-gherkin Run the TUI gherkin harness" \
+		"  make test-tui-markdown Run Markdown/ANSI Gherkin scenarios in tmux" \
 		"  make test-tui-sessions Verify draft isolation and compact picker sizes" \
 		"  make test-ux-parity   Run mapped frozen Piclaw scenarios in Chromium/WebKit" \
 		"  make ux-parity-inventory Verify all frozen feature hashes and list coverage" \
@@ -385,6 +386,9 @@ test-tui-compaction:
 	$(GO) test -c -o bin/gi-tui-compaction-test ./internal/tui
 	$(BUN) scripts/test-tui-compaction.mjs
 
+test-tui-markdown: build
+	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-markdown.mjs
+
 test-tui-source-copy: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-source-copy.mjs
 
@@ -476,7 +480,7 @@ test-tui-smoke: build
 	chmod +x scripts/test-tui-smoke.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
 
-test-tui-gherkin: build
+test-tui-gherkin: build test-tui-markdown
 	chmod +x scripts/test-tui-gherkin.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin scripts/test-tui-gherkin.sh
 

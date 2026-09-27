@@ -285,10 +285,11 @@ by a contract test and supported by selected Go tests, not run as Gherkin steps.
 - Classic queue-return `@ux-original-017`/`@ux-compose-004` replaces draft and clears
   media; Shared28 preserves/merges latest draft/media before deletion. ADR-0017
   accepts Gi's no-loss recovery; Classic replacement remains unmapped.
-- Classic007 replaces Quick Actions prefill. Shared16 requires preserving an
-  existing draft for supported commands, but mounted `/model` still replaces it;
-  only the built canonical skill adapter preserves existing text for Shared17.
-  Piclaw 3.2.4's fixture-listed skill prefill also replaces text.
+- Classic007 explicitly replaces existing composer text on Quick Actions
+  prefill; Shared16 requires preserving it. Mounted `/model` follows Classic
+  and Piclaw 3.2.4, leaving Shared16 unmapped. The built canonical skill adapter
+  preserves existing text for Shared17; Piclaw's fixture-listed skill prefill
+  replaces it. General-command policy needs an explicit priority decision.
 - Classic029 keeps fenced SVG as source; Shared41 renders sanitized inline SVG.
 - `features/tui/keyboard_behavior.feature:4` bundles focus, history, scrolling,
   resizing and quit, but scroll assertions only require unchanged text to remain

@@ -22989,11 +22989,11 @@
           "skipped": false
         }
       ],
-      "review_status": "frozen Shared16→mounted /model prefill→Classic007 empty-draft test→Piclaw replacement probe",
+      "review_status": "frozen Classic007 replacement vs Shared16 preservation; mounted /model and Piclaw replacement; no general-policy decision",
       "oracle_status": "bounded-piclaw-3.2.4-model-prefill-replaces-draft",
-      "audit_status": "mounted-general-command-draft-loss-gap",
+      "audit_status": "frozen-classic-shared-prefill-policy-conflict",
       "priority": "P0",
-      "finding": "Shared16 requires draft-preserving supported command insertion. Mounted /model sets command text and replaces a nonempty draft; Classic007 tests empty draft only. Skill-specific build adapter does not fix general command. Piclaw also replaces. Shared16 remains unmapped; no Gi safety credit.",
+      "finding": "Shared16 preserving nonempty draft conflicts directly with frozen Classic007 replacement. Mounted /model follows Classic and shipped Piclaw; Classic007 focused test begins empty. Skill adapter preserves only /skill:<name>. Shared16 unmapped; decide priority before changing general prefill.",
       "evidence_link": "oracle-deltas.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "3.2.3 or pinned70d33bc as qualified"

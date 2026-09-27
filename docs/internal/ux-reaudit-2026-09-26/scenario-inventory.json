@@ -18485,11 +18485,11 @@
           "skipped": false
         }
       ],
-      "review_status": "seven real excluded-control examples not individually proved; partial input/settings evidence",
+      "review_status": "seven examples checked against mounted swipe host and actual adjacent tests; no full tagged journey",
       "oracle_status": "source-backed-runtime-unprobed",
       "audit_status": "verified-outline-test-gap",
       "priority": null,
-      "finding": "Frozen seven-example exclusion outline has Piclaw/Gi source selectors but no tagged journey for all real controls; input/settings and some targets are tested elsewhere. Do not infer full acceptance from selectors or passing adjacent swipe tags.",
+      "finding": "Mounted swipe host admits timeline/status starts only. Composer input has adjacent evidence; explorer sidebar, body-portal attachment and read-only editor sit outside host, while terminal dock is unmounted/no-op. Card/picker controls mount but lack tagged gesture cases. Seven expanded examples remain uncredited; selector-only substitutes insufficient.",
       "evidence_link": "mobile-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"

@@ -21638,7 +21638,7 @@
       "oracle_status": "current-oracle-backend-runtime-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Installed Piclaw 3.2.4 direct-delete source has no Replies exist guard; frozen backend-rejection premise is a source-level oracle risk, not a runtime finding.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
@@ -21685,7 +21685,7 @@
       "oracle_status": "current-oracle-backend-runtime-unprobed",
       "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause.",
+      "finding": "Gi has no follow-up/visible-reply cascade prompt and server rejects cascade=true; direct deletion, busy rejection or error preservation cannot substitute for this clause. Installed Piclaw 3.2.4 direct-delete source has no Replies exist guard; frozen backend-rejection premise is a source-level oracle risk, not a runtime finding.",
       "evidence_link": "message-deletion-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"

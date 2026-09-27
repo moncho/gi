@@ -236,8 +236,10 @@ Chromium and WebKit. The broader reconnect run timed out at 63/72 and is not
 a pass; current Piclaw backend and deployed Gi were not tested.
 `theme-command-gap.md` records fifteen Classic composer `/theme`/`/tint`
 scenarios unsupported by Gi's native command path. An installed 3.2.4
-parser-only probe passed nine bounded command cases; Piclaw composer/timeline,
-visual and reload behaviour were not tested. Browser-local Gi Appearance
+parser-only probe passed nine bounded command cases. A shipped-UI
+Chromium/WebKit desktop fixture sent `/theme ristretto` and `/tint #e11d48`,
+observed local theme/tint state and a timeline response; backend persistence,
+reload and pixel colours were not tested. Browser-local Gi Appearance
 Settings cannot earn the command/legacy-storage credit.
 `context-compaction-review.md` traces thirteen context/compaction/model
 clauses through current source and focused Gi native tests; the broad

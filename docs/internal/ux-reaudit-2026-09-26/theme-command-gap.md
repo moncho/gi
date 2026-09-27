@@ -26,7 +26,13 @@ cover theme list, ristretto/default, invalid `dark`, tint usage, hex/named/off
 and invalid tint. All parser status/message/payload assertions passed. The
 installed `src/channels/web/handlers/agent.ts` calls this parser, persists a
 successful theme payload via `setServerUiThemeConfig` and broadcasts
-`ui_theme`, but that handler path was only source-reviewed. Piclaw's composer,
-timeline, storage, reload and visual CSS were not exercised by the parser
-probe. The frozen Gherkin stays a historical contract; neither this probe nor
-Gi Settings grants command parity or physical/pixel credit.
+`ui_theme`; that handler path was only source-reviewed.
+`tests/ux/oracle/piclaw-theme-ui-probe.mjs` uses the shipped Classic UI with
+a disposable `/agent/default/message` response and SSE events fed by the
+installed parser. In Chromium and WebKit desktop, composer submission sent
+`/theme ristretto` then `/tint #e11d48`; the `ui_theme` fixture updated root
+attributes and legacy localStorage, and the tint response appeared in the
+fixture timeline. It did not exercise the Piclaw backend handler, server
+persistence, reload, named tint, or pixel colour equivalence. The frozen
+Gherkin stays a historical contract; these bounded oracle probes and Gi
+Settings grant no Gi command parity or physical/pixel credit.

@@ -15377,12 +15377,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi mounted menu/handler; missing native action or callback",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "verified-native-shell-gap",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Hamburger New file emits event without a matching new-file visibility adapter action; refresh/reindex forward. No three-action tagged journey.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15448,12 +15448,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi menu/layout/tab code and bounded browser/CSS trace; see review for limits",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Bounded native/source trace in shell-layout-review.md; tagged 002/003/005/007 passed 24/24 combined. 003 does not exercise actual chat-only mode; 006/008/009 lack frozen-clause tagged assertions. Piclaw UI unprobed.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15511,12 +15511,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi menu/layout/tab code and bounded browser/CSS trace; see review for limits",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Bounded native/source trace in shell-layout-review.md; tagged 002/003/005/007 passed 24/24 combined. 003 does not exercise actual chat-only mode; 006/008/009 lack frozen-clause tagged assertions. Piclaw UI unprobed.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15567,12 +15567,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi mounted menu/handler; missing native action or callback",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "verified-native-shell-gap",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Mounted TimelineMenu lacks terminal/VNC callbacks; WorkspaceExplorer callbacks are no-op. No native callback action journey.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15639,12 +15639,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi menu/layout/tab code and bounded browser/CSS trace; see review for limits",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Bounded native/source trace in shell-layout-review.md; tagged 002/003/005/007 passed 24/24 combined. 003 does not exercise actual chat-only mode; 006/008/009 lack frozen-clause tagged assertions. Piclaw UI unprobed.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15693,12 +15693,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi menu/layout/tab code and bounded browser/CSS trace; see review for limits",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Bounded native/source trace in shell-layout-review.md; tagged 002/003/005/007 passed 24/24 combined. 003 does not exercise actual chat-only mode; 006/008/009 lack frozen-clause tagged assertions. Piclaw UI unprobed.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15758,12 +15758,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi menu/layout/tab code and bounded browser/CSS trace; see review for limits",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Bounded native/source trace in shell-layout-review.md; tagged 002/003/005/007 passed 24/24 combined. 003 does not exercise actual chat-only mode; 006/008/009 lack frozen-clause tagged assertions. Piclaw UI unprobed.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15827,12 +15827,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi menu/layout/tab code and bounded browser/CSS trace; see review for limits",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Bounded native/source trace in shell-layout-review.md; tagged 002/003/005/007 passed 24/24 combined. 003 does not exercise actual chat-only mode; 006/008/009 lack frozen-clause tagged assertions. Piclaw UI unprobed.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -15877,12 +15877,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→Gi menu/layout/tab code and bounded browser/CSS trace; see review for limits",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Bounded native/source trace in shell-layout-review.md; tagged 002/003/005/007 passed 24/24 combined. 003 does not exercise actual chat-only mode; 006/008/009 lack frozen-clause tagged assertions. Piclaw UI unprobed.",
+      "evidence_link": "shell-layout-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

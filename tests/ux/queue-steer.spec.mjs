@@ -109,8 +109,8 @@ test('Gi display-idle admission queues a distinct prompt until the completed cla
  const token=`completed-${info.project.name}-${Date.now()}`,gate=resolve('test-results/ux-parity/queue-gates',token);
  mkdirSync(resolve(gate,'..'),{recursive:true});
  const session=await(await request.post('/api/sessions',{data:{agent_id:token,title:token}})).json();
- await request.patch(`/api/sessions/${session.id}/model`,{data:{model:'test-model'}});
- const first=await(await request.post(`/api/sessions/${session.id}/prompt`,{data:{prompt:`UX completed claim:${token}`,model:'test-model'}})).json();
+ await request.patch(`/api/sessions/${session.id}/model`,{data:{model:'ux-local/gate'}});
+ const first=await(await request.post(`/api/sessions/${session.id}/prompt`,{data:{prompt:`UX completed claim:${token}`,model:'ux-local/gate'}})).json();
  try {
   await expect.poll(()=>existsSync(gate+'.held')).toBe(true);
   const activity=await(await request.get(`/api/sessions/${session.id}/activity`)).json();expect(activity.status).toBe('idle');expect(activity.turn_id).toBe(first.turn_id);

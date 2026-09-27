@@ -1,10 +1,9 @@
 import {test,expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
-import {loadCorpus} from './support/catalogue.mjs';
+import {attachGiDeviation} from './support/gi-deviations.mjs';
 const inputName='Message (Enter to send, Shift+Enter for newline)...';
-for(const [kind,id] of [['classic','@ux-original-008'],['shared','@shared-17']])
-test(`${id} canonical loaded skill Quick Action preserves draft and executes only captured session`,async({page,request},info)=>{
- const scenario=loadCorpus(kind).find(s=>s.id===id);await info.attach('gherkin',{body:scenario.steps.join('\n'),contentType:'text/plain'});
+test('Gi deviation: loaded skill Quick Action preserves draft and executes only captured session',async({page,request},info)=>{
+ await attachGiDeviation(info,'@gi-ux-002');
  const token=`skill-${info.project.name}-${Date.now()}`,main=await(await request.post('/api/sessions',{data:{agent_id:token,title:token}})).json(),fork=await(await request.post(`/api/sessions/${main.id}/fork`,{data:{title:token+'-other',agent_id:token+'-other'}})).json(),other={id:fork.branch.chat_jid.slice(3)};
  await page.addInitScript(id=>localStorage.setItem('gi_session_id',id),main.id);await page.goto('/');const input=page.getByRole('textbox',{name:inputName,exact:true});await expect(input).toBeVisible();await input.fill('existing request β');await page.locator('.compose-box input[type=file]').setInputFiles({name:'skill-ref.txt',mimeType:'text/plain',buffer:Buffer.from('skill media bytes')});
  const catalogue=await(await request.get('/api/quick-actions')).json();expect(catalogue.commands.filter(c=>c.name==='/skill:proof')).toEqual([{name:'/skill:proof',description:'Validate the cerulean evidence marker',source:'skill'}]);expect(catalogue.slashCommands.filter(x=>x==='/skill:proof')).toHaveLength(1);
@@ -19,8 +18,7 @@ test(`${id} canonical loaded skill Quick Action preserves draft and executes onl
   await expect.poll(async()=>((await(await request.get(`/api/sessions/${main.id}/turns`)).json()).turns||[])[0]?.status).toBe('completed');const nativeMessages=(await(await request.get(`/api/sessions/${main.id}/messages`)).json()).messages||[];expect(nativeMessages.filter(m=>m.role==='user')).toHaveLength(1);expect(nativeMessages.find(m=>m.role==='assistant').content).toContain('CERULEAN_NATIVE_SKILL_V1');
   await expect(input).toHaveValue('other session draft');expect((await(await request.get(`/api/sessions/${other.id}/turns`)).json()).turns||[]).toEqual([]);await switchTo(main.id);await expect(input).toHaveValue('');await page.reload();expect((await(await request.get(`/api/sessions/${main.id}/turns`)).json()).turns).toHaveLength(1);
  }finally{release();await page.unrouteAll({behavior:'wait'});}
- // Complete the same frozen scenario with unknown/stale recovery. One tagged
- // case per project keeps the strict matrix count tied to all its assertions.
+ // Exercise unknown/stale recovery in the same Gi-specific six-project case.
  const session=main;
  const path='.gi/skills/proof/SKILL.md',original=readFileSync('tests/ux/fixtures/skills/.gi/skills/proof/SKILL.md','utf8');
  const write=async content=>{const response=await request.post('/api/tools/execute',{data:{tool:'write',input:{path,content}}});expect((await response.json()).error).toBeFalsy();};

@@ -1,10 +1,8 @@
-@canonical @piclaw-3.2.4 @classic @source-reviewed
+@canonical @piclaw-baseline @classic @source-reviewed
 Feature: Classic Piclaw interaction model
-  Installed Piclaw 3.2.4 is the reference; the historical 70d33bc clauses are
-  preserved under tests/ux/upstream/classic-snapshot/.
+  The coded Classic web client is the reference for this specification.
   Visual differences and optional add-on behavior are not implied to be identical.
-  Source-review evidence and validation gaps are indexed in
-  docs/internal/ux-reaudit-2026-09-26/gherkin-alignment.md.
+  Source-review evidence and remaining validation gaps are indexed in ../../canonical/COMPLETION.md.
 
   Background:
     Given Piclaw is in single-user mode in an isolated workspace
@@ -75,8 +73,8 @@ Feature: Classic Piclaw interaction model
     Given a supported slash command is present in Quick Actions
     And the composer already contains text
     When I select that slash command
-    Then the client requests compose prefill with exactly the selected command text
-    And the composer replaces its existing text with that prefill
+    Then the client requests compose prefill with the command followed by a space
+    And the composer replaces its text with that prefill
     And the text area is focused with its cursor at the end
     And prefill does not submit the command
     And the palette closes
@@ -89,8 +87,7 @@ Feature: Classic Piclaw interaction model
     And Quick Actions presents those commands in the Slash commands group
     And no separate Skills group is created by Quick Actions
     When I select a skill command
-    Then its command text replaces the existing draft through the same compose-prefill path as other slash commands
-    And selection alone does not submit the command
+    Then its command text is inserted by the same compose-prefill path as other slash commands
 
   @ux-original-009 @plan @addon-dependent
   Scenario: Save Markdown through the Plan sidebar add-on
@@ -173,7 +170,7 @@ Feature: Classic Piclaw interaction model
     And it clears the composer's media list and submission notices
     And it schedules focus and cursor placement at the end of the restored text
     And it schedules the queued-item removal callback
-    # The installed client does not persist a merged recovery draft before removal.
+    # The current client does not persist a merged recovery draft before removal.
 
   @ux-original-018 @queue @remove @reorder
   Scenario: Reorder and remove queued follow-ups with reconciliation
@@ -290,14 +287,12 @@ Feature: Classic Piclaw interaction model
     When I copy a code block
     Then the copy path uses code text instead of highlighted HTML
 
-  @ux-original-029 @svg @markdown @piclaw-3.2.4
-  Scenario: Render a safe fenced SVG as an isolated image and retain source
-    Given a post contains a fenced SVG with safe vector geometry and a title
-    When the Classic Markdown renderer processes it with sanitization enabled
-    Then the post renders an accessible image whose source is a sanitized data:image/svg+xml URL
-    And the original SVG source remains available to the code-copy path
-    And model SVG geometry is not injected as privileged inline DOM descendants
-    When another fence contains scripts, event handlers or external references
-    Then that unsafe fence remains visible as escaped source without a preview image
-    And it cannot execute script or fetch an external resource
-    # Malformed/oversized cases and additional unsafe categories need separate evidence.
+  @ux-original-029 @svg @markdown @current-behavior
+  Scenario: Keep model-generated fenced SVG as source code
+    Given a post contains an SVG fenced code block
+    When the Classic Markdown renderer processes the post
+    Then the SVG remains code text in a code block
+    And the normal code-copy action can copy its source
+    And the renderer does not turn that fence into an inline SVG diagram
+    # Upstream 3f8ee0d2f requested safe accessible inline SVG rendering.
+    # That rendering path and its size/fallback policy are absent at this code baseline.

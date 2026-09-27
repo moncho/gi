@@ -38,13 +38,14 @@ for (const row of rows.values()) counts[row.status] = (counts[row.status] || 0) 
 const sharedCounts = {};
 for (const row of sharedRows.values()) sharedCounts[row.status] = (sharedCounts[row.status] || 0) + 1;
 const report = {
-  sourceCommit: '70d33bc93ab540845bbcf5f80503ca8125c71594',
+  oracleRelease: 'piclaw-3.2.4-linux-x64-baseline',
+  historicalSourceCommit: '70d33bc93ab540845bbcf5f80503ca8125c71594',
   scenarios: rows.size, expandedCases: classic.length, sharedContractCases: shared.length,
   expectedProjects, counts, rows: [...rows.values()], sharedCounts, sharedRows: [...sharedRows.values()],
 };
 mkdirSync('test-results/ux-parity', { recursive: true });
 writeFileSync('test-results/ux-parity/matrix.json', JSON.stringify(report, null, 2) + '\n');
-writeFileSync('test-results/ux-parity/matrix.md', `# Gi Piclaw Classic parity\n\nSource: \`${report.sourceCommit}\`. Frozen corpus: ${rows.size} scenarios / ${classic.length} expanded cases. Shared Vibes/Tau contract: ${shared.length} expanded cases, reported separately below.\n\nCounts: ${JSON.stringify(counts)}. A pass requires all six browser/viewport projects; unmapped is not a pass or skip.\n\n| ID | Status | Scenario |\n|---|---|---|\n${[...rows.values()].map(row => `| ${row.id} | ${row.status} | ${row.name.replaceAll('|', '\\|')} |`).join('\n')}\n`);
+writeFileSync('test-results/ux-parity/matrix.md', `# Gi Piclaw Classic parity\n\nOracle: \`${report.oracleRelease}\`. Historical snapshot: \`${report.historicalSourceCommit}\`. Active Classic contracts: ${rows.size} scenarios / ${classic.length} expanded cases. Active shared contracts: ${shared.length} expanded cases, reported separately below. Historical bytes are verified under tests/ux/upstream/.\n\nCounts: ${JSON.stringify(counts)}. A pass requires all six browser/viewport projects; unmapped is not a pass or skip.\n\n| ID | Status | Scenario |\n|---|---|---|\n${[...rows.values()].map(row => `| ${row.id} | ${row.status} | ${row.name.replaceAll('|', '\\|')} |`).join('\n')}\n`);
 const sharedMarkdown = `\n## Shared contract (separate evidence)\n\nCounts: ${JSON.stringify(sharedCounts)}.\n\n| ID | Status | Scenario |\n|---|---|---|\n${[...sharedRows.values()].map(row => `| ${row.id} | ${row.status} | ${row.name.replaceAll('|', '\\|')} |`).join('\n')}\n`;
 const matrixPath = 'test-results/ux-parity/matrix.md';
 writeFileSync(matrixPath, readFileSync(matrixPath,'utf8') + sharedMarkdown);

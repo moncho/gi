@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
+import {attachGiDeviation} from './support/gi-deviations.mjs';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
-import {loadCorpus} from './support/catalogue.mjs';
 const inputName='Message (Enter to send, Shift+Enter for newline)...';
 const file=name=>({name,mimeType:'text/plain',buffer:Buffer.from(`bytes:${name}`)});
 async function fixture(page,request,info){
@@ -23,8 +23,8 @@ async function fixture(page,request,info){
  return{main,child,queued,media,input,row,stored,release};
 }
 
-test('@shared-28 Return a queued item to the latest editor draft',async({page,request},info)=>{
- const scenario=loadCorpus('shared').find(row=>row.id==='@shared-28');await info.attach('gherkin',{body:scenario.steps.join('\n'),contentType:'text/plain'});
+test('Gi no-loss deviation: recover queued item alongside the latest editor draft',async({page,request},info)=>{
+ await attachGiDeviation(info,'@gi-ux-004');
  const{main,queued,media,input,row,stored,release}=await fixture(page,request,info);
  let unblock,held=false,delivered;const gate=new Promise(resolve=>{unblock=resolve;});const done=new Promise(resolve=>{delivered=resolve;});
  const mediaURL=`**/api/sessions/${main.id}/media/${media.media.id}`;

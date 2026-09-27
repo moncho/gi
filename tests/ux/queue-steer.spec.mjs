@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
+import {attachGiDeviation} from './support/gi-deviations.mjs';
 import {mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {resolve} from 'node:path';
-import {loadCorpus} from './support/catalogue.mjs';
 import {createServer, request as httpRequest} from 'node:http';
 async function sseProxy(page){
  let blocked=false;const connections=new Set();
@@ -34,8 +34,8 @@ async function fixture(page,request,info){
  return{main,child,active,queued,row,button,input,turns,release,token};
 }
 
-test('@shared-30 Steer only a matching active run',async({page,request},info)=>{
- const scenario=loadCorpus('shared').find(x=>x.id==='@shared-30');await info.attach('gherkin',{body:scenario.steps.join('\n'),contentType:'text/plain'});
+test('Gi safety deviation: Steer only a matching active run',async({page,request},info)=>{
+ await attachGiDeviation(info,'@gi-ux-005');
  const proxy=await sseProxy(page);
  const f=await fixture(page,request,info);const{main,child,active,queued,row,button,input,turns,release,token}=f;
  const url=`/api/sessions/${main.id}/queue/${queued.turn_id}/steer`;let calls=0,unblock,held=false;const gate=new Promise(r=>unblock=r);

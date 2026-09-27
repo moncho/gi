@@ -321,7 +321,7 @@ Latest: **216/216 browser executions** (192 + 12 + 12), **70/70 functional**, **
 
 ## Shared run-bound queue Steer: 2026-09-22
 
-`queue-steer.spec.mjs` maps `@shared-30`; the catalogue test pins its title. Run `make test-ux-steer` for the isolated Go server and local streaming provider. Native API/SSE, SQLite and inference checkpoints are unchanged. The fixture uses temporary credentials/workspace, binds to loopback and closes on exit. No paid provider, forced clicks, retries or fabricated timeline events are used.
+`queue-steer.spec.mjs` tests `@gi-ux-005`, Gi's run-bound safety deviation; `@shared-30` was unmapped after the Piclaw 3.2.4 alignment. The catalogue test pins the active scenario title. Run `make test-ux-steer` for the isolated Go server and local streaming provider. Native API/SSE, SQLite and inference checkpoints are unchanged. The fixture uses temporary credentials/workspace, binds to loopback and closes on exit. No paid provider, forced clicks, retries or fabricated timeline events are used.
 
 The six-project suite verifies idle/unknown disabled controls (real SSE disconnection), run/session ownership, failed admission, duplicate activation, actual second-request delivery, held recovery/reload, retry into a new run and stale replies after switching sessions. Native Go tests cover atomic rollback, media projection, persistence failure and at-most-once acknowledgement.
 
@@ -337,7 +337,7 @@ The combined report has **15/236 Classic** and **2/42 shared** passes (221 and 4
 
 ## Shared durable queue return: 2026-09-22
 
-`queue-return.spec.mjs` maps `@shared-28` (the immutable shared corpus's ordinal ID), with a name assertion preventing mapping drift. Return merges the latest origin draft/media/refs and persists recovery before DELETE. Tests hold real media responses, inspect committed state at DELETE, inject quota/transport failures, reload/retry and verify no duplicate recovery. Separate regressions cover already-consumed items and session switches.
+`queue-return.spec.mjs` tests `@gi-ux-004`, Gi's no-loss deviation; `@shared-28` was unmapped after the Piclaw 3.2.4 alignment. The catalogue test pins the active scenario title. Return merges the latest origin draft/media/refs and persists recovery before DELETE. Tests hold real media responses, inspect committed state at DELETE, inject quota/transport failures, reload/retry and verify no duplicate recovery. Separate regressions cover already-consumed items and session switches.
 
 The report now includes separate shared rows/counts. Full matrix: **192/192** executions; Classic **15/236** passing (221 unmapped), shared **1/42** passing (41 unmapped). Classic `017` and compose `004` prescribe replacement/media clearing and remain unmapped; their frozen assertions were not weakened. See [ADR-0017](../../docs/adr/0017-durable-queue-return.md).
 

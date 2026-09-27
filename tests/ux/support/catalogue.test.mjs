@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { loadCorpus, verifySources, mappedIds, sharedMappedIds, uxRoot } from './catalogue.mjs';
 
-test('frozen Piclaw sources and shared Vibes/Tau contract retain their exact hashes', () => {
+test('historical Piclaw and Vibes/Tau snapshots retain their exact hashes', () => {
   expect(() => verifySources()).not.toThrow();
 });
 
@@ -19,7 +19,7 @@ test('imported Piclaw component sources retain their upstream hashes', () => {
   }
 });
 
-test('all frozen scenarios and outline examples are inventoried, not just mapped tests', () => {
+test('all active Piclaw 3.2.4 scenarios and outline examples are inventoried, not just mapped tests', () => {
   const cases = loadCorpus();
   expect(cases).toHaveLength(256);
   expect(new Set(cases.map(item => item.id)).size).toBe(236);
@@ -36,8 +36,8 @@ test('all frozen scenarios and outline examples are inventoried, not just mapped
   const shared = loadCorpus('shared');
   expect(shared).toHaveLength(42);
   for (const id of sharedMappedIds) expect(shared.some(item => item.id === id)).toBe(true);
-  expect(shared.find(row => row.id === '@shared-28')?.name).toBe('Return a queued item to the latest editor draft');
-  expect(shared.find(row => row.id === '@shared-30')?.name).toBe('Steer only a matching active run');
+  expect(shared.find(row => row.id === '@shared-28')?.name).toBe('Return a queued item by replacing the Classic editor draft');
+  expect(shared.find(row => row.id === '@shared-30')?.name).toBe('Let the backend steer or send a queued item after the stream ends');
 });
 
 test('Quick Actions provenance includes unchanged pinned sources and the exact CSS region',()=>{

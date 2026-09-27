@@ -44,8 +44,8 @@ test('additive passkey ledger pins every Background, criterion and example witho
  expect(ledger.terminal.idleRows).toBe(0);
  // This ledger is additive; it is deliberately not added to existing sets.
  const classic=loadCorpus();expect(classic).toHaveLength(256);expect(new Set(classic.map(c=>c.id)).size).toBe(236);expect(loadCorpus('shared')).toHaveLength(42);
- expect(mappedIds.size).toBe(101);expect(sharedMappedIds.size).toBe(33);
- expect(mappedIds.has('@ux-original-008')).toBe(true); // disputed mapping retained, not re-awarded
+ expect(mappedIds.size).toBe(98);expect(sharedMappedIds.size).toBe(30);
+ expect(mappedIds.has('@ux-original-008')).toBe(false); // conflicting skill clause cannot earn Piclaw parity
  for(const s of ledger.scenarios){expect(mappedIds.has(s.id)).toBe(false);expect(sharedMappedIds.has(s.id)).toBe(false);}
 });
 

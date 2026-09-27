@@ -154,8 +154,9 @@ failure, retained draft and explicit retry (6/6); Piclaw backend and media
 cleanup/deduplication remain unprobed.
 `classic-reconnect-stop-review.md` traces Classic023 through a real-SSE
 Gi reconnect and exact-turn Stop journey (6/6). Shipped Piclaw 3.2.4 Classic
-source and frozen `@ux-reconnect-004` both require manual reload; installed
-browser warning and current-backend acceptance remain unverified.
+source and frozen `@ux-reconnect-004` both require manual reload; shipped-asset
+browser warning passed Chromium/WebKit fixture probes, while current-backend
+acceptance remains unverified.
 `classic-model-review.md` traces Classic020/022 through focused Gi model
 selection and sparse-metadata tests (12/12); Piclaw backend switching remains
 unprobed.
@@ -211,8 +212,9 @@ the installed 3.2.4 Classic source map disables auto-reload; a divergent
 checkout and copied unmounted Gi helper still schedule it after 350 ms. The
 frozen clean-state manual-reload clause agrees with the shipped source.
 Filtered Gi runs passed 6/6 and 30/30. A disposable shipped-asset browser
-probe did not confirm warning delivery; the broader reconnect run timed out at
-63/72 and is not a pass.
+probe confirmed SSE delivery, one manual warning and no auto-navigation in
+Chromium and WebKit. The broader reconnect run timed out at 63/72 and is not
+a pass; current Piclaw backend and deployed Gi were not tested.
 `theme-command-gap.md` records fifteen Classic composer `/theme`/`/tint`
 scenarios unsupported by Gi's native command path. Browser-local Appearance
 Settings is separate and cannot earn their timeline/legacy-storage credit.

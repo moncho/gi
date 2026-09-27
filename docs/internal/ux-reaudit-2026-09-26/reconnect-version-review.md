@@ -17,11 +17,15 @@ copy at `web/src/ui/app-connection-lifecycle.ts` still schedule clean-state
 reload after 350 ms. The two passing tests in
 `tests/ux/support/version-drift-lifecycle.test.ts` exercise that copied helper;
 they cannot overturn the installed release or credit Gi's mounted entry point.
-The earlier source-conflict finding was a provenance error. A disposable browser
-probe with the shipped Classic assets observed zero navigation but no warning
-from an injected SSE version event in Chromium/WebKit. Its injection did not
-establish delivery to the warning handler, so it cannot establish full runtime
-behaviour. No current Piclaw backend version-change or deployed Gi run was made.
+The earlier source-conflict finding was a provenance error. A first disposable
+probe produced no warning because the pin-sync GET fixture returned an invalid
+shape and its error toast displaced the warning. After that fixture was given a
+valid scope, revision and pin arrays, `tests/ux/oracle/piclaw-version-drift-probe.mjs`
+confirmed SSE delivery, one manual warning on version drift, one warning after a
+repeat and zero automatic navigations in Chromium and WebKit. It checked the
+shipped asset and source-map hash before each run. These are shipped Classic
+browser-asset observations against disposable API/SSE fixtures. No current
+Piclaw backend version-change or deployed Gi run was made.
 
 Gi's mounted browser entry point is `web/src/app.ts`. Its selected-session SSE
 `connected` handler uses `createAssetVersionGuard(loadedAssetVersion(document))`
@@ -39,13 +43,13 @@ oracle logic do **not** prove that clean-state auto-reload happens in Gi.
 | `001` | `tests/ux/queue.spec.mjs` severs SSE, checks that transient agent display clears while the user's draft survives; `web/src/app.ts` disconnect handler clears previews, pending/run state. | Focused real SSE-proxy/browser run: 6/6; current Piclaw UI not run. |
 | `002` | `tests/ux/reconnect.spec.mjs` holds a stale response across reconnect, checks authoritative timeline, queue and activity; `activationRefresh` and `refreshAfterConnection` reload selected state. | Focused reconnect tags `002`–`005`: 30/30 across six projects; Gi fixture, not deployed acceptance. |
 | `003` | Tagged search test checks no general messages refresh over search, but fresh activity/queue/model data and retained draft/file; search-aware refresh in `web/src/app.ts`. | Same focused run; no Piclaw search-reconnect browser probe. |
-| `004` | Existing dirty-draft test checks manual warning, no navigation, unchanged asset URL, then manual reload. **Clean-composer** test waits beyond 350 ms, checks no navigation on two notices, and then manually reloads. `createAssetVersionGuard` checks deduplication. | Clean case 6/6; focused tags 30/30. Installed Classic source and frozen clause agree on no auto-reload; shipped browser warning and current backend remain unverified. The divergent copied helper is unmounted. |
+| `004` | Existing dirty-draft test checks manual warning, no navigation, unchanged asset URL, then manual reload. **Clean-composer** test waits beyond 350 ms, checks no navigation on two notices, and then manually reloads. `createAssetVersionGuard` checks deduplication. | Clean Gi case 6/6; focused tags 30/30. Installed Classic source agrees with the frozen clause; shipped-asset Chromium/WebKit probes confirm delivered warning, deduplication and zero auto-navigation. Current Piclaw backend, live Gi and physical acceptance remain unverified. The divergent copied helper is unmounted. |
 | `005` | Tagged test checks one initial refresh per selected session and a new refresh after actual disconnect; `createActivationRefreshGate` unit test covers readiness ordering. | Same focused run; not an exactly-once transport guarantee. |
 
 A broader unfiltered reconnect command reached 63/72 before its external
 260-second timeout; it has **no pass result**. The focused runs do not cover
 all additional Gi reconnect journeys. No production code, frozen Gherkin,
-installed Piclaw or live Gi state was changed. Re-run an instrumented Classic
-version-change UI test with a confirmed delivered event and warning before
-claiming installed-browser acceptance. The copied helper's auto-reload path
-must not be presented as installed 3.2.4 policy.
+installed Piclaw or live Gi state was changed. The shipped-asset probe uses a
+mocked backend and does not establish real-server version-change handling. The
+copied helper's auto-reload path must not be presented as installed 3.2.4
+policy.

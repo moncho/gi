@@ -62,7 +62,7 @@ export async function installPixelHost({page,host,root,state,reference}){
  await page.route('**/*',handler);
  return {origin,assets,calls,failures,streamAborts,
   assert(){if(failures.length)throw Error(failures.join('; '));if(![...streams.values()].includes('/sse/stream'))throw Error('No connected fixture stream');},
-  async connected(){for(let n=0;n<100&&!([...streams.values()].includes('/sse/stream'));n++)await page.waitForTimeout(50);this.assert();for(const [s,path]of streams)if(path==='/sse/stream')s.write(`event: connected\ndata: ${JSON.stringify({chat_jid:state.sessionId})}\n\n`);},
+  async connected(extra={}){for(let n=0;n<100&&!([...streams.values()].includes('/sse/stream'));n++)await page.waitForTimeout(50);this.assert();for(const [s,path]of streams)if(path==='/sse/stream')s.write(`event: connected\ndata: ${JSON.stringify({chat_jid:state.sessionId,...extra})}\n\n`);},
   async dispose(){page.off('pageerror',onError);page.off('requestfailed',onFailed);await page.unroute('**/*',handler);for(const s of streams.keys())s.end();server.closeAllConnections();await new Promise(r=>server.close(r));}
  };
 }

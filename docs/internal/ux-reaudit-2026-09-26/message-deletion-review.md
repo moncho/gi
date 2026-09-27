@@ -31,15 +31,24 @@ and confirmation sends `cascade=true` and removes the returned IDs. When the
 fixture deliberately returns HTTP 409 `Replies exist` for a hidden reply, the
 UI prompts after `cascade=false`: cancellation leaves the parent visible and
 confirmation retries with `cascade=true`. These fixture assertions exercise
-the shipped UI branch, not the installed backend. The backend probe's real
-response is 200 instead of the synthetic 409, so the two independent probes
-do not establish `018`/`019` end-to-end.
+the shipped UI branch, not the installed backend. A third probe joins the
+shipped UI to installed `getTimelineResponse` and `deletePostResponse` through
+**disposable routes** and in-memory SQLite:
+`PICLAW_DB_IN_MEMORY=1 ORACLE_BROWSER=chromium|webkit bun
+tests/ux/oracle/piclaw-deletion-combined-probe.mjs` (run separately for each
+browser). Its deliberately restricted current view presents a real stored
+parent while hiding a real stored reply. In both desktop browsers, clicking
+Delete sends `cascade=false`, shows no prompt, removes the parent from the UI
+and leaves the reply row orphaned (`thread_id` still points to the parent).
+This is a joined browser/backend-function fixture finding, not a production
+HTTP-router, authentication, or live-chat acceptance. The backend's 200
+response cannot reach the synthetic-409 retry branch in this setup.
 
 | ID | Bounded Gi evidence | Result |
 |---|---|---|
 | `017` | `tests/ux/message-delete.spec.mjs` holds native DELETE acknowledgment, checks no premature removal, transient removing class, eventual removal, absent stored/search row and reload absence; draft/file survive. `web/src/app.ts:571–600` performs only `deletePost(id,false,originChat)` and animates after success. | Tagged focused run **6/6** Chromium/WebKit phone/tablet/desktop in disposable Gi; no live/Piclaw runtime acceptance. |
-| `018` | Gi always sends `cascade=false`. `internal/web/message_delete.go` rejects `cascade=true` with HTTP 400; no reply-detection retry in Gi `handleDeletePost`. Installed Piclaw backend-function deletion of a parent with an unseen reply returns 200 and orphans it; the independent shipped-UI fixture retries only after a synthetic 409 `Replies exist`. | Verified Gi gap; frozen Piclaw premise fails in an isolated backend-function probe, while the shipped UI conditional branch passes a fixture probe. Integrated HTTP/UI untested. |
-| `019` | Gi has no follow-up prompt after `Replies exist`; it displays a deletion error and leaves the post on failure. Installed Piclaw backend-function deletion returns 200 for this setup; the shipped UI's cancellation preserves the fixture parent after synthetic 409. | Gi cancellation interaction absent; generic failure preservation is insufficient. No integrated HTTP/UI probe or Gi tagged journey. |
+| `018` | Gi always sends `cascade=false`. `internal/web/message_delete.go` rejects `cascade=true` with HTTP 400; no reply-detection retry in Gi `handleDeletePost`. Joined shipped UI/installed-backend-function fixture deletes a stored parent with an unseen reply directly, leaving an orphan; a separate shipped-UI fixture retries only after synthetic 409 `Replies exist`. | Verified Gi gap; frozen Piclaw reply-rejection premise fails in the joined disposable fixture. Production HTTP router/live untested. |
+| `019` | Gi has no follow-up prompt after `Replies exist`; it displays a deletion error and leaves the post on failure. The joined shipped UI/installed-backend-function fixture receives 200 and removes the parent without a prompt; the separate shipped UI cancels and preserves the parent only after synthetic 409. | Gi cancellation interaction absent; generic failure preservation is insufficient. No production HTTP-router/live check or Gi tagged journey. |
 | `020` | Gi does not count visible `thread_id` replies to build the three-reply confirmation prompt. Shipped Piclaw UI with three fixture replies shows the exact `Delete this message and its 3 replies?` dialog in Chromium and WebKit desktop. | Verified Gi prompt gap; Piclaw fixture branch is bounded, without installed-backend or physical acceptance. |
 | `021` | Gi server disallows cascade, UI removes only the acknowledged direct ID. Shipped Piclaw UI with fixture replies sends `cascade=true` and removes all returned IDs; the independent installed-backend probe deletes a parent and three replies with `cascade=true`. | Verified Gi cascade gap; independent probes do not establish an integrated HTTP/UI journey. |
 | `022` | Gi has no visible-reply prompt or its cancel path; generic failure preservation is insufficient. Shipped Piclaw UI with three fixture replies leaves parent and replies visible and sends no DELETE when the prompt is cancelled. | Verified Gi prompt/cancel gap; Piclaw fixture assertion is bounded, without integrated backend acceptance. |

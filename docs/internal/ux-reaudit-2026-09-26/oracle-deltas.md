@@ -57,6 +57,14 @@ passkeys, keyboard assistive technology or Gi's runtime.
   installed server handler, persistence, reload and pixel colours were not
   exercised; Gi has no `/theme` or `/tint` composer-command path, leaving all
   fifteen Classic command scenarios unmapped.
+- Installed Piclaw 3.2.4 with Plan Sidebar add-on 0.1.25 preserves dirty
+  Markdown on a same-chat `plan.changes` event, then explicit Refresh replaces
+  it without confirmation. A shipped-Classic/add-on disposable browser probe
+  saw the warning, one refresh GET and no write in Chromium and WebKit desktop
+  (`plan-oracle-gap.md`). Gi has no Plan feature. Frozen Shared20's
+  confirm-before-discard requirement is a proposed no-loss deviation from this
+  observed oracle behavior and needs an explicit policy decision before
+  implementation; no Shared Plan parity credit follows from this probe.
 - `tests/features/settings/gi-settings.feature:40` said thinking was read-only;
   `web/src/gi-settings-models.ts:117` and `tests/ux/session-thinking.spec.mjs:18-35`
   expose/apply native supported choices. The additive Gi feature is corrected with

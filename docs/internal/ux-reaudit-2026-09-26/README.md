@@ -45,8 +45,8 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Two hundred and seventy-six have qualified clause findings or source→test→Gi-code
-reviews; 82 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
+Three hundred and three have qualified clause findings or source→test→Gi-code
+reviews; 55 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
@@ -97,6 +97,10 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`gi-settings-native-review.md` traces the 27 Gi-specific baseline Settings
+definitions (including one unimplemented OAuth proposal) through scoped native
+browser and auth tests. Post-baseline thinking cases 028–029 remain outside the
+358-definition ledger; none grants Piclaw Classic/Shared parity.
 `classic-core-settings-review.md` classifies all 32 Classic Settings clauses
 against Gi's six mounted sections. Three directly tagged shell cases passed
 within a 24/24 run; the remaining clauses have qualified partial or missing

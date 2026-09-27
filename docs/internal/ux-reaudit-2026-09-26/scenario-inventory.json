@@ -2947,12 +2947,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3019,12 +3019,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3091,12 +3091,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3257,12 +3257,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3332,12 +3332,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3403,12 +3403,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3447,12 +3447,12 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "native unauthenticated route denial and no-secret-leak Go test; no ID-tagged browser case",
+      "oracle_status": "not-applicable-gi-derived",
+      "audit_status": "source-backed-native-auth-test",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "TestGiSettingsRoutesPreserveAuthentication passed; Gi-derived auth boundary, not Piclaw parity or full cross-origin browser proof.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3538,12 +3538,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3614,12 +3614,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3686,12 +3686,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3750,12 +3750,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3814,12 +3814,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3885,12 +3885,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -3968,12 +3968,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4036,12 +4036,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4107,12 +4107,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4183,12 +4183,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4270,12 +4270,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4356,12 +4356,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4432,12 +4432,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4515,12 +4515,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4609,12 +4609,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4703,12 +4703,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4790,12 +4790,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4884,12 +4884,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4952,12 +4952,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "Gi-derived clause→tagged focused six-project browser assertion→mounted Gi Settings/API path",
+      "oracle_status": "not-applicable-gi-derived-current-oracle-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused tagged native Gi Settings assertions passed in scoped runs; see gi-settings-native-review.md. No Piclaw Classic/Shared parity or live deployment credit.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -4997,12 +4997,12 @@
       "examples": [],
       "expanded_count": 1,
       "test_candidates": [],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "browser OAuth proposal; native Gi Providers labels OAuth/token setup read-only",
+      "oracle_status": "not-applicable-gi-proposal",
+      "audit_status": "proposal-unimplemented",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Provider-specific browser OAuth lifecycle remains a proposal; no native browser login/refresh journey.",
+      "evidence_link": "gi-settings-native-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

@@ -45,8 +45,8 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Two hundred and seventeen have qualified clause findings or source→test→Gi-code
-reviews; 141 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
+Two hundred and nineteen have qualified clause findings or source→test→Gi-code
+reviews; 139 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
@@ -97,6 +97,9 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`classic-copy-delete-retrieval-gap.md` records Classic024's missing cascade
+path and Classic025's all-chat/family scope gap. Direct-delete and Shared38
+current-session acceptance do not cover those combined contracts.
 `classic-copy-speech-review.md` traces Classic028's combined code-copy and
 speech-owner journey (6/6 with stubbed synthesis); audible output remains
 unprobed.

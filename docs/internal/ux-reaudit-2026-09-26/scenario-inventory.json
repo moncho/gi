@@ -8807,12 +8807,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen combined copy/cascade clause→Gi copy/direct-delete assertions→native cascade rejection",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "verified-native-cascade-gap",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Markdown/code copy and direct delete exist, but Gi rejects cascade=true and has no replies confirmation/cancellation/removal journey.",
+      "evidence_link": "classic-copy-delete-retrieval-gap.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -8885,12 +8885,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen all-chat/family retrieval clause→accepted current-session Shared38→native tool scope restriction",
+      "oracle_status": "current-oracle-backend-runtime-unprobed",
+      "audit_status": "policy-conflict",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Native messages tool accepts only current session; no explicit all-chat scope or family-owned authorisation. Shared38 does not satisfy Classic025.",
+      "evidence_link": "classic-copy-delete-retrieval-gap.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

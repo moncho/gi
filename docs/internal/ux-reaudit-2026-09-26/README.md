@@ -45,8 +45,8 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-One hundred and nine have qualified clause findings or source→test→Gi-code
-reviews; 249 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
+One hundred and fifteen have qualified clause findings or source→test→Gi-code
+reviews; 243 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
@@ -97,6 +97,9 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`message-deletion-review.md` separates one direct-delete native journey
+(6/6) from five unsupported reply/cascade prompts; Gi's server rejects
+cascade deletion. Piclaw's current backend was not exercised.
 `shell-layout-review.md` traces nine Classic menu/layout clauses: four tagged
 native cases passed 24/24, while hamburger New file dispatch and terminal/VNC
 callbacks remain native gaps; safe-area, scale and inline-code checks are bounded.

@@ -22360,12 +22360,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen shared clause→tagged native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused first fifteen shared cases passed 84/84 except Shared8; current Piclaw UI and physical input unprobed.",
+      "evidence_link": "shared-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -22449,12 +22449,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen shared clause→tagged native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused first fifteen shared cases passed 84/84 except Shared8; current Piclaw UI and physical input unprobed.",
+      "evidence_link": "shared-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -22562,12 +22562,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen shared clause→tagged native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused first fifteen shared cases passed 84/84 except Shared8; current Piclaw UI and physical input unprobed.",
+      "evidence_link": "shared-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -22698,12 +22698,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "six real interactive cases pass; contenteditable editor example unmapped",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "partial-shared-outline",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Shared5–7 and 9–11 pass, but Shared8 real contenteditable editor is absent; artificial DOM cannot earn seven-example outline completion.",
+      "evidence_link": "shared-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared",
       "harness_status": "contenteditable example @shared-8 has no direct tagged browser test; synthetic DOM guard is not real editor typing"
@@ -22776,12 +22776,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen shared clause→tagged native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused first fifteen shared cases passed 84/84 except Shared8; current Piclaw UI and physical input unprobed.",
+      "evidence_link": "shared-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -22914,12 +22914,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen shared clause→tagged native browser assertion→mounted menu/Quick Actions",
+      "oracle_status": "current-oracle-ui-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused first fifteen shared cases passed 84/84 except Shared8; current Piclaw UI and physical input unprobed.",
+      "evidence_link": "shared-shell-quick-actions-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

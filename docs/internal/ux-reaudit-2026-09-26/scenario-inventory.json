@@ -18485,11 +18485,11 @@
           "skipped": false
         }
       ],
-      "review_status": "seven examples checked against mounted swipe host and actual adjacent tests; no full tagged journey",
-      "oracle_status": "source-backed-runtime-unprobed",
-      "audit_status": "verified-outline-test-gap",
+      "review_status": "two-tagged-gi-mounted-control-journeys-12of12-six-project-fixture",
+      "oracle_status": "installed-piclaw-source-current-browser-unprobed",
+      "audit_status": "partial-mounted-six-surface-browser-evidence",
       "priority": null,
-      "finding": "Mounted swipe host admits timeline/status starts only. Composer input has adjacent evidence; explorer sidebar, body-portal attachment and read-only editor sit outside host, while terminal dock is unmounted/no-op. Card/picker controls mount but lack tagged gesture cases. Seven expanded examples remain uncredited; selector-only substitutes insufficient.",
+      "finding": "Two tagged Gi browser cases exercise composer, real sidebar, read-only preview, attachment modal, Adaptive Card input/Submit and model popup with timeline positive control (12/12). Terminal/dock example is unmounted: callbacks no-op. Seven-example Piclaw/physical acceptance not established.",
       "evidence_link": "mobile-swipe-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"

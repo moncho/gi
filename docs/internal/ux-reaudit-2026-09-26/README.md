@@ -247,9 +247,11 @@ editor. `pwa-manifest-review.md` records six icon clauses. Gi's static manifest 
 Apple/favicon routes passed 12 browser cases; avatar PNG/versioned paths in
 Piclaw have no Gi counterpart or acceptance test.
 `mobile-swipe-review.md` qualifies six mobile definitions. Four session-tagged
-IDs passed 24/24 and status-panel gestures passed 12/12 (six mobile, six Gi
-variants). The seven-example excluded-controls outline has a verified test gap:
-no journey covers every real control; emulation grants no physical-touch credit.
+IDs passed 24/24; status-panel gestures passed 12/12 (six mobile, six Gi
+variants). Two tagged excluded-control journeys passed 12/12 across six
+projects for mounted composer, sidebar, read-only preview, attachment modal,
+card controls and picker. The terminal/dock example is unmounted; simulated
+touch grants no physical-device or complete seven-example credit.
 Six session-switching clauses (`@ux-session-001`–`006`) passed 36/36 in
 six disposable Gi browser projects. `session-switching-review.md` traces the
 current installed Piclaw source, Gi assertions and code; Piclaw UI/physical

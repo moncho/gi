@@ -8698,12 +8698,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test review in classic-canonical-review.md; current Piclaw 3.2.4 UI comparison pending unless separately probed",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "pinned connection source→tagged real-SSE Gi browser assertion→mounted Stop/refresh guards",
+      "oracle_status": "current-oracle-reconnect-stop-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused Gi reconnect/Stop case passed 6/6 across six projects; Piclaw backend runtime and separate version drift policy unprobed.",
+      "evidence_link": "classic-reconnect-stop-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

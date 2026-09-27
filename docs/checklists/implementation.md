@@ -708,6 +708,8 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 
 ---
 
+- [x] Make TUI Up/Down history navigate submitted prompts only with an unsent-draft round trip; persist bounded prompt history per session, including legacy user-message backfill. Go/store tests and `make test-tui-input-history` verify switches, rejection and restart. Full legacy Gherkin/Markdown suites remain blocked by pre-existing renderer expectation failures.
+
 ## Explicit investigation items
 
 - [ ] Investigate exact Piclaw transcript/message export path for future import tools

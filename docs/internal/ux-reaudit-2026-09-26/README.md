@@ -211,9 +211,11 @@ through Gi native upload, reference serialization, newer-draft preservation
 and timeline assertions (30/30); Piclaw backend acceptance was not run.
 `message-deletion-review.md` separates one direct-delete native journey
 (6/6) from five unsupported reply/cascade clauses; Gi's server rejects
-cascade deletion. Installed Piclaw 3.2.4 backend source has no `Replies exist`
-guard on direct deletion, so frozen `018`/`019` have a source-level oracle
-risk; the Piclaw backend/UI deletion path was not exercised.
+cascade deletion. An isolated installed-Piclaw 3.2.4 backend-function probe
+returned 200 for direct deletion of a parent with an unseen reply, leaving an
+orphan; cascade removed a parent and three replies. Frozen `018`/`019` require
+a `Replies exist` direct-delete rejection, which this backend did not emit.
+Piclaw HTTP/UI deletion and live acceptance were not exercised.
 `shell-layout-review.md` traces nine Classic menu/layout clauses: four tagged
 native cases passed 24/24, while hamburger New file dispatch and terminal/VNC
 callbacks remain native gaps; safe-area, scale and inline-code checks are bounded.

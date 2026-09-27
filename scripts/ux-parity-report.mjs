@@ -10,8 +10,19 @@ for (const item of classic) {
   rows.get(item.id).expandedCases++;
 }
 const sharedRows = new Map(shared.map(item => [item.id, { id: item.id, name: item.name, source: `${item.uri}:${item.line}`, expandedCases: 1, status: 'unmapped', results: [] }]));
-// Explicit result paths only: do not silently reuse a stale fixture run.
-for (const resultPath of process.argv.slice(2)) {
+// Supplemental fixture results may replace only a skipped generic case with
+// one matching passed case per project. Explicit paths prevent stale reuse.
+const args = process.argv.slice(2);
+const separator = args.indexOf('--supplemental');
+if (args.filter(arg => arg === '--supplemental').length > 1 || (separator >= 0 && (separator === 0 || separator === args.length - 1))) {
+  throw new Error('Usage: ux-parity-report.mjs <primary results...> [--supplemental <fixture results...>]');
+}
+const primaryPaths = separator < 0 ? args : args.slice(0, separator);
+const supplementalPaths = separator < 0 ? [] : args.slice(separator + 1);
+if ([...primaryPaths, ...supplementalPaths].some(path => path.startsWith('--'))) {
+  throw new Error('Only explicit result paths are accepted');
+}
+for (const [resultPath, fixture] of [...primaryPaths.map(path => [path, false]), ...supplementalPaths.map(path => [path, true])]) {
   const result = JSON.parse(readFileSync(resultPath, 'utf8'));
   function walk(suites) {
     for (const suite of suites || []) {
@@ -21,7 +32,7 @@ for (const resultPath of process.argv.slice(2)) {
         if (!row) continue;
         for (const test of spec.tests || []) {
           const last = test.results?.at(-1);
-          row.results.push({ project: test.projectName, status: last?.status || 'not-run', errors: (last?.errors || []).map(error => error.message) });
+          row.results.push({ project: test.projectName, status: last?.status || 'not-run', errors: (last?.errors || []).map(error => error.message), ...(fixture ? {fixture: true} : {}) });
         }
       }
       walk(suite.suites);
@@ -31,7 +42,28 @@ for (const resultPath of process.argv.slice(2)) {
 }
 for (const row of [...rows.values(), ...sharedRows.values()]) {
   if (!mappedIds.has(row.id) && !sharedMappedIds.has(row.id)) continue;
-  row.status = !row.results.length ? 'not-run' : row.results.some(test => test.status !== 'passed') ? 'fail' : expectedProjects.every(project => row.results.filter(test => test.project === project && test.status === 'passed').length === row.expandedCases) ? 'pass' : 'partial-matrix';
+  const primary = row.results.filter(test => !test.fixture);
+  const supplemental = row.results.filter(test => test.fixture);
+  // An absent, failed or incomplete primary project cannot borrow another
+  // fixture's success. Multiple runs for a project also cannot erase failures.
+  const replaceable = primary.length === expectedProjects.length * row.expandedCases &&
+    expectedProjects.every(project => primary.filter(test => test.project === project).length === row.expandedCases);
+  const hasSkipped = primary.some(test => test.status === 'skipped');
+  const supplementalComplete = replaceable && hasSkipped && expectedProjects.every(project => {
+    const skipped = primary.filter(test => test.project === project && test.status === 'skipped');
+    const fixtureResults = supplemental.filter(test => test.project === project);
+    return fixtureResults.length === skipped.length && fixtureResults.every(test => test.status === 'passed');
+  });
+  // A clause omitted from the generic fixture can use its own isolated fixture,
+  // but only with an exact complete six-project matrix and no competing primary.
+  const fixtureOnly = separator >= 0 && !primary.length && supplemental.length === expectedProjects.length * row.expandedCases &&
+    expectedProjects.every(project => supplemental.filter(test => test.project === project && test.status === 'passed').length === row.expandedCases);
+  const effective = fixtureOnly ? supplemental : supplementalComplete ? primary.map(test => test.status === 'skipped' ? {...test, status: 'passed', supplemented: true} : test) : primary;
+  const status = !primary.length && !supplemental.length ? 'not-run' :
+    primary.some(test => test.status === 'failed' || test.status === 'interrupted') || supplemental.some(test => test.status === 'failed' || test.status === 'interrupted') || effective.some(test => test.status !== 'passed') ? 'fail' :
+    expectedProjects.every(project => effective.filter(test => test.project === project && test.status === 'passed').length === row.expandedCases) ? 'pass' : 'partial-matrix';
+  row.status = status;
+  if (supplementalComplete || fixtureOnly) row.supplementedProjects = fixtureOnly ? [...expectedProjects] : expectedProjects.filter(project => primary.some(test => test.project === project && test.status === 'skipped'));
 }
 const counts = {};
 for (const row of rows.values()) counts[row.status] = (counts[row.status] || 0) + 1;

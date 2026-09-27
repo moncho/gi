@@ -553,6 +553,39 @@ test('Shared35 requires all projects and cannot borrow thinking or compaction ev
  }finally{rmSync(dir,{recursive:true,force:true})}
 });
 
+test('supplemental fixture evidence replaces only complete six-project skipped cases',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'gi-supplemental-report-'));
+ try{
+  const primary=join(dir,'primary.json'),fixture=join(dir,'fixture.json');
+  const run=(main:any[],extra:any[],supplement=true)=>{
+   writeFileSync(primary,JSON.stringify({suites:[{specs:main}]}));
+   writeFileSync(fixture,JSON.stringify({suites:[{specs:extra}]}));
+   execFileSync(process.execPath,[script,primary,...(supplement?['--supplemental',fixture]:[])],{cwd:dir});
+   return JSON.parse(readFileSync(join(dir,'test-results/ux-parity/matrix.json'),'utf8'));
+  };
+  const skipped=spec('@ux-extra-003',6),other=spec('@shared-42',6);
+  skipped.tests.forEach(test=>test.results=[{status:'skipped'}]);
+  other.tests.forEach(test=>test.results=[{status:'skipped'}]);
+  const status=(report:any,id:string)=>[...report.rows,...report.sharedRows].find(row=>row.id===id).status;
+  const fixtureCase=spec('@ux-extra-003',6),fixtureShared=spec('@shared-42',6);
+  expect(status(run([skipped,other],[fixtureCase,fixtureShared],false),'@ux-extra-003')).toBe('fail');
+  const full=run([skipped,other],[fixtureCase,fixtureShared]);
+  expect(status(full,'@ux-extra-003')).toBe('pass');expect(status(full,'@shared-42')).toBe('pass');
+  expect(full.rows.find((row:any)=>row.id==='@ux-extra-003').supplementedProjects).toEqual(projects);
+  expect(status(run([skipped],[spec('@ux-extra-003',5)]),'@ux-extra-003')).toBe('fail');
+  expect(status(run([spec('@ux-extra-003',5)],[fixtureCase]),'@ux-extra-003')).toBe('partial-matrix');
+  expect(status(run([skipped],[fixtureCase,fixtureCase]),'@ux-extra-003')).toBe('fail');
+  const failed=spec('@ux-extra-003',6);failed.tests[2].results=[{status:'failed'}];
+  expect(status(run([failed],[fixtureCase]),'@ux-extra-003')).toBe('fail');
+  const fixtureOnly=run([skipped],[spec('@ux-extra-003',6),spec('@shared-42',6)]);
+  expect(status(fixtureOnly,'@shared-42')).toBe('pass');
+  expect(fixtureOnly.sharedRows.find((row:any)=>row.id==='@shared-42').supplementedProjects).toEqual(projects);
+  expect(status(run([skipped],[spec('@shared-42',5)]),'@shared-42')).toBe('partial-matrix');
+  expect(status(run([skipped],[spec('@shared-42',6),spec('@shared-42',6)]),'@shared-42')).toBe('partial-matrix');
+  expect(()=>execFileSync(process.execPath,[script,primary,'--supplemental'],{cwd:dir,stdio:'pipe'})).toThrow();
+ }finally{rmSync(dir,{recursive:true,force:true})}
+});
+
 test('Shared38 needs all six combined retrieval journeys and cannot claim Classic authorization',()=>{
  const dir=mkdtempSync(join(tmpdir(),'gi-retrieval-report-'));
  try{

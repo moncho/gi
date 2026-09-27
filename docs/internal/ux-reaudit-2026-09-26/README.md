@@ -44,9 +44,10 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 `tests/ux/features/oracle/piclaw-3.2.4-basic-interactions.feature`. The older
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
-`scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Three hundred and three have qualified clause findings or source→test→Gi-code
-reviews; 55 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
+`scenario-inventory.json` contains all 358 baseline definitions. Three hundred
+and twenty-nine have qualified clause findings or source→test→Gi-code reviews;
+29 still await clause audit. `scenario-status.csv` is the initial status snapshot;
+its audit statuses were not regenerated after later tranche reviews. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
@@ -97,6 +98,11 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`passkey-additions-review.md` traces all 26 additive passkey clauses through
+the pinned criterion ledger, bounded assertions and mounted Gi paths. Its 15
+candidate, eight partial, two manual and one unsupported findings add no
+formal scenario mappings, Visual/physical-device acceptance or current Piclaw
+runtime comparison.
 `gi-settings-native-review.md` traces the 27 Gi-specific baseline Settings
 definitions (including one unimplemented OAuth proposal) through scoped native
 browser and auth tests. Post-baseline thinking cases 028–029 remain outside the

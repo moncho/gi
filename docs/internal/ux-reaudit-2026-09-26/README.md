@@ -45,7 +45,7 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
 `scenario-status.csv`/`scenario-inventory.json` contain all 358 baseline definitions.
-Ninety-five have qualified clause findings or source→test→Gi-code reviews; 263
+One hundred have qualified clause findings or source→test→Gi-code reviews; 258
 still await clause audit. Historical Classic canonical 001–029 and Shared 1–42
 also have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
@@ -97,6 +97,12 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`reconnect-version-review.md` traces five SSE reconnect clauses through the
+copied Piclaw source, focused Gi browser assertions and Gi's mounted entry
+point. The frozen clean-state no-auto-reload clause conflicts with the pinned
+3.2.4 helper's 350 ms auto-reload path; current Piclaw runtime and policy
+resolution are still outstanding. The filtered Gi runs passed 6/6 and 30/30;
+the broader reconnect run timed out at 63/72 and is not a pass.
 `theme-command-gap.md` records fifteen Classic composer `/theme`/`/tint`
 scenarios unsupported by Gi's native command path. Browser-local Appearance
 Settings is separate and cannot earn their timeline/legacy-storage credit.

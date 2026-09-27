@@ -118,6 +118,25 @@ test('@ux-reconnect-004 Show version drift without automatically reloading',asyn
  }finally{await env.close();}
 });
 
+test('@ux-reconnect-004 Clean composer still requires a manual UI-version reload',async({page},info)=>{
+ await source(info,'@ux-reconnect-004');const env=await environment(page,info);const{input}=env;
+ try{
+  const old=await page.locator('script[src*="/dist/app.bundle.js"]').getAttribute('src');
+  await expect(input).toHaveValue('');let navigations=0;page.on('framenavigated',frame=>{if(frame===page.mainFrame())navigations++;});
+  await env.stop();await expect(page.locator('.compose-connection-status')).toBeVisible({timeout:15000});await env.start();
+  const warning=page.getByRole('status').filter({hasText:'New UI available'});
+  await expect(warning).toHaveCount(1,{timeout:15000});await expect(warning).toContainText('Reload manually');
+  // The frozen clean-state clause must survive the oracle helper's 350ms reload window.
+  await page.waitForTimeout(800);expect(navigations).toBe(0);await expect(input).toHaveValue('');
+  expect(await page.locator('script[src*="/dist/app.bundle.js"]').getAttribute('src')).toBe(old);
+  await env.drop();await expect(page.locator('.compose-connection-status')).toBeVisible({timeout:15000});env.resume();
+  await expect(page.locator('.compose-connection-status')).toHaveCount(0,{timeout:15000});await expect(warning).toHaveCount(1);
+  expect(navigations).toBe(0);
+  await page.reload();await expect(warning).toHaveCount(0);
+  expect(await page.locator('script[src*="/dist/app.bundle.js"]').getAttribute('src')).not.toBe(old);
+ }finally{await env.close();}
+});
+
 test('Gi pre-disconnect activity failure cannot overwrite healthy reconnect state',async({page},info)=>{
  const env=await environment(page,info);const{main,input,api}=env;
  let unblock,held=false,done;const gate=new Promise(r=>unblock=r),delivery=new Promise(r=>done=r);

@@ -16280,12 +16280,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→copied 3.2.4 source→focused Gi browser assertions→mounted Gi app.ts; current Piclaw UI not run",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused native SSE-proxy browser assertion and Gi app.ts trace, not current Piclaw UI or deployed parity; see reconnect-version-review.md.",
+      "evidence_link": "reconnect-version-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -16360,12 +16360,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→copied 3.2.4 source→focused Gi browser assertions→mounted Gi app.ts; current Piclaw UI not run",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused native SSE-proxy browser assertion and Gi app.ts trace, not current Piclaw UI or deployed parity; see reconnect-version-review.md.",
+      "evidence_link": "reconnect-version-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -16440,12 +16440,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→copied 3.2.4 source→focused Gi browser assertions→mounted Gi app.ts; current Piclaw UI not run",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused native SSE-proxy browser assertion and Gi app.ts trace, not current Piclaw UI or deployed parity; see reconnect-version-review.md.",
+      "evidence_link": "reconnect-version-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -16524,12 +16524,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→copied 3.2.4 source→focused Gi browser assertions→mounted Gi app.ts; current Piclaw UI not run",
+      "oracle_status": "frozen-source-clean-reload-conflicts-with-clause-runtime-unprobed",
+      "audit_status": "oracle-conflict",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Frozen clean-state no-auto-reload conflicts with pinned Piclaw 3.2.4 helper auto-reload; mounted Gi manual warning passes dirty and clean native browser cases. Current Piclaw runtime and policy unresolved.",
+      "evidence_link": "reconnect-version-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -16600,12 +16600,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen clause→copied 3.2.4 source→focused Gi browser assertions→mounted Gi app.ts; current Piclaw UI not run",
+      "oracle_status": "current-oracle-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Focused native SSE-proxy browser assertion and Gi app.ts trace, not current Piclaw UI or deployed parity; see reconnect-version-review.md.",
+      "evidence_link": "reconnect-version-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

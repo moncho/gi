@@ -450,6 +450,9 @@ func StreamWithToolsWithHooks(ctx context.Context, modelID string, convCtx *goai
 			opts.Reasoning = &level
 		}
 	}
+	if model.Api == goai.ApiOpenAICodexResponses {
+		opts.OnPayload = codexPayloadHook(opts.OnPayload)
+	}
 	if provider == "github-copilot" {
 		opts.Headers = goai.CopilotHeaders()
 	}

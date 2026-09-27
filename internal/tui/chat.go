@@ -814,7 +814,15 @@ func (c *chatTUI) handleEvent(ev map[string]any) {
 		if data != nil {
 			text, _ := data["content"].(string)
 			if text != "" {
-				c.finalizeDraftTranscript(text)
+				if data["type"] == "system_message" || ev["sender"] == "system" {
+					// A terminal system notice is not an assistant response. Use
+					// the same role projection as reload, so an earlier streamed
+					// error can deduplicate instead of gaining a second Gi label.
+					c.clearDraftTranscriptLine()
+					c.appendTranscript("sys: " + text)
+				} else {
+					c.finalizeDraftTranscript(text)
+				}
 				c.status = fmt.Sprintf("%s · %s", c.cfg.AssistantName, c.cfg.DefaultModel)
 				c.resetRunningDraftState()
 				if c.stickToBottom {

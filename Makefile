@@ -243,6 +243,11 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-codex-tui-regression
+test-codex-tui-regression:
+	$(GO) test -race -count=3 ./internal/inference -run 'TestCodex'
+	$(GO) test -race -count=3 ./internal/tui -run 'TestStreamedErrorAndDurableSystemPost|TestSystemPostDoesNotBecomeAssistant'
+
 vet:
 	$(GO) vet ./...
 
@@ -505,7 +510,7 @@ test-tui-reading: build
 	$(BUN) scripts/test-tui-reading.mjs
 
 test-tui-input-history: build
-	FEATURE_FILE=$(abspath features/tui/input_history.feature) ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-input-history TEST_DIR=$(abspath $(TUI_TEST_DIR))-input-history scripts/test-tui-gherkin.sh
+	FEATURE_FILE=$(abspath features/tui/input_history.feature) ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-input-history TEST_DIR=$(abspath $(TUI_TEST_DIR))-input-history bash scripts/test-tui-gherkin.sh
 
 test-tui-sessions: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-sessions.mjs
@@ -561,10 +566,6 @@ test-tui-session-picker: build
 test-tui-smoke: build
 	chmod +x scripts/test-tui-smoke.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
-
-.PHONY: test-tui-input-history
-test-tui-input-history: build
-	FEATURE_FILE=$(abspath features/tui/input_history.feature) ARTIFACT_DIR=$(abspath test-results/tui-input-history) TEST_DIR=$(abspath .gi-tui-input-history) bash scripts/test-tui-gherkin.sh
 
 test-tui-gherkin: build test-tui-markdown test-tui-scrollbar
 	chmod +x scripts/test-tui-gherkin.sh

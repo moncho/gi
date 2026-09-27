@@ -21298,12 +21298,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native stored-media lightbox assertion; emulated trusted touch not physical device",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw image-modal source identical to frozen; tagged Gi native lightbox journey passed six browser projects. Current Piclaw UI and physical touch unprobed; see lightbox-dismissal-review.md.",
+      "evidence_link": "lightbox-dismissal-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -21364,12 +21364,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native stored-media lightbox assertion; emulated trusted touch not physical device",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw image-modal source identical to frozen; tagged Gi native lightbox journey passed six browser projects. Current Piclaw UI and physical touch unprobed; see lightbox-dismissal-review.md.",
+      "evidence_link": "lightbox-dismissal-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -21430,12 +21430,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native stored-media lightbox assertion; emulated trusted touch not physical device",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw image-modal source identical to frozen; tagged Gi native lightbox journey passed six browser projects. Current Piclaw UI and physical touch unprobed; see lightbox-dismissal-review.md.",
+      "evidence_link": "lightbox-dismissal-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },
@@ -21496,12 +21496,12 @@
           "skipped": false
         }
       ],
-      "review_status": "not-complete",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "bounded native stored-media lightbox assertion; emulated trusted touch not physical device",
+      "oracle_status": "source-identical-runtime-unprobed",
+      "audit_status": "source-backed-native-journey",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Installed Piclaw image-modal source identical to frozen; tagged Gi native lightbox journey passed six browser projects. Current Piclaw UI and physical touch unprobed; see lightbox-dismissal-review.md.",
+      "evidence_link": "lightbox-dismissal-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared",
       "harness_status": "test.use hasTouch:true with trusted emulated touch, physical hardware excluded"

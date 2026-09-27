@@ -24826,12 +24826,12 @@
           "skipped": false
         }
       ],
-      "review_status": "qualified-source-test group review in shared-contract-review.md; current Piclaw 3.2.4 comparison pending except versioned oracle probes",
-      "oracle_status": "not-yet-compared",
-      "audit_status": "awaiting-clause-audit",
+      "review_status": "frozen accessible persisted tool-pane clause→mounted Gi status-only component→WIP separate/unapproved",
+      "oracle_status": "current-oracle-tool-pane-runtime-unprobed",
+      "audit_status": "verified-native-tool-pane-gap",
       "priority": null,
-      "finding": null,
-      "evidence_link": null,
+      "finding": "Gi tool activity status row lacks accessible expandable persisted output pane, focus lifecycle and reduced-motion acceptance; WIP terminal provenance is unapproved and undeployed.",
+      "evidence_link": "shared-contract-review.md",
       "test_candidates_kind": "lexical-only, not acceptance",
       "oracle_release": "not-yet-compared"
     },

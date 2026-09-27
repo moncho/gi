@@ -470,6 +470,14 @@ test-tui-compaction:
 test-tui-scrollbar: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-scrollbar.mjs
 
+.PHONY: test-tui-inline-prose test-tui-inline-prose-binary
+test-tui-inline-prose: build
+	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-inline-prose.mjs
+
+# Probe an already-built binary (for retained failing-baseline evidence).
+test-tui-inline-prose-binary:
+	$(BUN) scripts/test-tui-inline-prose.mjs
+
 test-tui-markdown: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-markdown.mjs
 
@@ -567,7 +575,7 @@ test-tui-smoke: build
 	chmod +x scripts/test-tui-smoke.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
 
-test-tui-gherkin: build test-tui-markdown test-tui-scrollbar
+test-tui-gherkin: build test-tui-markdown test-tui-inline-prose test-tui-scrollbar
 	chmod +x scripts/test-tui-gherkin.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin scripts/test-tui-gherkin.sh
 

@@ -44,11 +44,13 @@ skill prefill and model-picker keys—across six Chromium/WebKit viewport projec
 `tests/ux/features/oracle/piclaw-3.2.4-basic-interactions.feature`. The older
 3.2.3 reference is historical. These probes are **not Gi parity tests**.
 
-`scenario-inventory.json` contains all 358 baseline definitions. Three hundred
-and twenty-nine have qualified clause findings or source→test→Gi-code reviews;
-29 still await clause audit. `scenario-status.csv` is the initial status snapshot;
-its audit statuses were not regenerated after later tranche reviews. Historical Classic canonical 001–029 and Shared 1–42
-also have qualified **group** reviews in `classic-canonical-review.md` and
+`scenario-inventory.json` contains all 358 baseline definitions. Each has a
+qualified clause finding or source→test→Gi-code review; none awaits initial
+clause audit. Findings include unsupported controls and unresolved policy
+conflicts, so this count is not a parity pass. `scenario-status.csv` is the
+initial status snapshot; its audit statuses were not regenerated after later
+tranche reviews. Historical Classic canonical 001–029 and Shared 1–42 also
+have qualified **group** reviews in `classic-canonical-review.md` and
 `shared-contract-review.md`. `compose-stability-review.md` traces five
 additional frozen compose clauses through current Piclaw 3.2.4 source, tagged
 Gi assertions and code; their Piclaw upload/failure backend was not run.
@@ -98,6 +100,13 @@ The first unchanged run passed 29 and stalled on WebKit phone after reload at
 `Loading Gi…`; the unchanged rerun passed. Cause unknown. The sixth clause,
 queued return `004`, retains the no-loss policy conflict.
 
+`workspace-index-derived-review.md` traces the 23 derived index proposals to
+mounted scanner, store, worker, scheduler, HTTP and TUI assertions. The
+search-triggered versus explicit-only refresh policy conflicts at `:33`, `:199`
+and `:211` persist; there is no complete derived-index acceptance.
+`tui-remaining-review.md` traces the final nine native TUI clauses against a
+fresh seven-feature disposable tmux run. Screen substring/SQLite checks are not
+physical-terminal, accessibility or Piclaw parity acceptance.
 `passkey-additions-review.md` traces all 26 additive passkey clauses through
 the pinned criterion ledger, bounded assertions and mounted Gi paths. Its 15
 candidate, eight partial, two manual and one unsupported findings add no

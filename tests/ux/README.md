@@ -39,12 +39,15 @@ The sources came from `/workspace/evidence/piclaw-classic-70d33bc93` and `/works
 
 Gi-only behaviours are tagged in `../features/ux/gi-deviations.feature`. A Gi-specific pass does not grant Classic or shared Piclaw parity.
 
-## Current status (2026-09-26)
+## Current status (2026-09-27)
 
 The [feature and parity matrix](../../docs/feature-parity.md) separates shipped
-behaviour, known gaps and planned integrations. Source mappings are 101/236
-Classic IDs and 33/42 shared cases; they are not a full-suite pass. Classic008 is
-disputed. All 26 separately pinned passkey Settings scenarios/outlines are unmapped;
+behaviour, known gaps and planned integrations. Active Piclaw 3.2.4 mappings are
+98/236 Classic IDs and 30/42 shared cases. The six-project fixture-backed
+matrix reports those mapped IDs as passed; it does not establish production,
+physical-device or full requirement acceptance. The conflicting Classic008
+skill-prefill behaviour is captured separately as `@gi-ux-002` and has no Piclaw
+parity credit. All 26 separately pinned passkey Settings scenarios/outlines are unmapped;
 `make test-ux-passkeys` verifies native APIs and Settings/login journeys using real
 Chromium WebAuthn and virtual authenticators. Full per-case mapping, Visual-skin
 and physical-device evidence are outstanding.

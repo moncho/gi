@@ -305,15 +305,15 @@ by a contract test and supported by selected Go tests, not run as Gherkin steps.
   Gi `internal/web/workspace_index.go:138-141` rejects GET refresh. Decide whether
   to adopt Piclaw's trigger while keeping bounded asynchronous indexing and safe
   read semantics. No worker completion or production HTTP was tested.
-- Classic queue-return `@ux-original-017`/`@ux-compose-004` replaces draft and clears
-  media; Shared28 preserves/merges latest draft/media before deletion. ADR-0017
-  accepts Gi's no-loss recovery; Classic replacement remains unmapped.
-- Classic007 explicitly replaces existing composer text on Quick Actions
-  prefill; Shared16 requires preserving it. Mounted `/model` follows Classic
-  and Piclaw 3.2.4, leaving Shared16 unmapped. The built canonical skill adapter
-  preserves existing text for Shared17; Piclaw's fixture-listed skill prefill
-  replaces it. General-command policy needs an explicit priority decision.
-- Classic029 keeps fenced SVG as source; Shared41 renders sanitized inline SVG.
+- Active Classic `@ux-compose-004` and Shared28 describe Piclaw's queued-item
+  draft replacement. Gi's ADR-0017 no-loss recovery has its own `@gi-ux-004`
+  clause and earns no Piclaw mapping credit.
+- Active Classic007 and Shared16/17 describe Piclaw's exact-command prefill,
+  replacing the existing draft. Gi's trailing-space and draft-preserving skill
+  paths are `@gi-ux-001` and `@gi-ux-002`; the conflicting Piclaw mappings were
+  removed. The authenticated skill backend journey still needs separate evidence.
+- Active Classic029 and Shared41 describe Piclaw's sanitized fenced SVG image
+  with escaped-source fallback. Gi's source-only path is `@gi-ux-003`.
 - `features/tui/keyboard_behavior.feature:4` bundles focus, history, scrolling,
   resizing and quit, but scroll assertions only require unchanged text to remain
   present. It cannot by itself prove scrolling or cursor/viewport preservation.
@@ -321,8 +321,9 @@ by a contract test and supported by selected Go tests, not run as Gherkin steps.
   rather than a complete human journey. Strengthen with actual trigger, exact
   native identity/result, focus/caret, failure/retry and preservation assertions.
 
-These are source-backed audit leads, not an exhaustive defect list. The frozen
-Classic/shared specs and supplied component bytes were not changed. A Gi-owned
+These are source-backed audit leads, not an exhaustive defect list. Historical
+Classic/shared snapshots and supplied component bytes remain unchanged. Active
+Piclaw 3.2.4 contracts were corrected separately; see `gherkin-alignment.md`. A Gi-owned
 production helper now handles the model-picker keyboard contract.
 Additive Gi Gherkin and functional tests were corrected on the audit branch.
 A verified Classic021 finding (`picker-keyboard-gap.md`) showed its former

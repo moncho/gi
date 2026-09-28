@@ -4,6 +4,8 @@ Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-28
 
+- [x] Isolated WebKit reload-oracle symptom with minimal native HTTP/EventSource/presence page: same cancelled-request/access-control errors without Piclaw assets or routing; replacement stream connects and server receives presence. Chromium clean. Strict Piclaw gate remains failed; no waiver/product workaround/parity claim. [Control](../internal/webkit-reload-control-2026-09-28.md).
+
 - [x] User P0 TUI tables reproduced/fixed: hidden inline-code markers inflated widths; rune padding and precomputed resize broke grids. Pi0.87.1 width-aware grid/wrapped cells, terminal/grapheme widths, source-backed reflow and larger bounded regular live preview. Oracle4widths+race3,6native streaming/resize/reloadPTY,24Markdown,6inlineprose,6copy,3scrollbar,check144functional11skips+206support pass. Broad searchPTY fails identically on clean pre-fix5ef8dd8; retained/not waived. Review timeouts disclosed. No running TUI replacement/deploy. [Evidence](../internal/tui-tables-2026-09-28.md).
 
 - [x] Reproduced Anthropic empty-tool HTTP400: pinned decoder leaves nil args, next request sends input:null. Immutable inference-boundary {} normalisation matches installed Pi0.87.1 stream/encoder. Native two-request wire/race3+oracle pass; check144functional11skips,206support7760assertions. No live provider/deploy, no screenshot-provider attribution; OpenCode chunks/full schema repair remain separate. [Evidence](../internal/empty-tool-input-2026-09-28.md).

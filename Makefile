@@ -511,6 +511,10 @@ capture-gi-chat-baseline:
 test-pi-piclaw-queue-oracle:
 	$(BUN) tests/ux/oracle/pi-piclaw-queue-probe.mjs
 
+.PHONY: diagnose-webkit-unload
+diagnose-webkit-unload:
+	$(BUN) tests/ux/oracle/webkit-unload-diagnostic.mjs
+
 .PHONY: test-piclaw-chat-lifecycle
 test-piclaw-chat-lifecycle:
 	$(BUN) tests/ux/oracle/piclaw-chat-lifecycle-probe.mjs

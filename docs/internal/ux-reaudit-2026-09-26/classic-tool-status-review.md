@@ -14,8 +14,18 @@ with a different tool-call ID, a held stale activity response, and session
 switch isolation. Focused `test-ux-steer` run: **6/6** across Chromium/WebKit
 phone, tablet and desktop.
 
+`make test-piclaw-output-oracle` also passed **6/6** using the installed
+Piclaw 3.2.4 event translator and shipped browser assets alongside Gi's
+adapter. Its synthetic tool start/update/end shows call arguments, a bounded
+Output preview, and Waiting for model after completion. A separate thought
+and draft preview survives that intra-turn transition, with no tool-result
+conversation post; an idle event clears all three panes. The fixture does
+not test an authoritative reload. A stricter shipped-WebKit lifecycle reload
+probe still reports SSE and presence cancellation/access-control errors.
+
 This covers the visible status path and stale-response guard in disposable Gi.
-It does not validate full tool-pane lifecycle reconstruction, reduced-motion
-presentation, current Piclaw 3.2.4 browser UI, or deployed Gi. The separate
-WIP tool-terminal provenance branch has no CI/deployment credit from this
-review. No production code or frozen contract changed.
+Full tool-pane lifecycle reconstruction, concurrent calls, reduced-motion
+presentation, production Piclaw routing and deployed Gi remain unverified.
+Classic027 stays unmapped. The separate WIP tool-terminal provenance branch
+has no CI/deployment credit from this review. No production code or frozen
+contract changed.

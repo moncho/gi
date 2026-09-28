@@ -37,8 +37,16 @@ a disposable `/agent/default/message` response and SSE events fed by the
 installed parser. In Chromium and WebKit desktop, composer submission sent
 `/theme ristretto` then `/tint #e11d48`; the `ui_theme` fixture updated root
 attributes and legacy localStorage, and the tint response appeared in the
-fixture timeline. The direct handler call does not exercise the production
-router, authentication, a live chat or browser reload; the UI probe still
-does not establish named-tint or pixel-colour equivalence. The frozen Gherkin
-stays a historical contract; these bounded oracle probes and Gi Settings
-grant no Gi command parity or physical/pixel credit.
+fixture timeline. `make test-piclaw-theme-combined` joins the installed
+handler and shipped UI in Chromium and WebKit desktop with an in-memory DB
+and temporary config. Both passed `/theme ristretto`, `/tint orange`, `/tint
+off` and invalid tint: HTTP 200 `ui_only`, matching timeline posts, three
+`ui_theme` events for the successful changes, matching legacy localStorage,
+global extension KV and temporary config, and unchanged appearance after the
+invalid command. The fixture never called an agent executor.
+
+Neither fixture exercises the production router/authentication, a live chat
+or browser reload. Named tint is covered in the joined probe, but physical
+colour matching and reload persistence have not been checked. The frozen
+Gherkin stays a historical contract; these bounded oracle probes and Gi
+Settings grant no Gi command parity or physical/pixel credit.

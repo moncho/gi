@@ -779,6 +779,10 @@ test-piclaw-svg-adversarial:
 test-piclaw-theme-handler:
 	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-theme-handler-probe.mjs
 
+.PHONY: test-piclaw-theme-combined
+test-piclaw-theme-combined:
+	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-theme-combined-probe.mjs
+
 .PHONY: test-piclaw-message-retrieval
 test-piclaw-message-retrieval:
 	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-message-retrieval-probe.mjs

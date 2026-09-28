@@ -759,6 +759,10 @@ test-piclaw-upload-state:
 test-piclaw-copy-controls:
 	$(BUN) tests/ux/oracle/piclaw-copy-ui-probe.mjs
 
+.PHONY: test-piclaw-stale-terminal
+test-piclaw-stale-terminal:
+	$(BUN) tests/ux/oracle/piclaw-stale-terminal-probe.mjs
+
 .PHONY: test-piclaw-speech-ui
 test-piclaw-speech-ui:
 	$(BUN) tests/ux/oracle/piclaw-speech-ui-probe.mjs

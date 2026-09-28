@@ -1,8 +1,10 @@
 @oracle-only @piclaw-3.2.4 @addon-plan-0.1.25 @source-reviewed @not-gi-parity
 Feature: Plan sidebar behaviour in the installed Piclaw add-on
   These clauses describe @rcarmo/piclaw-addon-plan-sidebar 0.1.25 shipped with
-  the audited Piclaw workspace. They are source-backed, not browser-executed.
-  They neither grant Gi Plan parity nor revise the frozen Classic corpus.
+  the audited Piclaw workspace. Save, remote-update/Refresh, and Submit UI
+  slices have disposable Chromium/WebKit browser evidence; the Plan tool is
+  source-reviewed only. These clauses grant no Gi Plan parity and do not revise
+  the frozen Classic corpus.
 
   Background:
     Given the Plan sidebar add-on is installed for the selected chat

@@ -5,9 +5,9 @@ Oracle environment: Piclaw 3.2.4 with installed
 not assumed to be part of every portable Piclaw installation. Its source is
 `/workspace/.pi/extensions/node_modules/@rcarmo/piclaw-addon-plan-sidebar/`.
 The versioned source-reviewed Gherkin is
-`tests/ux/features/oracle/piclaw-3.2.4-plan-sidebar.feature`. It has four
-parse-checked scenarios; only the **remote-update/explicit-Refresh slice**
-was exercised in a browser fixture. The other clauses have no browser run.
+`features/ux/oracle/piclaw-3.2.4-plan-sidebar.feature`. It has four
+parse-checked scenarios. The browser fixture now covers the Save, remote-update/
+explicit-Refresh, and Submit UI slices; the Plan tool has no browser run.
 
 The add-on stores per-chat Markdown and `updated_at` (`index.ts`), and the web
 editor posts `{chat_jid,markdown}`. It clears dirty state only if the editor still
@@ -27,17 +27,20 @@ API. Chromium and WebKit desktop both retained unsaved Markdown after a
 same-chat `plan.changes` event and displayed the remote-change warning.
 Clicking Refresh then made one GET, replaced the dirty editor text with the
 fixture's remote Markdown and made no POST. No discard confirmation was shown.
-This is the observed add-on behaviour in a fixture, not production API
-acceptance or Gi parity. It supports only the corresponding slice of the
-second oracle scenario; Save, Submit, and Plan tool journeys remain
-source-reviewed.
+A held Save posted the captured Markdown while retaining a newer edit as unsaved.
+A failed Save blocked Submit; a successful retry saved first and sent one
+`mode: auto` prompt to the captured chat. Submitting whitespace-only Markdown
+saved it but sent no prompt. Chromium and WebKit desktop passed these disposable
+browser fixtures (`/workspace/tmp/gi-plan-oracle-extended-attempt2.log` and
+`/workspace/tmp/gi-plan-oracle-extended-webkit.log`). Production Plan API,
+chat switching during save, and the Plan tool remain untested.
 
 | Frozen scenarios | Oracle/implementation disposition |
 |---|---|
 | Classic009–012 | Add-on-dependent clauses broadly correspond to the installed add-on. Gi does not expose a native Plan API/tool/sidebar; they remain unmapped. Do not infer presence from streamed `agentPlan` text in `web/src/app.ts`. |
 | Shared18–19 | Requires revision 1→2 and a native Plan tool. The installed add-on uses `updated_at` without server revision CAS; Gi lacks the feature. The shared contract is a strengthening, not current oracle parity. |
 | Shared20 | Requires confirmation before discarding dirty Plan text. Installed add-on Refresh does not confirm; it deliberately loads stored Markdown. Gi will retain the frozen no-loss requirement: an explicit Refresh must offer cancellation and must not overwrite dirty text until discard is confirmed. This is a deliberate deviation from the installed add-on and no shared-case pass. |
-| Shared21 | Save-before-submit/captured chat are source-backed in the add-on; Gi lacks the Plan workflow. |
+| Shared21 | Save-before-submit and captured-chat delivery passed the add-on's disposable browser fixture; chat switching during save was not tested. Gi lacks the Plan workflow. |
 | Shared22 | Checklist Markdown/tool semantics exist in the add-on, but Gi has no canonical Plan store/tool/sidebar or revision. No Shared22 credit. |
 
 The Gi target uses monotonic per-session revision CAS, a bounded Plan tool with

@@ -27,22 +27,29 @@ const page=await browser.newPage({viewport:{width:1440,height:900},serviceWorker
 const host=await installPixelHost({page,host:'piclaw',root:oracleRoot,state,reference});
 const sourceHtml=await readFile(path.join(oracleRoot,'app/runtime/web/static/classic/index.html'),'utf8');
 const stored={markdown:'- [ ] stored original',updated_at:'2026-09-27T00:00:00.000Z'};
-const calls=[];
+const calls=[],messages=[];
+let rejectSave=false,holdSave=false,releaseSave=()=>{},saveHeld=()=>{};
 try{
  await page.route(host.origin+'/',route=>route.fulfill({contentType:'text/html',body:sourceHtml.replaceAll('__PICLAW_SANITIZE_SVG_FENCES_FLAG__','1')}));
  await page.route('**/agent/picker-pins',route=>route.fulfill({json:{scope:state.sessionId,revision:1,models:[],sessions:[]}}));
  await page.route('**/__oracle_plan_addon.js',route=>route.fulfill({contentType:'text/javascript',body:addonBytes}));
- await page.route('**/agent/addons/api/plan-sidebar/plan?*',route=>{
+ await page.route('**/agent/addons/api/plan-sidebar/plan?*',async route=>{
   const r=route.request(),url=new URL(r.url());
   assert.equal(url.searchParams.get('chat_jid'),state.sessionId);
   calls.push({method:r.method(),chatJid:url.searchParams.get('chat_jid'),body:r.postDataJSON?.()??null});
   if(r.method()==='GET')return route.fulfill({json:{ok:true,...stored}});
   if(r.method()==='POST'){
    const body=r.postDataJSON();assert.equal(body.chat_jid,state.sessionId);
+   if(holdSave){saveHeld();await new Promise(resolve=>releaseSave=resolve);holdSave=false;}
+   if(rejectSave)return route.fulfill({status:503,json:{error:'fixture save refused'}});
    stored.markdown=body.markdown;stored.updated_at='2026-09-27T00:01:00.000Z';
    return route.fulfill({json:{ok:true,plan:{...stored}}});
   }
   throw Error(`Unexpected Plan request ${r.method()}`);
+ });
+ await page.route('**/agent/default/message?*',route=>{
+  const r=route.request(),url=new URL(r.url());assert.equal(r.method(),'POST');assert.equal(url.searchParams.get('chat_jid'),state.sessionId);
+  messages.push(r.postDataJSON());return route.fulfill({json:{ok:true,turn_id:'fixture-plan-turn'}});
  });
  await page.goto(host.origin);await page.locator('.compose-box textarea').waitFor();await host.connected();
  await page.addScriptTag({type:'module',url:host.origin+'/__oracle_plan_addon.js'});
@@ -61,9 +68,34 @@ try{
  assert.equal(await editor.textContent(),'- [ ] remote version');
  assert.equal(calls.slice(beforeRefresh).filter(c=>c.method==='GET').length,1);
  assert.equal(calls.filter(c=>c.method==='POST').length,0);
+ const save=page.getByRole('button',{name:'Save',exact:true}),submit=page.getByRole('button',{name:'Submit to model',exact:true});
+ // Hold the first Save response and edit again: the newer draft must stay dirty.
+ await editor.fill('- [ ] saved snapshot');
+ let signal;const held=new Promise(resolve=>signal=resolve);saveHeld=signal;holdSave=true;
+ await save.click();await held;
+ await editor.fill('- [ ] newer unsaved edit');releaseSave();
+ await page.getByText('Saved previous edits; newer changes are unsaved.',{exact:true}).waitFor();
+ assert.equal(await editor.textContent(),'- [ ] newer unsaved edit');assert.equal(stored.markdown,'- [ ] saved snapshot');
+ assert.deepEqual(calls.at(-1).body,{chat_jid:state.sessionId,markdown:'- [ ] saved snapshot'});
+ assert.equal(messages.length,0);
+ // Save failure prevents Submit from sending anything to the model.
+ rejectSave=true;await submit.click();
+ await page.getByText('fixture save refused',{exact:false}).waitFor();
+ assert.equal(messages.length,0);assert.equal(await editor.textContent(),'- [ ] newer unsaved edit');
+ rejectSave=false;await submit.click();
+ await page.getByText('Submitted to model.',{exact:true}).waitFor();
+ assert.equal(stored.markdown,'- [ ] newer unsaved edit');assert.equal(messages.length,1);
+ assert.equal(messages[0].mode,'auto');assert(messages[0].content.includes('- [ ] newer unsaved edit'));
+ const methods=calls.filter(c=>c.method==='POST').map(c=>c.body.markdown);
+ assert.deepEqual(methods,['- [ ] saved snapshot','- [ ] newer unsaved edit','- [ ] newer unsaved edit']);
+ await editor.fill('   ');await submit.click();
+ await page.getByText('Plan is empty; nothing to submit.',{exact:true}).waitFor();
+ assert.equal(messages.length,1);
  host.assert();
  console.log(JSON.stringify({browserName,release:reference.release,addon:packageJson.name,addonVersion:packageJson.version,
   addonSha256:createHash('sha256').update(addonBytes).digest('hex'),mapSha256:reference.map.sha256,
   scope:'installed addon web source on shipped Classic assets with disposable Plan API; no production backend/live writes',
-  remoteWarning:true,dirtyTextBeforeRefresh:'- [ ] unsaved local',textAfterRefresh:await editor.textContent(),refreshReads:calls.slice(beforeRefresh),writeCount:0},null,2));
-}finally{await host.dispose();await browser.close();}
+  remoteWarning:true,dirtyTextBeforeRefresh:'- [ ] unsaved local',textAfterRefresh:'- [ ] remote version',
+  refreshReads:calls.slice(beforeRefresh).filter(c=>c.method==='GET'),savePosts:calls.filter(c=>c.method==='POST'),
+  messageCount:messages.length,emptyPlanBlocked:true},null,2));
+}finally{releaseSave();await host.dispose();await browser.close();}

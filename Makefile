@@ -243,6 +243,11 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-tool-input-contract
+test-tool-input-contract:
+	$(BUN) tests/ux/oracle/pi-tool-input-probe.mjs
+	$(GO) test -race -count=3 ./internal/inference -run 'ToolInput'
+
 .PHONY: test-piclaw-idle-steer
 test-piclaw-idle-steer:
 	$(BUN) tests/ux/oracle/piclaw-idle-steer-probe.mjs

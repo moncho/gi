@@ -413,6 +413,7 @@ func StreamWithTools(ctx context.Context, modelID string, convCtx *goai.Context,
 // StreamWithToolsWithHooks is the hook-aware variant of StreamWithTools.
 func StreamWithToolsWithHooks(ctx context.Context, modelID string, convCtx *goai.Context, broadcast func(map[string]any), hooks *StreamHooks) (*StreamResult, error) {
 	Init()
+	convCtx = contextWithObjectToolInputs(convCtx)
 
 	provider, modelName := splitModelID(modelID)
 	model := goai.GetModel(goai.Provider(provider), modelName)
@@ -502,7 +503,7 @@ func StreamWithToolsWithHooks(ctx context.Context, modelID string, convCtx *goai
 				}
 				broadcast(map[string]any{"type": "done", "model": modelID, "usage": usageMap})
 			}
-			result = &StreamResult{Message: e.Message, Usage: usage, Text: fullText}
+			result = &StreamResult{Message: objectToolInputs(e.Message), Usage: usage, Text: fullText}
 			return result, nil
 		case *goai.ErrorEvent:
 			if broadcast != nil {

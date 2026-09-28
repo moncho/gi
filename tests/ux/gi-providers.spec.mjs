@@ -9,7 +9,7 @@ async function setup(page,request,info){
  const main=await(await request.post('/api/sessions',{data:{agent_id:`keys-${info.project.name}-${Date.now()}`}})).json();
  await page.addInitScript(id=>{if(!localStorage.getItem('gi_session_id'))localStorage.setItem('gi_session_id',id);},main.id);await page.goto('/');
  const input=page.getByRole('textbox',{name:inputName,exact:true});await expect(input).toBeVisible();await input.fill('provider settings draft');
- const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});const open=async()=>{await page.keyboard.press('Control+,');await dialog.getByRole('button',{name:'Providers',exact:true}).click();await expect(dialog.getByRole('region',{name:'Provider openai',exact:true})).toBeVisible();};
+ const dialog=page.getByRole('dialog',{name:'Settings',exact:true});const open=async()=>{await page.keyboard.press('Control+,');await dialog.getByRole('button',{name:'Providers',exact:true}).click();await expect(dialog.getByRole('region',{name:'Provider openai',exact:true})).toBeVisible();};
  return{main,input,dialog,open,row:dialog.getByRole('region',{name:'Provider openai',exact:true})};
 }
 

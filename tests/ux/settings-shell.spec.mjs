@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loadCorpus } from './support/catalogue.mjs';
 const inputName = 'Message (Enter to send, Shift+Enter for newline)...';
-const dialogFor = page => page.getByRole('dialog', { name: 'Gi Settings', exact: true });
+const dialogFor = page => page.getByRole('dialog', { name: 'Settings', exact: true });
 async function source(info, id) {
   const scenario = loadCorpus().find(row => row.id === id); expect(scenario).toBeTruthy();
   await info.attach('gherkin', { body: scenario.steps.join('\n'), contentType: 'text/plain' });
@@ -61,6 +61,7 @@ test('@ux-settings-dialog-001 Rapid native shortcut opens exactly one settings d
   await source(info, '@ux-settings-dialog-001'); const f = await setup(page, request, info);
   await f.input.focus(); for (let i = 0; i < 3; i++) await page.keyboard.press('Control+,');
   await expect(f.dialog).toHaveCount(1); await expect(f.dialog).toBeVisible(); await expect(page.locator('.settings-portal')).toHaveCount(1);
+  await expect(f.dialog.locator('.settings-dialog-title')).toHaveText('Settings');
   await page.keyboard.press('Escape'); await expect(f.dialog).toHaveCount(0); await expect(f.input).toBeFocused(); await f.unchanged();
 });
 
@@ -279,7 +280,7 @@ for(const id of ['@ux-settings-001','@ux-settings-dialog-002']) test(`${id} Nati
  const snapshot=await(await request.get('/api/runtime/config')).json();
  await page.getByTestId('hamburger').click();await page.getByRole('menuitem',{name:'Settings',exact:true}).click();await expect(f.dialog).toBeVisible();
  const nav=f.dialog.getByRole('navigation',{name:'Settings sections',exact:true});
- await expect(f.dialog.locator('.settings-dialog-header')).toBeVisible();await expect(f.dialog.locator('.settings-dialog-header')).toContainText('Gi Settings');await expect(nav).toBeVisible();
+ await expect(f.dialog.locator('.settings-dialog-header')).toBeVisible();await expect(f.dialog.locator('.settings-dialog-header')).toContainText('Settings');await expect(nav).toBeVisible();
  await expect(nav.getByRole('button').first()).toHaveText('General');await expect(nav.getByRole('button',{name:'General',exact:true})).toHaveAttribute('aria-current','page');
  const values=f.dialog.locator('.gi-settings-values');await expect(values).toContainText(snapshot.assistant_name);await expect(values).toContainText(snapshot.workspace_root);await expect(values).toContainText(snapshot.current||snapshot.default_model);
  // Visit every supported navigation target. Pane-specific functionality and
@@ -308,7 +309,7 @@ test('@ux-settings-002 uncached General keeps the native loading shell and recov
  const mutations=[];page.on('request',r=>{if(!['GET','HEAD'].includes(r.method())&&/\/api\/(sessions|settings)/.test(new URL(r.url()).pathname))mutations.push(r.url());});
  let release;const gate=new Promise(r=>release=r);let held=false;
  await page.route('**/api/runtime/config',async route=>{const response=await route.fetch();expect(response.status()).toBe(200);held=true;await gate;await route.fulfill({response});},{times:1});
- const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});
+ const dialog=page.getByRole('dialog',{name:'Settings',exact:true});
  try{
   const opened=Date.now();await page.keyboard.press('Control+,');await expect(dialog).toBeVisible();await expect.poll(()=>held).toBe(true);await expect(dialog.getByRole('status').filter({hasText:'Loading settings…'})).toBeVisible();expect(Date.now()-opened).toBeLessThan(1000);
   await expect(dialog.locator('.settings-dialog-header')).toBeVisible();await expect(dialog.getByRole('navigation',{name:'Settings sections'})).toBeVisible();await expect(dialog.locator('.settings-nav-item.active')).toHaveText('General');await expect(dialog.getByRole('heading',{name:'General',exact:true})).toBeVisible();await expect(dialog.locator('.gi-settings-values')).toHaveCount(0);

@@ -154,7 +154,7 @@ function Dialog({ chatJid, initialSection = 'general', onClose, onMutationStart,
     }, []);
     return html`<div class="settings-dialog-backdrop" onClick=${e => { if (e.target === e.currentTarget) onClose(); }}>
         <div ref=${dialog} class=${`settings-dialog${layoutMode.compact ? ' settings-dialog-compact' : ''}${layoutMode.narrow ? ' settings-dialog-narrow' : ''}`} role="dialog" aria-modal="true" aria-labelledby="gi-settings-title" onKeyDown=${e => e.stopPropagation()}>
-            <header class="settings-dialog-header"><span class="settings-dialog-title" id="gi-settings-title">Gi Settings</span>
+            <header class="settings-dialog-header"><span class="settings-dialog-title" id="gi-settings-title">Settings</span>
                 ${section === 'models' && html`<input ref=${filterRef} type="search" class="settings-header-filter" aria-label="Filter models" placeholder="Filter models…" value=${filter} disabled=${busyScope === searchScope} onInput=${e => setFilter(e.target.value)} />`}
                 <button class="settings-dialog-close" aria-label="Close settings" onClick=${onClose}>✕</button></header>
             <div class="settings-dialog-body"><nav class="settings-nav" aria-label="Settings sections">

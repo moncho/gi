@@ -4,6 +4,8 @@ Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-28
 
+- [x] Settings title now Settings, matching installed Piclaw3.2.4; native sections/menu/shortcut/modal behaviour retained. Source oracle passes; Settings216cases in complete108Chromium+108WebKit runs; check142functional11skips;204support7747assertions. Initial combined run tool-timeout retained, no test timeout increase. No deployment/new mapping. [Evidence](../internal/settings-title-2026-09-28.md). Canonical-ID display remains separate.
+
 - [x] Bounded installed Piclaw3.2.4 Output/status slice: pinned verbatim renderer/dependencies outside protected trees, build adapter, occurrence-owned bounded output/reload projection and Marked bootstrap fix. Independent shipped-Piclaw/Gi comparison6/6; native tools12/12; Thoughts/Draft48/48; race3; check142functional11skips; 204support7747assertions. Review blocker fixed/re-reviewed. Protected sources unchanged. Older WebKit reload oracle, concurrent tools and whole-web parity remain open; no new mapping/deploy. [Evidence](../internal/piclaw-output-status-2026-09-28.md).
 
 - [x] Bounded web conversation projection: opt-in conversation pages/search filter raw tools before limits, preserve prose/media/raw history, attribute System notices consistently across SSE/reload/search, suppress idle/completed footers and clear terminal previews. Go+200support pass; full check142functional11skips and12native tool-lifecycle browser cases pass. No new parity mapping; running-tool Output component and full clone remain open. [Evidence](../internal/web-conversation-projection-2026-09-28.md).

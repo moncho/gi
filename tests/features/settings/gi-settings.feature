@@ -7,7 +7,7 @@ Feature: Gi settings backed by native capabilities
   Scenario: Open one modal and return to the unchanged draft
     Given a native Gi session with an unsent draft and an open workspace
     When I open Settings from the timeline menu or press Control+Comma repeatedly
-    Then exactly one body-portal dialog named Gi Settings is visible above the workspace
+    Then exactly one body-portal dialog named Settings is visible above the workspace
     And its half-opaque backdrop and focus trap prevent interaction with the workspace
     And the dialog fits phone, tablet and desktop viewports
     When I dismiss with Escape, Close or a backdrop click
@@ -16,7 +16,7 @@ Feature: Gi settings backed by native capabilities
 
   @gi-settings-002
   Scenario: Show only implemented settings sections and explicit scopes
-    When I open Gi Settings
+    When I open Settings
     Then General is selected and separates active instance values from saved display-name fields
     And Models, Appearance, Compaction and Providers are the other enabled sections
     And General explains that startup settings are loaded from files and require restart
@@ -28,7 +28,7 @@ Feature: Gi settings backed by native capabilities
   @gi-settings-003
   Scenario: Load General without a blank frame and recover from failure
     Given the runtime config response is held
-    When I open Gi Settings
+    When I open Settings
     Then the shell immediately shows a loading status
     When the request fails
     Then an error and Retry action replace the loading status
@@ -38,7 +38,7 @@ Feature: Gi settings backed by native capabilities
 
   @gi-settings-004
   Scenario: Fetch model choices only when Models is opened
-    Given Gi Settings is on General
+    Given Settings is on General
     When I select Models
     Then a loading state is shown until the current session model catalogue arrives
     And I can filter the native model labels
@@ -69,7 +69,7 @@ Feature: Gi settings backed by native capabilities
   @gi-settings-005
   Scenario: Apply a model only after server confirmation to its captured session
     Given two native sessions and an unsent draft with an attachment
-    When I choose another model in Gi Settings
+    When I choose another model in Settings
     Then no mutation occurs before I press Apply model
     When I apply and the accepted response is held
     Then Apply is disabled and the previous confirmed model remains visible
@@ -158,7 +158,7 @@ Feature: Gi settings backed by native capabilities
 
   @gi-settings-014
   Scenario: Inspect effective compaction policy and session capability without changing it
-    When I open Compaction in Gi Settings
+    When I open Compaction in Settings
     Then the effective engine startup policy is displayed separately from saved policy fields with restart guidance
     And the destination session and authoritative manual capability or disabled reason are visible
     And no provider-model, watchdog or backoff controls are advertised

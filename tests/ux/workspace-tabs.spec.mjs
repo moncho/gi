@@ -131,7 +131,7 @@ test('Gi last preview close cannot steal focus from Settings opened in the same 
   window.dispatchEvent(new KeyboardEvent('keydown',{key:',',ctrlKey:true,bubbles:true,cancelable:true}));
   requestAnimationFrame(()=>requestAnimationFrame(resolve));
  })));
- const settings=page.getByRole('dialog',{name:'Gi Settings',exact:true});await expect(settings).toBeVisible();await expect(settings.getByRole('button',{name:'Close settings',exact:true})).toBeFocused();await expect(f.tabs).toHaveCount(0);
+ const settings=page.getByRole('dialog',{name:'Settings',exact:true});await expect(settings).toBeVisible();await expect(settings.getByRole('button',{name:'Close settings',exact:true})).toBeFocused();await expect(f.tabs).toHaveCount(0);
  await page.keyboard.press('Escape');await expect(settings).toHaveCount(0);await expect(f.input).toBeFocused();await expect(f.input).toHaveValue('tabs keep this draft');await f.preserved();await f.untouched();
 });
 
@@ -164,7 +164,7 @@ test('Gi read-only context actions clamp to viewport and Settings owns tab short
  await f.tab(c).dispatchEvent('contextmenu',{clientX:size.width-1,clientY:size.height-1});await expect(menu).toBeVisible();const box=await menu.boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(size.width);expect(box.y+box.height).toBeLessThanOrEqual(size.height);
  // Focused keyboard activation also reaches the pin callback once.
  await menu.getByRole('button',{name:'Pin',exact:true}).focus();await page.keyboard.press('Enter');await expect(f.tab(c)).toHaveClass(/pinned/);await expect(menu).toHaveCount(0);
- await f.tab(c).click({button:'right'});await page.keyboard.press('Control+,');const settings=page.getByRole('dialog',{name:'Gi Settings',exact:true});await expect(settings).toBeVisible();
+ await f.tab(c).click({button:'right'});await page.keyboard.press('Control+,');const settings=page.getByRole('dialog',{name:'Settings',exact:true});await expect(settings).toBeVisible();
  await page.keyboard.press('Control+Tab');await expect(f.tab(c)).toHaveClass(/active/);await page.keyboard.press('Control+Shift+Tab');await expect(f.tab(c)).toHaveClass(/active/);await page.keyboard.press('Escape');await expect(settings).toHaveCount(0);await page.keyboard.press('Escape');await expect(menu).toHaveCount(0);
  await f.tab(c).click({button:'right'});await menu.getByRole('button',{name:'Unpin',exact:true}).click();await expect(f.tab(c)).not.toHaveClass(/pinned/);
  await f.tab(c).click({button:'right'});await menu.getByRole('button',{name:'Close All',exact:true}).click();await expect(f.tabs).toHaveCount(0);await expect(f.input).toBeFocused();await f.preserved();await f.untouched();
@@ -179,6 +179,6 @@ test('Gi read-only editor-pane inline code uses the code font across native appe
  });
  const check=async()=>{const value=await fonts();expect(value.font).toBe(value.expected);expect(value.font).not.toBe(value.parent);expect(Math.abs(value.narrow-value.wide)).toBeLessThan(0.2);};
  await check();
- await page.keyboard.press('Control+,');const settings=page.getByRole('dialog',{name:'Gi Settings',exact:true});await expect(settings).toBeVisible();await settings.getByRole('button',{name:'Appearance',exact:true}).click();await settings.getByLabel('Theme preset',{exact:true}).selectOption('monokai');await settings.getByRole('button',{name:'Save appearance',exact:true}).click();await expect(page.locator('html')).toHaveAttribute('data-color-theme','monokai');await page.keyboard.press('Escape');await expect(settings).toHaveCount(0);await check();await f.preserved();await f.untouched();
+ await page.keyboard.press('Control+,');const settings=page.getByRole('dialog',{name:'Settings',exact:true});await expect(settings).toBeVisible();await settings.getByRole('button',{name:'Appearance',exact:true}).click();await settings.getByLabel('Theme preset',{exact:true}).selectOption('monokai');await settings.getByRole('button',{name:'Save appearance',exact:true}).click();await expect(page.locator('html')).toHaveAttribute('data-color-theme','monokai');await page.keyboard.press('Escape');await expect(settings).toHaveCount(0);await check();await f.preserved();await f.untouched();
  await page.reload();await expect(f.input).toHaveValue('tabs keep this draft');await f.open(f.paths[0]);await f.settle();await expect(page.locator('html')).toHaveAttribute('data-color-theme','monokai');await check();await f.preserved();await f.untouched();await page.screenshot({path:info.outputPath('preview-code-font.png')});
 });

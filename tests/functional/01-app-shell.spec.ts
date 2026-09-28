@@ -38,7 +38,8 @@ test.describe('App shell', () => {
     await input.fill('functional settings draft');
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: 'Gi Settings', exact: true });
+    const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
+    await expect(dialog.locator('.settings-dialog-title')).toHaveText('Settings');
     await expect(dialog.getByText('Active instance settings · read-only')).toBeVisible();
     await expect(dialog.locator('.gi-settings-values')).toContainText('test-model');
     const identity = await (await request.get('/api/settings/identity')).json();
@@ -72,7 +73,7 @@ test.describe('App shell', () => {
   test('Gi appearance saves only a browser preference and restores it after reload', async ({ page }) => {
     await page.goto(BASE_URL); await waitForAppShell(page);
     await page.keyboard.press('Control+,');
-    const dialog = page.getByRole('dialog', { name: 'Gi Settings', exact: true });
+    const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
     await dialog.getByRole('button', { name: 'Appearance', exact: true }).click();
     await dialog.getByLabel('Theme preset').selectOption('monokai');
     await dialog.getByRole('button', { name: 'Save appearance' }).click();
@@ -253,7 +254,7 @@ test('native timeline controls and modal fields receive their own keyboard event
   await copy.evaluate(el=>{(window as any).__functionalKeys=[];el.addEventListener('keydown',e=>(window as any).__functionalKeys.push(e.key));});
   await copy.press('q');expect(await page.evaluate(()=>(window as any).__functionalKeys)).toEqual(['q']);await expect(page.locator('.timeline-quick-actions')).toHaveCount(0);
   await page.getByRole('button',{name:'Open model picker',exact:true}).click();const popup=page.getByRole('listbox',{name:'Models',exact:true});await expect(popup).toBeVisible();
-  const active=await popup.locator('.active').textContent();await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true}),name=dialog.getByLabel('Assistant display name',{exact:true});await name.focus();
+  const active=await popup.locator('.active').textContent();await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog',{name:'Settings',exact:true}),name=dialog.getByLabel('Assistant display name',{exact:true});await name.focus();
   await name.evaluate(el=>{(window as any).__functionalKeys=[];el.addEventListener('keydown',e=>(window as any).__functionalKeys.push(e.key));});
   await name.press('q');await name.press('ArrowDown');expect(await page.evaluate(()=>(window as any).__functionalKeys)).toEqual(['q','ArrowDown']);expect(await popup.locator('.active').textContent()).toBe(active);
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(popup).toBeVisible();await page.keyboard.press('Escape');await expect(popup).toHaveCount(0);

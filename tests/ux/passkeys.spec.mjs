@@ -224,7 +224,7 @@ test('Settings owns cancellation, reauth and failed or uncertain writes without 
   // Native prompts may blur the page. This synthetic notification tests only
   // app blur ownership; physical OS prompt focus remains manual evidence.
   await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await expect(page.getByRole('button',{name:'Cancel pending operation',exact:true})).toBeVisible();expect(finishes).toBe(0);
-  await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Gi Settings',exact:true})).toBeVisible();await expect(page.getByRole('alert')).toContainText('cancelled');expect(finishes).toBe(0);expect(starts).toBe(1);
+  await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Settings',exact:true})).toBeVisible();await expect(page.getByRole('alert')).toContainText('cancelled');expect(finishes).toBe(0);expect(starts).toBe(1);
   await page.getByRole('button',{name:'Refresh passkeys',exact:true}).click();await expect(page.getByRole('button',{name:'Add passkey',exact:true})).toBeEnabled();
   await auth.cdp.send('WebAuthn.setAutomaticPresenceSimulation',{authenticatorId:auth.id,enabled:true});await page.getByRole('textbox',{name:'New passkey name',exact:true}).fill('After cancellation');await page.getByRole('button',{name:'Add passkey',exact:true}).click();await expect(page.locator('.gi-passkey-row')).toHaveCount(2);expect(starts).toBe(2);
   await page.getByRole('button',{name:'Rename Laptop',exact:true}).click();await page.getByRole('textbox',{name:'Rename passkey',exact:true}).fill('Bad network rename');
@@ -434,7 +434,7 @@ for(const operation of ['add','rename','remove'])test(`Settings cancelled reauth
    const response=page.waitForResponse(r=>r.url().endsWith('/api/auth/passkeys/reauth/start')&&r.request().method()==='POST');await page.getByRole('button',{name:'Verify with passkey',exact:true}).click();const started=await response;expect(started.status()).toBe(200);ceremonies.push((await started.json()).ceremony_id);
    await expect.poll(()=>page.evaluate(()=>window.__reauthGets)).toBe(index+1);await expect(page.getByRole('button',{name:'Cancel pending operation',exact:true})).toBeVisible();
    if(cancel==='button')await page.getByRole('button',{name:'Cancel pending operation',exact:true}).click();else await page.keyboard.press('Escape');
-   await expect(page.getByRole('alert')).toContainText('cancelled');await expect(page.getByRole('dialog',{name:'Gi Settings',exact:true})).toBeVisible();await expect(page.getByText('Authentication verified.',{exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Verify with passkey',exact:true})).toBeFocused();
+   await expect(page.getByRole('alert')).toContainText('cancelled');await expect(page.getByRole('dialog',{name:'Settings',exact:true})).toBeVisible();await expect(page.getByText('Authentication verified.',{exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Verify with passkey',exact:true})).toBeFocused();
    // Presence after cancellation cannot complete the abandoned ceremony.
    await auth.cdp.send('WebAuthn.setAutomaticPresenceSimulation',{authenticatorId:auth.id,enabled:true});await page.waitForTimeout(150);
    expect(starts).toBe(index+1);expect(finishes).toBe(0);expect(changes).toEqual([]);expect(await proof()).toEqual(stale);expect(savedAuth(env).passkeys).toEqual(state.passkeys);expect(savedAuth(env).sessions).toEqual(state.sessions);

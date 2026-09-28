@@ -182,7 +182,7 @@ async function settingsManualFixture(page,request,info){
  await page.addInitScript(id=>{if(!localStorage.getItem('gi_session_id'))localStorage.setItem('gi_session_id',id);},main);
  await page.goto('/');const input=page.getByRole('textbox',{name:inputName,exact:true});await expect(input).toBeVisible();await input.fill('settings compaction draft');
  await page.locator('.compose-box input[type=file]').setInputFiles({name:'settings-compact.txt',mimeType:'text/plain',buffer:Buffer.from('preserve settings media')});
- const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});
+ const dialog=page.getByRole('dialog',{name:'Settings',exact:true});
  const open=async()=>{await page.keyboard.press('Control+,');await dialog.getByRole('button',{name:'Compaction',exact:true}).click();await expect(dialog.getByTestId('compaction-policy')).toBeVisible();};
  const gate=resolve('test-results/ux-parity/queue-gates',`manual-${main}`);mkdirSync(resolve(gate,'..'),{recursive:true});
  return{main,child,input,dialog,open,turns,release:()=>writeFileSync(gate,'go')};

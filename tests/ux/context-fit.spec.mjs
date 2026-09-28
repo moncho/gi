@@ -63,7 +63,7 @@ test('@gi-settings-006 Settings model fit uses measured native context and keeps
  const{input,state,child,switchTo}=await fixture(page,request,info);
  await input.fill('settings measured draft');
  await page.keyboard.press('Control+,');
- const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});
+ const dialog=page.getByRole('dialog',{name:'Settings',exact:true});
  await dialog.getByRole('button',{name:'Models',exact:true}).click();
  const choice=dialog.getByLabel('Session model',{exact:true});await expect(choice).toBeVisible();
  await dialog.getByLabel('Filter models',{exact:true}).fill('ux-local/small');
@@ -88,7 +88,7 @@ if(process.env.GI_UX_SETTINGS_CATALOGUE){
   const{input,state}=await fixture(page,request,info);
   expect((await state()).model_options.length).toBeGreaterThan(50);
   await input.fill('bounded catalogue draft');await page.keyboard.press('Control+,');
-  const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});await dialog.getByRole('button',{name:'Models',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Settings',exact:true});await dialog.getByRole('button',{name:'Models',exact:true}).click();
   const select=dialog.getByLabel('Session model',{exact:true});await expect(select).toBeVisible();
   await expect(select.locator('option:not([disabled])')).toHaveCount(50);await expect(dialog.getByText(/Refine the filter/)).toBeVisible();
   await dialog.getByLabel('Filter models',{exact:true}).fill('settings-59');await expect(select.locator('option:not([disabled])')).toHaveCount(1);

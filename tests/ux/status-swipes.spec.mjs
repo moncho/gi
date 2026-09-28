@@ -47,7 +47,7 @@ for (const kind of ['draft','thought']) test(`${kind === 'draft' ? '@ux-mobile-0
     await swipe(input);await page.waitForTimeout(200);expect(await selected()).toBe(a);
     const wheelDefault=await input.evaluate(el=>el.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaX:110})));
     expect(wheelDefault).toBe(true);expect(await page.evaluate(()=>[window.__inputTouches,window.__inputWheels])).toEqual([1,1]);
-    await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});await expect(dialog).toBeVisible();
+    await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog',{name:'Settings',exact:true});await expect(dialog).toBeVisible();
     await swipe(dialog.getByRole('button',{name:'Close settings',exact:true}));await page.waitForTimeout(150);expect(await selected()).toBe(a);await page.keyboard.press('Escape');
     expect((await(await request.get(`/api/sessions/${a}/turns`)).json()).turns).toHaveLength(1);
     if (process.env.GI_STATUS_CAPTURE && kind === 'draft' && info.project.name.startsWith('chromium-')) {

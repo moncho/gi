@@ -22292,11 +22292,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-mh1jv1ej.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-4n189smd.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-3brhzz6h.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-86vez1af.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-6t1tg7re.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-1m64zhg5.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-hn60h444.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-4v0bazvq.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-h1pvw1f9.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-d1kw7anf.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -22540,7 +22540,7 @@ function Dialog({ chatJid, initialSection = "general", onClose, onMutationStart,
       onClose();
   }}>
         <div ref=${dialog} class=${`settings-dialog${layoutMode.compact ? " settings-dialog-compact" : ""}${layoutMode.narrow ? " settings-dialog-narrow" : ""}`} role="dialog" aria-modal="true" aria-labelledby="gi-settings-title" onKeyDown=${(e) => e.stopPropagation()}>
-            <header class="settings-dialog-header"><span class="settings-dialog-title" id="gi-settings-title">Gi Settings</span>
+            <header class="settings-dialog-header"><span class="settings-dialog-title" id="gi-settings-title">Settings</span>
                 ${section === "models" && fe`<input ref=${filterRef} type="search" class="settings-header-filter" aria-label="Filter models" placeholder="Filter models…" value=${filter} disabled=${busyScope === searchScope} onInput=${(e) => setFilter(e.target.value)} />`}
                 <button class="settings-dialog-close" aria-label="Close settings" onClick=${onClose}>✕</button></header>
             <div class="settings-dialog-body"><nav class="settings-nav" aria-label="Settings sections">
@@ -25098,5 +25098,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=C18C95653EADC28B64756E2164756E21
-//# sourceMappingURL=app-mjsddy6w.js.map
+//# debugId=EAA648333835588064756E2164756E21
+//# sourceMappingURL=app-ze8mfyv9.js.map

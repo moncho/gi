@@ -243,6 +243,14 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-piclaw-settings-title test-ux-settings-title
+test-piclaw-settings-title:
+	$(BUN) tests/ux/oracle/piclaw-settings-title-probe.mjs
+
+UX_SETTINGS_PROJECTS ?=
+test-ux-settings-title: test-piclaw-settings-title
+	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/settings-shell.spec.mjs tests/ux/gi-settings.spec.mjs $(UX_SETTINGS_PROJECTS)'
+
 .PHONY: test-piclaw-output-oracle
 test-piclaw-output-oracle: build-web
 	$(BUN) tests/ux/oracle/piclaw-output-contract.mjs

@@ -245,7 +245,7 @@ test('Authentication pane explains unavailable passkeys and preserves drafts acr
   const input=page.locator('.compose-box textarea');await expect(input).toBeVisible();await input.fill('Unavailable passkeys draft');await input.focus();await page.keyboard.press('Control+,');
   await page.getByRole('button',{name:'Authentication',exact:true}).click();await expect(page.getByText('Passkeys are disabled by policy or are not configured for this origin.',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Add passkey',exact:true})).toBeDisabled();
   await expect(page.getByRole('button',{name:'Refresh passkeys',exact:true})).toBeEnabled();expect(await page.locator('.settings-dialog').evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
-  await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Gi Settings',exact:true})).toHaveCount(0);await expect(input).toHaveValue('Unavailable passkeys draft');
+  await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Settings',exact:true})).toHaveCount(0);await expect(input).toHaveValue('Unavailable passkeys draft');
  }finally{await env.close();}
 });
 
@@ -257,7 +257,7 @@ test('TOTP browser sign-out waits for native status and preserves drafts and oth
   await page.locator('.compose-box textarea').fill('Logout keeps draft and selection Ω');await page.locator('.compose-box input[type=file]').setInputFiles({name:'signout.txt',mimeType:'text/plain',buffer:Buffer.from('Stored logout attachment')});await expect(page.locator('.compose-file-pill[title="signout.txt"]')).toBeVisible();
   await page.keyboard.press('Control+,');await page.getByRole('button',{name:'Authentication',exact:true}).click();await expect(page.getByRole('button',{name:'Sign out this browser',exact:true})).toBeEnabled();
   let posts=0,held=false;page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/api/auth/session/logout'))posts++;});
-  await page.getByRole('button',{name:'Sign out this browser',exact:true}).click();await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Gi Settings',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Sign out this browser',exact:true})).toBeFocused();expect(posts).toBe(0);
+  await page.getByRole('button',{name:'Sign out this browser',exact:true}).click();await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Settings',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Sign out this browser',exact:true})).toBeFocused();expect(posts).toBe(0);
   await page.route('**/api/auth/status',async route=>{held=true;await gate;await route.continue();});
   await page.getByRole('button',{name:'Sign out this browser',exact:true}).click();await page.getByRole('button',{name:'Confirm sign out',exact:true}).click();await expect.poll(()=>held).toBe(true);
   await expect(page.locator('.settings-dialog')).toBeVisible();await expect(page.getByRole('heading',{name:'Sign in to Gi',exact:true})).toHaveCount(0);expect(posts).toBe(1);expect((await context.cookies()).find(c=>c.name==='gi_session')).toBeUndefined();

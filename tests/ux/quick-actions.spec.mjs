@@ -154,7 +154,7 @@ for(const [id,surface] of [['@shared-5','composer textarea'],['@shared-6','input
   await expect(f.input).toHaveValue(text+'é文');expect(await f.input.evaluate(el=>[el.selectionStart,el.selectionEnd])).toEqual([text.length+2,text.length+2]);await expect(f.palette).toHaveCount(0);
   await f.input.press('Backspace');await f.input.pressSequentially('ß');text+='éß';await expect(f.input).toHaveValue(text);await expect(f.input).toBeFocused();
  }else if(id==='@shared-6'){
-  await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});await dialog.getByRole('button',{name:'Models',exact:true}).click();
+  await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog',{name:'Settings',exact:true});await dialog.getByRole('button',{name:'Models',exact:true}).click();
   const filter=dialog.getByLabel('Filter models',{exact:true}),select=dialog.getByLabel('Session model',{exact:true});await expect(select).toBeVisible();await expect(filter).toBeFocused();
   await filter.pressSequentially('boot');await expect(filter).toHaveValue('boot');await filter.pressSequentially('strap');await expect(filter).toHaveValue('bootstrap');await expect(filter).toBeFocused();
   await expect(select.locator('option:not([disabled])')).toHaveCount(1);await expect(select.locator('option:not([disabled])')).toHaveText(/test\/bootstrap/);await expect(dialog.getByTestId('settings-current-model')).toHaveText('test/test-model');await expect(dialog.getByRole('button',{name:'Apply model',exact:true})).toBeDisabled();await expect(f.palette).toHaveCount(0);
@@ -203,16 +203,16 @@ for(const [id,surface] of [['@shared-7','button or link'],['@shared-9','workspac
   await receives(tree);expect(await tree.locator('.workspace-row').evaluateAll(nodes=>nodes.map(n=>({path:n.dataset.path,selected:n.classList.contains('selected')})))).toEqual(rows);
   await page.locator('.workspace-toggle-tab.open').click();
  }else{
-  await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});await expect(dialog).toBeVisible();await expect(dialog).toHaveAttribute('aria-modal','true');
+  await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog',{name:'Settings',exact:true});await expect(dialog).toBeVisible();await expect(dialog).toHaveAttribute('aria-modal','true');
   const name=dialog.getByLabel('Assistant display name',{exact:true}),value=await name.inputValue();await name.focus();await name.press('End');await receives(name);await expect(name).toHaveValue(value+'q');
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await page.keyboard.press('Control+,');await expect(name).toHaveValue(value);await page.keyboard.press('Escape');
  }
  await f.unchanged();await f.open();await f.close();await f.unchanged();
 });
 
-test('Gi Settings delivers target keys while native background popups remain suspended',async({page,request},info)=>{
+test('Settings delivers target keys while native background popups remain suspended',async({page,request},info)=>{
  const f=await sharedTypingFixture(page,request,info,'@shared-10');
- const dialog=page.getByRole('dialog',{name:'Gi Settings',exact:true});
+ const dialog=page.getByRole('dialog',{name:'Settings',exact:true});
  for(const background of ['model','session','palette','menu']){
   let popup,open;
   if(background==='model'){popup=page.getByRole('listbox',{name:'Models',exact:true});open=()=>page.getByRole('button',{name:'Open model picker',exact:true}).click();}

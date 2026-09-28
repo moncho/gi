@@ -4874,65 +4874,88 @@ func (r *sessionRunner) runProviderIteration(ctx context.Context, s *store.Store
 		thinking, _ = turnSnapshot.Metadata["selected_thinking_level"].(string)
 	}
 	responseObserved := false
-	result, inferErr := streamWithToolsWithHooks(ctx, model, requestCtx, func(ev map[string]any) {
-		ev["chat_jid"] = "gi:" + sessionID
-		ev["turn_id"] = turnID
-		ev["iteration"] = iter
-		switch ev["type"] {
-		case "text_delta":
-			_, _ = r.engine.emitHook(ctx, HookRequest{Name: HookMessageUpdate, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"delta": ev["delta"]}})
-			ev["type"] = "agent_draft_delta"
-			r.engine.broadcast(sessionID, ev)
-		case "thinking_delta":
-			ev["type"] = "agent_thought_delta"
-			r.engine.broadcast(sessionID, ev)
-		case "tool_call_start":
-			r.engine.broadcast(sessionID, map[string]any{
-				"type": "agent_status", "chat_jid": "gi:" + sessionID,
-				"title": fmt.Sprintf("Tool: %s", ev["name"]), "status": "running", "turn_id": turnID,
-			})
-		case "error":
-			r.engine.broadcast(sessionID, ev)
-		}
-	}, &inference.StreamHooks{
-		Thinking: thinking,
-		OnPayload: func(payload any, modelDef *goai.Model) (any, error) {
-			hookPayload := map[string]any{"ok": true, "request": payload, "stage": "payload"}
-			if modelDef != nil {
-				hookPayload["provider"] = string(modelDef.Provider)
-				hookPayload["api"] = string(modelDef.Api)
-				hookPayload["model_id"] = modelDef.ID
+	result, inferErr := retryProviderRequest(ctx, r.engine.runtimeCfg.Retry.Policy(), func() (*inference.StreamResult, error, bool) {
+		progress, hookFailed := false, false
+		responseObserved = false
+		result, inferErr := streamWithToolsWithHooks(ctx, model, requestCtx, func(ev map[string]any) {
+			ev["chat_jid"] = "gi:" + sessionID
+			ev["turn_id"] = turnID
+			ev["iteration"] = iter
+			switch ev["type"] {
+			case "text_delta", "thinking_delta", "tool_call_start", "tool_call_end":
+				progress = true
 			}
-			resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeProviderRequest, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, SystemPrompt: requestCtx.SystemPrompt, Messages: requestCtx.Messages, Tools: requestCtx.Tools, Payload: hookPayload})
-			if err != nil {
-				return nil, err
+			switch ev["type"] {
+			case "text_delta":
+				_, _ = r.engine.emitHook(ctx, HookRequest{Name: HookMessageUpdate, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"delta": ev["delta"]}})
+				ev["type"] = "agent_draft_delta"
+				r.engine.broadcast(sessionID, ev)
+			case "thinking_delta":
+				ev["type"] = "agent_thought_delta"
+				r.engine.broadcast(sessionID, ev)
+			case "tool_call_start":
+				r.engine.broadcast(sessionID, map[string]any{
+					"type": "agent_status", "chat_jid": "gi:" + sessionID,
+					"title": fmt.Sprintf("Tool: %s", ev["name"]), "status": "running", "turn_id": turnID,
+				})
+			case "error":
+				// The turn owner decides retry versus terminal failure. Do not
+				// publish a terminal error while a transient retry is pending.
 			}
-			if abortErr := hookAbortFromResponse(resp, "aborted before provider request send by hook"); abortErr != nil {
-				return nil, abortErr
-			}
-			if replacement, ok := providerRequestReplacementFromHook(resp); ok {
-				return replacement, nil
-			}
-			return payload, nil
-		},
-		OnResponse: func(status int, headers map[string]string, modelDef *goai.Model) {
-			responseObserved = true
-			payload := map[string]any{"ok": true, "status": status, "headers": headers}
-			if modelDef != nil {
-				payload["provider"] = string(modelDef.Provider)
-				payload["api"] = string(modelDef.Api)
-				payload["model_id"] = modelDef.ID
-			}
-			if _, err := r.engine.emitHook(ctx, HookRequest{Name: HookAfterProviderResponse, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: payload}); err != nil {
+		}, &inference.StreamHooks{
+			Thinking: thinking,
+			OnPayload: func(payload any, modelDef *goai.Model) (any, error) {
+				hookPayload := map[string]any{"ok": true, "request": payload, "stage": "payload"}
+				if modelDef != nil {
+					hookPayload["provider"] = string(modelDef.Provider)
+					hookPayload["api"] = string(modelDef.Api)
+					hookPayload["model_id"] = modelDef.ID
+				}
+				resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeProviderRequest, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, SystemPrompt: requestCtx.SystemPrompt, Messages: requestCtx.Messages, Tools: requestCtx.Tools, Payload: hookPayload})
+				if err != nil {
+					hookFailed = true
+					return nil, err
+				}
+				if abortErr := hookAbortFromResponse(resp, "aborted before provider request send by hook"); abortErr != nil {
+					hookFailed = true
+					return nil, abortErr
+				}
+				if replacement, ok := providerRequestReplacementFromHook(resp); ok {
+					return replacement, nil
+				}
+				return payload, nil
+			},
+			OnResponse: func(status int, headers map[string]string, modelDef *goai.Model) {
+				responseObserved = true
+				payload := map[string]any{"ok": true, "status": status, "headers": headers}
+				if modelDef != nil {
+					payload["provider"] = string(modelDef.Provider)
+					payload["api"] = string(modelDef.Api)
+					payload["model_id"] = modelDef.ID
+				}
+				if _, err := r.engine.emitHook(ctx, HookRequest{Name: HookAfterProviderResponse, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: payload}); err != nil {
+					log.Printf("hook after_provider_response error: %v", err)
+				}
+			},
+		})
+		if !responseObserved {
+			if _, err := r.engine.emitHook(ctx, HookRequest{Name: HookAfterProviderResponse, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"ok": inferErr == nil}}); err != nil {
 				log.Printf("hook after_provider_response error: %v", err)
 			}
-		},
-	})
-	if !responseObserved {
-		if _, err := r.engine.emitHook(ctx, HookRequest{Name: HookAfterProviderResponse, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"ok": inferErr == nil}}); err != nil {
-			log.Printf("hook after_provider_response error: %v", err)
 		}
-	}
+		return result, inferErr, progress || hookFailed
+	}, func(attempt int, delay time.Duration, class string) error {
+		return r.providerRetryWait(ctx, s, turnID, sessionID, model, iter, attempt, delay, class)
+	}, func() error {
+		if err := s.SetClaimedRunningPhase(ctx, sessionID, turnID, "running"); err != nil {
+			return err
+		}
+		if err := s.AppendTurnEvent(ctx, turnID, sessionID, "inference.retry_resumed", map[string]any{"iteration": iter, "phase": "inference"}); err != nil {
+			return err
+		}
+		r.engine.broadcast(sessionID, map[string]any{"type": "agent_status", "chat_jid": "gi:" + sessionID, "turn_id": turnID, "status": "running", "title": "Retrying provider request…", "phase": "inference"})
+		return nil
+	})
 	return result, inferErr
 }
 

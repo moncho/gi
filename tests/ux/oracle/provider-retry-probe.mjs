@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';import fs from 'node:fs/promises';
+const root='/opt/piclaw/current/app';
+const {retryDelayMs}=await import(root+'/node_modules/@earendil-works/pi-ai/dist/index.js');
+const {isRetryableAssistantError}=await import(root+'/node_modules/@earendil-works/pi-ai/dist/compat.js');
+const {classifyOpaqueAgentFailure,decideAutomaticRecovery,DEFAULT_AUTOMATIC_RECOVERY_CONFIG}=await import(root+'/runtime/src/agent-pool/automatic-recovery.ts');
+const error='Post "https://api.enterprise.githubcopilot.com/responses": http2: timeout awaiting response headers';
+const classification=classifyOpaqueAgentFailure(error);assert.equal(classification,'timeout');
+const piRetry=isRetryableAssistantError({role:'assistant',stopReason:'error',errorMessage:error});assert.equal(piRetry,true);
+const delays=[1,2,3].map(n=>retryDelayMs({baseDelayMs:2000,maxAgentDelayMs:60000},n));assert.deepEqual(delays,[2000,4000,8000]);
+const decision=decideAutomaticRecovery({config:DEFAULT_AUTOMATIC_RECOVERY_CONFIG,failureCategory:classification,recoveryAttemptsUsed:0,elapsedMs:0,snapshot:{hadToolActivity:false,hadPartialOutput:false}});assert.equal(decision.recover,true);
+const out=`test-results/ux-oracle/provider-retry-${Date.now()}.json`;await fs.mkdir('test-results/ux-oracle',{recursive:true});await fs.writeFile(out,JSON.stringify({scope:'Installed classifier/backoff/recovery functions only; no provider traffic or full-session acceptance',error,classification,piRetry,delays,decision},null,2));console.log(JSON.stringify({out,classification,piRetry,delays,decision},null,2));

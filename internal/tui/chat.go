@@ -611,6 +611,10 @@ func (c *chatTUI) handleTopicEvent(env topics.Envelope) {
 	payload := env.Payload
 	switch env.Topic {
 	case "turn.status":
+		if payload["phase"] == "retry_wait" {
+			c.handleEvent(payload)
+			return
+		}
 		title, _ := payload["title"].(string)
 		status, _ := payload["status"].(string)
 		if status == "running" {
@@ -882,6 +886,22 @@ func (c *chatTUI) handleEvent(ev map[string]any) {
 			c.app.MarkDirty()
 		}
 	case "agent_status":
+		if ev["phase"] == "retry_wait" {
+			title, _ := ev["title"].(string)
+			c.markRunning()
+			c.showThinkingIndicator(time.Time{})
+			if span, ok := c.transcriptBlockSpans[c.thinkingIndicatorKey]; ok && span.HeaderIndex >= 0 && span.HeaderIndex < len(c.transcript) {
+				if meta, valid := parseTranscriptBlockMarker(c.transcript[span.HeaderIndex]); valid {
+					meta.Title = title
+					c.replaceTranscriptBlock(meta, nil)
+				}
+			}
+			c.status = title
+			if c.app != nil {
+				c.app.MarkDirty()
+			}
+			return
+		}
 		title := ""
 		if v, ok := ev["title"].(string); ok {
 			title = v

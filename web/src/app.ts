@@ -1126,9 +1126,9 @@ function GiApp() {
                     removingPostIds=${removingPostIds}
                     searchQuery=${searchState.active ? searchState.query : ''}
                 />
-                ${activityFresh && activity?.tool && !activity?.compaction?.active && html`<${ToolActivity} tool=${activity.tool} />`}
+                ${activityFresh && activity?.tool && !activity?.compaction?.active && agentStatus?.phase !== 'retry_wait' && html`<${ToolActivity} tool=${activity.tool} />`}
                 <${AgentStatus} key=${`${sessionId}:${currentTurnId || ''}`}
-                    status=${activity?.tool || isCompactionStatus(agentStatus) ? null : agentStatus}
+                    status=${(activity?.tool && agentStatus?.phase !== 'retry_wait') || isCompactionStatus(agentStatus) ? null : agentStatus}
                     draft=${agentDraft}
                     plan=${agentPlan}
                     thought=${agentThought}

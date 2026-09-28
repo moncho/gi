@@ -30,6 +30,7 @@ type RuntimeConfig struct {
 	TUIClipboardMode     string                 `json:"tui_clipboard_mode"`
 	TUIScrollbar         bool                   `json:"tui_scrollbar"`
 	Compaction           CompactionSettings     `json:"compaction"`
+	Retry                ProviderRetrySettings  `json:"retry"`
 	Hooks                HookSettings           `json:"hooks"`
 	Peering              PeeringSettings        `json:"peering"`
 	Passkeys             PasskeySettings        `json:"passkeys"`
@@ -106,6 +107,7 @@ type piSettings struct {
 	TUIClipboardMode     string                 `json:"tuiClipboardMode"`
 	TUIScrollbar         bool                   `json:"tuiScrollbar"`
 	Compaction           CompactionSettings     `json:"compaction"`
+	Retry                ProviderRetrySettings  `json:"retry"`
 	Hooks                HookSettings           `json:"hooks"`
 	Peering              PeeringSettings        `json:"peering"`
 	Passkeys             PasskeySettings        `json:"passkeys"`
@@ -142,6 +144,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.TUIClipboardMode = normalizeClipboardMode(ps.TUIClipboardMode)
 		cfg.TUIScrollbar = ps.TUIScrollbar
 		cfg.Compaction = ps.Compaction
+		cfg.Retry = ps.Retry
 		cfg.Hooks = ps.Hooks
 		cfg.Peering = ps.Peering
 		cfg.Passkeys = ps.Passkeys

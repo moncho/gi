@@ -2276,6 +2276,9 @@ async function getAgentStatus(agentId, chatJid = null) {
   if (!sessionId)
     return null;
   const data = await request(`/api/sessions/${encodeURIComponent(sessionId)}/activity`);
+  if (data.status === "running" && data.phase === "retry_wait" && data.retry) {
+    return { ...data, ...data.retry, type: "intent", status: "running", phase: "retry_wait" };
+  }
   return {
     ...data,
     type: data.status === "running" ? "tool_call" : "intent",
@@ -19861,11 +19864,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-erg2wmvw.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-1pttekg2.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-7t78gx7r.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-r56ck38x.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-qqncv3fv.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-t3xjwd4h.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-cd4npzkk.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-jy8qeefs.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-80mrxjgc.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-4zpx16s4.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -22359,9 +22362,9 @@ function GiApp() {
                     removingPostIds=${removingPostIds}
                     searchQuery=${searchState.active ? searchState.query : ""}
                 />
-                ${activityFresh && activity?.tool && !activity?.compaction?.active && fe`<${ToolActivity} tool=${activity.tool} />`}
+                ${activityFresh && activity?.tool && !activity?.compaction?.active && agentStatus?.phase !== "retry_wait" && fe`<${ToolActivity} tool=${activity.tool} />`}
                 <${AgentStatus} key=${`${sessionId}:${currentTurnId || ""}`}
-                    status=${activity?.tool || isCompactionStatus(agentStatus) ? null : agentStatus}
+                    status=${activity?.tool && agentStatus?.phase !== "retry_wait" || isCompactionStatus(agentStatus) ? null : agentStatus}
                     draft=${agentDraft}
                     plan=${agentPlan}
                     thought=${agentThought}
@@ -22649,5 +22652,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=3FA67660585BDB2A64756E2164756E21
-//# sourceMappingURL=app-fn5ked4f.js.map
+//# debugId=0FE1B988B93E86EB64756E2164756E21
+//# sourceMappingURL=app-wzg69126.js.map

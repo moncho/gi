@@ -216,6 +216,9 @@ export async function getAgentStatus(agentId: string, chatJid: string | null = n
     const sessionId = chatJid?.startsWith('gi:') ? chatJid.slice(3) : null;
     if (!sessionId) return null;
     const data = await request(`/api/sessions/${encodeURIComponent(sessionId)}/activity`);
+    if (data.status === 'running' && data.phase === 'retry_wait' && data.retry) {
+        return { ...data, ...data.retry, type: 'intent', status: 'running', phase: 'retry_wait' };
+    }
     return { ...data, type: data.status === 'running' ? 'tool_call' : 'intent',
         title: data.status === 'cancelling' ? 'Cancelling…' : data.status === 'running' ? 'Working…' : '' };
 }

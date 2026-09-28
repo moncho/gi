@@ -61,5 +61,17 @@ func (s *Store) SessionActivity(ctx context.Context, sessionID string) (map[stri
 	if tool != nil {
 		result["tool"] = tool
 	}
+	if status == "running" && phase == "retry_wait" && claimed {
+		var raw string
+		if err := tx.QueryRowContext(ctx, `select payload_json from turn_events where turn_id=? and event_type='inference.retry_scheduled' order by seq desc limit 1`, id).Scan(&raw); err == nil {
+			payload, err := unmarshalJSONMap(raw)
+			if err != nil {
+				return nil, err
+			}
+			result["retry"] = payload
+		} else if err != sql.ErrNoRows {
+			return nil, err
+		}
+	}
 	return result, nil
 }

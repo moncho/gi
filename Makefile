@@ -243,6 +243,13 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-provider-retry-oracle test-provider-retry
+test-provider-retry-oracle:
+	$(BUN) tests/ux/oracle/provider-retry-probe.mjs
+
+test-provider-retry:
+	$(GO) test -race -count=3 ./internal/config ./internal/turn ./internal/tui -run 'TestProviderRetry|TestProviderHeaderTimeout|TestTransientProviderFailure'
+
 .PHONY: test-codex-tui-regression
 test-codex-tui-regression:
 	$(GO) test -race -count=3 ./internal/inference -run 'TestCodex'

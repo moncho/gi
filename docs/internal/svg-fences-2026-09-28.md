@@ -1,0 +1,18 @@
+# Fenced SVG: Piclaw 3.2.4 comparison (2026-09-28)
+
+Gi now renders safe fenced SVG as a sanitised, isolated data image with an exact source disclosure. Unsafe input remains escaped code. This change is in the repository only; it has not been deployed.
+
+## Reference and implementation
+
+- The installed Piclaw 3.2.4 source map at `/opt/piclaw/current/app/runtime/web/static/classic/dist/app.bundle.js.map` has SHA-256 `c53092cfb75415f30b4c6b16b758cab68fed9bbc546953e5916a91b382acb32b`. `web/piclaw-svg-3.2.4/MANIFEST.json` records the source paths, bytes and hashes for `utils/svg-images.ts`, `ui/svg-theme.ts` and the relevant release CSS. The pinned TypeScript is byte-for-byte equal to the source-map entries. The CSS matches the recorded byte range of the installed stylesheet.
+- `scripts/piclaw-svg-adapter.mjs` checks the pinned files at build time, wraps the supplied Markdown renderer with the installed `renderSvgFences`, and binds installed surface controls in post effects. `build.js` copies scoped CSS. The supplied `web/src/markdown.ts` and `web/src/components/post.ts` are unchanged. The wrapper uses Gi's existing Markdown sanitiser for non-SVG text and creates the code-copy source as escaped text.
+- The pinned sanitizer rejects invalid or unsafe trees, bounds input bytes, node count, depth and dimensions, strips unapproved attributes and renders an `<img src="data:image/svg+xml;base64,…">`. Source disclosure retains the original fenced content. The browser never inserts the model SVG as privileged inline DOM.
+
+## Tests and limits
+
+- `make test-piclaw-oracle-matrix`: six installed-asset probes passed with the production-default sanitisation flag and mocked APIs, including safe preview, source copy and hostile-source fallback. Logs: `test-results/ux-oracle-{chromium,webkit}-{phone,tablet,desktop}.log`.
+- `make test-ux-parity UX_PARITY_ARGS='tests/ux/rendering.spec.mjs'`: 42/42 native rendering checks across Chromium/WebKit phone, tablet and desktop; log `/workspace/tmp/gi-svg-rendering-release.log`. Cases cover data-image accessibility, exact native copy, light/dark controls, viewport reduction, escaped hostile and malformed trees, stripped unsafe attributes, no external tracker request, and oversized input via an intercepted renderer response. The upstream `@ux-original-029` scenario includes session/lifecycle steps this test does not exercise, so it is not mapped as a full pass.
+- `make check ux-parity-inventory`: 144 functional passes, 11 skips; 214 support passes and 7,977 assertions. Support checks compare the pinned sources against installed files and ensure build adapters reject altered anchors. Log: `/workspace/tmp/gi-svg-check-final.log`. Classic mapping remains 97/241, Shared 29/42; no new mapping was awarded.
+- Earlier attempts are retained: `/workspace/tmp/gi-svg-native-red.log` failed an invalid `toHaveAttribute('open', null)` assertion and an oversized test-model prompt rejected before rendering; `/workspace/tmp/gi-svg-native2.log` counted Gi's trusted code-copy icon SVGs as model SVGs; `/workspace/tmp/gi-svg-adversarial.log` assumed an unsafe `style` attribute rejects the entire SVG, while installed code strips the attribute. Tests now check the actual contract. These failures were test assumptions, not reasons to weaken sanitizer assertions.
+
+Mocked installed assets and local native browser runs do not establish physical-device behaviour, production provider behaviour, deployment, or whole-web UX parity. In particular, installed WebKit reload/SSE diagnostics and the wider queue/composer inventory remain separate open work.

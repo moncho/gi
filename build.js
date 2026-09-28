@@ -2,6 +2,7 @@ import { resolve, dirname } from 'path';
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, rmSync, copyFileSync, cpSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { piclawStatusAdapter } from './scripts/piclaw-status-adapter.mjs';
+import {piclawSvgAdapter, patchMarkdownSvg, patchPostSvg, verifyPiclawSvg} from './scripts/piclaw-svg-adapter.mjs';
 import { patchTimelineMenu } from './scripts/patch-timeline-menu.mjs';
 import { patchWorkspaceReadonly } from './scripts/patch-workspace-readonly.mjs';
 import { patchTabReadonly } from './scripts/patch-tab-readonly.mjs';
@@ -88,10 +89,11 @@ const appBuild = await Bun.build({
   target: 'browser', format: 'esm', sourcemap: 'linked', splitting: true, modulePreload: false,
   naming: { entry: 'app.bundle.[ext]', chunk: 'chunks/[name]-[hash].[ext]', asset: 'assets/[name]-[hash].[ext]' },
   external: ['/editor-vendor/codemirror.js'],
-  plugins: [piclawStatusAdapter(__dirname), { name: 'gi-post-speech', setup(build) {
+  plugins: [piclawStatusAdapter(__dirname), piclawSvgAdapter(__dirname), { name: 'gi-post-speech', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]post\.ts$/ }, async args => ({
-      contents: patchPostRecoveryControl(patchPostOutcomes(patchPostSpeech(await Bun.file(args.path).text()))), loader: 'ts',
+      contents: patchPostSvg(patchPostRecoveryControl(patchPostOutcomes(patchPostSpeech(await Bun.file(args.path).text())))), loader: 'ts',
     }));
+    build.onLoad({filter:/[\\/]src[\\/]markdown\.ts$/},async args=>({contents:patchMarkdownSvg(await Bun.file(args.path).text()),loader:'ts'}));
   } }, { name: 'gi-popup-key-ownership', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]timeline-quick-actions\.ts$/ }, async args => ({
       contents: patchQuickActionKeys(await Bun.file(args.path).text()), loader: 'ts',
@@ -147,6 +149,8 @@ if (existsSync(phtmAlias)) rmSync(phtmAlias);
 
 // Pinned renderer stylesheet; original supplied stylesheet is left untouched.
 copyFileSync('web/piclaw-status-3.2.4/css/agent.css', 'internal/web/static/css/piclaw-status-3.2.4.css');
+verifyPiclawSvg(__dirname);
+copyFileSync('web/piclaw-svg-3.2.4/css/svg-fences.css','internal/web/static/css/piclaw-svg-3.2.4.css');
 
 // ── CSS bundle ────────────────────────────────────────────────────────────
 // CSS bundle — all Piclaw CSS is served from /css/styles.css (with @import partials).

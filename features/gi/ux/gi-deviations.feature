@@ -20,12 +20,13 @@ Feature: Gi implementation checks and remaining Piclaw gaps
     Then the captured session receives one turn with the loaded skill and media
     And stale or unknown skill commands retain recoverable text with an error
 
-  @gi-ux-003
-  Scenario: Gi leaves fenced SVG as copyable source instead of an image preview
-    Given an assistant message containing a fenced SVG block
+  @gi-ux-003 @oracle-aligned
+  Scenario: Safe fenced SVG has an isolated image preview and exact copyable source
+    Given an assistant message containing safe and unsafe fenced SVG blocks
     When Gi renders the message
-    Then the SVG remains escaped source code and no image preview appears
-    And the source can still be copied
+    Then only safe bounded SVG appears as an isolated data-image preview with surface controls
+    And its exact source remains copyable while unsafe SVG stays escaped source code
+    And no hostile code executes or external resources are loaded
 
   # Piclaw replacement is now implemented; async recovery/persistence remains
   # native-specific and is not a blanket queue parity mapping.

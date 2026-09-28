@@ -52,14 +52,86 @@ test('@ux-timeline-024 Code-copy control copies native code text from the top-ri
  await expect(input).toHaveValue('rendering draft retained');
 });
 
-test('Gi deviation: fenced SVG remains source code instead of Piclaw sanitized image',async({page,request},info)=>{
- await attachGiDeviation(info,'@gi-ux-003');await observeClipboard(page);
- const svg='<svg xmlns="http://www.w3.org/2000/svg" aria-label="source-only"><text x="2" y="12">SVG & text</text></svg>\n';
- const {post,input}=await fixture(page,request,info,'```svg\n'+svg+'```');
- const block=post.locator('.post-code-block');await expect(block.locator('pre code')).toHaveText(svg);
- await expect(post.locator('.post-content svg[aria-label="source-only"]')).toHaveCount(0);
- await block.getByRole('button',{name:'Copy code',exact:true}).click();
+test('Gi fenced SVG uses Piclaw isolated preview and preserves exact source (bounded original-029 checks)',async({page,request},info)=>{
+ await evidence(info,'@ux-original-029');await attachGiDeviation(info,'@gi-ux-003');await observeClipboard(page);
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><title>Safe vector</title><text x="2" y="12">SVG &amp; text</text></svg>\n';
+ const {post,input}=await fixture(page,request,info,'Before SVG\n\n```svg\n'+svg+'```\n\nAfter SVG');
+ const preview=post.locator('.model-svg-block'),image=preview.locator('img.model-svg-image');
+ await expect(preview).toHaveCount(1);await expect(image).toBeVisible();
+ await expect(image).toHaveAttribute('src',/^data:image\/svg\+xml;base64,/);
+ await expect(image).toHaveAttribute('alt','Safe vector');
+ await expect(post.locator('.post-content > svg')).toHaveCount(0);
+ await expect(post.locator('.post-content')).toContainText('Before SVG');
+ await expect(post.locator('.post-content')).toContainText('After SVG');
+ const decoded=await image.evaluate(el=>new TextDecoder().decode(Uint8Array.from(atob(el.src.split(',')[1]),ch=>ch.charCodeAt(0))));
+ expect(decoded).toContain('SVG &amp; text');expect(decoded).not.toContain('onload=');
+ const code=preview.locator('.model-svg-source pre code');await expect(code).toHaveText(svg);
+ expect(await preview.locator('.model-svg-source').evaluate(el=>el.hasAttribute('open'))).toBe(false);
+ await preview.locator('.model-svg-source summary').click();
+ const block=preview.locator('.post-code-block');await block.getByRole('button',{name:'Copy code',exact:true}).click();
  await expect.poll(()=>page.evaluate(()=>window.__nativeCopies.at(-1))).toMatchObject({trusted:true,text:svg});
+ const surface=preview.getByRole('combobox',{name:'SVG background'});
+ const initialSrc=await image.getAttribute('src');
+ const layout=await preview.evaluate(el=>({width:el.getBoundingClientRect().width,body:document.body.scrollWidth,viewport:innerWidth}));
+ expect(layout.width).toBeLessThanOrEqual(layout.viewport);expect(layout.body).toBeLessThanOrEqual(layout.viewport);
+ await page.setViewportSize({width:Math.max(320,Math.floor(info.project.use.viewport.width*0.8)),height:info.project.use.viewport.height});
+ await expect(image).toBeVisible();
+ expect(await preview.evaluate(el=>document.body.scrollWidth<=innerWidth&&el.getBoundingClientRect().width<=innerWidth)).toBe(true);
+ await surface.selectOption('dark');await expect(preview).toHaveAttribute('data-svg-surface','dark');
+ await expect(image).toHaveAttribute('src',/^data:image\/svg\+xml;base64,/);
+ await expect.poll(()=>image.getAttribute('src')).not.toBe(initialSrc);
+ await surface.selectOption('light');await expect(preview).toHaveAttribute('data-svg-surface','light');
+ await expect.poll(()=>image.getAttribute('src')).not.toBe(initialSrc);
+ await expect(input).toHaveValue('rendering draft retained');
+});
+
+test('Gi SVG sanitizer rejects unsafe and malformed fences without loading resources',async({page,request},info)=>{
+ await attachGiDeviation(info,'@gi-ux-003');await observeClipboard(page);
+ const sources=[
+  '<svg xmlns="http://www.w3.org/2000/svg" onload="window.svgAttack=true"><script>window.svgAttack=true</script><image href="https://example.invalid/svg-tracker"/></svg>\n',
+  '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject><img src="https://example.invalid/svg-tracker"/></foreignObject></svg>\n',
+  '<svg xmlns="http://www.w3.org/2000/svg"><text>unescaped & text</text></svg>\n',
+  '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><a xlink:href="https://example.invalid/svg-tracker"><text>external</text></a></svg>\n',
+  '<svg xmlns="http://www.w3.org/2000/svg"><g xmlns="http://www.w3.org/1999/xhtml"><div>mixed namespace</div></g></svg>\n',
+  '<!DOCTYPE svg [<!ENTITY bad SYSTEM "https://example.invalid/svg-tracker">]><svg xmlns="http://www.w3.org/2000/svg"><text>&bad;</text></svg>\n',
+ ];
+ const requests=[];page.on('request',r=>{if(r.url().includes('svg-tracker'))requests.push(r.url());});
+ const {post,input}=await fixture(page,request,info,sources.map(s=>'```svg\n'+s+'```').join('\n\n'));
+ await expect(post.locator('.model-svg-block')).toHaveCount(0);
+ const codes=post.locator('pre code.language-svg');await expect(codes).toHaveCount(sources.length);
+ for(let n=0;n<sources.length;n++)await expect(codes.nth(n)).toHaveText(sources[n]);
+ await expect(post.locator('.post-content img.model-svg-image, .post-content > svg')).toHaveCount(0);
+ expect(requests).toEqual([]);expect(await page.evaluate(()=>!!window.svgAttack)).toBe(false);
+ await post.locator('.post-code-block').first().getByRole('button',{name:'Copy code',exact:true}).click();
+ await expect.poll(()=>page.evaluate(()=>window.__nativeCopies.at(-1))).toMatchObject({trusted:true,text:sources[0]});
+ await expect(input).toHaveValue('rendering draft retained');
+});
+
+test('Gi strips unsafe SVG attributes from isolated preview without external fetches',async({page,request},info)=>{
+ const source='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><rect style="fill:url(https://example.invalid/svg-tracker)" onclick="window.svgAttack=true" width="10" height="10" fill="red"/></svg>\n';
+ const requests=[];page.on('request',r=>{if(r.url().includes('svg-tracker'))requests.push(r.url());});
+ const {post}=await fixture(page,request,info,'```svg\n'+source+'```');
+ const image=post.locator('.model-svg-block img.model-svg-image');await expect(image).toBeVisible();
+ const decoded=await image.evaluate(el=>new TextDecoder().decode(Uint8Array.from(atob(el.src.split(',')[1]),ch=>ch.charCodeAt(0))));
+ expect(decoded).toContain('<rect');expect(decoded).not.toContain('style=');expect(decoded).not.toContain('onclick=');
+ expect(decoded).not.toContain('svg-tracker');expect(requests).toEqual([]);
+ expect(await page.evaluate(()=>!!window.svgAttack)).toBe(false);
+ await expect(post.locator('.model-svg-source pre code')).toHaveText(source);
+});
+
+test('Gi leaves oversized SVG as source without a preview (renderer-only fixture)',async({page,request},info)=>{
+ // Inject only the browser's message response: the test-model provider rejects
+ // a 256 KiB prompt before it reaches the renderer. Keep the stored turn small.
+ const oversized='<svg xmlns="http://www.w3.org/2000/svg"><text>'+'x'.repeat(256*1024)+'</text></svg>\n';
+ await page.route('**/api/sessions/*/messages*',async route=>{
+  const response=await route.fetch(),body=await response.json();
+  for(const message of body.messages||[])if(message.role==='assistant')message.content='```svg\n'+oversized+'```';
+  await route.fulfill({response,json:body});
+ });
+ const {post,input}=await fixture(page,request,info,'```svg\n<svg><title>small provider prompt</title></svg>\n```');
+ await expect(post.locator('.model-svg-block')).toHaveCount(0);
+ await expect(post.locator('pre code.language-svg')).toContainText('x'.repeat(100));
+ await expect(post.locator('img.model-svg-image')).toHaveCount(0);
  await expect(input).toHaveValue('rendering draft retained');
 });
 

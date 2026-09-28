@@ -9,6 +9,7 @@ import { patchQuickActionKeys, patchComposePopupKeys } from './scripts/patch-pop
 import { patchModelPicker } from './scripts/patch-model-picker.mjs';
 import { patchPickerGeometry } from './scripts/patch-picker-geometry.mjs';
 import { patchComposeCommands } from './scripts/patch-compose-commands.mjs';
+import { patchComposeEscape } from './scripts/patch-compose-escape.mjs';
 import { patchComposeRandomId } from './scripts/patch-compose-random-id.mjs';
 import { patchComposeCaptureToken } from './scripts/patch-compose-capture-token.mjs';
 import { patchMessageReferenceLabels } from './scripts/patch-message-reference-labels.mjs';
@@ -96,7 +97,7 @@ const appBuild = await Bun.build({
       contents: patchQuickActionKeys(await Bun.file(args.path).text()), loader: 'ts',
     }));
     build.onLoad({ filter: /[\\/]components[\\/]compose-box\.ts$/ }, async args => ({
-      contents: patchMessageReferenceLabels(patchComposeCaptureToken(patchComposeRandomId(patchModelAccessibility(patchModelThinking(patchVoiceInput(patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(await Bun.file(args.path).text()))))))))))))))), loader: 'ts',
+      contents: patchMessageReferenceLabels(patchComposeCaptureToken(patchComposeRandomId(patchModelAccessibility(patchModelThinking(patchVoiceInput(patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(patchComposeEscape(await Bun.file(args.path).text())))))))))))))))), loader: 'ts',
     }));
   } }, { name: 'gi-workspace-readonly', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]tab-strip\.ts$/ }, async args => ({

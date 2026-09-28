@@ -2333,11 +2333,6 @@ async function compactSession(chatJid, token) {
     throw new Error("No compaction snapshot");
   return request(`/api/sessions/${encodeURIComponent(chatJid.slice(3))}/compaction`, { method: "POST", body: JSON.stringify({ token }) });
 }
-async function resumeSessionQueue(chatJid, stopTurnId) {
-  if (!chatJid?.startsWith("gi:") || !stopTurnId)
-    throw new Error("No stopped queue to resume");
-  return request(`/api/sessions/${encodeURIComponent(chatJid.slice(3))}/resume-queue`, { method: "POST", body: JSON.stringify({ stop_turn_id: stopTurnId }) });
-}
 async function cancelSessionRun(chatJid, turnId) {
   if (!chatJid?.startsWith("gi:") || !turnId)
     throw new Error("No active run to stop");
@@ -10500,6 +10495,13 @@ ${mediaIds.map((id, index) => {
       } else {
         handleSubmit(currentValue);
       }
+    }
+    if (e.key === "Escape") {
+      if (showModelPopup || showSessionPopup || showSlash || showMention)
+        return;
+      e.preventDefault();
+      e.stopPropagation();
+      textareaRef.current?.blur();
     }
   };
   const addMediaFiles = (files) => {
@@ -22375,11 +22377,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-axj9zy50.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-sfkr9wdq.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-21a8b7yw.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-xmnq4jyp.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-c2a3w8gz.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-z0j1xaq6.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-85cgcwan.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-2zk96hg0.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-fngbxfbx.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-1296t4j1.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -23880,9 +23882,6 @@ function GiApp() {
   const activityRevision = Q_(createActivityRevision()).current;
   const [activityNow, setActivityNow] = F_(Date.now());
   const [stopPending, setStopPending] = F_(false);
-  const resumeToken = Q_(null);
-  const [resumePending, setResumePending] = F_(false);
-  const [resumeError, setResumeError] = F_("");
   const [stopError, setStopError] = F_("");
   const [activityFresh, setActivityFresh] = F_(false);
   const stopToken = Q_(null);
@@ -24533,9 +24532,6 @@ function GiApp() {
     stopToken.current = null;
     setStopPending(false);
     setStopError("");
-    resumeToken.current = null;
-    setResumePending(false);
-    setResumeError("");
     compactToken.current = null;
     setCompactPending(false);
     setCompactError("");
@@ -24935,33 +24931,6 @@ function GiApp() {
                 ${searchError && fe`<div role="alert">${searchError}</div>`}
                 ${searchState.active && fe`<div role="status">Search${searchState.query ? `: ${searchState.query}` : ""} · ${searchState.scope} · up to 50 results</div>`}
                 ${stopError && fe`<div role="alert">${stopError}</div>`}
-                ${activity?.queue_hold_turn_id && fe`<div role="status">Queue paused after Stop.
-                    <button type="button" disabled=${resumePending || !activityFresh || connectionStatus !== "connected" || activity.status !== "idle"} onClick=${async () => {
-    if (resumeToken.current || !activityFresh || streamDisconnected.current || activity.status !== "idle")
-      return;
-    const scope = selection.capture(), stop = activity.queue_hold_turn_id, token = {};
-    resumeToken.current = token;
-    setResumePending(true);
-    setResumeError("");
-    try {
-      await resumeSessionQueue(sessionToChatJid2(scope.sessionId), stop);
-    } catch (error) {
-      if (selection.isCurrent(scope))
-        setResumeError("Resume not confirmed: " + error.message + ". Check queue state before retrying.");
-    } finally {
-      if (resumeToken.current === token) {
-        resumeToken.current = null;
-        setResumePending(false);
-      }
-      if (selection.isCurrent(scope)) {
-        activityRevision.invalidate();
-        setActivityFresh(false);
-        refreshAfterConnection.current();
-      }
-    }
-  }}>Resume queue</button>
-                </div>`}
-                ${resumeError && fe`<div role="alert">${resumeError}</div>`}
                 ${compactError && fe`<div role="alert">${compactError}</div>`}
                 ${draftStorageError && fe`<div role="alert">${draftStorageError}</div>`}
                 ${drafts.error(sessionId) && fe`<div role="alert">${drafts.error(sessionId)}</div>`}
@@ -25184,5 +25153,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=28E1FDEDAC581F1464756E2164756E21
-//# sourceMappingURL=app-dtwgbftv.js.map
+//# debugId=A92A9B0916ED7BBF64756E2164756E21
+//# sourceMappingURL=app-d52mbwam.js.map

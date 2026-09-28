@@ -306,6 +306,10 @@ test-piclaw-settings-shell:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
+.PHONY: test-piclaw-widget-events
+test-piclaw-widget-events:
+	$(BUN) tests/ux/oracle/piclaw-widget-lifecycle-probe.mjs
+
 UX_SETTINGS_PROJECTS ?=
 test-ux-settings-title: test-piclaw-settings-title
 	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/settings-shell.spec.mjs tests/ux/gi-settings.spec.mjs $(UX_SETTINGS_PROJECTS)'

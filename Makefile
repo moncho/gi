@@ -518,6 +518,10 @@ test-ux-outcomes:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_OUTCOMES=1' UX_LOCAL_SPEC='tests/ux/outcomes.spec.mjs tests/ux/message-copy.spec.mjs tests/ux/speech.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/13-outcomes.spec.ts
 	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
 
+.PHONY: test-ux-widget-persisted
+test-ux-widget-persisted:
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_WIDGETS=1' UX_LOCAL_SPEC='tests/ux/widget-persisted.spec.mjs'
+
 .PHONY: test-ux-links
 test-ux-links:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_LINKS=1' UX_LOCAL_SPEC='tests/ux/remote-links.spec.mjs tests/ux/rendering.spec.mjs tests/ux/lightbox.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/12-remote-links.spec.ts

@@ -304,6 +304,25 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	if os.Getenv("GI_UX_WIDGETS") != "" {
+		if _, err := s.CreateSession(context.Background(), "widget-fixture", "Stored widgets", map[string]any{"model": "test-model"}); err != nil {
+			log.Fatal(err)
+		}
+		for i, artifact := range []map[string]any{
+			{"kind": "html", "html": ""},
+			{"kind": "html", "html": "<p>Stored HTML proof</p>"},
+			{"kind": "svg", "svg": ""},
+			{"kind": "svg", "svg": `<svg xmlns="http://www.w3.org/2000/svg"><text y="20">Stored SVG proof</text></svg>`},
+		} {
+			payload := map[string]any{"content_blocks": []any{map[string]any{
+				"type": "generated_widget", "widget_id": fmt.Sprintf("persisted-%d", i),
+				"title": fmt.Sprintf("Stored widget %d", i), "capabilities": []string{"interactive"}, "artifact": artifact,
+			}}}
+			if err := s.AddMessage(context.Background(), fmt.Sprintf("widget-message-%d", i), "widget-fixture", "assistant", "Widget artifact fixture", payload); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 	if os.Getenv("GI_UX_LINKS") != "" {
 		if _, err := s.CreateSession(context.Background(), "links-fixture", "Remote links", map[string]any{"model": "test-model"}); err != nil {
 			log.Fatal(err)

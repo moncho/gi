@@ -10,7 +10,7 @@ This is a bounded audit ledger for the installed Piclaw 3.2.4 reference. Prior G
 | Composer thinking | Installed picker browser 6/6: explicit level retains draft/picker; select focus lost after pending. | Native30/30 and Settings thinking42/42 passed. | Gi conditionally restores select focus; this difference and full model/provider journeys need review. |
 | Output/status | Installed Output browser 6/6 and prior native12/12. | Bounded occurrence-owned preview and separate Thoughts/Draft/Output panes previously verified. | Strict installed WebKit reload oracle still fails in a minimal SSE control. |
 | Queue steering/restoration | Installed method oracle 8 cases including ended-before-queue, plus installed idle Steer browser/method 6 cases. | Released-claim fallback/native6/6 and active18/18 passed; Stop holds removed. | Cleanup-owned claim handoff, returned steering, Pi dequeue/abort restoration, ordering and media end-races remain unverified. |
-| Slash quick actions, skill selection, SVG preview | Historical Gi-specific deviations in `tests/features/ux/gi-deviations.feature`. | No new acceptance. | Compare installed Piclaw interaction before changing or mapping these paths. |
+| Slash quick actions, skill selection, SVG preview | Historical Gi-specific deviations in `features/gi/ux/gi-deviations.feature`. | No new acceptance. | Compare installed Piclaw interaction before changing or mapping these paths. |
 
 The historical Shared36 hold-and-Resume evidence was invalid for Piclaw. `tests/ux/support/catalogue.mjs` now leaves it unmapped, and the reconnect test no longer carries the `@shared-36` tag. Historical upstream Gherkin bytes remain unchanged; a new clause audit must decide the Shared36 acceptance journey.
 

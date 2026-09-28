@@ -21,7 +21,7 @@ test('setup availability is optional, typed and restricted to unenrolled policy'
  expect(()=>parseAuthPolicy({...ready,enrolled:true,totp_enabled:true,setup_available:true})).toThrow();
 });
 test('new passkey contract remains pinned separately from frozen browser inventory',()=>{
- const source=readFileSync('tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature');
+ const source=readFileSync('features/ux/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature');
  expect(createHash('sha256').update(source).digest('hex')).toBe('bd48cab9126778763cab3ddfd8ee04a89bd8c29da62e3bc4188cf24dc3a55b82');
  expect(source.toString().match(/^\s*Scenario(?: Outline)?:/gm)?.length).toBe(26);
 });

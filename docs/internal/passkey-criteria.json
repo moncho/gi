@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "baselineCommit": "e7d9b0450db9dc2c103dc06797dd5387ab9f81d7",
   "source": {
-    "path": "tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature",
+    "path": "features/ux/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature",
     "sha256": "bd48cab9126778763cab3ddfd8ee04a89bd8c29da62e3bc4188cf24dc3a55b82"
   },
   "limits": [

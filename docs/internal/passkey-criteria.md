@@ -10,7 +10,7 @@ Initial source-evidence baseline: `e7d9b0450db9dc2c103dc06797dd5387ab9f81d7`.
 Later tested changes update individual dispositions and anchors in the ledger.
 Source hash:
 `bd48cab9126778763cab3ddfd8ee04a89bd8c29da62e3bc4188cf24dc3a55b82`.
-The [frozen feature](../../tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature)
+The [frozen feature](../../features/ux/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature)
 is unchanged. All 26 full-scenario mappings remain unawarded. Classic/shared
 mapping counts remain 101 of236 Classic scenario IDs (256 expanded cases) and
 30 of42 shared cases, including the separately disputed Classic008 mapping.

@@ -5,7 +5,7 @@ import { IdGenerator } from '@cucumber/messages';
 import { loadCorpus } from './catalogue.mjs';
 
 test('Gi settings scenarios stay separate from the active Piclaw parity corpus', () => {
-  const source = readFileSync(new URL('../../features/settings/gi-settings.feature', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../../features/gi/settings/gi-settings.feature', import.meta.url), 'utf8');
   const ast = new Parser(new AstBuilder(IdGenerator.incrementing()), new GherkinClassicTokenMatcher()).parse(source);
   const cases = ast.feature!.children.flatMap(child => child.scenario ? [child.scenario] : []);
   expect(cases).toHaveLength(30);

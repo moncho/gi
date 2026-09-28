@@ -1,7 +1,7 @@
 @canonical @piclaw-3.2.4 @classic @source-reviewed
 Feature: Classic Piclaw interaction model
   Installed Piclaw 3.2.4 is the reference; the historical 70d33bc clauses are
-  preserved under tests/ux/upstream/classic-snapshot/.
+  preserved under features/ux/upstream/classic-snapshot/.
   Visual differences and optional add-on behavior are not implied to be identical.
   Source-review evidence and validation gaps are indexed in
   docs/internal/ux-reaudit-2026-09-26/gherkin-alignment.md.

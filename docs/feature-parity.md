@@ -171,7 +171,7 @@ explicit full-suite runner with skip accounting. See the [suite guide][ux] and
 [audit]: internal/ux-test-audit-2026-09-24.md
 [tui]: internal/tui-pi-parity-plan.md
 [media]: internal/tui-clipboard-media.md
-[passkeys]: ../tests/ux/features/additions/piclaw-2026-09-24/README.md
+[passkeys]: ../features/ux/additions/piclaw-2026-09-24/README.md
 [checklist]: checklists/implementation.md
 [ux]: ../tests/ux/README.md
 [plan]: internal/full-web-tui-parity-plan.md

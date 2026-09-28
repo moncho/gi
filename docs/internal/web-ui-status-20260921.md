@@ -69,7 +69,7 @@ Shared durable queue return now passes independently (`shared-28`): 192/192 brow
 
 ## First parity correction
 
-The frozen Piclaw Classic corpus used by Vibes/Tau is now at `tests/ux/features/classic/`. It contains 24 files, 236 tagged scenarios and 256 expanded cases. The separate shared Vibes/Tau contract is also copied byte-for-byte (42 expanded cases).
+The frozen Piclaw Classic corpus used by Vibes/Tau is now at `features/ux/classic/`. It contains 24 files, 236 tagged scenarios and 256 expanded cases. The separate shared Vibes/Tau contract is also copied byte-for-byte (42 expanded cases).
 
 Gi previously had only the explorer's file-actions menu. The global TimelineMenu, language selector, recent-file and display-scale helpers were imported unchanged from Piclaw `70d33bc93ab540845bbcf5f80503ca8125c71594`. Source hashes and upstream MIT licence are in `web/upstream/`. The Gi adapter now mounts that menu and the Piclaw narrow-screen workspace drawer/backdrop. CSS excerpts retain source line references.
 

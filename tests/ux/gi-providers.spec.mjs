@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {readFileSync,mkdirSync} from 'node:fs';
 const secret='gi-fixture-provider-key',inputName='Message (Enter to send, Shift+Enter for newline)...';
-const feature=readFileSync('tests/features/settings/gi-settings.feature','utf8');
+const feature=readFileSync('features/gi/settings/gi-settings.feature','utf8');
 async function metadata(request){const response=await request.get('/api/settings/providers');expect(response.status()).toBe(200);const text=await response.text();expect(text).not.toContain(secret);expect(text).not.toContain('fixture-only');return JSON.parse(text);}
 async function clean(request){const current=await metadata(request);expect((await request.delete('/api/settings/providers',{data:{provider:'openai',revision:current.revision}})).status()).toBe(200);}
 async function setup(page,request,info){

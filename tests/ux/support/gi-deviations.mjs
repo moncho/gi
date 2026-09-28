@@ -2,9 +2,9 @@ import {readFileSync} from 'node:fs';
 import {generateMessages} from '@cucumber/gherkin';
 import {IdGenerator,SourceMediaType} from '@cucumber/messages';
 
-export const giDeviationFile = 'tests/features/ux/gi-deviations.feature';
+export const giDeviationFile = 'features/gi/ux/gi-deviations.feature';
 export function loadGiDeviations() {
-  const source = readFileSync(new URL('../../features/ux/gi-deviations.feature', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../../features/gi/ux/gi-deviations.feature', import.meta.url), 'utf8');
   const messages = generateMessages(source, giDeviationFile, SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN, {
     newId: IdGenerator.incrementing(), includeSource: false, includeGherkinDocument: false, includePickles: true,
   });

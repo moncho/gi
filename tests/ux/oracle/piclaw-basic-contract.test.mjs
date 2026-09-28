@@ -5,7 +5,7 @@ import {generateMessages} from '@cucumber/gherkin';
 import {IdGenerator, SourceMediaType} from '@cucumber/messages';
 
 const root=resolve(import.meta.dir,'../../..');
-const file=resolve(root,'tests/ux/features/oracle/piclaw-3.2.4-basic-interactions.feature');
+const file=resolve(root,'features/ux/oracle/piclaw-3.2.4-basic-interactions.feature');
 const text=readFileSync(file,'utf8');
 const messages=generateMessages(text,file,SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN,{newId:IdGenerator.incrementing(),includeGherkinDocument:true,includePickles:true});
 
@@ -29,7 +29,7 @@ test('versioned oracle scenarios are parseable, isolated and intentionally outsi
 });
 
 test('Gi first-send scenarios remain separately tagged and parseable',()=>{
- const path=resolve(root,'tests/features/sessions/gi-basic-send.feature');
+ const path=resolve(root,'features/gi/sessions/gi-basic-send.feature');
  const text=readFileSync(path,'utf8');
  const envelopes=generateMessages(text,path,SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN,{newId:IdGenerator.incrementing(),includeGherkinDocument:true,includePickles:true});
  expect(envelopes.filter(e=>e.parseError)).toEqual([]);

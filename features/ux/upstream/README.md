@@ -10,7 +10,7 @@ snapshots use `.gherkin` so normal active-feature discovery does not count them.
 `tests/ux/support/catalogue.mjs` checks these bytes on every inventory run.
 
 The editable active Piclaw 3.2.4 contracts remain under
-`tests/ux/features/classic/` and `tests/ux/features/shared-canonical-ux.feature`.
+`features/ux/classic/` and `features/ux/shared-canonical-ux.feature`.
 Their tags and clauses can be corrected when pinned release evidence conflicts
 with the historical snapshots. The `oracle/` fixtures retain narrower evidence
 and are not Gi parity cases. See

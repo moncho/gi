@@ -1,7 +1,7 @@
 @canonical @piclaw-3.2.4
 Feature: Piclaw-compatible interaction model
   Installed Piclaw 3.2.4 is the behavioral oracle. The original Tau/Vibes
-  contract is preserved under tests/ux/upstream/shared-canonical-ux.gherkin.
+  contract is preserved under features/ux/upstream/shared-canonical-ux.gherkin.
   Unsupported Gi capabilities remain gaps; deliberate safety deviations are
   documented separately and do not earn Piclaw parity credit.
 

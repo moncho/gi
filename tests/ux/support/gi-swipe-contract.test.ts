@@ -5,7 +5,7 @@ import { IdGenerator } from '@cucumber/messages';
 import { loadCorpus } from './catalogue.mjs';
 
 test('Gi activation swipe contract is separate from frozen browser and terminal credit', () => {
-    const text = readFileSync(new URL('../../features/sessions/gi-swipe.feature', import.meta.url), 'utf8');
+    const text = readFileSync(new URL('../../../features/gi/sessions/gi-swipe.feature', import.meta.url), 'utf8');
     const document = new Parser(new AstBuilder(IdGenerator.incrementing()), new GherkinClassicTokenMatcher()).parse(text);
     const cases = document.feature.children.filter(child => child.scenario).map(child => child.scenario);
     expect(cases).toHaveLength(3);

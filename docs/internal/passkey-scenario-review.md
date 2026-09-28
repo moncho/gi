@@ -71,4 +71,4 @@ work. The operator's live instance has not been enrolled or had its policy chang
 Terminal adaptation stays browser-based: no WebAuthn emulation, credential secret
 entry or extra idle terminal rows.
 
-[addition]: ../../tests/ux/features/additions/piclaw-2026-09-24/README.md
+[addition]: ../../features/ux/additions/piclaw-2026-09-24/README.md

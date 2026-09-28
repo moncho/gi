@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {generateMessages} from '@cucumber/gherkin';
 import {IdGenerator,SourceMediaType} from '@cucumber/messages';
-const featurePath=path.resolve('tests/features/tui/markdown-tables.feature');
+const featurePath=path.resolve('features/gi/tui/markdown-tables.feature');
 const definitions=generateMessages(await fs.readFile(featurePath,'utf8'),featurePath,SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN,{newId:IdGenerator.incrementing(),includePickles:true});
 if(definitions.some(x=>x.parseError)||definitions.filter(x=>x.pickle).length!==6)throw Error('table feature inventory changed');
 const binary=path.resolve(process.env.GI_TABLE_PTY_BIN||'bin/gi-tui-table-test');

@@ -10,7 +10,7 @@ The provisional Gi full-workspace lexical rebuild is **stashed and not deployed*
 |---|---|---|
 | Piclaw | `bfc34e4ebfe9b0ce0deefa6202a9d9a4780a5322` | `runtime/src/workspace-search.ts`, `workspace-index-process.ts`, `db/connection.ts`, `channels/web/handlers/workspace.ts`, `channels/web/workspace/service.ts`; `runtime/test/workspace-search.test.ts`, `workspace-index-process.test.ts`, `extensions/extensions-workspace-search.test.ts` |
 | Tau | `62d28201ec1d16f3a8097f159a88f2bfdacd932f` | `src/tau_web/sqlite/migrations.py`, `repositories.py` (`SearchRepository`); `tests/web/test_sqlite_runtime_repositories.py::test_search_repository_updates_filters_and_removes_stale_rows`, `test_sqlite_migrations.py` |
-| Vibes | `16894139ba502c5555834f9925bac92ca4ddd34e` | `internal/db/migrations.go`, `queries.go` (`SearchInteractions`), `db_fuzz_test.go`; `tests/features/workspace.feature` |
+| Vibes | `16894139ba502c5555834f9925bac92ca4ddd34e` | `internal/db/migrations.go`, `queries.go` (`SearchInteractions`), `db_fuzz_test.go`; `features/gi/workspace.feature` |
 | Gi baseline | `6aff14c` | `docs/adr/0008-workspace-hybrid-search.md`, `internal/search/{types,service}.go`, `internal/search/store/schema.go`, `docs/internal/search/fts-namespace.md` |
 
 These revisions were read locally. Their full upstream test suites were not rerun during this comparison. Tau's checkout is divergent from its remote; the revision above, not an assumed latest release, is the evidence boundary. Frozen Classic provenance remains `70d33bc93ab540845bbcf5f80503ca8125c71594`; no frozen feature is edited by this work.

@@ -9,7 +9,7 @@ test('historical Piclaw and Vibes/Tau snapshots retain their exact hashes', () =
 });
 
 test('imported Piclaw component sources retain their upstream hashes', () => {
-  const root = resolve(uxRoot, '../..');
+  const root = uxRoot;
   for (const name of ['piclaw-menu-70d33bc93.json', 'piclaw-session-picker-70d33bc93.json', 'piclaw-quick-actions-70d33bc93.json']) {
     const manifest = JSON.parse(readFileSync(resolve(root, 'web/upstream', name), 'utf8'));
     for (const file of [...manifest.files,...(manifest.css?[manifest.css]:[])]) {
@@ -44,7 +44,7 @@ test('all active Piclaw 3.2.4 scenarios and outline examples are inventoried, no
 });
 
 test('Quick Actions provenance includes unchanged pinned sources and the exact CSS region',()=>{
- const root=resolve(uxRoot,'../..');const manifest=JSON.parse(readFileSync(resolve(root,'web/upstream/piclaw-quick-actions-70d33bc93.json'),'utf8'));
+ const root=uxRoot;const manifest=JSON.parse(readFileSync(resolve(root,'web/upstream/piclaw-quick-actions-70d33bc93.json'),'utf8'));
  expect(manifest.commit).toBe('70d33bc93ab540845bbcf5f80503ca8125c71594');expect(manifest.files).toHaveLength(3);
  expect(manifest.css.start).toBe('.timeline-quick-actions-overlay {');expect(manifest.css.endBefore).toBe('.compose-submit-spinner {');
 });

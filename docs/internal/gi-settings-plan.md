@@ -1,6 +1,6 @@
 # Gi settings
 
-Gi settings reuse Piclaw's modal layout while exposing Gi's own capabilities. The derived scenarios are in `tests/features/settings/gi-settings.feature`; they never increase frozen Classic/shared coverage. Independent whole-criterion frozen acceptance lives in `tests/ux/settings-shell.spec.mjs`.
+Gi settings reuse Piclaw's modal layout while exposing Gi's own capabilities. The derived scenarios are in `features/gi/settings/gi-settings.feature`; they never increase frozen Classic/shared coverage. Independent whole-criterion frozen acceptance lives in `tests/ux/settings-shell.spec.mjs`.
 
 ## Implemented sections
 

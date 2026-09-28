@@ -24,7 +24,7 @@ const fixtures=[
  {name:'table-link',source:'| Name | Value |\n| --- | --- |\n| First | 世界 |\n\nVisit [docs](https://example.invalid/docs).',
   lines:['│ Name │ Value │','│ First │ 世界 │','docs (https://example.invalid/docs)'],absent:['[docs]','| --- |']},
 ];
-const featurePath=resolve('features/tui-markdown/rendering.feature');
+const featurePath=resolve('features/tui/markdown/rendering.feature');
 const envelopes=generateMessages(readFileSync(featurePath,'utf8'),featurePath,
  SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN,
  {newId:IdGenerator.incrementing(),includeGherkinDocument:true,includePickles:true});

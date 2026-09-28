@@ -2,7 +2,7 @@
 Feature: Message deletion from timeline
   Installed Piclaw 3.2.4 counts replies in the loaded view before prompting.
   Direct deletion does not guard against replies outside that view. The
-  historical 70d33bc clauses are in tests/ux/upstream/classic-snapshot/.
+  historical 70d33bc clauses are in features/ux/upstream/classic-snapshot/.
 
   Background:
     Given I am authenticated and on the main chat

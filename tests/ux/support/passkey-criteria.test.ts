@@ -22,7 +22,7 @@ const checkDisposition=(row:any)=>{
 
 test('additive passkey ledger pins every Background, criterion and example without granting frozen parity',()=>{
  expect(ledger.schemaVersion).toBe(1);
- expect(ledger.source.path).toBe('tests/ux/features/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature');
+ expect(ledger.source.path).toBe('features/ux/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature');
  expect(createHash('sha256').update(text).digest('hex')).toBe('bd48cab9126778763cab3ddfd8ee04a89bd8c29da62e3bc4188cf24dc3a55b82');
  expect(ledger.source.sha256).toBe('bd48cab9126778763cab3ddfd8ee04a89bd8c29da62e3bc4188cf24dc3a55b82');
  expect(messages.filter(m=>m.parseError)).toEqual([]);expect(messages.filter(m=>m.pickle)).toHaveLength(56);

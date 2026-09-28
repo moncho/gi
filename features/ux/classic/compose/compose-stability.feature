@@ -1,7 +1,7 @@
 @classic @piclaw-3.2.4 @source-reviewed
 Feature: Classic composer draft and queue behavior
   Installed Piclaw 3.2.4 is the oracle. Historical source is preserved under
-  tests/ux/upstream/classic-snapshot/compose/compose-stability.gherkin.
+  features/ux/upstream/classic-snapshot/compose/compose-stability.gherkin.
 
   @ux-compose-001
   Scenario: Clear captured content while allowing a new draft

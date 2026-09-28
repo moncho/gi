@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync, mkdirSync } from 'node:fs';
-const feature = readFileSync('tests/features/settings/gi-settings.feature', 'utf8');
+const feature = readFileSync('features/gi/settings/gi-settings.feature', 'utf8');
 const inputName = 'Message (Enter to send, Shift+Enter for newline)...';
 const dialogFor = page => page.getByRole('dialog', { name: 'Settings', exact: true });
 async function setup(page, request, info) {

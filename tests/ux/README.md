@@ -49,7 +49,7 @@ Gi keeps historical Classic and Tau/Vibes Gherkin separate from editable Piclaw 
 - `features/classic/`: active Piclaw 3.2.4 contracts, 236 unique IDs and 257 expanded cases. `features/shared-canonical-ux.feature` has 42 active cases.
 - `support/catalogue.mjs` verifies historical hashes. Active changes and evidence limits are recorded in `../../docs/internal/ux-reaudit-2026-09-26/gherkin-alignment.md`.
 
-The sources came from `/workspace/evidence/piclaw-classic-70d33bc93` and `/workspace/tau/tests/ux/features/canonical-ux.feature`. Tests do not depend on those paths after copying. Source-relative links inside historical snapshots refer to the original Piclaw checkout.
+The sources came from `/workspace/evidence/piclaw-classic-70d33bc93` and `/workspace/tau/features/ux/canonical-ux.feature`. Tests do not depend on those paths after copying. Source-relative links inside historical snapshots refer to the original Piclaw checkout.
 
 Gi-only behaviours are tagged in `../features/ux/gi-deviations.feature`. A Gi-specific pass does not grant Classic or shared Piclaw parity.
 

@@ -4,7 +4,7 @@ The retained manual-validation binary reproduces the screenshot's reordered inli
 
 ## Reproduction
 
-`tests/features/tui/inline-prose-layout.feature` describes an assistant sentence containing `internal/tui`, followed by two shell results. `scripts/test-tui-inline-prose.mjs` loads it into a disposable SQLite database and opens the real TUI in tmux at widths 60, 100 and 140, in fullscreen and regular modes.
+`features/gi/tui/inline-prose-layout.feature` describes an assistant sentence containing `internal/tui`, followed by two shell results. `scripts/test-tui-inline-prose.mjs` loads it into a disposable SQLite database and opens the real TUI in tmux at widths 60, 100 and 140, in fullscreen and regular modes.
 
 The check reads rendered rows in order, requires every word and the inline path exactly once, verifies multi-row wrapping at width 60 and single-row fit at width 140, requires the two tool blocks immediately afterward in stored order, checks for absent decorative output boxes, resizes with an unsent draft, and verifies that rendering creates no messages. It does not submit prompts or use provider credentials.
 

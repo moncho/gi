@@ -9,7 +9,7 @@ const binary=process.env.GI_TUI_BIN||resolve('bin/gi');
 const out=resolve(process.env.GI_TUI_PROSE_OUTPUT||`test-results/tui-inline-prose/run-${Date.now()}`);mkdirSync(out,{recursive:true});
 const source='I added these tests under `internal/tui` and the suite passed. I left the other uncommitted changes untouched.';
 const expected=source.replaceAll('`','');
-const cases=generateMessages(readFileSync('tests/features/tui/inline-prose-layout.feature','utf8'),'inline-prose-layout.feature',SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN,{newId:IdGenerator.incrementing(),includePickles:true,includeGherkinDocument:true});
+const cases=generateMessages(readFileSync('features/gi/tui/inline-prose-layout.feature','utf8'),'inline-prose-layout.feature',SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN,{newId:IdGenerator.incrementing(),includePickles:true,includeGherkinDocument:true});
 if(cases.some(x=>x.parseError))throw Error(JSON.stringify(cases.filter(x=>x.parseError)));
 const scenarios=cases.filter(x=>x.pickle).map(x=>x.pickle);if(scenarios.length!==6)throw Error('Expected six inline-prose scenarios');
 const run=(cmd,args)=>{const r=spawnSync(cmd,args,{encoding:'utf8',timeout:15000});if(r.status!==0)throw Error(`${cmd}: ${r.stderr}`);return r.stdout;};

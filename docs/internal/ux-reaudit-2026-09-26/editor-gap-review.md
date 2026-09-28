@@ -1,6 +1,6 @@
 # Classic editor-stability 001–005: native capability gap
 
-The frozen `tests/ux/features/classic/editor/editor-stability.feature` describes
+The frozen `features/ux/classic/editor/editor-stability.feature` describes
 an **editable** Classic workspace. Gi currently mounts read-only preview tabs
 (`web/src/gi-workspace-tab.ts:7–26`, `web/src/app.ts:979+,1085+`). Its tab store
 has generic `dirty` and pin fields, but the Gi app does not mount an editor
@@ -20,5 +20,16 @@ All five rows have **no directly tagged Gi browser test** and no native editor
 capability. They remain unmapped rather than earning parity through CSS class
 names, generic `tabStore` functions or read-only tab coverage. This is a
 capability/acceptance gap, not evidence that the frozen Classic editor
-requirement is wrong. No Piclaw 3.2.4 editor UI probe or physical pointer test
-was run in this slice.
+requirement is wrong.
+
+`make test-piclaw-editor-tabs` passed **6/6** using the installed 3.2.4
+Classic UI and disposable file-read routes across Chromium/WebKit phone,
+tablet and desktop. It opened two editable tabs, activated the inactive tab
+on primary mouse-down before mouse-up, changed the visible editor content,
+then made a browser-local edit. Dismissing the native dirty-close confirmation
+kept both tabs and the unsaved text; the composer draft was unchanged and no
+workspace save request occurred. The existing typeahead probe separately
+establishes that a real CodeMirror editor owns its typing. Markdown split
+preview, zen mode, production file saves and physical pointer behaviour
+have not been tested. None of these installed-UI observations supplies Gi's
+missing editable editor.

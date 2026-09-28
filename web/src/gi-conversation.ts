@@ -17,7 +17,7 @@ export function projectConversationMessage(m: any, fallbackSession?: string) {
     const session = m.session_id || fallbackSession;
     const user = m.role === 'user';
     return {
-        id:m.id,chat_jid:`gi:${session}`,timestamp:m.created_at,content,
+        id:m.id,display_row_id:m.display_row_id,chat_jid:`gi:${session}`,timestamp:m.created_at,content,
         sender:user?'user':m.role==='system'?'system':'agent',
         is_from_me:user,is_bot_message:!user,
         data:{type:user?'user_message':'agent_response',content,thread_id:null,

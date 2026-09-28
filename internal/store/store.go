@@ -35,12 +35,14 @@ type Session struct {
 }
 
 type Message struct {
-	ID        string         `json:"id"`
-	SessionID string         `json:"session_id"`
-	Role      string         `json:"role"`
-	Content   string         `json:"content"`
-	Payload   map[string]any `json:"payload"`
-	CreatedAt string         `json:"created_at"`
+	// DisplayRowID is an optional UI label; ID remains canonical.
+	DisplayRowID int64          `json:"display_row_id,omitempty"`
+	ID           string         `json:"id"`
+	SessionID    string         `json:"session_id"`
+	Role         string         `json:"role"`
+	Content      string         `json:"content"`
+	Payload      map[string]any `json:"payload"`
+	CreatedAt    string         `json:"created_at"`
 }
 
 type Turn struct {

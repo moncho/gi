@@ -1407,6 +1407,7 @@ function projectConversationMessage(m, fallbackSession) {
   const user = m.role === "user";
   return {
     id: m.id,
+    display_row_id: m.display_row_id,
     chat_jid: `gi:${session}`,
     timestamp: m.created_at,
     content,
@@ -1465,6 +1466,21 @@ function projectActivityStatus(activity) {
     };
   }
   return activity;
+}
+
+// web/src/gi-message-reference-label.ts
+function messageReferenceLabel(id, labels = {}) {
+  const canonical = String(id);
+  if (Object.prototype.hasOwnProperty.call(labels, canonical))
+    return labels[canonical];
+  return canonical.length > 14 ? `${canonical.slice(0, 4)}…${canonical.slice(-6)}` : canonical;
+}
+function messageReferenceLabels(posts) {
+  const labels = Object.create(null);
+  for (const post of posts || [])
+    if (Number.isSafeInteger(post.display_row_id) && post.display_row_id > 0)
+      labels[String(post.id)] = String(post.display_row_id);
+  return labels;
 }
 
 // web/src/utils/storage.ts
@@ -9180,6 +9196,7 @@ function parseQueuedContent(value) {
   };
 }
 function QueuedFollowupStack({
+  messageReferenceLabels = {},
   items = [],
   busy = false,
   onReturnQueuedFollowup,
@@ -9209,7 +9226,7 @@ function QueuedFollowupStack({
                                         <${FilePill}
                                             key=${"queue-msg-" + id}
                                             prefix="compose"
-                                            label=${"msg:" + id}
+                                            label=${"msg:" + messageReferenceLabel(id, messageReferenceLabels)}
                                             title=${"Message reference: " + id}
                                             icon="message"
                                         />
@@ -9315,6 +9332,7 @@ function ComposeBox({
   onRemoveFileRef,
   onClearFileRefs,
   messageRefs = [],
+  messageReferenceLabels = {},
   onRemoveMessageRef,
   onClearMessageRefs,
   activeModel = null,
@@ -10742,6 +10760,7 @@ ${mediaIds.map((id, index) => {
             ${giVoice.status}
             ${showQueueStack && !searchMode && fe`
                 <${QueuedFollowupStack}
+                    messageReferenceLabels=${messageReferenceLabels}
                     items=${followupQueueItems}
                     onInjectQueuedFollowup=${handleInjectQueuedFollowup}
                     onRemoveQueuedFollowup=${onRemoveQueuedFollowup}
@@ -10803,7 +10822,7 @@ ${mediaIds.map((id, index) => {
                                     <${FilePill}
                                         key=${"msg-" + id}
                                         prefix="compose"
-                                        label=${"msg:" + id}
+                                        label=${"msg:" + messageReferenceLabel(id, messageReferenceLabels)}
                                         title=${"Message reference: " + id}
                                         removeTitle="Remove reference"
                                         icon="message"
@@ -22292,11 +22311,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-1m64zhg5.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-hn60h444.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-4v0bazvq.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-h1pvw1f9.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-d1kw7anf.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-4mqmfk3h.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-0hdqh1mq.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-q3a8s6wz.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-de4n900f.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-kj1s1j86.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -24833,6 +24852,7 @@ function GiApp() {
                     />
                 `}
                 <${RunBoundQueueStack}
+                    messageReferenceLabels=${messageReferenceLabels(posts)}
                     steerEnabled=${connectionStatus === "connected" && isAgentTurnActive && !!queueActiveTurnId}
                     onInjectQueuedFollowup=${(item) => mutateQueue("steer", item)}
                     items=${[...followupQueueItems, ...optimisticQueue.filter((item) => item.chat_jid === currentChatJid && !followupQueueItems.some((stored) => stored.id === item.id || stored.metadata?.client_request_id === item.id))]}
@@ -24976,6 +24996,7 @@ function GiApp() {
   }}
                     fileRefs=${fileRefs}
                     messageRefs=${messageRefs}
+                    messageReferenceLabels=${messageReferenceLabels(posts)}
                     onRemoveFileRef=${(p) => {
     const refs = getDraft(sessionId).fileRefs.filter((x) => x !== p);
     drafts.update(sessionId, { fileRefs: refs });
@@ -25098,5 +25119,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=EAA648333835588064756E2164756E21
-//# sourceMappingURL=app-ze8mfyv9.js.map
+//# debugId=5FEB86E9C7C51FAF64756E2164756E21
+//# sourceMappingURL=app-z9tfwe31.js.map

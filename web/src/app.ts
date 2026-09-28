@@ -4,6 +4,7 @@ import { staleTerminalEvent } from './gi-turn-event.js';
 import { speechPlayback } from './gi-post-speech.js';
 import { useGiNotifications } from './gi-notifications.js';
 import { projectConversationEvent, projectActivityStatus, SYSTEM_AGENT_ID, SYSTEM_AGENT } from './gi-conversation.js';
+import { messageReferenceLabels } from './gi-message-reference-label.js';
 /**
  * app.ts — Gi entry point.
  *
@@ -1161,6 +1162,7 @@ function GiApp() {
                     />
                 `}
                 <${RunBoundQueueStack}
+                    messageReferenceLabels=${messageReferenceLabels(posts)}
                     steerEnabled=${connectionStatus === 'connected' && isAgentTurnActive && !!queueActiveTurnId}
                     onInjectQueuedFollowup=${(item: any) => mutateQueue('steer', item)}
                     items=${[...followupQueueItems, ...optimisticQueue.filter(item => item.chat_jid === currentChatJid && !followupQueueItems.some(stored => stored.id === item.id || stored.metadata?.client_request_id === item.id))]}
@@ -1268,6 +1270,7 @@ function GiApp() {
                     }}
                     fileRefs=${fileRefs}
                     messageRefs=${messageRefs}
+                    messageReferenceLabels=${messageReferenceLabels(posts)}
                     onRemoveFileRef=${(p: string) => {
                         const refs = getDraft(sessionId).fileRefs.filter((x: string) => x !== p);
                         drafts.update(sessionId, { fileRefs: refs }); setFileRefs(refs);

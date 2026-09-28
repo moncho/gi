@@ -63,7 +63,11 @@ func (s *Store) pageMessages(ctx context.Context, sessionID, before, after strin
 	if conversation {
 		content = conversationContentSQL
 	}
-	query := `select id,session_id,role,` + content + `,payload_json,created_at from messages where session_id=?`
+	displayID := "0"
+	if conversation {
+		displayID = `(select row_id from message_rows where message_id=messages.id)`
+	}
+	query := `select id,session_id,role,` + content + `,payload_json,created_at,coalesce(` + displayID + `,0) from messages where session_id=?`
 	if conversation {
 		query += ` and (` + conversationVisibleSQL + `)`
 	}
@@ -82,7 +86,7 @@ func (s *Store) pageMessages(ctx context.Context, sessionID, before, after strin
 	for rows.Next() {
 		var m Message
 		var raw string
-		if err = rows.Scan(&m.ID, &m.SessionID, &m.Role, &m.Content, &raw, &m.CreatedAt); err != nil {
+		if err = rows.Scan(&m.ID, &m.SessionID, &m.Role, &m.Content, &raw, &m.CreatedAt, &m.DisplayRowID); err != nil {
 			return out, err
 		}
 		m.Payload, err = unmarshalJSONMap(raw)

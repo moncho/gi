@@ -4,6 +4,8 @@ Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-28
 
+- [x] Compact message-reference pills: conversation-only numeric row labels, guarded display adapter for composer/queue, full canonical IDs preserved in tooltip/draft/link/removal/submission; explicit elision fallback outside loaded history. Installed-source oracle, store race3, queue6/6, check144functional11skips,206support7760assertions pass; focused review no blocker. No schema migration/deploy/new mapping. [Evidence](../internal/message-reference-labels-2026-09-28.md).
+
 - [x] Settings title now Settings, matching installed Piclaw3.2.4; native sections/menu/shortcut/modal behaviour retained. Source oracle passes; Settings216cases in complete108Chromium+108WebKit runs; check142functional11skips;204support7747assertions. Initial combined run tool-timeout retained, no test timeout increase. No deployment/new mapping. [Evidence](../internal/settings-title-2026-09-28.md). Canonical-ID display remains separate.
 
 - [x] Bounded installed Piclaw3.2.4 Output/status slice: pinned verbatim renderer/dependencies outside protected trees, build adapter, occurrence-owned bounded output/reload projection and Marked bootstrap fix. Independent shipped-Piclaw/Gi comparison6/6; native tools12/12; Thoughts/Draft48/48; race3; check142functional11skips; 204support7747assertions. Review blocker fixed/re-reviewed. Protected sources unchanged. Older WebKit reload oracle, concurrent tools and whole-web parity remain open; no new mapping/deploy. [Evidence](../internal/piclaw-output-status-2026-09-28.md).

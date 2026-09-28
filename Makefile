@@ -243,6 +243,16 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-ux-message-reference-labels
+test-ux-message-reference-labels: test-message-reference-labels
+	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/message-reference-labels.spec.mjs'
+
+.PHONY: test-message-reference-labels
+test-message-reference-labels:
+	$(BUN) tests/ux/oracle/piclaw-reference-label-probe.mjs
+	$(GO) test -race -count=3 ./internal/store -run TestMessageDisplayRows
+	$(BUN) test tests/ux/support/message-reference-label.test.ts
+
 .PHONY: test-piclaw-settings-title test-ux-settings-title
 test-piclaw-settings-title:
 	$(BUN) tests/ux/oracle/piclaw-settings-title-probe.mjs

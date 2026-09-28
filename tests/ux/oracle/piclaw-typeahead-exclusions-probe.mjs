@@ -25,6 +25,11 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
   const html=(await fs.readFile(root+'/app/runtime/web/static/classic/index.html','utf8')).replaceAll('__PICLAW_SANITIZE_SVG_FENCES_FLAG__','1');
   await page.route(host.origin+'/',r=>r.fulfill({contentType:'text/html',body:html}));
   await page.route('**/agent/picker-pins',r=>r.fulfill({json:{scope:'typeahead',revision:0,models:[],sessions:[]}}));
+  await page.route('**/agent/settings/quick-actions',r=>r.fulfill({json:{ok:true,settings:{workspaceCommands:null,slashCommands:null}}}));
+  await page.route('**/workspace/tree?*',r=>r.fulfill({json:{root:{name:'fixture',path:'.',type:'dir',children:[{name:'oracle-note.txt',path:'oracle-note.txt',type:'file',size:11}]},truncated:false}}));
+  await page.route('**/workspace/file?*',r=>r.fulfill({json:{path:'oracle-note.txt',name:'oracle-note.txt',kind:'text',content_type:'text/plain',size:11,mtime:state.now,text:'oracle text',truncated:false}}));
+  await page.route('**/workspace/raw?*',r=>r.fulfill({contentType:'text/plain',body:'oracle text'}));
+  await page.route('**/workspace/branch?*',r=>r.fulfill({json:{branch:'fixture',path:'oracle-note.txt'}}));
   await page.goto(host.origin);await host.connected();const palette=page.locator('.timeline-quick-actions');
   const input=page.locator('.compose-box textarea');await input.fill('kept draft');
   await page.locator('.timeline').click({position:{x:150,y:90}});await page.keyboard.press('q');await palette.waitFor();
@@ -45,6 +50,28 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
   await sessionSearch.press('Escape');
   await page.locator('.compose-session-popup').waitFor({state:'hidden'});
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  // Exercise the shipped workspace tree, not only an injected sidebar class.
+  await page.locator('.timeline').click({position:{x:150,y:90}});
+  await page.keyboard.press('w');await palette.waitFor();
+  await palette.locator('.timeline-quick-actions-input').fill('Show workspace');
+  await palette.locator('.timeline-quick-actions-item-workspace').filter({hasText:'Show workspace'}).first().click();
+  await page.waitForFunction(()=>document.querySelector('.app-shell')?.classList.contains('workspace-collapsed')===false);
+  const tree=page.locator('.workspace-sidebar .workspace-tree-list');await tree.waitFor();
+  await tree.focus();assert(await tree.evaluate(el=>document.activeElement===el));
+  await tree.press('q');assert.equal(await palette.count(),0);live.push('workspace tree');
+  await tree.locator('.workspace-row[data-path="oracle-note.txt"]').click();
+  await page.locator('.workspace-preview-actions .workspace-edit').click();
+  const editor=page.locator('.editor-pane-container .cm-editor');await editor.waitFor();
+  // Mobile workspace drawer overlays the pane. Close it through its shipped
+  // backdrop before focusing CodeMirror; never force-click through it.
+  const backdrop=page.locator('.workspace-drawer-backdrop');
+  if(await backdrop.isVisible())await backdrop.click({position:{x:viewport.width-24,y:Math.floor(viewport.height/2)}});
+  await editor.click();
+  const editorFocus=await page.evaluate(()=>({inside:!!document.activeElement?.closest?.('.cm-editor'),editable:document.activeElement?.getAttribute('contenteditable')}));
+  assert.equal(editorFocus.inside,true);
+  await page.keyboard.press('q');assert.equal(await palette.count(),0);
+  assert.equal((await editor.locator('.cm-content').innerText()).replace('q',''),'oracle text');
+  live.push('CodeMirror editor');
   const excluded=[];
   for(const [name,markup] of targets){
    await page.evaluate(markup=>{
@@ -58,6 +85,6 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
   }
   assert.equal(await input.inputValue(),'kept draftz');host.assert();
   cases.push({browser:browserName,viewport:viewportName,result:'pass',openedFromTimeline:true,editorText:await input.inputValue(),live,excluded});
- }finally{await fs.writeFile(path.join(output,'evidence.json'),JSON.stringify({scope:'Shipped Piclaw3.2.4 assets and isolated browser keyboard fixture. Excluded selectors outside composer are synthetic DOM targets, not real editor/panel acceptance.',cases},null,2));await host.dispose();await browser.close();}
+ }finally{await fs.writeFile(path.join(output,'evidence.json'),JSON.stringify({scope:'Shipped Piclaw3.2.4 assets and isolated browser keyboard fixture. Real composer/session search/workspace tree/CodeMirror editor plus synthetic overlay selectors; no provider or physical keyboard acceptance.',cases},null,2));await host.dispose();await browser.close();}
 }
 console.log(JSON.stringify({output,cases}));

@@ -9,11 +9,22 @@ The tagged `@ux-original-028` case in `tests/ux/speech-contract.spec.mjs`
 checks a trusted plain-text code-copy event without HTML, then transfers
 speech ownership between assistant posts while preserving native draft and
 stored messages. Focused `test-ux-steer` run: **6/6** across Chromium/WebKit
-phone, tablet and desktop. The browser speech API is stubbed for deterministic
-ownership assertions; audible output and physical/assistive-device behaviour
-were not tested. The installed Piclaw 3.2.4 speech UI was not run.
+phone, tablet and desktop.
+
+`make test-piclaw-speech-ui` runs the installed 3.2.4 Classic UI in a
+disposable timeline at the same six browser/viewport combinations: **6/6**.
+Two assistant posts expose Read aloud; switching posts cancels the first,
+and late `onend`/`onerror` callbacks do not clear the second post's active
+button. The first utterance omits fenced code, code copy supplies plain
+source text without HTML, and the unsent draft remains. Piclaw calls
+`cancel` before the first `speak`, as well as during transfer; Gi's existing
+browser test expects `speak`, `cancel`, `speak` and tests the same observable
+ownership transfer. Both probes stub the browser speech and clipboard
+boundaries. Audible output and physical/assistive-device behaviour remain
+untested.
 
 `timeline-rendering-review.md` contains the narrower `@ux-timeline-024`,
-`027` and `028` evidence. This case binds the two actions in one journey but
-does not add current-oracle acceptance. No production code or frozen Gherkin
-changed.
+`027` and `028` evidence. The shipped-UI probe adds current-oracle coverage
+for the combined speech-transfer/code-copy actions. Production routing,
+audible speech, assistive devices and a live session were not tested. No
+production code or frozen Gherkin changed.

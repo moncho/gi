@@ -306,9 +306,12 @@ test-piclaw-settings-shell:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
-.PHONY: test-piclaw-widget-events
+.PHONY: test-piclaw-widget-events test-piclaw-widget-persisted
 test-piclaw-widget-events:
 	$(BUN) tests/ux/oracle/piclaw-widget-lifecycle-probe.mjs
+
+test-piclaw-widget-persisted:
+	$(BUN) tests/ux/oracle/piclaw-widget-persisted-probe.mjs
 
 UX_SETTINGS_PROJECTS ?=
 test-ux-settings-title: test-piclaw-settings-title

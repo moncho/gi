@@ -40,7 +40,7 @@ export async function installPixelHost({page,host,root,state,reference,allowPres
   '/api/workspace/tree':{name:'fixture',path:'.',type:'dir',children:[]},'/api/workspace/index':{state:'ready',roots:['.']},'/api/workspace/index/status':{state:'ready',roots:['.']},
  };
  const allowedQueries=new Set(['chat_jid','root_chat_jid','include_archived','limit','before','after','ui','scope','path','depth','show_hidden','view']);
- await page.addInitScript(s=>{localStorage.setItem('piclaw_theme',s.theme);localStorage.setItem('vibes-theme',s.theme);localStorage.setItem('workspaceOpen','false');localStorage.setItem('piclaw_system_meters_enabled','false');localStorage.setItem('piclaw_compose_height',String(s.composeHeightPreference));localStorage.setItem('gi_session_id','main');},state);
+ await page.addInitScript(s=>{if(window!==window.top)return;localStorage.setItem('piclaw_theme',s.theme);localStorage.setItem('vibes-theme',s.theme);localStorage.setItem('workspaceOpen','false');localStorage.setItem('piclaw_system_meters_enabled','false');localStorage.setItem('piclaw_compose_height',String(s.composeHeightPreference));localStorage.setItem('gi_session_id','main');},state);
  const handler=async route=>{
   const r=route.request(),u=new URL(r.url());calls.push({method:r.method(),path:u.pathname,query:u.search});
   try{

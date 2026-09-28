@@ -43,12 +43,12 @@ function isAdaptiveCardSubmissionBlock(block) {
   if (!block || typeof block !== "object")
     return false;
   const candidate = block;
-  return candidate.type === "adaptive_card_submission" && typeof candidate.card_id === "string" && typeof candidate.source_post_id === "number" && typeof candidate.submitted_at === "string";
+  return candidate.type === "adaptive_card_submission" && typeof candidate.card_id === "string" && candidate.card_id.trim().length > 0 && candidate.card_id.length <= 256 && Number.isSafeInteger(candidate.source_post_id) && Number(candidate.source_post_id) > 0 && typeof candidate.submitted_at === "string" && Number.isFinite(Date.parse(candidate.submitted_at)) && (candidate.action_type === undefined || candidate.action_type === "Action.Submit");
 }
 function extractAdaptiveCardSubmissionBlocks(contentBlocks) {
   if (!Array.isArray(contentBlocks))
     return [];
-  return contentBlocks.filter(isAdaptiveCardSubmissionBlock);
+  return contentBlocks.filter(isAdaptiveCardSubmissionBlock).map((block) => block.action_type === undefined ? { ...block, action_type: "Action.Submit" } : block);
 }
 function buildAdaptiveCardSubmissionFallbackText(block) {
   const label = String(block.title || block.card_id || "card").trim() || "card";
@@ -22739,11 +22739,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-06k3e109.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-xbmn0ce7.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-h5aarjeg.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-bh1rh6wq.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-ed9d6tee.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-ty07c858.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-trpydzrh.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-9ajy9rm5.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-9cfa79eg.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-x4wjhr7r.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -25515,5 +25515,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=F995057AE9FCDE6564756E2164756E21
-//# sourceMappingURL=app-k6q90fpx.js.map
+//# debugId=E42AA8BC758C502E64756E2164756E21
+//# sourceMappingURL=app-mje3gn51.js.map

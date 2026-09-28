@@ -304,6 +304,39 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	if os.Getenv("GI_UX_CARD_IDENTITY") != "" {
+		if _, err := s.CreateSession(context.Background(), "card-identity-fixture", "Card identity", map[string]any{"model": "test-model"}); err != nil {
+			log.Fatal(err)
+		}
+		valid := map[string]any{"type": "adaptive_card_submission", "card_id": "card-1", "source_post_id": 42, "submitted_at": "2026-09-28T12:00:00.000Z", "action_type": "Action.Submit"}
+		for i := 0; i < 8; i++ {
+			block := make(map[string]any, len(valid))
+			for key, value := range valid {
+				block[key] = value
+			}
+			switch i {
+			case 1:
+				block["card_id"] = "   "
+			case 2:
+				block["card_id"] = strings.Repeat("x", 257)
+			case 3:
+				block["source_post_id"] = 0
+			case 4:
+				block["source_post_id"] = 9007199254740992
+			case 5:
+				block["submitted_at"] = "invalid"
+			case 6:
+				block["action_type"] = "Action.OpenUrl"
+			case 7:
+				block["card_id"] = "legacy-card"
+				delete(block, "action_type")
+			}
+			payload := map[string]any{"content_blocks": []any{block}}
+			if err := s.AddMessage(context.Background(), fmt.Sprintf("identity-message-%d", i), "card-identity-fixture", "assistant", fmt.Sprintf("Submission identity fixture %d", i), payload); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 	if os.Getenv("GI_UX_WIDGETS") != "" {
 		if _, err := s.CreateSession(context.Background(), "widget-fixture", "Stored widgets", map[string]any{"model": "test-model"}); err != nil {
 			log.Fatal(err)

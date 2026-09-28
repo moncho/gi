@@ -306,6 +306,10 @@ test-piclaw-settings-shell:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
+.PHONY: test-piclaw-card-identity
+test-piclaw-card-identity:
+	$(BUN) tests/ux/oracle/piclaw-card-submission-identity-probe.mjs
+
 .PHONY: test-piclaw-btw-panel
 test-piclaw-btw-panel:
 	$(BUN) tests/ux/oracle/piclaw-btw-panel-probe.mjs
@@ -521,6 +525,10 @@ test-ux-recovery-controls:
 test-ux-outcomes:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_OUTCOMES=1' UX_LOCAL_SPEC='tests/ux/outcomes.spec.mjs tests/ux/message-copy.spec.mjs tests/ux/speech.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/13-outcomes.spec.ts
 	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+
+.PHONY: test-ux-card-identity
+test-ux-card-identity:
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_IDENTITY=1' UX_LOCAL_SPEC='tests/ux/card-submission-identity.spec.mjs'
 
 .PHONY: test-ux-btw-mount
 test-ux-btw-mount: build-web

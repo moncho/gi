@@ -124,6 +124,15 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	pending := c.regularPending()
 	if len(pending) > 0 && c.regularBusy() {
 		previewHeight = min(3, len(pending))
+		// A three-row tail hides table headers and most streamed cells. Keep
+		// a bounded larger live region for source-backed tables; completed
+		// output is still committed once to terminal-owned scrollback.
+		for _, line := range pending {
+			if meta, ok := parseTranscriptBlockMarker(line); ok && meta.MarkdownSource != "" {
+				previewHeight = min(len(pending), max(3, h/2))
+				break
+			}
+		}
 	}
 	c.boundEditor(h, 0, len(footer), len(widgets)+previewHeight, menuHeight, true)
 	input := app.MountPersistent(c, 0, func() gotui.Component { return c.input })

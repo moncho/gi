@@ -243,6 +243,20 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-tui-tables
+test-tui-tables: test-pi-table-oracle test-tui-tables-unit
+	mkdir -p bin
+	$(GO) test -c -o bin/gi-tui-table-test ./internal/tui
+	$(BUN) scripts/test-tui-tables.mjs
+
+.PHONY: test-pi-table-oracle
+test-pi-table-oracle:
+	$(BUN) tests/ux/oracle/pi-table-probe.mjs
+
+.PHONY: test-tui-tables-unit
+test-tui-tables-unit: test-pi-table-oracle
+	PI_TABLE_ORACLE=$(abspath test-results/tui-tables/pi-oracle.json) $(GO) test -race -count=3 ./internal/tui -run 'TestMarkdownTable'
+
 .PHONY: test-tool-input-contract
 test-tool-input-contract:
 	$(BUN) tests/ux/oracle/pi-tool-input-probe.mjs

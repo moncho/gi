@@ -117,14 +117,15 @@ type transcriptBlockHitTarget struct {
 }
 
 type transcriptBlockMeta struct {
-	Key       string `json:"key"`
-	Kind      string `json:"kind"`
-	Title     string `json:"title"`
-	Status    string `json:"status,omitempty"`
-	StartedAt string `json:"started_at,omitempty"`
-	EndedAt   string `json:"ended_at,omitempty"`
-	Detail    string `json:"detail,omitempty"`
-	Footer    string `json:"footer,omitempty"`
+	Key            string `json:"key"`
+	Kind           string `json:"kind"`
+	Title          string `json:"title"`
+	Status         string `json:"status,omitempty"`
+	StartedAt      string `json:"started_at,omitempty"`
+	EndedAt        string `json:"ended_at,omitempty"`
+	Detail         string `json:"detail,omitempty"`
+	Footer         string `json:"footer,omitempty"`
+	MarkdownSource string `json:"markdown_source,omitempty"`
 }
 
 type transcriptBlockSpan struct {
@@ -133,24 +134,25 @@ type transcriptBlockSpan struct {
 }
 
 type transcriptRenderableBlock struct {
-	Key          string
-	Kind         string
-	Header       string
-	Subheader    string
-	Body         []string
-	Expanded     bool
-	Expandable   bool
-	PreviewLimit int
-	PreviewTail  bool
-	Footer       string
-	Status       string
-	Selected     bool
-	Border       gotui.BorderStyle
-	BorderStyle  gotui.Style
-	HeaderStyle  gotui.Style
-	BodyStyle    gotui.Style
-	HintStyle    gotui.Style
-	SelectedHint string
+	MarkdownSource string
+	Key            string
+	Kind           string
+	Header         string
+	Subheader      string
+	Body           []string
+	Expanded       bool
+	Expandable     bool
+	PreviewLimit   int
+	PreviewTail    bool
+	Footer         string
+	Status         string
+	Selected       bool
+	Border         gotui.BorderStyle
+	BorderStyle    gotui.Style
+	HeaderStyle    gotui.Style
+	BodyStyle      gotui.Style
+	HintStyle      gotui.Style
+	SelectedHint   string
 }
 
 // bashPreviewLines mirrors PiSwift's bash output preview window: when collapsed,
@@ -968,18 +970,18 @@ func (c *chatTUI) appendUserPrompt(text string, queued bool) {
 	if queued {
 		prefix = "you [queued]: "
 	}
-	c.appendTranscript(renderMarkdownTranscript(prefix, text, c.transcriptRenderWidth())...)
+	c.appendTranscript(renderChatMarkdown("user", prefix, text, c.transcriptRenderWidth())...)
 }
 
 // Reproject the entire accumulated draft on every delta. Markdown structures
 // (notably tables, emphasis and fences) may become valid only after a later
 // token; a one-time looksLikeMarkdown check leaves the live preview raw.
 func (c *chatTUI) renderStreamingDraftLines() []string {
-	return renderMarkdownTranscript(c.cfg.AssistantName+": ", c.draft, c.transcriptRenderWidth())
+	return renderChatMarkdown("assistant", c.cfg.AssistantName+": ", c.draft, c.transcriptRenderWidth())
 }
 
 func (c *chatTUI) finalizeDraftTranscript(text string) {
-	lines := renderMarkdownTranscript(c.cfg.AssistantName+": ", text, c.transcriptRenderWidth())
+	lines := renderChatMarkdown("assistant", c.cfg.AssistantName+": ", text, c.transcriptRenderWidth())
 	if c.draftLineIndex >= 0 && c.draftLineIndex < len(c.transcript) {
 		end := c.draftLineIndex + c.draftLineCount
 		if c.draftLineCount <= 0 || end > len(c.transcript) {
@@ -4763,7 +4765,7 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 	leading := len(line) - len(strings.TrimLeft(line, " "))
 	// Table cells and preformatted code require literal padding. go-tui's
 	// rich-text word wrapper otherwise folds their ASCII spaces.
-	preformatted := leading > 0 || strings.HasPrefix(line, "|") || strings.HasPrefix(line, "+")
+	preformatted := leading > 0 || strings.HasPrefix(line, "|") || strings.HasPrefix(line, "+") || strings.HasPrefix(line, "│") || strings.HasPrefix(line, "┌") || strings.HasPrefix(line, "├") || strings.HasPrefix(line, "└")
 	line = line[leading:]
 	segments := parseTUIInlineSegments(line)
 	options := []gotui.Option{gotui.WithWidthPercent(100)}
@@ -4824,6 +4826,17 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 				}
 				body = append(body, part)
 				j++
+			}
+			if meta.MarkdownSource != "" && (meta.Kind == "user" || meta.Kind == "assistant") {
+				block := transcriptRenderableBlock{Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Body: body, Expanded: true}
+				if len(body) > 0 {
+					block.Header = body[0]
+					block.Body = body[1:]
+				}
+				block.HeaderStyle, block.BodyStyle, block.HintStyle, _, _ = transcriptBlockPalette(meta.Kind, "", false)
+				blocks = append(blocks, block)
+				i = j
+				continue
 			}
 			expanded := c.transcriptExpanded[meta.Key]
 			headStyle, bodyStyle, hintStyle, borderStyle, border := transcriptBlockPalette(meta.Kind, meta.Status, c.selectedTranscriptBlock == meta.Key)
@@ -5093,6 +5106,15 @@ func (c *chatTUI) renderTranscriptBlock(block transcriptRenderableBlock) *gotui.
 
 func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) *gotui.Element {
 	if block.Kind == "user" || block.Kind == "assistant" {
+		if block.MarkdownSource != "" {
+			message := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
+			// Account for message-band padding and the potential scrollbar.
+			_, _, horizontal := transcriptSpacing(block.Kind)
+			for _, line := range renderMarkdownTranscript("", block.MarkdownSource, max(1, c.currentContentWidth()-2*horizontal-1)) {
+				message.AddChild(c.renderInlineStyledLine(line, block.BodyStyle))
+			}
+			return message
+		}
 		message := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
 		// Speaker prefixes remain in the transcript for message boundaries,
 		// but are not part of the visible Markdown. Remove only the projector's
@@ -5241,7 +5263,7 @@ func (c *chatTUI) renderMessageLines(m store.Message, width int) []string {
 		prefix = "sys: "
 	}
 	if m.Role == "user" || m.Role == "assistant" || looksLikeMarkdown(m.Content) {
-		return renderMarkdownTranscript(prefix, m.Content, width)
+		return renderChatMarkdown(m.Role, prefix, m.Content, width)
 	}
 	return []string{c.renderMessageLine(m)}
 }

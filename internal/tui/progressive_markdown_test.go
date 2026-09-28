@@ -29,7 +29,7 @@ func TestStreamingMarkdownRerendersEachDeltaWithoutSpeakerLabels(t *testing.T) {
 		}
 	}
 	before := renderMarkdownScreen(t, c)
-	for _, want := range []string{"HEADING", "• bold code", "  keep spaces", "| A    | B     |"} {
+	for _, want := range []string{"HEADING", "• bold code", "  keep spaces", "│ A    │ B     │"} {
 		if !strings.Contains(before, want) {
 			t.Fatalf("missing %q in streamed screen: %q", want, before)
 		}

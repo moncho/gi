@@ -34,10 +34,37 @@ func looksLikeMarkdown(text string) bool {
 	return strings.Contains(trimmed, "\n")
 }
 
+// Table-bearing messages retain source in an invisible transcript metadata row
+// so terminal resize can allocate columns again instead of wrapping old borders.
+func renderChatMarkdown(role, prefix, markdown string, width int) []string {
+	lines := renderMarkdownTranscript(prefix, markdown, width)
+	if (role != "user" && role != "assistant") || !strings.Contains(markdown, "|") {
+		return lines
+	}
+	root := tuiMarkdown.Parser().Parse(text.NewReader([]byte(markdown)))
+	hasTable := false
+	_ = gast.Walk(root, func(n gast.Node, entering bool) (gast.WalkStatus, error) {
+		if _, ok := n.(*extast.Table); ok && entering {
+			hasTable = true
+			return gast.WalkStop, nil
+		}
+		return gast.WalkContinue, nil
+	})
+	if !hasTable {
+		return lines
+	}
+	body := renderMarkdownTranscript("", markdown, max(1, width-1))
+	out := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "markdown-table", Kind: role, MarkdownSource: markdown})}
+	for _, line := range body {
+		out = append(out, "│ "+line)
+	}
+	return out
+}
+
 func renderMarkdownTranscript(prefix, markdown string, width int) []string {
 	contentWidth := width - utf8.RuneCountInString(prefix)
-	if contentWidth < 20 {
-		contentWidth = 20
+	if contentWidth < 1 {
+		contentWidth = 1
 	}
 	source := []byte(markdown)
 	root := tuiMarkdown.Parser().Parse(text.NewReader(source))
@@ -194,90 +221,7 @@ func (m *markdownProjector) renderTable(table *extast.Table) []string {
 			headers[i] = "Col" + strconv.Itoa(i+1)
 		}
 	}
-	if m.tableFits(headers, rows) {
-		return m.renderTableGrid(headers, rows)
-	}
-	return m.renderTableStacked(headers, rows)
-}
-
-func (m *markdownProjector) tableFits(headers []string, rows [][]string) bool {
-	if len(headers) == 0 {
-		return false
-	}
-	widths := make([]int, len(headers))
-	for i, h := range headers {
-		widths[i] = utf8.RuneCountInString(h)
-	}
-	for _, row := range rows {
-		for i, cell := range row {
-			if i < len(widths) && utf8.RuneCountInString(cell) > widths[i] {
-				widths[i] = utf8.RuneCountInString(cell)
-			}
-		}
-	}
-	total := 1
-	for _, w := range widths {
-		total += w + 3
-	}
-	return total <= m.width
-}
-
-func (m *markdownProjector) renderTableGrid(headers []string, rows [][]string) []string {
-	widths := make([]int, len(headers))
-	for i, h := range headers {
-		widths[i] = utf8.RuneCountInString(h)
-	}
-	for _, row := range rows {
-		for i, cell := range row {
-			if i < len(widths) && utf8.RuneCountInString(cell) > widths[i] {
-				widths[i] = utf8.RuneCountInString(cell)
-			}
-		}
-	}
-	formatRow := func(cells []string) string {
-		parts := make([]string, len(widths))
-		for i := range widths {
-			cell := ""
-			if i < len(cells) {
-				cell = cells[i]
-			}
-			pad := widths[i] - utf8.RuneCountInString(cell)
-			if pad < 0 {
-				pad = 0
-			}
-			parts[i] = " " + cell + strings.Repeat(" ", pad) + " "
-		}
-		return "|" + strings.Join(parts, "|") + "|"
-	}
-	sepParts := make([]string, len(widths))
-	for i, w := range widths {
-		sepParts[i] = strings.Repeat("-", w+2)
-	}
-	out := []string{formatRow(headers), "+" + strings.Join(sepParts, "+") + "+"}
-	for _, row := range rows {
-		out = append(out, formatRow(row))
-	}
-	return out
-}
-
-func (m *markdownProjector) renderTableStacked(headers []string, rows [][]string) []string {
-	var out []string
-	for idx, row := range rows {
-		if idx > 0 {
-			out = append(out, strings.Repeat("-", min(max(8, m.width/3), m.width)))
-		}
-		for i, cell := range row {
-			header := "Col" + strconv.Itoa(i+1)
-			if i < len(headers) && headers[i] != "" {
-				header = headers[i]
-			}
-			out = append(out, wrapWithPrefix(cell, m.width, header+": ")...)
-		}
-	}
-	if len(out) == 0 && len(headers) > 0 {
-		out = append(out, wrapParagraph(strings.Join(headers, " | "), m.width)...)
-	}
-	return out
+	return m.renderTableGrid(headers, rows)
 }
 
 func (m *markdownProjector) renderInlineChildren(node gast.Node) string {

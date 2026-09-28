@@ -59,7 +59,12 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 	previousKind := ""
 	for _, block := range c.buildTranscriptRenderableBlocks(c.visibleTranscript()) {
 		gap := assistantGapBefore(previousKind, block.Kind)
+		previousWidth := c.outputWidth
+		if block.MarkdownSource != "" {
+			c.outputWidth = width
+		}
 		el := c.renderTranscriptBlockAfter(block, previousKind)
+		c.outputWidth = previousWidth
 		previousKind = block.Kind
 		height := max(1, el.HeightForWidth(width))
 		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(height))

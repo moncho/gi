@@ -22,7 +22,7 @@ const fixtures=[
  {name:'code-quote',source:'> Quoted words\n\nUse `inline()` now.\n\n```js\nconst answer = 42;\n  return answer;\n```',
   lines:['> Quoted words','Use inline() now.','[code:js] 2 lines','    const answer = 42;','      return answer;'],absent:['```js','`inline()`']},
  {name:'table-link',source:'| Name | Value |\n| --- | --- |\n| First | 世界 |\n\nVisit [docs](https://example.invalid/docs).',
-  lines:['| Name | Value |','| First | 世界 |','docs (https://example.invalid/docs)'],absent:['[docs]','| --- |']},
+  lines:['│ Name │ Value │','│ First │ 世界 │','docs (https://example.invalid/docs)'],absent:['[docs]','| --- |']},
 ];
 const featurePath=resolve('features/tui-markdown/rendering.feature');
 const envelopes=generateMessages(readFileSync(featurePath,'utf8'),featurePath,
@@ -68,7 +68,7 @@ for(const scenario of scenarios){
    for(const line of fixture.lines){
     // Table columns carry alignment padding; compare cell contents while
     // preserving strict indentation assertions for code and tool output.
-    const tableRow=fixture.name==='table-link'&&line.startsWith('|');
+    const tableRow=fixture.name==='table-link'&&line.startsWith('│');
     const visible=row=>tableRow?row.replace(/ +/g,' '):row;
     if(!rows.some(row=>visible(row).includes(visible(line))))problems.push(`missing ${JSON.stringify(line)}`);
    }

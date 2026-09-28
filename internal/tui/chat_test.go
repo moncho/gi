@@ -1897,9 +1897,20 @@ func TestRenderMessageLinesFormatsTableResponsively(t *testing.T) {
 	content := "| Name | Role | Value |\n| --- | --- | --- |\n| Alice | admin | 42 |\n| Bob | user | 7 |"
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: content, Payload: map[string]any{"kind": "chat"}}, 20)
 	joined := strings.Join(lines, "\n")
-	for _, want := range []string{"Name: Alice", "Role: admin", "Value: 42", "Name: Bob", "Role: user", "Value: 7"} {
+	if !strings.Contains(joined, "┌") || strings.Contains(joined, "Name:") {
+		t.Fatalf("expected wrapped grid: %q", joined)
+	}
+	for _, line := range lines {
+		if _, metadata := parseTranscriptBlockMarker(line); metadata {
+			continue
+		}
+		if gotui.StringWidth(stripMarkdownInlineStyleMarkers(line)) > 25 {
+			t.Fatalf("table overflow %q", line)
+		}
+	}
+	for _, want := range []string{"42", "Bob", "7"} {
 		if !strings.Contains(joined, want) {
-			t.Fatalf("responsive table render missing %q:\n%s", want, joined)
+			t.Fatalf("lost cell %q: %q", want, joined)
 		}
 	}
 }

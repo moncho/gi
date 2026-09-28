@@ -8,7 +8,7 @@ import {patchModelPanel} from '../../../scripts/patch-model-panel.mjs';
 import {patchComposeSurface} from '../../../scripts/patch-compose-surface.mjs';
 import {patchComposeCommands} from '../../../scripts/patch-compose-commands.mjs';
 import {patchPickerGeometry} from '../../../scripts/patch-picker-geometry.mjs';
-import {patchSkillPrefill} from '../../../scripts/patch-skill-prefill.mjs';
+import {patchComposePrefillFocus} from '../../../scripts/patch-compose-prefill-focus.mjs';
 import {patchUploadCancel} from '../../../scripts/patch-upload-cancel.mjs';
 import {patchModelPicker} from '../../../scripts/patch-model-picker.mjs';
 import {patchComposePopupKeys} from '../../../scripts/patch-popup-keys.mjs';
@@ -19,7 +19,7 @@ test('model widget IDs are per mount and label encoding does not collide',()=>{
 });
 test('guarded semantic adapter leaves source bytes and native mutation guards intact',()=>{
  const path='web/src/components/compose-box.ts',source=readFileSync(path,'utf8');
- const before=patchVoiceInput(patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source))))))))));
+ const before=patchVoiceInput(patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source))))))))));
  const result=patchModelAccessibility(before);
  for(const text of ['role="combobox"','role="listbox"','role="option"','tabIndex="-1"','aria-activedescendant=','aria-selected=${current','aria-disabled=${switchingModel || blocked','disabled=${switchingModel || blocked}','void handleSelectModel(modelOption)'])expect(result).toContain(text);
  expect(result.indexOf('const [loadingModels, setLoadingModels]')).toBeLessThan(result.indexOf('const modelEntries = useMemo'));

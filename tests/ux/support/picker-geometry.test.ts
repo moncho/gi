@@ -4,11 +4,11 @@ import {patchPickerGeometry} from '../../../scripts/patch-picker-geometry.mjs';
 import {patchComposePopupKeys} from '../../../scripts/patch-popup-keys.mjs';
 import {patchModelPicker} from '../../../scripts/patch-model-picker.mjs';
 import {patchUploadCancel} from '../../../scripts/patch-upload-cancel.mjs';
-import {patchSkillPrefill} from '../../../scripts/patch-skill-prefill.mjs';
+import {patchComposePrefillFocus} from '../../../scripts/patch-compose-prefill-focus.mjs';
 import reference from '../fixtures/picker-geometry-reference.json';
 const path='web/src/components/compose-box.ts';
 test('picker adapter only inserts close controls after guarded existing adapters',()=>{
- const source=readFileSync(path,'utf8'),before=patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source)))),after=patchPickerGeometry(before);
+ const source=readFileSync(path,'utf8'),before=patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source)))),after=patchPickerGeometry(before);
  expect(after.replace(/^.*class="gi-picker-close".*\n/gm,'')).toBe(before);
  expect(after.match(/class="gi-picker-close"/g)).toHaveLength(2);expect(after).toContain('closeSessionPopup(true)');
  expect(readFileSync(path,'utf8')).toBe(source);

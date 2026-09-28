@@ -5,7 +5,7 @@ import {patchModelPanel} from '../../../scripts/patch-model-panel.mjs';
 import {patchComposeSurface} from '../../../scripts/patch-compose-surface.mjs';
 import {patchComposeCommands} from '../../../scripts/patch-compose-commands.mjs';
 import {patchPickerGeometry} from '../../../scripts/patch-picker-geometry.mjs';
-import {patchSkillPrefill} from '../../../scripts/patch-skill-prefill.mjs';
+import {patchComposePrefillFocus} from '../../../scripts/patch-compose-prefill-focus.mjs';
 import {patchUploadCancel} from '../../../scripts/patch-upload-cancel.mjs';
 import {patchModelPicker} from '../../../scripts/patch-model-picker.mjs';
 import {patchComposePopupKeys} from '../../../scripts/patch-popup-keys.mjs';
@@ -19,7 +19,7 @@ test('metadata formatting follows pinned reference without invented values',()=>
 });
 test('guarded model panel adapter composes without changing supplied bytes or mutation ownership',()=>{
  const path='web/src/components/compose-box.ts',source=readFileSync(path,'utf8');
- const previous=patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source)))))));
+ const previous=patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source)))))));
  const adapted=patchModelPanel(previous);expect(adapted).toContain('openModelSettings(modelHintRef.current)');expect(adapted).toContain('void handleSelectModel(modelOption)');expect(adapted).toContain('disabled=${switchingModel || blocked}');expect(adapted).toContain('Thinking level (read-only)');expect(adapted).not.toContain('Next model\n');
  expect(()=>patchModelPanel(adapted)).toThrow();expect(()=>patchModelPanel('drift')).toThrow();expect(readFileSync(path,'utf8')).toBe(source);
 });

@@ -22,7 +22,7 @@ import { patchThemeTextContrast } from './scripts/patch-theme-text-contrast.mjs'
 import { patchVoiceInput } from './scripts/patch-voice-input.mjs';
 import { patchModelAccessibility } from './scripts/patch-model-accessibility.mjs';
 import { patchUploadCancel } from './scripts/patch-upload-cancel.mjs';
-import { patchSkillPrefill } from './scripts/patch-skill-prefill.mjs';
+import { patchComposePrefillFocus } from './scripts/patch-compose-prefill-focus.mjs';
 import { patchPostSpeech } from './scripts/patch-post-speech.mjs';
 import { patchPostOutcomes } from './scripts/patch-post-outcomes.mjs';
 import { patchPostRecoveryControl } from './scripts/patch-post-recovery-control.mjs';
@@ -97,7 +97,7 @@ const appBuild = await Bun.build({
       contents: patchQuickActionKeys(await Bun.file(args.path).text()), loader: 'ts',
     }));
     build.onLoad({ filter: /[\\/]components[\\/]compose-box\.ts$/ }, async args => ({
-      contents: patchMessageReferenceLabels(patchComposeCaptureToken(patchComposeRandomId(patchModelAccessibility(patchModelThinking(patchVoiceInput(patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(patchComposeEscape(await Bun.file(args.path).text())))))))))))))))), loader: 'ts',
+      contents: patchMessageReferenceLabels(patchComposeCaptureToken(patchComposeRandomId(patchModelAccessibility(patchModelThinking(patchVoiceInput(patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(patchComposeEscape(await Bun.file(args.path).text())))))))))))))))), loader: 'ts',
     }));
   } }, { name: 'gi-workspace-readonly', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]tab-strip\.ts$/ }, async args => ({

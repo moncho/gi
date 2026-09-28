@@ -9535,16 +9535,12 @@ function ComposeBox({
     if (!resolved.shouldApply)
       return;
     lastPrefillTokenRef.current = resolved.nextToken;
-    const skillPrefill = /^\/skill:[A-Za-z0-9][A-Za-z0-9_-]{0,63}\s*$/.test(resolved.text);
-    if (skillPrefill) {
-      resolved.text = resolved.text.trim() + " " + content;
-    }
     setSubmitError(null);
     setContent(resolved.text);
     updateSlashAutocomplete(resolved.text);
     updateMentionAutocomplete(resolved.text);
     requestAnimationFrame(() => {
-      if (skillPrefill && (!mountedRef.current || document.querySelector('.settings-dialog[aria-modal="true"]')))
+      if (!mountedRef.current || document.querySelector('.settings-dialog[aria-modal="true"]'))
         return;
       resizeTextarea();
       const textarea = textareaRef.current;
@@ -22377,11 +22373,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-z0j1xaq6.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-85cgcwan.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-2zk96hg0.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-fngbxfbx.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-1296t4j1.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-vgtmb2hf.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-3p4k0bsm.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-nrb2yp77.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-90144nhx.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-jng200gr.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -24792,9 +24788,9 @@ function GiApp() {
                 onToggleWorkspace=${() => setWorkspaceOpen((v) => !v)}
                 onSwitchChat=${handleSwitchChat}
                 onPrefillCompose=${(command) => {
-    if (!selection.isCurrent(renderedSelection))
+    if (!selection.isCurrent(renderedSelection) || !command.trim())
       return;
-    setComposePrefill({ sessionId, token: randomClientId(), text: command.trim() + " " });
+    setComposePrefill({ sessionId, token: randomClientId(), text: command });
   }}
             />`}
             <${TimelineMenu}
@@ -25153,5 +25149,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=A92A9B0916ED7BBF64756E2164756E21
-//# sourceMappingURL=app-d52mbwam.js.map
+//# debugId=3A61BF1E7D01F73F64756E2164756E21
+//# sourceMappingURL=app-x9xeeg4t.js.map

@@ -98,7 +98,7 @@ test('quick actions prefill native model command without submitting',async({page
  const input=page.getByRole('textbox',{name:'Message (Enter to send, Shift+Enter for newline)...',exact:true});await input.fill('before quick action');await input.blur();
  await page.locator('.timeline').click({position:{x:160,y:180}});await page.keyboard.type('m');const query=page.locator('.timeline-quick-actions-input');await expect(query).toBeFocused();await query.fill('/model');
  await expect(page.locator('.timeline-quick-actions-item.active .timeline-quick-actions-item-title')).toHaveText('/model');await page.locator('.timeline-quick-actions-item-slash').click();
- await expect(input).toHaveValue('/model ');await expect(input).toBeFocused();expect(await input.evaluate(el=>el.selectionStart)).toBe(7);
+ await expect(input).toHaveValue('/model');await expect(input).toBeFocused();expect(await input.evaluate(el=>el.selectionStart)).toBe(6);
  expect((await(await request.get(`${BASE_URL}/api/sessions/${session.id}/turns`)).json()).turns??[]).toEqual([]);
 });
 

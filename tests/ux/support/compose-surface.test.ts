@@ -4,7 +4,7 @@ import {patchComposeSurface} from '../../../scripts/patch-compose-surface.mjs';
 import {patchComposePopupKeys} from '../../../scripts/patch-popup-keys.mjs';
 import {patchModelPicker} from '../../../scripts/patch-model-picker.mjs';
 import {patchUploadCancel} from '../../../scripts/patch-upload-cancel.mjs';
-import {patchSkillPrefill} from '../../../scripts/patch-skill-prefill.mjs';
+import {patchComposePrefillFocus} from '../../../scripts/patch-compose-prefill-focus.mjs';
 import {patchPickerGeometry} from '../../../scripts/patch-picker-geometry.mjs';
 import {patchComposeCommands} from '../../../scripts/patch-compose-commands.mjs';
 import {composeHeightBounds,clampComposeHeight,readComposeHeight} from '../../../web/src/gi-compose-height.ts';
@@ -18,7 +18,7 @@ test('compose height bounds follow pinned automatic/manual limits',()=>{
 });
 test('guarded adapter preserves supplied source and existing handlers',()=>{
  const path='web/src/components/compose-box.ts',source=readFileSync(path,'utf8');
- const before=patchComposeCommands(patchPickerGeometry(patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source))))));
+ const before=patchComposeCommands(patchPickerGeometry(patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source))))));
  const adapted=patchComposeSurface(before);
  expect(adapted).toContain('const resizeTextarea = giComposeSurface.resize;');
  expect(adapted.match(/class="compose-session-trigger-group compose-session-trigger-top"/g)).toHaveLength(1);

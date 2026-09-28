@@ -30,7 +30,7 @@ test('@ux-original-003 Timeline typing filters ordered native actions and keyboa
  await page.screenshot({path:info.outputPath('quick-no-results.png')});
  await query.press('Escape');await expect(palette).toHaveCount(0);await expect(input).toHaveValue('untouched draft');expect(await turns()).toEqual([]);
  await open('m');await query.fill('/model');await expect(page.locator('.timeline-quick-actions-item.active .timeline-quick-actions-item-title')).toHaveText('/model');await page.waitForTimeout(150);await query.press('Enter');
- await expect(palette).toHaveCount(0);await expect(input).toHaveValue('/model ');expect(await turns()).toEqual([]);
+ await expect(palette).toHaveCount(0);await expect(input).toHaveValue('/model');expect(await turns()).toEqual([]);
 });
 
 test('@ux-original-006 Escape and outside pointer dismiss without running an action and reopen with a fresh query',async({page,request},info)=>{
@@ -40,16 +40,16 @@ test('@ux-original-006 Escape and outside pointer dismiss without running an act
  await open('m');await expect(query).toHaveValue('m');await query.press('Escape');await expect(input).toHaveValue('untouched draft');expect(await turns()).toEqual([]);
 });
 
-test('Gi deviation: slash actions append a space instead of Piclaw exact-command prefill',async({page,request},info)=>{
+test('Gi Quick Actions insert the Piclaw exact command while retaining media and focus',async({page,request},info)=>{
  await attachGiDeviation(info,'@gi-ux-001');const {main,child,input,palette,query,open,turns}=await fixture(page,request,info);
  await page.locator('.compose-box input[type=file]').setInputFiles({name:'kept.txt',mimeType:'text/plain',buffer:Buffer.from('kept bytes')});
  await open('m');await query.fill('/model');await expect(palette.locator('.timeline-quick-actions-item-slash')).toHaveCount(1);await expect(page.locator('.timeline-quick-actions-item.active .timeline-quick-actions-item-title')).toHaveText('/model');await page.waitForTimeout(150);await query.press('Enter');
- await expect(palette).toHaveCount(0);await expect(input).toHaveValue('/model ');await expect(input).toBeFocused();expect(await input.evaluate(el=>[el.selectionStart,el.selectionEnd])).toEqual([7,7]);
+ await expect(palette).toHaveCount(0);await expect(input).toHaveValue('/model');await expect(input).toBeFocused();expect(await input.evaluate(el=>[el.selectionStart,el.selectionEnd])).toEqual([6,6]);
  await expect(page.locator('.compose-file-pill').filter({hasText:'kept.txt'})).toBeVisible();expect(await turns()).toEqual([]);
  await page.screenshot({path:info.outputPath('quick-command-prefill.png')});
  await input.fill('newer text');await page.reload();await expect(input).toHaveValue('newer text');
- await open('c');await query.fill('/compact');await palette.locator('.timeline-quick-actions-item-slash').click();await expect(input).toHaveValue('/compact ');await expect(input).toBeFocused();expect(await turns()).toEqual([]);
- await page.reload();await expect(input).toHaveValue('/compact ');expect(await turns()).toEqual([]);
+ await open('c');await query.fill('/compact');await palette.locator('.timeline-quick-actions-item-slash').click();await expect(input).toHaveValue('/compact');await expect(input).toBeFocused();expect(await turns()).toEqual([]);
+ await page.reload();await expect(input).toHaveValue('/compact');expect(await turns()).toEqual([]);
 });
 
 test('@ux-original-005 Repeated composing consumed whitespace and modifier events do not open Quick Actions',async({page,request},info)=>{
@@ -134,7 +134,7 @@ async function sharedTypingFixture(page,request,info,id){
  await expect.poll(async()=>(await f.turns()).find(t=>t.id===turn)?.status).toBe('completed');
  await page.reload();await expect(f.input).toHaveValue('untouched draft');
  await page.locator('.compose-box input[type=file]').setInputFiles({name:'guard-unsent.txt',mimeType:'text/plain',buffer:Buffer.from('guard native bytes')});
- const history=page.locator('.post-content p').filter({hasText:`native key guard history ${id}`}).first();await expect(history).toBeVisible();
+ const history=page.locator('.post-content').filter({hasText:`native key guard history ${id}`}).first();await expect(history).toBeVisible();await expect(history).toContainText(`native key guard history ${id}`);
  const state=async()=>({turns:await f.turns(),messages:await(await request.get(`/api/sessions/${f.main.id}/messages`)).json(),model:await(await request.get(`/api/sessions/${f.main.id}/model`)).json()});
  const before=await state();let mutations=0;page.on('request',r=>{if(!['GET','HEAD'].includes(r.method())&&new URL(r.url()).pathname.startsWith('/api/sessions'))mutations++;});
  const frames=()=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));

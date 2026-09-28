@@ -6,7 +6,7 @@ import {patchComposePopupKeys} from '../../../scripts/patch-popup-keys.mjs';
 import {patchModelPicker} from '../../../scripts/patch-model-picker.mjs';
 import {patchPickerGeometry} from '../../../scripts/patch-picker-geometry.mjs';
 import {patchUploadCancel} from '../../../scripts/patch-upload-cancel.mjs';
-import {patchSkillPrefill} from '../../../scripts/patch-skill-prefill.mjs';
+import {patchComposePrefillFocus} from '../../../scripts/patch-compose-prefill-focus.mjs';
 test('native compose catalogue validates, deduplicates and preserves supported order',()=>{
  expect(normaliseComposeCommands({commands:[{name:'/model',description:'model'},{name:'/skill:proof'},{name:'/model'}]})).toEqual([{name:'/model',description:'model'},{name:'/skill:proof',description:''}]);
  expect(normaliseComposeCommands({commands:[]})).toEqual([]);
@@ -20,7 +20,7 @@ test('compose key ownership declines consumed, repeat and IME without blocking o
 });
 test('compose command adapter preserves render markup and fails on drift or double application',()=>{
  const path='web/src/components/compose-box.ts',source=readFileSync(path,'utf8');
- const before=patchPickerGeometry(patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source))))),after=patchComposeCommands(before);
+ const before=patchPickerGeometry(patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source))))),after=patchComposeCommands(before);
  const withoutNotice=after.replace(/^.*\$\{commandCatalogueError && html`.*\n/gm,'');
  const render='        <div class="compose-box">';
  expect(withoutNotice.slice(withoutNotice.indexOf(render))).toBe(before.slice(before.indexOf(render)));

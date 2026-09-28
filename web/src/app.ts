@@ -1050,8 +1050,8 @@ function GiApp() {
                 onToggleWorkspace=${() => setWorkspaceOpen((v: boolean) => !v)}
                 onSwitchChat=${handleSwitchChat}
                 onPrefillCompose=${(command: string) => {
-                    if (!selection.isCurrent(renderedSelection)) return;
-                    setComposePrefill({sessionId,token:randomClientId(),text:command.trim()+' '});
+                    if (!selection.isCurrent(renderedSelection) || !command.trim()) return;
+                    setComposePrefill({sessionId,token:randomClientId(),text:command});
                 }}
             />`}
             <${TimelineMenu}

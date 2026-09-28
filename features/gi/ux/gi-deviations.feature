@@ -1,22 +1,22 @@
 @gi-specific
-Feature: Gi behaviour retained where installed Piclaw 3.2.4 differs
-  # These clauses describe Gi's tested implementation. They do not award Classic or Shared parity.
-  # Oracle corrections and evidence limits: docs/internal/ux-reaudit-2026-09-26/gherkin-alignment.md
+Feature: Gi implementation checks and remaining Piclaw gaps
+  # The first two clauses follow the installed Piclaw 3.2.4 Quick Actions oracle.
+  # Gi checks alone do not award Classic or Shared parity; other gaps below remain open.
 
-  @gi-ux-001
-  Scenario: Slash Quick Actions insert a trailing space without submitting
-    Given an available slash Quick Action
+  @gi-ux-001 @oracle-aligned
+  Scenario: Slash Quick Actions insert the exact command without submitting
+    Given an available slash Quick Action and an existing editor draft
     When I select /model or /compact from the Quick Actions palette
-    Then Gi prefills the composer with the command and a trailing space
-    And it focuses the composer without submitting a turn
+    Then Gi replaces the draft with the exact command and no trailing space
+    And it focuses the composer without submitting a turn or removing attachments
 
-  @gi-ux-002
-  Scenario: Loaded skill selection retains the draft and media for Gi execution
+  @gi-ux-002 @oracle-aligned
+  Scenario: Loaded skill selection replaces the draft and retains media for explicit Gi execution
     Given a loaded /skill:proof Quick Action, draft text and a media attachment
     When I select the skill command from the Quick Actions palette
-    Then Gi prepends the command to the existing draft and keeps the attachment
-    And it does not submit until I explicitly send the composer
-    When I send while switching to another session
+    Then Gi replaces the draft with /skill:proof and keeps the attachment
+    And it does not submit until I explicitly add arguments and send the composer
+    When I add arguments and send while switching to another session
     Then the captured session receives one turn with the loaded skill and media
     And stale or unknown skill commands retain recoverable text with an error
 

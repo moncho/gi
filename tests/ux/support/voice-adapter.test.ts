@@ -6,13 +6,13 @@ import {patchModelPanel} from '../../../scripts/patch-model-panel.mjs';
 import {patchComposeSurface} from '../../../scripts/patch-compose-surface.mjs';
 import {patchComposeCommands} from '../../../scripts/patch-compose-commands.mjs';
 import {patchPickerGeometry} from '../../../scripts/patch-picker-geometry.mjs';
-import {patchSkillPrefill} from '../../../scripts/patch-skill-prefill.mjs';
+import {patchComposePrefillFocus} from '../../../scripts/patch-compose-prefill-focus.mjs';
 import {patchUploadCancel} from '../../../scripts/patch-upload-cancel.mjs';
 import {patchModelPicker} from '../../../scripts/patch-model-picker.mjs';
 import {patchComposePopupKeys} from '../../../scripts/patch-popup-keys.mjs';
 test('voice adapter preserves supplied sources and existing submit/key guards',()=>{
  const path='web/src/components/compose-box.ts',source=readFileSync(path,'utf8');
- const before=patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchSkillPrefill(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source)))))))));
+ const before=patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(source)))))))));
  const result=patchVoiceInput(before);
  expect(result).toContain("disabled: statusNotice?.type === 'compaction'");expect(result).toContain('if (declineComposeKey(e)) return;\n        if (giVoice.beforeKey(e)) return;');
  expect(result).toContain('const handleSubmit = async (overrideContent, submitMode, submitOptions = {}) => {\n        giVoice.cancel();');

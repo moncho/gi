@@ -759,6 +759,10 @@ test-piclaw-upload-state:
 test-piclaw-copy-controls:
 	$(BUN) tests/ux/oracle/piclaw-copy-ui-probe.mjs
 
+.PHONY: test-piclaw-message-retrieval
+test-piclaw-message-retrieval:
+	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-message-retrieval-probe.mjs
+
 .PHONY: test-piclaw-compose-escape test-ux-compose-escape
 test-piclaw-compose-escape:
 	$(BUN) tests/ux/oracle/piclaw-compose-escape-probe.mjs

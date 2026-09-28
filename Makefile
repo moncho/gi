@@ -746,9 +746,12 @@ test-ux-session-panel: build-web
 test-model-panel-helpers:
 	$(BUN) test tests/ux/support/model-panel.test.ts tests/ux/support/model-picker.test.ts tests/ux/support/model-accessibility.test.ts tests/ux/support/model-thinking.test.ts
 
-.PHONY: test-piclaw-quick-action-prefill
+.PHONY: test-piclaw-quick-action-prefill test-piclaw-typeahead-exclusions
 test-piclaw-quick-action-prefill:
 	$(BUN) tests/ux/oracle/piclaw-quick-action-prefill-probe.mjs
+
+test-piclaw-typeahead-exclusions:
+	$(BUN) tests/ux/oracle/piclaw-typeahead-exclusions-probe.mjs
 
 .PHONY: test-piclaw-compose-escape test-ux-compose-escape
 test-piclaw-compose-escape:

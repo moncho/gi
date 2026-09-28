@@ -1,6 +1,6 @@
 # Classic /theme and /tint 001–015: native command gap
 
-`tests/ux/features/classic/compose/theme-tint.feature` requires commands sent
+`features/ux/classic/compose/theme-tint.feature` requires commands sent
 through the Classic composer, timeline responses and visual changes. Gi has a
 browser-local Appearance Settings pane, but it is a different interaction:
 `web/src/gi-settings-appearance.ts` exposes explicit Save/Reset;
@@ -26,13 +26,19 @@ cover theme list, ristretto/default, invalid `dark`, tint usage, hex/named/off
 and invalid tint. All parser status/message/payload assertions passed. The
 installed `src/channels/web/handlers/agent.ts` calls this parser, persists a
 successful theme payload via `setServerUiThemeConfig` and broadcasts
-`ui_theme`; that handler path was only source-reviewed.
+`ui_theme`. `make test-piclaw-theme-handler` calls that installed handler with
+an in-memory database and temporary config. `/theme ristretto` and `/tint
+orange` each return HTTP 200 `ui_only`, emit `ui_theme`, write global
+`piclaw-ui` extension KV and the temporary legacy config, and send a
+forced-root timeline response. Invalid tint and the no-argument theme list
+send responses without changing stored appearance.
 `tests/ux/oracle/piclaw-theme-ui-probe.mjs` uses the shipped Classic UI with
 a disposable `/agent/default/message` response and SSE events fed by the
 installed parser. In Chromium and WebKit desktop, composer submission sent
 `/theme ristretto` then `/tint #e11d48`; the `ui_theme` fixture updated root
 attributes and legacy localStorage, and the tint response appeared in the
-fixture timeline. It did not exercise the Piclaw backend handler, server
-persistence, reload, named tint, or pixel colour equivalence. The frozen
-Gherkin stays a historical contract; these bounded oracle probes and Gi
-Settings grant no Gi command parity or physical/pixel credit.
+fixture timeline. The direct handler call does not exercise the production
+router, authentication, a live chat or browser reload; the UI probe still
+does not establish named-tint or pixel-colour equivalence. The frozen Gherkin
+stays a historical contract; these bounded oracle probes and Gi Settings
+grant no Gi command parity or physical/pixel credit.

@@ -1,5 +1,7 @@
 ## Steer after the observed run ends
 
+> Correction: Stop/Resume holds described below were Gi-only behaviour and have been removed. The current contract and results are in [Stop/Resume removal](stop-resume-removal-2026-09-28.md). Earlier hold tests establish only historical Gi behaviour.
+
 A queued Steer request can now launch its selected row after the observed run has ended and released its claim. The request keeps the original `active_turn_id`; it does not retry as an unrestricted idle action.
 
 The installed Piclaw 3.2.4 `WebAgentControlPlaneService.handleAgentQueueSteer` falls back to `processChat` if `queueStreamingMessage` reports that streaming ended. The existing independent method probe exercises this `ended-before-queue` path with in-memory collaborators. `make test-pi-piclaw-queue-oracle` passed all eight method cases. Replacing only Gi's handler with its pre-fix version made the new completion and retry regressions fail three times with `queue changed; refresh and retry`.

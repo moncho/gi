@@ -1,5 +1,7 @@
 # Explicit idle queue Steer
 
+> Correction: Stop/Resume holds described below were Gi-only behaviour and have been removed. The current contract and results are in [Stop/Resume removal](stop-resume-removal-2026-09-28.md). Earlier hold tests establish only historical Gi behaviour.
+
 Installed Piclaw 3.2.4 lets a queued item's Steer button send that item when no run is active. Gi previously disabled it. The button now permits an explicit idle action after a fresh activity read. Disconnected, unknown and pending states remain fenced.
 
 ## Native admission

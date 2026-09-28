@@ -2,101 +2,75 @@ package turn
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"fmt"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/rcarmo/gi/internal/inference"
 	"github.com/rcarmo/gi/internal/store"
-	goai "github.com/rcarmo/go-ai"
 )
 
-func TestWebQueueHoldStopCleanupAndExplicitResume(t *testing.T) {
+// Stop matches installed Piclaw: abort the active run and let queued work continue.
+func TestWebQueueHoldStopDoesNotPauseFIFO(t *testing.T) {
 	ctx := context.Background()
 	s := openTestStore(t)
 	defer s.Close()
 	e := New(s)
 	defer e.Close()
-	if _, err := s.CreateSession(ctx, "hold", "hold", nil); err != nil {
+	if _, err := s.CreateSession(ctx, "a", "test", nil); err != nil {
 		t.Fatal(err)
 	}
-	started := make(chan struct{}, 1)
-	withStreamWithToolsStub(t, func(ctx context.Context, _ string, _ *goai.Context, _ func(map[string]any)) (*inference.StreamResult, error) {
+	gate := make(chan struct{})
+	var once sync.Once
+	defer once.Do(func() { close(gate) })
+	e.beforeSetupHook = func(ctx context.Context, _, id string) {
 		select {
-		case started <- struct{}{}:
-		default:
-		}
-		<-ctx.Done()
-		return nil, ctx.Err()
-	})
-	first, err := e.SubmitPrompt(ctx, RunInput{SessionID: "hold", Prompt: "first", Model: "mock-stream"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	select {
-	case <-started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("not started")
-	}
-	second, err := e.SubmitPrompt(ctx, RunInput{SessionID: "hold", Prompt: "second", Intent: "queue", Model: "bootstrap"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	third, err := e.SubmitPrompt(ctx, RunInput{SessionID: "hold", Prompt: "third", Intent: "queue", Model: "bootstrap"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = e.StopWebActiveTurn(ctx, "hold", first.TurnID); err != nil {
-		t.Fatal(err)
-	}
-	waitForCondition(t, 3*time.Second, func() bool { _, _, err := s.GetSessionActiveTurn(ctx, "hold"); return errors.Is(err, sql.ErrNoRows) }, "cleanup releases claim")
-	for _, id := range []string{second.TurnID, third.TurnID} {
-		v, err := s.GetTurn(ctx, id)
-		if err != nil || v.Status != "queued" {
-			t.Fatal(v, err)
+		case <-ctx.Done():
+		case <-gate:
 		}
 	}
-	if hold, err := s.WebQueueHold(ctx, "hold"); err != nil || hold != first.TurnID {
-		t.Fatal(hold, err)
+	first, err := e.SubmitPrompt(ctx, RunInput{SessionID: "a", Prompt: "active", Model: "bootstrap"})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if _, err = e.ContinueSession(ctx, "hold"); !errors.Is(err, store.ErrQueueConflict) {
-		t.Fatal("unfenced continue", err)
+	second, err := e.SubmitPrompt(ctx, RunInput{SessionID: "a", Prompt: "queued second", Model: "bootstrap", Intent: "queue"})
+	if err != nil || !second.Queued {
+		t.Fatal(second, err)
 	}
-	if _, err = e.ResumeWebQueue(ctx, "hold", "stale"); !errors.Is(err, store.ErrQueueConflict) {
-		t.Fatal("stale resume", err)
+	third, err := e.SubmitPrompt(ctx, RunInput{SessionID: "a", Prompt: "queued third", Model: "bootstrap", Intent: "queue"})
+	if err != nil || !third.Queued {
+		t.Fatal(third, err)
 	}
-	later, err := e.SubmitPrompt(ctx, RunInput{SessionID: "hold", Prompt: "later", Model: "bootstrap"})
-	if err != nil || !later.Queued {
-		t.Fatal(later, err)
+	if err := e.StopWebActiveTurn(ctx, "a", first.TurnID); err != nil {
+		t.Fatal(err)
 	}
-	if ok, err := s.ClaimSessionActiveTurn(ctx, "hold", second.TurnID, "foreign", "foreign"); err != nil || ok {
-		t.Fatal("claim bypassed hold", ok, err)
+	waitForCondition(t, 3*time.Second, func() bool { active, _, _ := s.GetSessionActiveTurn(ctx, "a"); return active == second.TurnID }, "queue automatically advanced")
+	if err := e.StopWebActiveTurn(ctx, "a", first.TurnID); !errors.Is(err, store.ErrQueueConflict) {
+		t.Fatal("stale Stop affected successor", err)
 	}
-	if ok, err := e.ResumeWebQueue(ctx, "hold", first.TurnID); err != nil || !ok {
-		t.Fatal(ok, err)
-	}
+	once.Do(func() { close(gate) })
 	waitForCondition(t, 3*time.Second, func() bool {
-		v, err := s.GetTurn(ctx, second.TurnID)
-		return err == nil && (v.Status == "completed" || v.Status == "failed")
-	}, "resumed completion")
-	waitForCondition(t, 3*time.Second, func() bool {
-		v, err := s.GetTurn(ctx, third.TurnID)
-		return err == nil && (v.Status == "completed" || v.Status == "failed")
-	}, "resumed completion")
-	waitForCondition(t, 3*time.Second, func() bool {
-		v, err := s.GetTurn(ctx, later.TurnID)
-		return err == nil && (v.Status == "completed" || v.Status == "failed")
-	}, "resumed completion")
-	waitForCondition(t, 3*time.Second, func() bool { _, _, err := s.GetSessionActiveTurn(ctx, "hold"); return errors.Is(err, sql.ErrNoRows) }, "final cleanup")
-	if _, err = e.ResumeWebQueue(ctx, "hold", first.TurnID); !errors.Is(err, store.ErrQueueConflict) {
-		t.Fatal("duplicate resume", err)
+		a, _ := s.GetTurn(ctx, second.TurnID)
+		b, _ := s.GetTurn(ctx, third.TurnID)
+		return a.Status == "completed" && b.Status == "completed"
+	}, "FIFO completion")
+	msgs, err := s.ListMessages(ctx, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var users []string
+	for _, m := range msgs {
+		if m.Role == "user" {
+			users = append(users, m.Content)
+		}
+	}
+	if len(users) != 2 || users[0] != "queued second" || users[1] != "queued third" {
+		t.Fatal(users)
 	}
 }
 
-func TestWebQueueHoldCrashBeforeCleanupSurvivesRecovery(t *testing.T) {
+func TestWebQueueHoldLegacyCrashRecoveryClearsObsoleteHold(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "hold.db")
 	s, err := store.Open(path)
@@ -115,7 +89,10 @@ func TestWebQueueHoldCrashBeforeCleanupSurvivesRecovery(t *testing.T) {
 	if _, err = s.CreateTurnWithStatus(ctx, "next", "held", "queued", "preserve", nil); err != nil {
 		t.Fatal(err)
 	}
-	if err = s.StopWebActiveTurn(ctx, "held", "stopped", "stopped"); err != nil {
+	if err := s.UpdateTurnStatusAndPhase(ctx, "stopped", "cancelling", "cancelling"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.DB().Exec(`create table web_queue_holds(session_id text primary key,stop_turn_id text,created_at text);insert into web_queue_holds values('held','stopped',datetime('now'))`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = s.DB().Exec(`update session_active_turns set updated_at='2000-01-01T00:00:00Z'`); err != nil {
@@ -132,89 +109,54 @@ func TestWebQueueHoldCrashBeforeCleanupSurvivesRecovery(t *testing.T) {
 	if _, err = e.recoverInterruptedTurns(ctx, "held"); err != nil {
 		t.Fatal(err)
 	}
+	waitForCondition(t, 3*time.Second, func() bool { next, _ := s.GetTurn(ctx, "next"); return next.Status == "completed" }, "legacy held queue automatically continues")
 	stopped, _ := s.GetTurn(ctx, "stopped")
-	next, _ := s.GetTurn(ctx, "next")
-	if stopped.Status != "aborted" || next.Status != "queued" {
-		t.Fatal(stopped, next)
+	if stopped.Status != "aborted" {
+		t.Fatal(stopped)
 	}
-	if _, _, err = s.GetSessionActiveTurn(ctx, "held"); !errors.Is(err, sql.ErrNoRows) {
+
+}
+
+func TestWebQueueHoldLegacyIdleQueueAutomaticallyStartsOnUpgrade(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "idle-held.db")
+	s, err := store.Open(path)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if hold, err := s.WebQueueHold(ctx, "held"); err != nil || hold != "stopped" {
-		t.Fatal(hold, err)
+	if _, err = s.CreateSession(ctx, "a", "test", nil); err != nil {
+		t.Fatal(err)
 	}
-}
-
-func TestWebQueueHoldResumeFailureKeepsDurableFence(t *testing.T) {
-	for _, steering := range []bool{false, true} {
-		t.Run(fmt.Sprint(steering), func(t *testing.T) {
-			ctx := context.Background()
-			s := openTestStore(t)
-			defer s.Close()
-			e := New(s)
-			defer e.Close()
-			s.CreateSession(ctx, "held", "held", nil)
-			s.CreateTurnWithStatus(ctx, "stopped", "held", "cancelled", "old", nil)
-			if steering {
-				if _, err := s.EnqueueSteering(ctx, "held", "", "user", "pending", map[string]any{"model": "bootstrap"}, nil, ""); err != nil {
-					t.Fatal(err)
-				}
-			} else {
-				s.CreateTurnWithStatus(ctx, "next", "held", "queued", "next", map[string]any{"model": "bootstrap"})
-			}
-			if _, err := s.DB().Exec(`insert into web_queue_holds values('held','stopped',datetime('now'))`); err != nil {
-				t.Fatal(err)
-			}
-			e.beforeLaunchSessionStateErrorHook = func(context.Context, string, string) error { return errors.New("injected launch failure") }
-			if _, err := e.ResumeWebQueue(ctx, "held", "stopped"); err == nil {
-				t.Fatal("wanted failure")
-			}
-			if hold, err := s.WebQueueHold(ctx, "held"); err != nil || hold != "stopped" {
-				t.Fatal(hold, err)
-			}
-			if _, _, err := s.GetSessionActiveTurn(ctx, "held"); !errors.Is(err, sql.ErrNoRows) {
-				t.Fatal(err)
-			}
-			if _, err := e.ContinueSession(ctx, "held"); !errors.Is(err, store.ErrQueueConflict) {
-				t.Fatal(err)
-			}
-			e.beforeLaunchSessionStateErrorHook = nil
-			if ok, err := e.ResumeWebQueue(ctx, "held", "stopped"); err != nil || !ok {
-				t.Fatal(ok, err)
-			}
-			waitForCondition(t, 3*time.Second, func() bool { _, _, err := s.GetSessionActiveTurn(ctx, "held"); return errors.Is(err, sql.ErrNoRows) }, "resumed cleanup")
-		})
+	if _, err = s.CreateTurnWithStatus(ctx, "q", "a", "queued", "legacy queued prompt", map[string]any{"model": "bootstrap"}); err != nil {
+		t.Fatal(err)
 	}
-}
-
-func TestWebQueueHoldRetirementFailureRollsBackLaunch(t *testing.T) {
-	ctx := context.Background()
-	s := openTestStore(t)
+	if _, err = s.DB().Exec(`create table web_queue_holds(session_id text primary key,stop_turn_id text,created_at text);insert into web_queue_holds values('a','finished',datetime('now'))`); err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+	s, err = store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer s.Close()
 	e := New(s)
 	defer e.Close()
-	s.CreateSession(ctx, "held", "held", nil)
-	s.CreateTurnWithStatus(ctx, "next", "held", "queued", "next", map[string]any{"model": "bootstrap"})
-	if _, err := s.DB().Exec(`insert into web_queue_holds values('held','stopped',datetime('now'));create trigger reject_resume before delete on web_queue_holds begin select raise(abort,'hold retirement fault');end`); err != nil {
+	waitForCondition(t, 3*time.Second, func() bool { q, _ := s.GetTurn(ctx, "q"); return q.Status == "completed" }, "idle legacy queue automatically continues")
+	ids, err := s.LegacyStopQueueHandoffs(ctx)
+	if err != nil || len(ids) != 0 {
+		t.Fatal(ids, err)
+	}
+	msgs, err := s.ListMessages(ctx, "a")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.ResumeWebQueue(ctx, "held", "stopped"); err == nil {
-		t.Fatal("wanted failure")
+	users := 0
+	for _, m := range msgs {
+		if m.Role == "user" && m.Content == "legacy queued prompt" {
+			users++
+		}
 	}
-	if v, err := s.GetTurn(ctx, "next"); err != nil || v.Status != "queued" {
-		t.Fatal(v, err)
+	if users != 1 {
+		t.Fatal(msgs)
 	}
-	if _, _, err := s.GetSessionActiveTurn(ctx, "held"); !errors.Is(err, sql.ErrNoRows) {
-		t.Fatal(err)
-	}
-	if hold, err := s.WebQueueHold(ctx, "held"); err != nil || hold != "stopped" {
-		t.Fatal(hold, err)
-	}
-	if _, err := s.DB().Exec(`drop trigger reject_resume`); err != nil {
-		t.Fatal(err)
-	}
-	if ok, err := e.ResumeWebQueue(ctx, "held", "stopped"); err != nil || !ok {
-		t.Fatal(ok, err)
-	}
-	waitForCondition(t, 3*time.Second, func() bool { _, _, err := s.GetSessionActiveTurn(ctx, "held"); return errors.Is(err, sql.ErrNoRows) }, "cleanup")
 }

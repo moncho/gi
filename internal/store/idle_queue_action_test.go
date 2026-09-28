@@ -15,7 +15,7 @@ func TestIdleQueuePromptOwnsIdentityAndDeduplicates(t *testing.T) {
 	defer s.Close()
 	s.CreateSession(ctx, "a", "a", nil)
 	s.CreateTurnWithStatus(ctx, "q", "a", "queued", "original", nil)
-	if ok, err := s.ClaimIdleQueueAction(ctx, "a", "q", "test", "q", ""); err != nil || !ok {
+	if ok, err := s.ClaimIdleQueueAction(ctx, "a", "q", "test", "q"); err != nil || !ok {
 		t.Fatal(ok, err)
 	}
 	wrong := map[string]any{"turn_id": "foreign", "idle_queue_action": false}

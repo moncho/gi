@@ -6,33 +6,6 @@ import (
 	"net/http"
 )
 
-func (s *Server) handleSessionResume(w http.ResponseWriter, r *http.Request, sessionID string) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", "POST")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	var req struct {
-		StopTurnID string `json:"stop_turn_id"`
-	}
-	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
-	d.DisallowUnknownFields()
-	if err := d.Decode(&req); err != nil || req.StopTurnID == "" {
-		writeJSON(w, 400, map[string]any{"error": "Expected stop_turn_id"})
-		return
-	}
-	if err := d.Decode(new(any)); err != io.EOF {
-		writeJSON(w, 400, map[string]any{"error": "Expected one resume"})
-		return
-	}
-	continued, err := s.turns.ResumeWebQueue(r.Context(), sessionID, req.StopTurnID)
-	if err != nil {
-		writeJSON(w, 409, map[string]any{"error": "Queue state changed; refresh before resuming"})
-		return
-	}
-	writeJSON(w, 200, map[string]any{"continued": continued})
-}
-
 func (s *Server) handleSessionActivity(w http.ResponseWriter, r *http.Request, sessionID string) {
 	if _, err := s.store.GetSession(r.Context(), sessionID); err != nil {
 		writeJSON(w, 404, map[string]any{"error": err.Error()})

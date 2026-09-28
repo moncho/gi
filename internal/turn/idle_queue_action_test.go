@@ -10,7 +10,7 @@ import (
 	"github.com/rcarmo/gi/internal/store"
 )
 
-func TestIdleQueueSteerSelectedTurnRetainsHoldAndMetadata(t *testing.T) {
+func TestIdleQueueSteerSelectedTurnRetainsMetadata(t *testing.T) {
 	ctx := context.Background()
 	s := openTestStore(t)
 	defer s.Close()
@@ -20,7 +20,11 @@ func TestIdleQueueSteerSelectedTurnRetainsHoldAndMetadata(t *testing.T) {
 	for _, id := range []string{"first", "selected", "last"} {
 		s.CreateTurnWithStatus(ctx, id, "a", "queued", id, map[string]any{"model": "bootstrap", "thinking_level": "medium", "media": []any{map[string]any{"id": 7, "session_id": "a"}}})
 	}
-	s.DB().Exec(`insert into web_queue_holds values('a','stopped',datetime('now'))`)
+	for _, id := range []string{"first", "last"} {
+		if err := s.UpdateTurnStatusAndPhase(ctx, id, "queued", "steer_returned"); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := e.SteerQueuedTurn(ctx, "a", "selected", ""); err != nil {
 		t.Fatal(err)
 	}
@@ -31,9 +35,6 @@ func TestIdleQueueSteerSelectedTurnRetainsHoldAndMetadata(t *testing.T) {
 	selected, err := s.GetTurn(ctx, "selected")
 	if err != nil || selected.Status != "completed" || selected.Metadata["thinking_level"] != "medium" {
 		t.Fatal(selected, err)
-	}
-	if hold, _ := s.WebQueueHold(ctx, "a"); hold != "stopped" {
-		t.Fatal(hold)
 	}
 	for _, id := range []string{"first", "last"} {
 		turn, _ := s.GetTurn(ctx, id)
@@ -86,8 +87,8 @@ func TestIdleQueueSteerLaunchFailureRestoresOriginalPhase(t *testing.T) {
 	waitForCondition(t, 3*time.Second, func() bool { q, _ := s.GetTurn(ctx, "q"); return q.Status == "completed" }, "explicit retry")
 }
 
-func TestIdleQueueSteerFencesRacedClaimHoldAndForeignRow(t *testing.T) {
-	for _, race := range []string{"claim", "hold", "cancel", "foreign"} {
+func TestIdleQueueSteerFencesRacedClaimAndForeignRow(t *testing.T) {
+	for _, race := range []string{"claim", "cancel", "foreign"} {
 		t.Run(race, func(t *testing.T) {
 			ctx := context.Background()
 			s := openTestStore(t)
@@ -106,8 +107,6 @@ func TestIdleQueueSteerFencesRacedClaimHoldAndForeignRow(t *testing.T) {
 				case "claim":
 					s.CreateTurnWithStatus(ctx, "new", "a", "running", "new", nil)
 					s.ClaimSessionActiveTurn(ctx, "a", "new", "other", "new")
-				case "hold":
-					s.DB().Exec(`insert into web_queue_holds values('a','new-stop',datetime('now'))`)
 				case "cancel":
 					s.CancelQueuedTurn(ctx, "a", "q")
 				}

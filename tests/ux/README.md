@@ -1,5 +1,7 @@
 # Piclaw web interaction parity
 
+**2026-09-28 Stop correction:** Gi's Resume control and durable Stop holds were invented behaviour and are removed. `make test-piclaw-stop-queue` checks installed UI and runtime functions; native Stop now advances queued work without another user action. [Removal results and limits](../../docs/internal/stop-resume-removal-2026-09-28.md) supersede historical hold tests. `make test-ux-compose-escape` and `make test-piclaw-compose-escape` check the installed last-resort editor blur; the immediate-reload draft race is separately open.
+
 **2026-09-27 correction:** the prior audit missed the chat lifecycle and credited
 Gi's tool footer as Piclaw behaviour. Attribution, output routing and completion
 defects reproduce in Chromium and WebKit. See [chat UX recovery](../../docs/internal/chat-ux-recovery-2026-09-27.md).

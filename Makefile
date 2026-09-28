@@ -262,6 +262,11 @@ test-tool-input-contract:
 	$(BUN) tests/ux/oracle/pi-tool-input-probe.mjs
 	$(GO) test -race -count=3 ./internal/inference -run 'ToolInput'
 
+.PHONY: test-piclaw-stop-queue
+test-piclaw-stop-queue:
+	$(BUN) tests/ux/oracle/piclaw-stop-queue-probe.mjs
+	$(BUN) tests/ux/oracle/piclaw-stop-ui-probe.mjs
+
 .PHONY: test-piclaw-idle-steer
 test-piclaw-idle-steer:
 	$(BUN) tests/ux/oracle/piclaw-idle-steer-probe.mjs
@@ -737,6 +742,14 @@ test-ux-session-panel: build-web
 .PHONY: test-ux-model-panel test-model-panel-helpers
 test-model-panel-helpers:
 	$(BUN) test tests/ux/support/model-panel.test.ts tests/ux/support/model-picker.test.ts tests/ux/support/model-accessibility.test.ts tests/ux/support/model-thinking.test.ts
+
+.PHONY: test-piclaw-compose-escape test-ux-compose-escape
+test-piclaw-compose-escape:
+	$(BUN) tests/ux/oracle/piclaw-compose-escape-probe.mjs
+
+test-ux-compose-escape: build-web
+	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
+	GI_UX_COMPOSE_ESCAPE=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/compose-escape.spec.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-piclaw-picker-thinking
 test-piclaw-picker-thinking:

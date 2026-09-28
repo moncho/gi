@@ -44,7 +44,7 @@ import {
     getAgentThought,
     setAgentThoughtVisibility,
     getAgentStatus,
-    cancelSessionRun, resumeSessionQueue,
+    cancelSessionRun,
     getSessionCompaction, compactSession,
     getAgentContext,
     getAutoresearchStatus,
@@ -359,9 +359,6 @@ function GiApp() {
     const activityRevision = useRef(createActivityRevision()).current;
     const [activityNow, setActivityNow] = useState(Date.now());
     const [stopPending, setStopPending] = useState(false);
-    const resumeToken = useRef(null);
-    const [resumePending, setResumePending] = useState(false);
-    const [resumeError, setResumeError] = useState('');
     const [stopError, setStopError] = useState('');
     const [activityFresh, setActivityFresh] = useState(false);
     const stopToken = useRef(null);
@@ -841,7 +838,6 @@ function GiApp() {
         messageWindow.current=newMessageWindow();readingAnchor.current=null;pageRequest.current=null;pageRefreshPending.current=false;scrollRestore.current=null;
         timelineRevision.invalidate();
         stopToken.current = null; setStopPending(false); setStopError('');
-        resumeToken.current = null; setResumePending(false); setResumeError('');
         compactToken.current=null; setCompactPending(false); setCompactError(''); setCompactState(null);
         activityRevision.invalidate(); setActivity(null); setActivityFresh(false);
         setLocalStorageItem(SESSION_KEY, nextSessionId);
@@ -1181,20 +1177,6 @@ function GiApp() {
                 ${searchError && html`<div role="alert">${searchError}</div>`}
                 ${searchState.active && html`<div role="status">Search${searchState.query ? `: ${searchState.query}` : ''} · ${searchState.scope} · up to 50 results</div>`}
                 ${stopError && html`<div role="alert">${stopError}</div>`}
-                ${activity?.queue_hold_turn_id && html`<div role="status">Queue paused after Stop.
-                    <button type="button" disabled=${resumePending || !activityFresh || connectionStatus !== 'connected' || activity.status !== 'idle'} onClick=${async () => {
-                        if (resumeToken.current || !activityFresh || streamDisconnected.current || activity.status !== 'idle') return;
-                        const scope = selection.capture(), stop = activity.queue_hold_turn_id, token = {};
-                        resumeToken.current = token; setResumePending(true); setResumeError('');
-                        try { await resumeSessionQueue(sessionToChatJid(scope.sessionId), stop); }
-                        catch (error) { if (selection.isCurrent(scope)) setResumeError('Resume not confirmed: '+error.message+'. Check queue state before retrying.'); }
-                        finally {
-                            if (resumeToken.current === token) { resumeToken.current = null; setResumePending(false); }
-                            if (selection.isCurrent(scope)) { activityRevision.invalidate(); setActivityFresh(false); refreshAfterConnection.current(); }
-                        }
-                    }}>Resume queue</button>
-                </div>`}
-                ${resumeError && html`<div role="alert">${resumeError}</div>`}
                 ${compactError && html`<div role="alert">${compactError}</div>`}
                 ${draftStorageError && html`<div role="alert">${draftStorageError}</div>`}
                 ${drafts.error(sessionId) && html`<div role="alert">${drafts.error(sessionId)}</div>`}

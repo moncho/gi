@@ -1,5 +1,7 @@
 # Web Stop preserves pending work
 
+> Correction: Stop/Resume holds described below were Gi-only behaviour and have been removed. The current contract and results are in [Stop/Resume removal](stop-resume-removal-2026-09-28.md). Earlier hold tests establish only historical Gi behaviour.
+
 Web Stop cancels the captured active turn and preserves queued work behind an
 explicit **Resume queue** action. Generic engine/TUI cancellation and normal
 completion retain their existing handoff behaviour.

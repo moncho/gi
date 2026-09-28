@@ -49,4 +49,4 @@ Feature: Gi behaviour retained where installed Piclaw 3.2.4 differs
     And a matching active run accepts it once
     And a failed request leaves the item available for an explicit retry
     And an explicitly idle action sends the selected queued item once
-    And an existing Stop hold continues protecting other queued items
+    And Stop does not create a paused queue or require a Resume action

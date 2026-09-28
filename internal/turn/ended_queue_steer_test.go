@@ -69,8 +69,8 @@ func TestQueueSteerEndedRunLaunchesSameRowOnce(t *testing.T) {
 	}
 }
 
-func TestQueueSteerEndedRunFencesClaimHoldAndReturnedRows(t *testing.T) {
-	for _, race := range []string{"replacement", "replacement-ended", "hold", "cancel", "foreign", "returned", "unknown", "claimed", "compaction"} {
+func TestQueueSteerEndedRunFencesClaimAndReturnedRows(t *testing.T) {
+	for _, race := range []string{"replacement", "replacement-ended", "cancel", "foreign", "returned", "unknown", "claimed", "compaction"} {
 		t.Run(race, func(t *testing.T) {
 			ctx := context.Background()
 			s := openTestStore(t)
@@ -94,10 +94,6 @@ func TestQueueSteerEndedRunFencesClaimHoldAndReturnedRows(t *testing.T) {
 					if race == "replacement-ended" {
 						s.UpdateTurnStatusAndPhase(ctx, "new", "completed", "completed")
 						s.ReleaseSessionActiveTurn(ctx, "a", "new")
-					}
-				case "hold":
-					if _, err := s.DB().Exec(`insert into web_queue_holds values('a','new-stop',datetime('now'))`); err != nil {
-						t.Fatal(err)
 					}
 				case "cancel":
 					if err := s.CancelQueuedTurn(ctx, "a", "q"); err != nil {

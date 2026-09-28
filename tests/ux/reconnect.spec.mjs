@@ -98,8 +98,11 @@ test('@ux-original-023 Reconnect refresh and run-bound Stop await authoritative 
   const cancel=page.waitForResponse(r=>r.url().endsWith(`/api/sessions/${main.id}/activity`)&&r.request().method()==='POST');
   await stop.click();const response=await cancel;expect(response.request().postDataJSON().turn_id).toBe(active.turn_id);expect(response.status()).toBe(200);
   await expect.poll(async()=> (await api(`/api/sessions/${main.id}/turns`)).turns.find(t=>t.id===active.turn_id).status).toBe('cancelled');
+  // Installed Piclaw finalization schedules deferred follow-ups after abort.
+  await expect.poll(async()=> (await api(`/api/sessions/${main.id}/turns`)).turns.find(t=>t.id===queued.turn_id).status).toBe('completed');
   await expect(stop).toHaveCount(0);
-  await expect(page.locator(`[data-queue-id="${queued.turn_id}"]`)).toBeVisible();
+  await expect(page.locator(`[data-queue-id="${queued.turn_id}"]`)).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Resume queue',exact:true})).toHaveCount(0);
   await expect(input).toHaveValue('original reconnect draft');
   env.release(token);
  }finally{await env.close();}
@@ -299,7 +302,7 @@ test('Gi bounded timeline pages preserve viewport and catch up after outage',asy
  }finally{await env.close();}
 });
 
-test('@shared-36 Captured Stop survives reconnect, preserves queue, and ignores stale terminal frames',async({page},info)=>{
+test('Gi Stop reconnect retains draft, advances queue and ignores stale terminal frames',async({page},info)=>{
  test.setTimeout(60000);
  const source=loadCorpus('shared').find(x=>x.id==='@shared-36');await info.attach('gherkin',{body:source.steps.join('\n'),contentType:'text/plain'});
  const env=await environment(page,info,{observeFrames:true});const{main,input,api}=env;
@@ -328,12 +331,10 @@ test('@shared-36 Captured Stop survives reconnect, preserves queue, and ignores 
   const cancel=page.waitForResponse(r=>r.url().endsWith(`/api/sessions/${main.id}/activity`)&&r.request().method()==='POST');await stop.click();expect((await cancel).status()).toBe(200);
   expect(mutations).toEqual([{turn_id:first.turn_id}]);
   await expect.poll(async()=> (await api(`/api/sessions/${main.id}/turns`)).turns.find(t=>t.id===first.turn_id).status).toBe('cancelled');
-  // Stop preserves the exact queue until the user explicitly resumes it.
-  await expect.poll(async()=>(await state()).status).toBe('idle');
-  expect((await state()).queue_hold_turn_id).toBe(first.turn_id);expect((await queue()).items).toEqual(beforeQueue.items);
+  // Piclaw aborts the selected run and finalization advances pending work.
+  expect((await state()).queue_hold_turn_id).toBeUndefined();
+  await expect(page.getByRole('button',{name:'Resume queue',exact:true})).toHaveCount(0);
   await expect(input).toHaveValue('captured stop draft');await expect(page.locator('.compose-file-pill[title="stop.txt"]')).toHaveCount(1);
-  const resume=page.waitForResponse(r=>r.url().endsWith(`/api/sessions/${main.id}/resume-queue`)&&r.request().method()==='POST');
-  await page.getByRole('button',{name:'Resume queue',exact:true}).click();expect((await resume).status()).toBe(200);
   await expect.poll(async()=>(await state()).turn_id).toBe(queued.turn_id);await expect(stop).toBeEnabled();
   expect((await queue()).items).toEqual(beforeQueue.items.filter(x=>x.id===tail.turn_id));await expect(page.locator(`[data-queue-id="${tail.turn_id}"]`)).toBeVisible();await expect(input).toHaveValue('captured stop draft');await expect(page.locator('.compose-file-pill[title="stop.txt"]')).toHaveCount(1);
   expect((await api(`/api/sessions/${other.id}/activity`)).turn_id).toBe(foreign.turn_id);

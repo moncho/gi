@@ -9,18 +9,14 @@ import (
 )
 
 // Active Steer binds to the observed run. After that latest run is released,
-// it may launch the same queued row. Only explicit idle Steer bypasses Stop.
+// it may launch the same queued row.
 func (e *Engine) SteerQueuedTurn(ctx context.Context, sessionID, queuedID, activeID string) error {
 	runner := e.runner(sessionID)
 	runner.mu.Lock()
 	defer runner.mu.Unlock()
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
 	if activeID == "" {
-		hold, err := e.store.WebQueueHold(opCtx, sessionID)
-		if err != nil {
-			return err
-		}
-		launched, err := e.launchTurnWithQueueActionLocked(opCtx, runner, sessionID, queuedID, hold, true)
+		launched, err := e.launchQueueActionLocked(opCtx, runner, sessionID, queuedID, true, "")
 		if err != nil {
 			return err
 		}
@@ -31,7 +27,7 @@ func (e *Engine) SteerQueuedTurn(ctx context.Context, sessionID, queuedID, activ
 		if !errors.Is(err, store.ErrQueueConflict) {
 			return err
 		}
-		launched, launchErr := e.launchQueueActionLocked(opCtx, runner, sessionID, queuedID, "", true, activeID)
+		launched, launchErr := e.launchQueueActionLocked(opCtx, runner, sessionID, queuedID, true, activeID)
 		if launchErr != nil {
 			return launchErr
 		}

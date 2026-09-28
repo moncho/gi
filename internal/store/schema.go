@@ -188,12 +188,12 @@ func initSchema(db *sql.DB) error {
 		// Upgrade active claims only. Do not infer already-released history.
 		`insert into session_last_run(session_id,turn_id) select session_id,turn_id from session_active_turns where true
 			on conflict(session_id) do nothing;`,
-		// A web Stop with pending work must survive cleanup and process restart.
-		`create table if not exists web_queue_holds (
-			session_id text primary key references sessions(id) on delete cascade,
-			stop_turn_id text not null,
-			created_at text not null
-		);`,
+		// Capture old idle holds for one-time engine handoff, then remove the
+		// invented pause fence. Queue rows and messages remain unchanged.
+		`create table if not exists web_queue_holds(session_id text primary key,stop_turn_id text,created_at text);`,
+		`update sessions set state_json=json_set(state_json,'$.legacy_stop_queue_handoff',true)
+		 where id in (select session_id from web_queue_holds);`,
+		`drop table web_queue_holds;`,
 
 		`create table if not exists turn_failures (
 			turn_id text primary key,

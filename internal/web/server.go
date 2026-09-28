@@ -324,8 +324,6 @@ func (s *Server) handleSessionSubroutes(w http.ResponseWriter, r *http.Request) 
 		s.handleSessionCompaction(w, r, sessionID)
 	case "activity":
 		s.handleSessionActivity(w, r, sessionID)
-	case "resume-queue":
-		s.handleSessionResume(w, r, sessionID)
 	case "queue":
 		s.handleSessionQueue(w, r, sessionID, parts[2:])
 	case "model":

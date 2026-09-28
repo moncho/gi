@@ -80,3 +80,45 @@ func TestQueueSteerAPIRequiresMatchingActiveRun(t *testing.T) {
 	}
 	call(http.MethodDelete, "/api/sessions/A/queue/q", "", 200)
 }
+
+func TestIdleQueueSteerAPIExplicitStateAndSelectedOwnership(t *testing.T) {
+	ctx := context.Background()
+	s, err := store.Open(filepath.Join(t.TempDir(), "idle-steer.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	e := turn.New(s)
+	defer e.Close()
+	s.CreateSession(ctx, "A", "A", nil)
+	s.CreateSession(ctx, "B", "B", nil)
+	s.CreateTurnWithStatus(ctx, "q", "A", "queued", "selected", map[string]any{"model": "bootstrap"})
+	s.CreateTurnWithStatus(ctx, "foreign", "B", "queued", "foreign", nil)
+	srv := httptest.NewServer(New(s, e, config.RuntimeConfig{}).Handler())
+	defer srv.Close()
+	post := func(id, body string) int {
+		res, err := http.Post(srv.URL+"/api/sessions/A/queue/"+id+"/steer", "application/json", strings.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		return res.StatusCode
+	}
+	for _, body := range []string{`{}`, `{"active_turn_id":null}`, `{"active_turn_id":0}`, `{"active_turn_id":"","extra":1}`} {
+		if code := post("q", body); code != 400 {
+			t.Fatal(body, code)
+		}
+	}
+	if code := post("foreign", `{"active_turn_id":""}`); code != 409 {
+		t.Fatal(code)
+	}
+	if code := post("q", `{"active_turn_id":"stale"}`); code != 409 {
+		t.Fatal(code)
+	}
+	if code := post("q", `{"active_turn_id":""}`); code != 200 {
+		t.Fatal(code)
+	}
+	if code := post("q", `{"active_turn_id":""}`); code != 409 {
+		t.Fatal(code)
+	}
+}

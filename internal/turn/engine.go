@@ -852,6 +852,12 @@ func (e *Engine) launchTurnLocked(ctx context.Context, runner *sessionRunner, se
 	return e.launchTurnWithWebResumeLocked(ctx, runner, sessionID, turnID, "")
 }
 func (e *Engine) launchTurnWithWebResumeLocked(ctx context.Context, runner *sessionRunner, sessionID, turnID, stopTurnID string) (bool, error) {
+	return e.launchTurnWithQueueActionLocked(ctx, runner, sessionID, turnID, stopTurnID, false)
+}
+
+// Explicit idle Steer bypasses the captured Stop hold for the selected item
+// only. Unlike Resume queue, it leaves the hold protecting sibling work.
+func (e *Engine) launchTurnWithQueueActionLocked(ctx context.Context, runner *sessionRunner, sessionID, turnID, stopTurnID string, selectedSteer bool) (bool, error) {
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
 	if hook := e.beforeLaunchClaimHook; hook != nil {
 		hook(opCtx, sessionID, turnID)
@@ -859,7 +865,9 @@ func (e *Engine) launchTurnWithWebResumeLocked(ctx context.Context, runner *sess
 	claimToken := turnID
 	var claimed bool
 	var err error
-	if stopTurnID == "" {
+	if selectedSteer {
+		claimed, err = e.store.ClaimIdleQueueAction(opCtx, sessionID, turnID, "runner", claimToken, stopTurnID)
+	} else if stopTurnID == "" {
 		claimed, err = e.store.ClaimSessionActiveTurn(opCtx, sessionID, turnID, "runner", claimToken)
 	} else {
 		claimed, err = e.store.ClaimWebResumedTurn(opCtx, sessionID, turnID, "runner", claimToken, stopTurnID)
@@ -874,10 +882,11 @@ func (e *Engine) launchTurnWithWebResumeLocked(ctx context.Context, runner *sess
 	active := &runningTurn{turnID: turnID, cancel: cancel}
 	runner.current = active
 	claimedTurn := false
+	rollbackPhase := "queued"
 	releaseClaim := func(restoreQueued bool) error {
 		var cleanupErrs []error
 		if restoreQueued {
-			if err := e.store.UpdateTurnStatusAndPhase(e.backgroundContext(), turnID, "queued", "queued"); err != nil {
+			if err := e.store.UpdateTurnStatusAndPhase(e.backgroundContext(), turnID, "queued", rollbackPhase); err != nil {
 				cleanupErrs = append(cleanupErrs, fmt.Errorf("rollback turn status to queued: %w", err))
 			}
 			if claimedTurn {
@@ -903,7 +912,7 @@ func (e *Engine) launchTurnWithWebResumeLocked(ctx context.Context, runner *sess
 	}
 	// A queued-only cancellation may have committed before this claim.
 	claimedRecord, getErr := e.store.GetTurn(opCtx, turnID)
-	if getErr != nil || claimedRecord.Status != "queued" || claimedRecord.Phase == "steer_returned" {
+	if getErr != nil || claimedRecord.Status != "queued" || (claimedRecord.Phase == "steer_returned" && !selectedSteer) {
 		if cleanupErr := releaseClaim(false); cleanupErr != nil {
 			return false, cleanupErr
 		}
@@ -911,6 +920,9 @@ func (e *Engine) launchTurnWithWebResumeLocked(ctx context.Context, runner *sess
 			return false, getErr
 		}
 		return false, store.ErrQueueConflict
+	}
+	if selectedSteer {
+		rollbackPhase = claimedRecord.Phase
 	}
 	if err := e.store.MarkTurnClaimed(opCtx, turnID, "runner"); err != nil {
 		if cleanupErr := releaseClaim(false); cleanupErr != nil {
@@ -945,12 +957,22 @@ func (e *Engine) launchTurnWithWebResumeLocked(ctx context.Context, runner *sess
 		}
 		return false, err
 	}
-	if stopTurnID != "" {
+	if stopTurnID != "" && !selectedSteer {
 		if err := e.store.ResumeWebQueue(opCtx, sessionID, stopTurnID); err != nil {
 			if cleanupErr := releaseClaim(true); cleanupErr != nil {
 				return false, errors.Join(err, cleanupErr)
 			}
 			return false, err
+		}
+	}
+	if selectedSteer {
+		payload := map[string]any{"kind": "chat", "intent": "prompt", "turn_id": turnID}
+		copySelectedMetadata(payload, claimedRecord.Metadata, ingressMetadataKeys)
+		if media, ok := claimedRecord.Metadata["media"]; ok {
+			payload["media"] = media
+		}
+		if err := e.store.PersistIdleQueuePrompt(opCtx, sessionID, turnID, claimedRecord.Prompt, payload); err != nil {
+			return false, errors.Join(err, releaseClaim(true))
 		}
 	}
 	logutil.WarnIfErr("sync queue count after launch", e.store.SyncSessionQueueCount(opCtx, sessionID))
@@ -5325,7 +5347,11 @@ func (r *sessionRunner) setupTurnRun(ctx context.Context, s *store.Store, sessio
 	if rawMedia, ok := turnRec.Metadata["media"]; ok {
 		userPayload["media"] = rawMedia
 	}
-	if strings.TrimSpace(prompt) != "" && len(initialSteering) == 0 {
+	persistedIdlePrompt, err := s.HasIdleQueuePrompt(ctx, sessionID, turnID)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(prompt) != "" && len(initialSteering) == 0 && !persistedIdlePrompt {
 		if err := s.AddMessage(ctx, store.NowID("msg"), sessionID, "user", prompt, userPayload); err != nil {
 			return nil, fmt.Errorf("persist user prompt message: %w", err)
 		}

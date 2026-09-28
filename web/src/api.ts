@@ -311,7 +311,7 @@ export async function getAgentQueueState(chatJid: string | null = null) {
 }
 
 export async function steerAgentQueueItem(itemId: string, chatJid: string, activeTurnId: string) {
-    if (!chatJid?.startsWith('gi:') || !activeTurnId) throw new Error('Steer requires a matching active run');
+    if (!chatJid?.startsWith('gi:') || typeof activeTurnId !== 'string') throw new Error('Steer requires an observed session state');
     return request(`/api/sessions/${encodeURIComponent(chatJid.slice(3))}/queue/${encodeURIComponent(itemId)}/steer`, {
         method: 'POST', body: JSON.stringify({ active_turn_id: activeTurnId }),
     });

@@ -29,8 +29,8 @@ Installed release: `/opt/piclaw/current`, Piclaw 3.2.4, `@earendil-works/pi-codi
 | Pi pending display | Distinct `Steering:` and `Follow-up:` rows and edit-all hint | Open: current Gi transcript/queue presentation differs |
 | Piclaw web Return | Return one queued row by replacing editor text/refs, then schedule removal | Open: Gi recovery-merge behaviour differs |
 | Piclaw web Steer, active | Remove queued row, persist user message, steer active run | Partial Gi ownership fixture only; full exact contract open |
-| Piclaw web Steer, idle or run ending before admission | Dispatch as normal chat processing | Open: Gi active-only restriction differs |
-| Piclaw Steer storage failure | Restore removed queued row and report error | Method oracle verified; native Gi parity open |
+| Piclaw web Steer, idle or run ending before admission | Dispatch as normal chat processing | Explicit idle send implemented with claim/hold fences; stale-active automatic fallback remains open (Gi conflicts for explicit retry). |
+| Piclaw Steer storage failure | Restore removed queued row and report error | Installed method/browser oracle verified; native idle storage failure retains row for retry. Full active-path parity remains open. |
 | Piclaw Steer missing row | Idempotent no-removal response | Method oracle verified; native Gi parity open |
 
 The `@gi-ux-004` and `@gi-ux-005` scenarios are retained as migration-gap regressions for existing code. They are no longer acceptable substitutes for clone behaviour. Historical Piclaw snapshots remain unchanged.

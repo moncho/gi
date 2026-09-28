@@ -37,12 +37,14 @@ Feature: Gi behaviour retained where installed Piclaw 3.2.4 differs
     And recovery is persisted before the queued row is removed
     And failure or reload retains a recoverable item without duplicate recovery
 
-  # Existing-code regression only; not an accepted clone deviation.
-  # Installed Piclaw can send this content when the run is already idle.
+  # Bounded regression only; full Piclaw active/end-race parity remains open.
+  # Explicit observed-idle actions now send the selected queued item.
   @gi-ux-005 @migration-gap
-  Scenario: Gi Steer requires a matching active run
+  Scenario: Gi Steer fences observed active or idle admission
     Given a queued item associated with a session and an active run
     When I steer it in Gi
     Then stale or foreign run ownership is rejected without consuming the item
     And a matching active run accepts it once
     And a failed request leaves the item available for an explicit retry
+    And an explicitly idle action sends the selected queued item once
+    And an existing Stop hold continues protecting other queued items

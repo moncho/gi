@@ -2417,8 +2417,8 @@ async function getAgentQueueState(chatJid = null) {
   })) };
 }
 async function steerAgentQueueItem(itemId, chatJid, activeTurnId) {
-  if (!chatJid?.startsWith("gi:") || !activeTurnId)
-    throw new Error("Steer requires a matching active run");
+  if (!chatJid?.startsWith("gi:") || typeof activeTurnId !== "string")
+    throw new Error("Steer requires an observed session state");
   return request(`/api/sessions/${encodeURIComponent(chatJid.slice(3))}/queue/${encodeURIComponent(itemId)}/steer`, {
     method: "POST",
     body: JSON.stringify({ active_turn_id: activeTurnId })
@@ -22311,11 +22311,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-4mqmfk3h.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-0hdqh1mq.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-q3a8s6wz.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-de4n900f.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-kj1s1j86.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-sdjj575r.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-xn4fc13z.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-k3xy853e.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-mf0efj8r.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-2m8g0qe2.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -24584,9 +24584,9 @@ function GiApp() {
   const mutateQueue = async (action, itemOrIndex, toIndex) => {
     if (queueMutation.current)
       return;
-    if (action === "steer" && (streamDisconnected.current || !isAgentTurnActive || !queueActiveTurnId || itemOrIndex.pending))
+    if (action === "steer" && (streamDisconnected.current || !activityFresh || itemOrIndex.pending || isAgentTurnActive && !queueActiveTurnId))
       return;
-    const expectedActiveTurnId = queueActiveTurnId;
+    const expectedActiveTurnId = isAgentTurnActive ? queueActiveTurnId : "";
     const scope = selection.capture();
     if (!scope.sessionId)
       return;
@@ -24853,7 +24853,7 @@ function GiApp() {
                 `}
                 <${RunBoundQueueStack}
                     messageReferenceLabels=${messageReferenceLabels(posts)}
-                    steerEnabled=${connectionStatus === "connected" && isAgentTurnActive && !!queueActiveTurnId}
+                    steerEnabled=${connectionStatus === "connected" && activityFresh && (!isAgentTurnActive || !!queueActiveTurnId)}
                     onInjectQueuedFollowup=${(item) => mutateQueue("steer", item)}
                     items=${[...followupQueueItems, ...optimisticQueue.filter((item) => item.chat_jid === currentChatJid && !followupQueueItems.some((stored) => stored.id === item.id || stored.metadata?.client_request_id === item.id))]}
                     busy=${queueBusy}
@@ -24862,7 +24862,7 @@ function GiApp() {
                     onMoveQueuedFollowup=${(from, to) => mutateQueue("move", from, to)}
                     onOpenFilePill=${openEditor}
                 />
-                ${followupQueueItems.some((item) => item.phase === "steer_returned") && fe`<div role="alert">Steer was not consumed by its target run. The item remains queued and will not auto-send; return it to the editor, remove it, or Steer a new active run.</div>`}
+                ${followupQueueItems.some((item) => item.phase === "steer_returned") && fe`<div role="alert">Steer was not consumed by its target run. The item remains queued and will not auto-send; return it to the editor, remove it, or use Steer to send it now or direct the active run.</div>`}
                 ${queueError && fe`<div role="alert">${queueError}</div>`}
                 ${newUIVersion && fe`<div role="status" class="gi-version-warning">New UI available. Reload manually when ready; unsaved editor work may be lost.</div>`}
                 ${sessionError && fe`<div role="alert">${sessionError}</div>`}
@@ -25119,5 +25119,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=5FEB86E9C7C51FAF64756E2164756E21
-//# sourceMappingURL=app-z9tfwe31.js.map
+//# debugId=F77595A87AD08C4364756E2164756E21
+//# sourceMappingURL=app-4d0zwff9.js.map

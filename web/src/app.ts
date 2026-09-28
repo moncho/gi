@@ -925,8 +925,8 @@ function GiApp() {
 
     const mutateQueue = async (action: 'remove' | 'move' | 'return' | 'steer', itemOrIndex: any, toIndex?: number) => {
         if (queueMutation.current) return;
-        if (action === 'steer' && (streamDisconnected.current || !isAgentTurnActive || !queueActiveTurnId || itemOrIndex.pending)) return;
-        const expectedActiveTurnId = queueActiveTurnId;
+        if (action === 'steer' && (streamDisconnected.current || !activityFresh || itemOrIndex.pending || (isAgentTurnActive && !queueActiveTurnId))) return;
+        const expectedActiveTurnId = isAgentTurnActive ? queueActiveTurnId : '';
         const scope = selection.capture();
         if (!scope.sessionId) return;
         const token = {}; queueMutation.current = token; ++queueRevision.current;
@@ -1163,7 +1163,7 @@ function GiApp() {
                 `}
                 <${RunBoundQueueStack}
                     messageReferenceLabels=${messageReferenceLabels(posts)}
-                    steerEnabled=${connectionStatus === 'connected' && isAgentTurnActive && !!queueActiveTurnId}
+                    steerEnabled=${connectionStatus === 'connected' && activityFresh && (!isAgentTurnActive || !!queueActiveTurnId)}
                     onInjectQueuedFollowup=${(item: any) => mutateQueue('steer', item)}
                     items=${[...followupQueueItems, ...optimisticQueue.filter(item => item.chat_jid === currentChatJid && !followupQueueItems.some(stored => stored.id === item.id || stored.metadata?.client_request_id === item.id))]}
                     busy=${queueBusy}
@@ -1172,7 +1172,7 @@ function GiApp() {
                     onMoveQueuedFollowup=${(from: number, to: number) => mutateQueue('move', from, to)}
                     onOpenFilePill=${openEditor}
                 />
-                ${followupQueueItems.some(item => item.phase === 'steer_returned') && html`<div role="alert">Steer was not consumed by its target run. The item remains queued and will not auto-send; return it to the editor, remove it, or Steer a new active run.</div>`}
+                ${followupQueueItems.some(item => item.phase === 'steer_returned') && html`<div role="alert">Steer was not consumed by its target run. The item remains queued and will not auto-send; return it to the editor, remove it, or use Steer to send it now or direct the active run.</div>`}
                 ${queueError && html`<div role="alert">${queueError}</div>`}
                 ${newUIVersion && html`<div role="status" class="gi-version-warning">New UI available. Reload manually when ready; unsaved editor work may be lost.</div>`}
                 ${sessionError && html`<div role="alert">${sessionError}</div>`}

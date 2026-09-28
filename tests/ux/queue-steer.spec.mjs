@@ -34,7 +34,7 @@ async function fixture(page,request,info){
  return{main,child,active,queued,row,button,input,turns,release,token};
 }
 
-test('Gi safety deviation: Steer only a matching active run',async({page,request},info)=>{
+test('Gi Steer fences active ownership and permits explicit idle action',async({page,request},info)=>{
  await attachGiDeviation(info,'@gi-ux-005');
  const proxy=await sseProxy(page);
  const f=await fixture(page,request,info);const{main,child,active,queued,row,button,input,turns,release,token}=f;
@@ -70,17 +70,18 @@ test('Gi safety deviation: Steer only a matching active run',async({page,request
   const idleQueued=await(await request.post(`/api/sessions/${main.id}/prompt`,{data:{prompt:'unconsumed idle row',intent:'queue',model:'test-model'}})).json();
   expect((await request.post(`/api/sessions/${main.id}/queue/${idleQueued.turn_id}/steer`,{data:{active_turn_id:shell.turn_id}})).status()).toBe(200);
   writeFileSync(shellPath,'ok');
-  const idleRow=page.locator(`[data-queue-id="${idleQueued.turn_id}"]`);await expect(idleRow).toBeVisible({timeout:15000});await expect(idleRow.getByRole('button',{name:steerName})).toBeDisabled();
+  const idleRow=page.locator(`[data-queue-id="${idleQueued.turn_id}"]`);await expect(idleRow).toBeVisible({timeout:15000});await expect(idleRow.getByRole('button',{name:steerName})).toBeEnabled();
   const idleURL=`/api/sessions/${main.id}/queue/${idleQueued.turn_id}/steer`;let idleCalls=0;page.on('request',r=>{if(r.url().endsWith(idleURL))idleCalls++;});
-  const box=await idleRow.getByRole('button',{name:steerName}).boundingBox();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);expect(idleCalls).toBe(0);
+  // Idle is now actionable, but nothing sends without an explicit click.
+  expect(idleCalls).toBe(0);
   expect((await request.post(idleURL,{data:{active_turn_id:shell.turn_id}})).status()).toBe(409);
-  await page.reload();await expect(idleRow.getByRole('button',{name:steerName})).toBeDisabled();expect(idleCalls).toBe(0);
+  await page.reload();await expect(idleRow.getByRole('button',{name:steerName})).toBeEnabled();expect(idleCalls).toBe(0);
   await expect(page.getByRole('alert').filter({hasText:'will not auto-send'})).toBeVisible();
   await page.getByRole('button',{name:'Open model picker',exact:true}).click();
   await page.getByRole('listbox',{name:'Models',exact:true}).getByRole('option').filter({hasText:'ux-local/gate'}).click();
   const newToken=`resume-${token}`;await input.fill(`UX steer gate:${newToken}`);await input.press('Enter');
   const retry=idleRow.getByRole('button',{name:steerName});await expect(retry).toBeEnabled();
-  const freshRun=(await turns()).find(t=>t.status==='running');expect(freshRun.id).not.toBe(shell.turn_id);
+  let freshRun;await expect.poll(async()=>{freshRun=(await turns()).find(t=>t.status==='running');return freshRun?.id;}).toBeTruthy();expect(freshRun.id).not.toBe(shell.turn_id);
   await retry.click();await expect(idleRow).toHaveCount(0);writeFileSync(resolve('test-results/ux-parity/queue-gates',newToken),'ok');
   await expect.poll(async()=> (await turns()).find(t=>t.id===freshRun.id).status,{timeout:15000}).toBe('completed');
   const resumed=(await(await request.get(`/api/sessions/${main.id}/messages`)).json()).messages.filter(m=>m.role==='user'&&m.content==='unconsumed idle row');

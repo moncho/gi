@@ -4,6 +4,8 @@ Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-28
 
+- [x] Explicit idle queued-item Steer: same durable turn/metadata, atomic claim/hold fences, prompt stored before launch with owned deduplication ID; rollback preserves retry/phase and Stop hold protects siblings. Installed browser/method oracle6/6, native idle6/6+active18/18, race3, check144functional11skips,206support7760assertions. Focused review marker fix applied/retested; broad review timeout disclosed. No deploy/mapping; stale-active fallback/full queue parity remain open. [Evidence](../internal/idle-queue-steer-2026-09-28.md).
+
 - [x] Compact message-reference pills: conversation-only numeric row labels, guarded display adapter for composer/queue, full canonical IDs preserved in tooltip/draft/link/removal/submission; explicit elision fallback outside loaded history. Installed-source oracle, store race3, queue6/6, check144functional11skips,206support7760assertions pass; focused review no blocker. No schema migration/deploy/new mapping. [Evidence](../internal/message-reference-labels-2026-09-28.md).
 
 - [x] Settings title now Settings, matching installed Piclaw3.2.4; native sections/menu/shortcut/modal behaviour retained. Source oracle passes; Settings216cases in complete108Chromium+108WebKit runs; check142functional11skips;204support7747assertions. Initial combined run tool-timeout retained, no test timeout increase. No deployment/new mapping. [Evidence](../internal/settings-title-2026-09-28.md). Canonical-ID display remains separate.

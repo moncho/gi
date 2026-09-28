@@ -243,6 +243,18 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-piclaw-idle-steer
+test-piclaw-idle-steer:
+	$(BUN) tests/ux/oracle/piclaw-idle-steer-probe.mjs
+
+.PHONY: test-ux-idle-steer
+test-ux-idle-steer: test-idle-queue-steer
+	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/queue-idle-steer.spec.mjs'
+
+.PHONY: test-idle-queue-steer
+test-idle-queue-steer:
+	$(GO) test -race -count=3 ./internal/store ./internal/turn ./internal/web -run 'IdleQueue|QueueSteer|WebQueueHold'
+
 .PHONY: test-ux-message-reference-labels
 test-ux-message-reference-labels: test-message-reference-labels
 	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/message-reference-labels.spec.mjs'

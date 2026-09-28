@@ -4,9 +4,16 @@ Gi mounts six sections in `web/src/gi-settings.ts`: General, Models,
 Appearance, Compaction, Providers and Authentication. General has a cached
 read-only runtime snapshot and a separate saved display-name control. The
 other five sections lazy-load through `gi-settings-lazy.ts`. The frozen
-`tests/ux/features/classic/canonical/core-settings.feature` describes a
-larger Piclaw Settings surface, so a matching section name alone earns no
-clause acceptance. Piclaw 3.2.4's Settings UI was not run for this review.
+`features/ux/classic/canonical/core-settings.feature` describes a larger
+Piclaw Settings surface, so a matching section name alone earns no clause
+acceptance. `make test-piclaw-settings-shell` now runs the installed 3.2.4
+Classic shell with disposable settings reads: six Chromium/WebKit viewport
+fixtures opened one dialog, exposed General while `/agent/settings-data` was
+held, then dismissed with Escape and backdrop while retaining an unsent draft.
+The released bundle already has the dialog module available in this ordinary
+open sequence; holding data did not show the import-time loading shell.
+This fixture does not establish a cold lazy-import loading state, section
+mutation, production Settings routes, live authentication or physical input.
 
 | Frozen IDs | Mounted Gi behaviour and missing clause |
 |---|---|
@@ -21,6 +28,6 @@ clause acceptance. Piclaw 3.2.4's Settings UI was not run for this review.
 
 `@ux-settings-001`–`004` focused run passed 24/24; no other frozen ID has a
 direct tagged Gi browser journey. Several Gi-only settings tests cover their
-own narrower controls, not the missing Classic clauses. The installed Piclaw
-Settings routes, physical input, and deployed Gi were not tested here. No
+own narrower controls, not the missing Classic clauses. Production Piclaw
+Settings routes, physical input and deployed Gi were not tested here. No
 production code or frozen Gherkin changed.

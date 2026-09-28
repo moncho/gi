@@ -40,6 +40,14 @@ export function projectActivityStatus(activity: any) {
     if (!activity || !['running','cancelling'].includes(activity.status)) return null;
     if(activity.status==='cancelling')return {...activity,type:'intent',title:'Cancelling…'};
     if(activity.phase==='retry_wait')return activity;
-    if(activity.tool && activity.tool.state !== 'running')return {...activity,type:'waiting',title:'Waiting for model…'};
+    if(activity.tool && activity.tool.state !== 'running')return {status:'running',turn_id:activity.turn_id,type:'waiting',title:'Waiting for model...'};
+    if(activity.tool?.state === 'running') {
+        const tool=activity.tool;
+        return {status:'running',turn_id:activity.turn_id,type:tool.output_preview?'tool_status':'tool_call',
+            title:`${tool.name}${tool.preview?`: ${tool.preview}`:''}`,tool_name:tool.name,
+            tool_args:tool.preview?{command:tool.preview}:{},tool_status:tool.output_preview?'Streaming output...':'Running',
+            active_tool_count:1,started_at:tool.started_at,last_event_at:tool.started_at,
+            output_preview:tool.output_preview,output_total_lines:tool.output_total_lines};
+    }
     return activity;
 }

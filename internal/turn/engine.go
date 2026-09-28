@@ -4051,7 +4051,7 @@ func (e *Engine) registerDefaultTools() {
 		Weight:      "heavy",
 		Activation:  "default",
 		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
-			return tools.ExecuteShell(ctx, rt.WorkspaceRoot, call)
+			return tools.ExecuteShellOutput(ctx, rt.WorkspaceRoot, call, rt.OnOutput)
 		},
 	})
 }
@@ -4244,7 +4244,11 @@ func (r *sessionRunner) runAgentLoop(ctx context.Context, s *store.Store, turnID
 }
 
 // executeTool dispatches a single tool call and returns the text result.
-func (r *sessionRunner) executeTool(ctx context.Context, call goai.ToolCall, sessionID, turnID string) (string, error) {
+func (r *sessionRunner) executeTool(ctx context.Context, call goai.ToolCall, sessionID, turnID string, output ...func(string) error) (string, error) {
+	var onOutput func(string) error
+	if len(output) > 0 {
+		onOutput = output[0]
+	}
 	if strings.TrimSpace(turnID) != "" {
 		turnRec, err := r.store.GetTurn(ctx, turnID)
 		if err != nil {
@@ -4263,6 +4267,7 @@ func (r *sessionRunner) executeTool(ctx context.Context, call goai.ToolCall, ses
 		SessionID:     sessionID,
 		TurnID:        turnID,
 		WorkspaceRoot: r.engine.runtimeCfg.WorkspaceRoot,
+		OnOutput:      onOutput,
 	}, call)
 }
 
@@ -5096,7 +5101,14 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 			"title": fmt.Sprintf("Running: %s", call.Name), "status": "running", "turn_id": turnID,
 		})
 
-		toolResult, toolErr := r.executeTool(ctx, call, sessionID, turnID)
+		reportOutput := r.toolOutputReporter(turnID, sessionID, call.ID, toolOccurrenceID)
+		toolResult, toolErr := r.executeTool(ctx, call, sessionID, turnID, func(text string) error { return reportOutput(text, false) })
+		if outputErr := reportOutput(toolResult, true); outputErr != nil {
+			r.persistStoppedTool(s, sessionID, turnID, call, toolOccurrenceID, "aborted")
+			r.finishTurn(s, turnID, sessionID, agentID, model, "failed", "Persist tool output: "+outputErr.Error(), "persistence_error")
+			outcome.terminated = true
+			return outcome
+		}
 		if toolErr != nil {
 			if ctx.Err() != nil || isCancellationError(toolErr) {
 				r.persistStoppedTool(s, sessionID, turnID, call, toolOccurrenceID, "cancelled")
@@ -5382,17 +5394,15 @@ func (r *sessionRunner) runShellTurn(ctx context.Context, s *store.Store, run *p
 	logutil.WarnIfErr("append shell tool.started event", s.AppendTurnEvent(ctx, run.turnID, run.sessionID, "tool.started", map[string]any{"phase": "tool", "tool": "shell", "checkpoint": true, "occurrence_id": toolOccurrenceID, "command": []string{"sh", "-c", "printf 'Gi received: %s' \"$GI_PROMPT\""}}))
 	r.engine.broadcast(run.sessionID, map[string]any{"type": "tool_activity_changed", "chat_jid": "gi:" + run.sessionID, "turn_id": run.turnID})
 
+	reportOutput := r.toolOutputReporter(run.turnID, run.sessionID, "", toolOccurrenceID)
+	var streamedOutput strings.Builder
 	out, runErr, cancelled := tools.RunShellPrompt(ctx, run.prompt, nil, func(delta string) {
-		if strings.TrimSpace(delta) == "" {
-			return
-		}
-		r.engine.broadcast(run.sessionID, map[string]any{
-			"type":     "agent_draft_delta",
-			"chat_jid": "gi:" + run.sessionID,
-			"delta":    delta,
-			"turn_id":  run.turnID,
-		})
+		streamedOutput.WriteString(delta)
+		_ = reportOutput(streamedOutput.String(), false)
 	})
+	if outputErr := reportOutput(out, true); outputErr != nil && !cancelled {
+		runErr = outputErr
+	}
 	if cancelled {
 		r.persistStoppedTool(s, run.sessionID, run.turnID, goai.ToolCall{Name: "shell"}, toolOccurrenceID, "cancelled")
 		bgCtx := r.engine.backgroundContext()

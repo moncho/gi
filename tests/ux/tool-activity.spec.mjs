@@ -3,8 +3,8 @@ import {mkdirSync,writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 const gates=resolve('test-results/ux-parity/queue-gates');
 const inputName='Message (Enter to send, Shift+Enter for newline)...';
-// Retained regression for the existing implementation, not an accepted Gi
-// deviation or Piclaw parity. User evidence invalidated the original mapping.
+// Native lifecycle regression, complementary to the independent installed
+// Output oracle. Neither grants whole-chat parity or restores the old mapping.
 test('Active tool has owned timing and terminal metadata does not create a persistent footer',async({page,request},info)=>{
  test.setTimeout(45000);
  const token=`tools-${info.project.name}-${Date.now()}`;mkdirSync(gates,{recursive:true});
@@ -12,11 +12,11 @@ test('Active tool has owned timing and terminal metadata does not create a persi
  await page.addInitScript(id=>localStorage.setItem('gi_session_id',id),main.id);await page.goto('/');const input=page.getByRole('textbox',{name:inputName,exact:true});await input.fill('tool draft β');await page.locator('.compose-box input[type=file]').setInputFiles({name:'tool-ref.txt',mimeType:'text/plain',buffer:Buffer.from('retained tool bytes')});
  const submit=async prompt=>{const r=await request.post(`/api/sessions/${main.id}/prompt`,{data:{prompt,model:'test-model'}});expect(r.status()).toBe(202);return(await r.json()).turn_id;};
  const activity=async (id=main.id)=>(await(await request.get(`/api/sessions/${id}/activity`)).json());
- const region=page.locator('.gi-tool-activity');let id,release; 
+ const region=page.locator('[data-panel-key="tool-output"]');let id,release;
  try{
-  id=await submit(`UX queue gate:${token}`);await expect(region).toHaveAttribute('data-tool-state','running');await expect(region).toHaveAttribute('data-turn-id',id);const started=await activity();expect(started.tool.tool_call_id).toBeTruthy();expect(started.tool.preview).toContain("printf 'Gi received: %s'");await expect(region.locator('code')).toHaveText(started.tool.preview);
-  const elapsed=region.getByLabel('Tool elapsed');const initial=await elapsed.textContent();await expect(elapsed).not.toHaveText(initial,{timeout:2500});
-  await page.reload();await expect(input).toHaveValue('tool draft β');await expect(region).toHaveAttribute('data-tool-call-id',started.tool.tool_call_id);
+  id=await submit(`UX queue gate:${token}`);await expect(region).toBeVisible();const started=await activity();expect(started.tool.tool_call_id).toBeTruthy();expect(started.tool.preview).toContain("printf 'Gi received: %s'");await expect(region).toContainText('Queue gate streaming preview');await expect(page.locator('.agent-status-text')).toContainText(started.tool.preview);expect(started.tool.turn_id).toBe(id);
+  const elapsed=page.locator('.agent-status-elapsed-row');const initial=await elapsed.textContent();await expect(elapsed).not.toHaveText(initial,{timeout:2500});
+  await page.reload();await expect(input).toHaveValue('tool draft β');await expect(region).toContainText('Queue gate streaming preview');expect((await activity()).tool.tool_call_id).toBe(started.tool.tool_call_id);
   writeFileSync(resolve(gates,token),'release');await expect.poll(async()=>(await activity()).status).toBe('idle');const done=await activity();expect(done.tool.state).toBe('completed');expect(done.tool.duration_ms).toBeGreaterThanOrEqual(1000);await expect(region).toHaveCount(0);
   await page.waitForTimeout(1100);expect((await activity()).tool.duration_ms).toBe(done.tool.duration_ms);
   // A held old activity read cannot replace a new occurrence after its invalidation.
@@ -39,10 +39,10 @@ test('Gi tool cancellation has occurrence-bound terminal timing and reload recon
  await page.addInitScript(id=>localStorage.setItem('gi_session_id',id),main.id);await page.goto('/');
  const input=page.getByRole('textbox',{name:inputName,exact:true});await expect(input).toBeVisible();await input.fill('cancel tool draft β');
  const activity=async()=>(await(await request.get(`/api/sessions/${main.id}/activity`)).json());
- const region=page.locator('.gi-tool-activity');
+ const region=page.locator('[data-panel-key="tool-output"]');
  try{
   const submitted=await request.post(`/api/sessions/${main.id}/prompt`,{data:{prompt:`UX queue gate:${token}`,model:'test-model'}});expect(submitted.status()).toBe(202);const {turn_id}=await submitted.json();
-  await expect(region).toHaveAttribute('data-tool-state','running');const running=await activity();expect(running.tool.occurrence_id).toBeTruthy();
+  await expect(region).toBeVisible();const running=await activity();expect(running.tool.occurrence_id).toBeTruthy();
   await page.getByRole('button',{name:'Stop response',exact:true}).click();
   await expect.poll(async()=>(await activity()).tool?.state).toBe('cancelled');await expect.poll(async()=>(await activity()).status).toBe('idle');await expect(region).toHaveCount(0);
   const stopped=await activity();expect(stopped.tool.turn_id).toBe(turn_id);expect(stopped.tool.occurrence_id).toBe(running.tool.occurrence_id);expect(stopped.tool.duration_ms).toBeGreaterThanOrEqual(0);

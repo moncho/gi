@@ -28,6 +28,8 @@ type ToolRuntime struct {
 	SessionID     string
 	TurnID        string
 	WorkspaceRoot string
+	// OnOutput receives cumulative command output; errors fail execution closed.
+	OnOutput func(string) error
 }
 
 type ToolExecutor func(context.Context, ToolRuntime, goai.ToolCall) (string, error)

@@ -3,7 +3,6 @@ import { randomClientId } from "./gi-random-id.js";
 import { staleTerminalEvent } from './gi-turn-event.js';
 import { speechPlayback } from './gi-post-speech.js';
 import { useGiNotifications } from './gi-notifications.js';
-import { ToolActivity } from './gi-tool-activity.js';
 import { projectConversationEvent, projectActivityStatus, SYSTEM_AGENT_ID, SYSTEM_AGENT } from './gi-conversation.js';
 /**
  * app.ts — Gi entry point.
@@ -1137,9 +1136,9 @@ function GiApp() {
                     removingPostIds=${removingPostIds}
                     searchQuery=${searchState.active ? searchState.query : ''}
                 />
-                ${activityFresh && activity?.status === 'running' && activity?.tool?.state === 'running' && !activity?.compaction?.active && agentStatus?.phase !== 'retry_wait' && html`<${ToolActivity} tool=${activity.tool} />`}
+
                 <${AgentStatus} key=${`${sessionId}:${currentTurnId || ''}`}
-                    status=${(activity?.status === 'running' && activity?.tool?.state === 'running' && agentStatus?.phase !== 'retry_wait') || isCompactionStatus(agentStatus) ? null : agentStatus}
+                    status=${isCompactionStatus(agentStatus) ? null : agentStatus}
                     draft=${agentDraft}
                     plan=${agentPlan}
                     thought=${agentThought}

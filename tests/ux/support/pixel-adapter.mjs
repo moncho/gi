@@ -7,10 +7,10 @@ export async function installPixelHost({page,host,root,state,reference,allowPres
  if(!['gi','piclaw'].includes(host))throw Error(`Unknown pixel host: ${host}`);
  const failures=[],calls=[],assets={},streams=new Map(),streamAborts=[];
  const onError=e=>failures.push(`page: ${e.message}`);
- const onFailed=r=>{const error=r.failure()?.errorText,path=new URL(r.url()).pathname;
+ const onFailed=r=>{const error=r.failure()?.errorText,url=new URL(r.url()),path=url.pathname;
   // Gi aborts the initial unscoped fetch stream on session activation. Retain
   // that cancellation as evidence and require a live replacement at capture.
-  if(host==='gi'&&path==='/sse/stream'&&error==='net::ERR_ABORTED'&&streamAborts.length===0){streamAborts.push({path,error});return;}
+  if(host==='gi'&&path==='/sse/stream'&&!url.search&&['net::ERR_ABORTED','Load request cancelled'].includes(error)&&streamAborts.length===0){streamAborts.push({path,error});return;}
   failures.push(`network: ${r.url()} ${error}`);
  };
  page.on('pageerror',onError);page.on('requestfailed',onFailed);

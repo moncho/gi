@@ -1,7 +1,7 @@
 import { resolve, dirname } from 'path';
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, rmSync, copyFileSync, cpSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { patchStatusPreview } from './scripts/patch-status-preview.mjs';
+import { piclawStatusAdapter } from './scripts/piclaw-status-adapter.mjs';
 import { patchTimelineMenu } from './scripts/patch-timeline-menu.mjs';
 import { patchWorkspaceReadonly } from './scripts/patch-workspace-readonly.mjs';
 import { patchTabReadonly } from './scripts/patch-tab-readonly.mjs';
@@ -85,7 +85,7 @@ const appBuild = await Bun.build({
   target: 'browser', format: 'esm', sourcemap: 'linked', splitting: true, modulePreload: false,
   naming: { entry: 'app.bundle.[ext]', chunk: 'chunks/[name]-[hash].[ext]', asset: 'assets/[name]-[hash].[ext]' },
   external: ['/editor-vendor/codemirror.js'],
-  plugins: [{ name: 'gi-post-speech', setup(build) {
+  plugins: [piclawStatusAdapter(__dirname), { name: 'gi-post-speech', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]post\.ts$/ }, async args => ({
       contents: patchPostRecoveryControl(patchPostOutcomes(patchPostSpeech(await Bun.file(args.path).text()))), loader: 'ts',
     }));
@@ -106,10 +106,6 @@ const appBuild = await Bun.build({
   } }, { name: 'gi-timeline-menu-dismissal', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]timeline-menu\.ts$/ }, async args => ({
       contents: patchTimelineMenu(await Bun.file(args.path).text()), loader: 'ts',
-    }));
-  } }, { name: 'gi-status-preview-overflow', setup(build) {
-    build.onLoad({ filter: /[\\/]components[\\/]status\.ts$/ }, async args => ({
-      contents: patchStatusPreview(await Bun.file(args.path).text()), loader: 'ts',
     }));
   } }, { name: 'gi-appearance-renderer', setup(build) {
     // Adapt accent contrast at build time; keep the supplied source bytes unchanged.
@@ -145,6 +141,9 @@ if (existsSync(phtmAlias)) rmSync(phtmAlias);
   const p = `${webSrc}/vendor/${f}`;
   if (existsSync(p)) rmSync(p);
 });
+
+// Pinned renderer stylesheet; original supplied stylesheet is left untouched.
+copyFileSync('web/piclaw-status-3.2.4/css/agent.css', 'internal/web/static/css/piclaw-status-3.2.4.css');
 
 // ── CSS bundle ────────────────────────────────────────────────────────────
 // CSS bundle — all Piclaw CSS is served from /css/styles.css (with @import partials).

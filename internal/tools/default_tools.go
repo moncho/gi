@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/rcarmo/gi/internal/config"
 	"github.com/rcarmo/gi/internal/rtk"
@@ -96,16 +97,56 @@ func ExecuteRTK(ctx context.Context, workspaceRoot string, call goai.ToolCall) (
 }
 
 func ExecuteShell(ctx context.Context, workspaceRoot string, call goai.ToolCall) (string, error) {
+	return ExecuteShellOutput(ctx, workspaceRoot, call, nil)
+}
+
+func ExecuteShellOutput(ctx context.Context, workspaceRoot string, call goai.ToolCall, onOutput func(string) error) (string, error) {
 	command, _ := call.Arguments["command"].(string)
 	if command == "" {
 		return "", fmt.Errorf("shell: command is required")
 	}
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = workspaceRoot
-	out, err := cmd.CombinedOutput()
-	output := string(out)
-	if err != nil {
-		return output, fmt.Errorf("exit: %w", err)
+	if onOutput == nil {
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return string(out), fmt.Errorf("exit: %w", err)
+		}
+		return string(out), nil
 	}
-	return output, nil
+	configureShellProcess(cmd)
+	cmd.Cancel = func() error { killShellProcess(cmd); return nil }
+	output := &toolOutputWriter{notify: onOutput, cancel: func() { killShellProcess(cmd) }}
+	cmd.Stdout, cmd.Stderr = output, output
+	err := cmd.Run()
+	if output.err != nil {
+		return output.text.String(), output.err
+	}
+	if err != nil {
+		return output.text.String(), fmt.Errorf("exit: %w", err)
+	}
+	return output.text.String(), nil
+}
+
+// exec may copy stdout/stderr concurrently; serialize cumulative snapshots.
+type toolOutputWriter struct {
+	mu     sync.Mutex
+	text   strings.Builder
+	notify func(string) error
+	cancel func()
+	err    error
+}
+
+func (w *toolOutputWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.err != nil {
+		return len(p), nil
+	} // keep draining until the killed process exits
+	w.text.Write(p)
+	w.err = w.notify(w.text.String())
+	if w.err != nil && w.cancel != nil {
+		w.cancel()
+	}
+	return len(p), nil
 }

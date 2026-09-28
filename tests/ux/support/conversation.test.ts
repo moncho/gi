@@ -15,10 +15,18 @@ test('only known tool-call summaries strip synthetic suffixes; prose/media survi
 });
 test('idle activity metadata never creates a working/completed panel',()=>{
  expect(projectActivityStatus({status:'idle',tool:{state:'completed'}})).toBeNull();
- expect(projectActivityStatus({status:'running',tool:{state:'completed'}})?.title).toBe('Waiting for model…');
+ expect(projectActivityStatus({status:'running',tool:{state:'completed'}})?.title).toBe('Waiting for model...');
  const retry={status:'running',phase:'retry_wait',title:'Retrying'};expect(projectActivityStatus(retry)).toBe(retry);
  expect(projectActivityStatus({status:'cancelling'})?.title).toBe('Cancelling…');
 });
 test('user-authored tool syntax and metadata never hide or replace their words',()=>{
  for(const kind of ['tool_calls','tool_result'])expect(projectConversationMessage({role:'user',content:'literal [tool_call: example]',payload:{kind,display_text:'wrong'}},'s')?.content).toBe('literal [tool_call: example]');
+});
+test('running tool projects output and command independently; retry/wait never reuse output',()=>{
+ const tool={state:'running',name:'shell',preview:'printf output',started_at:'2026-09-28T00:00:00Z',output_preview:'actual\noutput',output_total_lines:2};
+ const active=projectActivityStatus({status:'running',turn_id:'t',tool});
+ expect(active.type).toBe('tool_status');expect(active.output_preview).toBe('actual\noutput');expect(active.tool_args.command).toBe('printf output');
+ expect(projectActivityStatus({status:'running',turn_id:'t',tool:{...tool,state:'completed'}}).output_preview).toBeUndefined();
+ expect(projectActivityStatus({status:'idle',tool})).toBeNull();
+ expect(projectActivityStatus({status:'running',phase:'retry_wait',title:'Retrying',tool}).output_preview).toBeUndefined();
 });

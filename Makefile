@@ -243,6 +243,15 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-piclaw-output-oracle
+test-piclaw-output-oracle: build-web
+	$(BUN) tests/ux/oracle/piclaw-output-contract.mjs
+
+.PHONY: test-piclaw-tool-output
+test-piclaw-tool-output:
+	$(GO) test -race -count=3 ./internal/store ./internal/tools ./internal/turn -run 'TestToolOutput|TestShellToolOutput'
+	$(BUN) test tests/ux/support/conversation.test.ts tests/ux/support/piclaw-status-adapter.test.ts
+
 .PHONY: test-conversation-projection
 test-conversation-projection:
 	$(GO) test -race -count=3 ./internal/store ./internal/web -run 'TestConversation|TestMessagePage'

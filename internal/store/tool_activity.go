@@ -64,6 +64,23 @@ func latestToolActivity(ctx context.Context, tx *sql.Tx, turnID string, claimed 
 	}
 	occurrenceID, _ := payload["occurrence_id"].(string)
 	result := map[string]any{"occurrence_id": occurrenceID, "turn_id": turnID, "tool_call_id": callID, "start_seq": seq, "name": name, "preview": preview, "state": state, "started_at": started, "finished_at": finished, "duration_ms": nil}
+	// Both identities are required: providers may reuse tool call IDs.
+	var outputJSON string
+	outputCallID, _ := payload["tool_call_id"].(string)
+	err = tx.QueryRowContext(ctx, `select payload_json from turn_events where turn_id=? and seq>? and event_type='tool.output' and coalesce(json_extract(payload_json,'$.tool_call_id'),'')=? and coalesce(json_extract(payload_json,'$.occurrence_id'),'')=? order by seq desc limit 1`, turnID, seq, outputCallID, occurrenceID).Scan(&outputJSON)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if err == nil {
+		var output map[string]any
+		if json.Unmarshal([]byte(outputJSON), &output) == nil {
+			for _, key := range []string{"output_preview", "output_total_lines", "output_preview_lines", "output_truncated"} {
+				if value, ok := output[key]; ok {
+					result[key] = value
+				}
+			}
+		}
+	}
 	if finished != "" {
 		a, e1 := time.Parse(time.RFC3339Nano, started)
 		b, e2 := time.Parse(time.RFC3339Nano, finished)

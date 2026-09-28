@@ -12,7 +12,7 @@ async function setup(page,request,info) {
   await input.fill(`UX preview expand UX steer gate:${token}`);await input.press('Enter');const r=await posted;expect(r.status()).toBe(202);const turn=(await r.json()).turn_id;
   await expect(input).toHaveValue('');await input.fill('preview unsent draft');
   const panel=kind=>page.locator('.agent-thinking').filter({has:page.locator('.agent-thinking-title').filter({hasText:kind})});
-  for(const kind of ['Thoughts','Draft'])await expect(panel(kind).getByRole('button',{name:'▸ 4 more lines',exact:true})).toBeVisible();
+  for(const kind of ['Thoughts','Draft'])await expect(panel(kind).getByRole('button',{name:'more…',exact:true})).toBeVisible();
   const more=()=>writeFileSync(gate+'.more','release');
   const finish=async()=>{more();writeFileSync(gate,'release');await expect.poll(async()=>((await(await request.get(`/api/sessions/${a}/turns`)).json()).turns||[]).find(t=>t.id===turn)?.status,{timeout:15000}).toBe('completed');};
   return {a,b,turn,token,gate,input,panel,more,finish};
@@ -24,34 +24,40 @@ for(const id of ['@gi-preview-002','@ux-thoughts-002','@ux-thoughts-003','@ux-th
     const thought=f.panel('Thoughts'),draft=f.panel('Draft');
     for(const panel of [thought,draft]) {
       await expect(panel).toHaveAttribute('data-expanded','false');
-      const body=panel.locator('.agent-thinking-body');await expect(body).toHaveCSS('overflow-y','hidden');
+      const body=panel.locator('.agent-thinking-body');await expect(body).toHaveCSS('overflow-y','auto');
       expect(await body.evaluate(el=>parseFloat(getComputedStyle(el).maxHeight))).toBeGreaterThan(0);
-      expect(await body.evaluate(el=>el.scrollHeight>el.clientHeight)).toBe(true);
+      // Installed renderer clips to the newest nine source lines; disclosure
+      // signals retained earlier text even when these lines fit the scroll box.
+      await expect(body).not.toContainText('line 01');await expect(body).toContainText('line 12');
+      await expect(panel.getByRole('button',{name:'more…',exact:true})).toBeVisible();
     }
     f.more();
-    for(const panel of [thought,draft]) {await expect(panel.getByRole('button',{name:'▸ 8 more lines',exact:true})).toBeVisible();await expect(panel).toHaveAttribute('data-expanded','false');}
-    let text=await thought.locator('.agent-thinking-body').textContent();expect(text).toContain('Thought line 16');
-    await thought.getByRole('button',{name:'▸ 8 more lines',exact:true}).click();await expect(thought).toHaveAttribute('data-expanded','true');
-    await expect(thought.locator('.agent-thinking-body')).toHaveCSS('max-height','none');
+    for(const panel of [thought,draft]) {await expect(panel.getByRole('button',{name:'more…',exact:true})).toBeVisible();await expect(panel).toHaveAttribute('data-expanded','false');}
+    await expect(thought.locator('.agent-thinking-body')).toContainText('Thought line 16');
+    let text=await thought.locator('.agent-thinking-body').textContent();
+    await thought.getByRole('button',{name:'more…',exact:true}).click();await expect(thought).toHaveAttribute('data-expanded','true');
+    await expect(thought.locator('.agent-thinking-body')).toHaveCSS('overflow-y','auto');
+    await expect(thought.locator('.agent-thinking-body')).toContainText('Thought line 01');
+    text=await thought.locator('.agent-thinking-body').textContent();
     await expect(draft).toHaveAttribute('data-expanded','false');
     if (id === '@ux-thoughts-002') {
       writeFileSync(f.gate+'.expanded','release');await expect(thought.locator('.agent-thinking-body')).toContainText('Thought line 20');
       await expect(thought).toHaveAttribute('data-expanded','true');await expect(draft).toHaveAttribute('data-expanded','false');
       text=await thought.locator('.agent-thinking-body').textContent();
     }
-    const omitted=id==='@ux-thoughts-002'?12:8;
+    // Installed 3.2.4 uses a generic disclosure, not omitted-line counts.
     const title=thought.locator('.agent-thinking-title');await title.click();await page.keyboard.press('Escape');await expect(thought).toHaveAttribute('data-expanded','false');
-    await thought.getByRole('button',{name:`▸ ${omitted} more lines`,exact:true}).click();
+    await thought.getByRole('button',{name:'more…',exact:true}).click();
     // Escape in an editable target and modified Escape do not consume disclosure.
     await f.input.focus();await page.keyboard.press('Escape');await expect(thought).toHaveAttribute('data-expanded','true');
     await title.click();await page.keyboard.press('Shift+Escape');await expect(thought).toHaveAttribute('data-expanded','true');
-    await draft.getByRole('button',{name:`▸ ${omitted} more lines`,exact:true}).click();await expect(draft).toHaveAttribute('data-expanded','true');
+    await draft.getByRole('button',{name:'more…',exact:true}).click();await expect(draft).toHaveAttribute('data-expanded','true');
     await draft.locator('.agent-thinking-title').click();await page.keyboard.press('Escape');await expect(draft).toHaveAttribute('data-expanded','false');await expect(thought).toHaveAttribute('data-expanded','true');
-    await thought.getByRole('button',{name:'Close Thoughts panel',exact:true}).click();await expect(thought).toHaveAttribute('data-expanded','false');
-    await thought.getByRole('button',{name:`▸ ${omitted} more lines`,exact:true}).click();
+    await thought.getByRole('button',{name:'less',exact:true}).click();await expect(thought).toHaveAttribute('data-expanded','false');
+    await thought.getByRole('button',{name:'more…',exact:true}).click();
     await expect(thought.locator('.agent-thinking-body')).toHaveText(text);
     const width=info.project.use.viewport.width;await page.setViewportSize({width:width>720?600:1000,height:700});await expect(thought).toHaveAttribute('data-expanded','true');await expect(thought.locator('.agent-thinking-body')).toHaveText(text);
-    await page.locator('.agent-status-panel').evaluate(el=>{el.scrollTop=el.scrollHeight;});expect(await page.locator('.agent-status-panel').evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
+    await thought.locator('.agent-thinking-body').evaluate(el=>{el.scrollTop=el.scrollHeight;});expect(await thought.locator('.agent-thinking-body').evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
     if(process.env.GI_THOUGHTS_CAPTURE&&id==='@ux-thoughts-005'&&info.project.name.startsWith('chromium-')){mkdirSync('test-results/thought-captures',{recursive:true});await page.screenshot({path:`test-results/thought-captures/${info.project.name}.png`});}
     await expect(f.input).toHaveValue('preview unsent draft');
     const composer=await f.input.boundingBox();expect(composer.y+composer.height).toBeLessThanOrEqual(701);
@@ -63,7 +69,7 @@ test('@gi-preview-001 Expansion and buffers reset across session switches and na
   const f=await setup(page,request,info);let secondGate;
   const pick=async id=>{await page.getByRole('button',{name:/Manage sessions for/}).last().click();const popup=page.locator('.compose-session-popup');await popup.getByRole('searchbox',{name:'Search sessions',exact:true}).fill(id);const row=popup.locator(`[data-session-jid="gi:${id}"]`).getByRole('menuitem');await expect(row).toBeVisible();const activity=page.waitForResponse(r=>r.request().method()==='GET'&&new URL(r.url()).pathname===`/api/sessions/${id}/activity`);await row.click();await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(id);await activity;await expect(page.locator('.compose-connection-status')).toHaveCount(0);};
   try {
-    await f.panel('Thoughts').getByRole('button',{name:'▸ 4 more lines',exact:true}).click();await expect(f.panel('Thoughts')).toHaveAttribute('data-expanded','true');
+    await f.panel('Thoughts').getByRole('button',{name:'more…',exact:true}).click();await expect(f.panel('Thoughts')).toHaveAttribute('data-expanded','true');
     await pick(f.b);await f.input.fill('B preview draft');f.more();
     await page.waitForTimeout(200);await expect(page.locator('.agent-thinking').filter({hasText:'Thought line'})).toHaveCount(0);await expect(f.input).toHaveValue('B preview draft');
     await pick(f.a);await expect(f.input).toHaveValue('preview unsent draft');
@@ -76,9 +82,9 @@ test('@gi-preview-001 Expansion and buffers reset across session switches and na
     const key=f.token+'-next';secondGate=resolve('test-results/ux-parity/queue-gates',key);
     const posted=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname===`/api/sessions/${f.a}/prompt`);
     await f.input.fill(`UX preview expand UX steer gate:${key}`);await f.input.press('Enter');expect((await posted).status()).toBe(202);await f.input.fill('next turn unsent');
-    await expect(f.panel('Thoughts').getByRole('button',{name:'▸ 4 more lines',exact:true})).toBeVisible();await expect(f.panel('Thoughts')).toHaveAttribute('data-expanded','false');
+    await expect(f.panel('Thoughts').getByRole('button',{name:'more…',exact:true})).toBeVisible();await expect(f.panel('Thoughts')).toHaveAttribute('data-expanded','false');
     await expect(f.panel('Thoughts').locator('.agent-thinking-body')).not.toContainText('Thought line 20');
-    await f.panel('Thoughts').getByRole('button',{name:'▸ 4 more lines',exact:true}).click();
+    await f.panel('Thoughts').getByRole('button',{name:'more…',exact:true}).click();
     const restored=page.waitForResponse(r=>r.request().method()==='GET'&&new URL(r.url()).pathname===`/api/sessions/${f.a}/activity`);
     await page.reload();await restored;await expect(page.locator('.compose-connection-status')).toHaveCount(0);await expect(f.input).toHaveValue('next turn unsent');await expect(page.locator('.agent-thinking').filter({hasText:'Thought line'})).toHaveCount(0);
     writeFileSync(secondGate+'.more','release');await expect(f.panel('Thoughts').locator('.agent-thinking-body')).toContainText('Thought line 16');await expect(f.panel('Thoughts')).toHaveAttribute('data-expanded','false');
@@ -100,7 +106,7 @@ for (const fallback of [false,true]) test(`${fallback?'@gi-preview-003':'@ux-tho
   const posted=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname===`/api/sessions/${id}/prompt`);
   await input.fill(`UX preview expand UX preview wrapped UX steer gate:${token}`);await input.press('Enter');expect((await posted).status()).toBe(202);await expect(input).toHaveValue('');await input.fill('wrapped unsent draft');
   const thought=page.locator('.agent-thinking').filter({has:page.locator('.agent-thinking-title').filter({hasText:'Thoughts'})});
-  const body=thought.locator('.agent-thinking-body'),more=thought.getByRole('button',{name:'▸ Show more',exact:true});
+  const body=thought.locator('.agent-thinking-body'),more=thought.getByRole('button',{name:'more…',exact:true});
   try {
     await expect(body).toContainText('end-initial');
     for(const width of [1200,390,1200,390]) {
@@ -110,9 +116,9 @@ for (const fallback of [false,true]) test(`${fallback?'@gi-preview-003':'@ux-tho
       await expect(thought).toHaveAttribute('data-expanded','false');
     }
     const before=await body.textContent();expect(before.trimEnd().split('\n')).toHaveLength(1);
-    await more.click();await expect(thought).toHaveAttribute('data-expanded','true');await expect(body).toHaveCSS('max-height','none');await expect(body).toHaveText(before);
-    await page.setViewportSize({width:1200,height:900});await expect(thought.getByRole('button',{name:'▴ show less',exact:true})).toBeVisible();
-    await thought.getByRole('button',{name:'▴ show less',exact:true}).click();await expect(more).toHaveCount(0);
+    await more.click();await expect(thought).toHaveAttribute('data-expanded','true');await expect(body).toHaveCSS('overflow-y','auto');await expect(body).toHaveText(before);
+    await page.setViewportSize({width:1200,height:900});await expect(thought.getByRole('button',{name:'less',exact:true})).toBeVisible();
+    await thought.getByRole('button',{name:'less',exact:true}).click();await expect(more).toHaveCount(0);
     // Container-only resizing must also work without window.resize, including
     // the fallback path used by constrained embedded browsers.
     const viewport=page.viewportSize();

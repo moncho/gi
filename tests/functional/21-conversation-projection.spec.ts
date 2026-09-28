@@ -39,7 +39,7 @@ for(const name of ['chromium','webkit'] as const)test(`${name} conversation excl
   await page.evaluate(({id,liveId})=>{for(const s of (window as any).__conversationStreams)s.dispatchEvent(new MessageEvent('new_post',{data:JSON.stringify({id:liveId,chat_jid:`gi:${id}`,sender:'system',timestamp:'2026-01-02T00:00:00Z',data:{type:'system_message',content:'Live system notice'}})}));},{id,liveId});
   await expect(page.locator(`#post-${liveId} .post-author`)).toHaveText('System');await expect(page.locator(`#post-${liveId}`)).toHaveClass(/agent-post/);
   await page.unroute(`**/api/sessions/${id}/messages?*`);
-  active=true;await page.reload();await expect(page.getByText('Waiting for model…',{exact:false})).toBeVisible();await expect(page.locator('.gi-tool-activity')).toHaveCount(0);
+  active=true;await page.reload();await expect(page.getByText('Waiting for model...',{exact:false})).toBeVisible();await expect(page.locator('.gi-tool-activity')).toHaveCount(0);
   await page.evaluate(id=>{for(const s of (window as any).__conversationStreams){s.dispatchEvent(new MessageEvent('agent_status',{data:JSON.stringify({chat_jid:`gi:${id}`,turn_id:'fixture-turn',status:'running',title:'Writing response'})}));s.dispatchEvent(new MessageEvent('agent_draft_delta',{data:JSON.stringify({chat_jid:`gi:${id}`,turn_id:'fixture-turn',delta:'PARTIAL DRAFT PREVIEW'})}));s.dispatchEvent(new MessageEvent('agent_thought_delta',{data:JSON.stringify({chat_jid:`gi:${id}`,turn_id:'fixture-turn',delta:'PARTIAL THOUGHT PREVIEW'})}));}},id);
   await expect(page.locator('.agent-status-panel')).toContainText('PARTIAL DRAFT PREVIEW');
   active=false;

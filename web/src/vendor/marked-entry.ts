@@ -36,4 +36,7 @@ const markedApi = Object.assign(marked, {
   walkTokens,
 });
 
+// Gi does not execute Piclaw's app-shell bootstrap. Apply its Markdown
+// options before publishing the vendor global, with no module-load race.
+markedApi.setOptions({ breaks: true, gfm: true });
 (globalThis as Record<string, unknown>).marked = markedApi;

@@ -1,6 +1,8 @@
 @classic @source-reviewed
 Feature: Classic thought and draft panel disclosure
-  Source: runtime/web/src/components/status.ts and Classic agent-status CSS.
+  Source: installed Piclaw 3.2.4 status source-map content and Classic agent-status CSS.
+  # Reconciled 2026-09-28: generic more…/less controls, nine-line tail windows,
+  # and independently scrollable bodies replace the older line-count renderer.
 
   @ux-thoughts-001
   Scenario: Render collapsed thought content with disclosure state
@@ -8,6 +10,8 @@ Feature: Classic thought and draft panel disclosure
     When the status panel renders
     Then it exposes the collapsed data-expanded state
     And the collapsed height and overflow follow the panel's CSS
+    And the collapsed preview shows the newest nine source lines
+    And earlier retained text is disclosed through a more control
 
   @ux-thoughts-002
   Scenario: Continue updating content independently of disclosure
@@ -20,6 +24,7 @@ Feature: Classic thought and draft panel disclosure
     Given thought content has a disclosure control
     When I activate that control
     Then the panel's expansion state toggles
+    And expanded content remains available in a scrollable body
     And the supplied panel-toggle callback is used when provided
     And otherwise the component manages its own expansion set
 

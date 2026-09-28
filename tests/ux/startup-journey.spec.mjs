@@ -17,7 +17,10 @@ async function assertTurn(page,id,turnId,prompt){
  expect(messages.filter(m=>m.role==='user').map(m=>m.content)).toEqual([prompt]);
  const [turn]=await turns(page,id);expect(turn.id).toBe(turnId);expect(turn.session_id).toBe(id);
  expect(messages.filter(m=>m.role==='assistant')).toHaveLength(1);
- await expect(page.locator('.timeline .post:not(.agent-post) .post-content')).toHaveText([prompt]);
+ // Markdown renders a soft source newline as a space-like boundary in the DOM;
+ // the API assertion above owns the exact stored prompt, including newlines.
+ const renderedPrompt=prompt.replace(/\s+/g,' ').trim();
+ await expect(page.locator('.timeline .post:not(.agent-post) .post-content')).toHaveText([renderedPrompt],{useInnerText:true});
  await expect(page.locator('.timeline .post.agent-post')).toHaveCount(1);
 }
 

@@ -771,6 +771,10 @@ test-piclaw-speech-ui:
 test-piclaw-concurrent-tools:
 	$(BUN) tests/ux/oracle/piclaw-concurrent-tools-probe.mjs
 
+.PHONY: test-piclaw-svg-adversarial
+test-piclaw-svg-adversarial:
+	$(BUN) tests/ux/oracle/piclaw-svg-adversarial-probe.mjs
+
 .PHONY: test-piclaw-message-retrieval
 test-piclaw-message-retrieval:
 	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-message-retrieval-probe.mjs

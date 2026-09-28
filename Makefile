@@ -521,7 +521,10 @@ capture-gi-chat-baseline:
 test-pi-piclaw-queue-oracle:
 	$(BUN) tests/ux/oracle/pi-piclaw-queue-probe.mjs
 
-.PHONY: test-piclaw-queue-return test-ux-queue-return
+.PHONY: test-piclaw-queue-reorder test-piclaw-queue-return test-ux-queue-return
+test-piclaw-queue-reorder:
+	$(BUN) tests/ux/oracle/piclaw-queue-reorder-probe.mjs
+
 test-piclaw-queue-return:
 	$(BUN) tests/ux/oracle/piclaw-return-probe.mjs
 

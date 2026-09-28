@@ -767,6 +767,10 @@ test-piclaw-stale-terminal:
 test-piclaw-speech-ui:
 	$(BUN) tests/ux/oracle/piclaw-speech-ui-probe.mjs
 
+.PHONY: test-piclaw-concurrent-tools
+test-piclaw-concurrent-tools:
+	$(BUN) tests/ux/oracle/piclaw-concurrent-tools-probe.mjs
+
 .PHONY: test-piclaw-message-retrieval
 test-piclaw-message-retrieval:
 	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-message-retrieval-probe.mjs

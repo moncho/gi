@@ -23,9 +23,19 @@ conversation post; an idle event clears all three panes. The fixture does
 not test an authoritative reload. A stricter shipped-WebKit lifecycle reload
 probe still reports SSE and presence cancellation/access-control errors.
 
+`make test-piclaw-concurrent-tools` passed **6/6** installed translator/UI
+fixtures. With two synthetic overlapping calls, completion of the first
+emits a status for the second, retaining its Output and carrying the first
+as `last_completed_tool`. Waiting for model appears only after the second
+ends. Gi's persisted `latestToolActivity` reads the most recent `tool.started`
+occurrence; an earlier unfinished call is not represented after a later call
+starts. The engine currently executes tool calls in order, so no native
+concurrent-call acceptance follows from the fixture.
+
 This covers the visible status path and stale-response guard in disposable Gi.
-Full tool-pane lifecycle reconstruction, concurrent calls, reduced-motion
-presentation, production Piclaw routing and deployed Gi remain unverified.
+Full tool-pane lifecycle reconstruction, concurrent-call behaviour in Gi,
+reduced-motion presentation, production Piclaw routing and deployed Gi remain
+unverified.
 Classic027 stays unmapped. The separate WIP tool-terminal provenance branch
 has no CI/deployment credit from this review. No production code or frozen
 contract changed.

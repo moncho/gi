@@ -81,6 +81,26 @@ test('Gi Quick Actions exclusions preserve native inputs and interactive control
  expect(await turns()).toEqual([]);
 });
 
+test('Gi read-only workspace tab owns printable keys without opening Quick Actions',async({page,request},info)=>{
+ const path=`quick-preview-${info.project.name}-${Date.now()}.md`;
+ const written=await request.post('/api/tools/execute',{data:{tool:'write',input:{path,content:'# Native read-only preview\\n\\nText remains visible.'}}});
+ expect(written.ok()).toBe(true);expect((await written.json()).error).toBeFalsy();
+ const {main,input,palette,turns}=await fixture(page,request,info);
+ await page.getByTestId('hamburger').click();await page.getByRole('menuitem',{name:'Show workspace',exact:true}).click();
+ const tree=page.locator('.workspace-sidebar .workspace-tree-list');await expect(tree).toBeVisible();
+ await tree.focus();await tree.press('q');await expect(palette).toHaveCount(0);
+ await page.locator(`.workspace-row[data-path="${path}"] .workspace-label-text`).click();
+ await page.getByRole('button',{name:'Open read-only tab',exact:true}).click();
+ const preview=page.getByRole('region',{name:`Read-only preview: ${path}`});await expect(preview).toBeVisible();
+ if(await page.locator('.workspace-toggle-tab.open').count())await page.locator('.workspace-toggle-tab.open').click();
+ const tab=page.locator('.gi-readonly-tabs .tab-item.active');await expect(tab).toBeVisible();
+ await tab.focus();await expect(tab).toBeFocused();await tab.press('q');await expect(palette).toHaveCount(0);
+ await expect(preview.getByRole('heading',{name:'Native read-only preview'})).toBeVisible();
+ await page.getByRole('button',{name:'Return to conversation',exact:true}).click();
+ await expect(input).toHaveValue('untouched draft');expect(await turns()).toEqual([]);
+ expect(await page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(main.id);
+});
+
 test('Gi Quick Actions switches native sessions and gates unsupported actions',async({page,request},info)=>{
  const {main,child,input,palette,query,open,turns}=await fixture(page,request,info);
  await open('m');await query.fill('');

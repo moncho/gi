@@ -39,7 +39,7 @@ export async function installPixelHost({page,host,root,state,reference,allowPres
   '/api/quick-actions':{commands:state.commands,settings:{workspaceCommands:[],slashCommands:state.commands.map(c=>c.name)}},'/api/metrics':state.metrics,
   '/api/workspace/tree':{name:'fixture',path:'.',type:'dir',children:[]},'/api/workspace/index':{state:'ready',roots:['.']},'/api/workspace/index/status':{state:'ready',roots:['.']},
  };
- const allowedQueries=new Set(['chat_jid','root_chat_jid','include_archived','limit','before','after','ui','scope','path','depth','show_hidden']);
+ const allowedQueries=new Set(['chat_jid','root_chat_jid','include_archived','limit','before','after','ui','scope','path','depth','show_hidden','view']);
  await page.addInitScript(s=>{localStorage.setItem('piclaw_theme',s.theme);localStorage.setItem('vibes-theme',s.theme);localStorage.setItem('workspaceOpen','false');localStorage.setItem('piclaw_system_meters_enabled','false');localStorage.setItem('piclaw_compose_height',String(s.composeHeightPreference));localStorage.setItem('gi_session_id','main');},state);
  const handler=async route=>{
   const r=route.request(),u=new URL(r.url());calls.push({method:r.method(),path:u.pathname,query:u.search});
@@ -53,7 +53,7 @@ export async function installPixelHost({page,host,root,state,reference,allowPres
     else if(/^\/(css|dist|fonts|js|editor-vendor)\//.test(u.pathname)||/^\/(favicon(?:-\d+x\d+)?\.(?:png|ico)|manifest\.json)$/.test(u.pathname))file=resolve(root,decodeURIComponent(u.pathname.slice(1)));
    }
    if(file){if(r.method()!=='GET'||!(await realpath(file)).startsWith((await realpath(root))+'/'))throw Error('Invalid asset path/method');for(const k of u.searchParams.keys())if(!['v','chat_jid'].includes(k))throw Error(`Invalid asset query ${k}`);const bytes=await readFile(file),sha256=createHash('sha256').update(bytes).digest('hex');if(host==='piclaw'&&sha256!==reference.files[u.pathname].sha256)throw Error(`Reference hash changed: ${u.pathname}`);if(assets[u.pathname]&&assets[u.pathname].sha256!==sha256)throw Error(`Asset changed during capture: ${u.pathname}`);assets[u.pathname]={path:file,sha256,bytes:bytes.length};return route.fulfill({contentType:mime[extname(file)]||'application/octet-stream',body:bytes});}
-   for(const [key,value]of u.searchParams){if(!allowedQueries.has(key))throw Error(`Undeclared query ${key}`);if(['chat_jid','root_chat_jid'].includes(key)&&value!==state.sessionId)throw Error('Wrong session scope');}
+   for(const [key,value]of u.searchParams){if(!allowedQueries.has(key))throw Error(`Undeclared query ${key}`);if(key==='view'&&(host!=='gi'||value!=='conversation'||!/^\/api\/sessions\/[^/]+\/(messages|search)$/.test(u.pathname)))throw Error('Invalid conversation view');if(['chat_jid','root_chat_jid'].includes(key)&&value!==state.sessionId)throw Error('Wrong session scope');}
    if(host==='piclaw'&&r.method()==='POST'&&['/workspace/visibility','/agent/push/presence'].includes(u.pathname))return route.fulfill({json:{ok:true}});
    const table=host==='piclaw'?piclaw:gi;if(r.method()==='GET'&&Object.hasOwn(table,u.pathname))return route.fulfill({json:table[u.pathname]});
    throw Error(`Undeclared ${r.method()} ${u.pathname}${u.search}`);

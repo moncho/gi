@@ -5,7 +5,7 @@ const gates=resolve('test-results/ux-parity/queue-gates');
 const inputName='Message (Enter to send, Shift+Enter for newline)...';
 // Retained regression for the existing implementation, not an accepted Gi
 // deviation or Piclaw parity. User evidence invalidated the original mapping.
-test('Existing Gi tool footer has owned preview, elapsed and terminal timing (not Piclaw parity)',async({page,request},info)=>{
+test('Active tool has owned timing and terminal metadata does not create a persistent footer',async({page,request},info)=>{
  test.setTimeout(45000);
  const token=`tools-${info.project.name}-${Date.now()}`;mkdirSync(gates,{recursive:true});
  const main=await(await request.post('/api/sessions',{data:{agent_id:token,title:token}})).json();const other=(await(await request.post(`/api/sessions/${main.id}/fork`,{data:{agent_id:token+'-other',title:token+'-other'}})).json()).branch.chat_jid.slice(3);
@@ -17,18 +17,18 @@ test('Existing Gi tool footer has owned preview, elapsed and terminal timing (no
   id=await submit(`UX queue gate:${token}`);await expect(region).toHaveAttribute('data-tool-state','running');await expect(region).toHaveAttribute('data-turn-id',id);const started=await activity();expect(started.tool.tool_call_id).toBeTruthy();expect(started.tool.preview).toContain("printf 'Gi received: %s'");await expect(region.locator('code')).toHaveText(started.tool.preview);
   const elapsed=region.getByLabel('Tool elapsed');const initial=await elapsed.textContent();await expect(elapsed).not.toHaveText(initial,{timeout:2500});
   await page.reload();await expect(input).toHaveValue('tool draft β');await expect(region).toHaveAttribute('data-tool-call-id',started.tool.tool_call_id);
-  writeFileSync(resolve(gates,token),'release');await expect(region).toHaveAttribute('data-tool-state','completed');const done=await activity();expect(done.tool.duration_ms).toBeGreaterThanOrEqual(1000);await expect(region.getByLabel('Tool duration')).toHaveText(`${Math.floor(done.tool.duration_ms/1000)}s`);await expect(region.locator('.spinner')).toHaveCount(0);
-  const duration=await region.getByLabel('Tool duration').textContent();await page.waitForTimeout(1100);await expect(region.getByLabel('Tool duration')).toHaveText(duration);
+  writeFileSync(resolve(gates,token),'release');await expect.poll(async()=>(await activity()).status).toBe('idle');const done=await activity();expect(done.tool.state).toBe('completed');expect(done.tool.duration_ms).toBeGreaterThanOrEqual(1000);await expect(region).toHaveCount(0);
+  await page.waitForTimeout(1100);expect((await activity()).tool.duration_ms).toBe(done.tool.duration_ms);
   // A held old activity read cannot replace a new occurrence after its invalidation.
   let held=false;const gate=new Promise(r=>release=r);
   await page.route(`**/api/sessions/${main.id}/activity`,async route=>{const response=await route.fetch();held=true;await gate;await route.fulfill({response});},{times:1});
   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
   // The regular native refresh interval provides the request if focus is throttled.
   await expect.poll(()=>held,{timeout:12000}).toBe(true);
-  id=await submit('UX tool fail: native error');release();await expect(region).toHaveAttribute('data-tool-state','failed');await expect(region).toHaveAttribute('data-turn-id',id);await expect(region.getByLabel('shell: Failed')).toBeVisible();await expect(region.locator('.spinner')).toHaveCount(0);
+  id=await submit('UX tool fail: native error');release();await expect.poll(async()=>(await activity()).tool?.state).toBe('failed');await expect.poll(async()=>(await activity()).tool?.turn_id).toBe(id);await expect.poll(async()=>(await activity()).status).toBe('idle');await expect(region).toHaveCount(0);
   const failed=await activity();expect(failed.tool.duration_ms).toBeGreaterThanOrEqual(0);expect(failed.tool.tool_call_id).not.toBe(started.tool.tool_call_id);
   await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${other}"]`).getByRole('menuitem').click();await expect(region).toHaveCount(0);await input.fill('other tool draft');expect((await activity(other)).tool).toBeUndefined();
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();await expect(region).toHaveAttribute('data-tool-state','failed');await expect(input).toHaveValue('tool draft β');await expect(page.locator('.compose-box')).toContainText('tool-ref.txt');
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();await expect(region).toHaveCount(0);await expect(input).toHaveValue('tool draft β');await expect(page.locator('.compose-box')).toContainText('tool-ref.txt');
   await info.attach('tool-status',{body:await page.screenshot(),contentType:'image/png'});
  }finally{release?.();writeFileSync(resolve(gates,token),'release');await page.unrouteAll({behavior:'wait'});}
 });
@@ -44,12 +44,12 @@ test('Gi tool cancellation has occurrence-bound terminal timing and reload recon
   const submitted=await request.post(`/api/sessions/${main.id}/prompt`,{data:{prompt:`UX queue gate:${token}`,model:'test-model'}});expect(submitted.status()).toBe(202);const {turn_id}=await submitted.json();
   await expect(region).toHaveAttribute('data-tool-state','running');const running=await activity();expect(running.tool.occurrence_id).toBeTruthy();
   await page.getByRole('button',{name:'Stop response',exact:true}).click();
-  await expect(region).toHaveAttribute('data-tool-state','cancelled');await expect(region.getByLabel('shell: Cancelled')).toBeVisible();await expect(region.locator('.spinner')).toHaveCount(0);
+  await expect.poll(async()=>(await activity()).tool?.state).toBe('cancelled');await expect.poll(async()=>(await activity()).status).toBe('idle');await expect(region).toHaveCount(0);
   const stopped=await activity();expect(stopped.tool.turn_id).toBe(turn_id);expect(stopped.tool.occurrence_id).toBe(running.tool.occurrence_id);expect(stopped.tool.duration_ms).toBeGreaterThanOrEqual(0);
   const events=(await(await request.get(`/api/turns/${turn_id}/events`)).json()).events;
   expect(events.filter(e=>e.type==='tool.cancelled'&&e.payload.occurrence_id===running.tool.occurrence_id)).toHaveLength(1);
   expect(events.some(e=>e.type==='tool.finished'&&e.payload.occurrence_id===running.tool.occurrence_id)).toBe(false);
-  await page.reload();await expect(input).toHaveValue('cancel tool draft β');await expect(region).toHaveAttribute('data-tool-state','cancelled');await expect(region.getByLabel('Tool duration')).toHaveText(`${Math.floor(stopped.tool.duration_ms/1000)}s`);
+  await page.reload();await expect(input).toHaveValue('cancel tool draft β');await expect(region).toHaveCount(0);
   expect((await activity()).tool).toEqual(stopped.tool);
  }finally{writeFileSync(resolve(gates,token),'release');}
 });

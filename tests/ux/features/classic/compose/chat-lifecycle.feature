@@ -3,7 +3,8 @@ Feature: Separate the conversation from transient agent activity
   # Oracle: installed Piclaw 3.2.4 event translator and shipped Classic UI.
   # tests/ux/oracle/piclaw-chat-lifecycle-probe.mjs records the exact source,
   # emitted frames and rendered DOM. This is not a Gi implementation fixture.
-  # The Gi manual-validation baseline fails these contracts; none is mapped.
+  # The retained Gi manual-validation baseline fails these contracts.
+  # Conversation/idle fixes have bounded native coverage; none is fully mapped.
   # Error persistence, provider recovery and physical-device acceptance need
   # backend and device evidence beyond this bounded rendering probe.
 

@@ -243,6 +243,11 @@ check-cross-build:
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 $(GO) build -o "$$out/gi-$$os-$$arch" ./cmd/gi; \
 	done
 
+.PHONY: test-conversation-projection
+test-conversation-projection:
+	$(GO) test -race -count=3 ./internal/store ./internal/web -run 'TestConversation|TestMessagePage'
+	$(BUN) test tests/ux/support/conversation.test.ts
+
 .PHONY: test-provider-retry-oracle test-provider-retry
 test-provider-retry-oracle:
 	$(BUN) tests/ux/oracle/provider-retry-probe.mjs

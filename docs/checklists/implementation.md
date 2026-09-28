@@ -4,6 +4,8 @@ Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-27
 
+- [x] Bounded web conversation projection: opt-in conversation pages/search filter raw tools before limits, preserve prose/media/raw history, attribute System notices consistently across SSE/reload/search, suppress idle/completed footers and clear terminal previews. Go+200support pass; full check142functional11skips and12native tool-lifecycle browser cases pass. No new parity mapping; running-tool Output component and full clone remain open. [Evidence](../internal/web-conversation-projection-2026-09-28.md).
+
 - [x] Screenshot3143 pre-response timeout slice: installed Pi/Piclaw retry classifier/backoff verified; bounded same-turn retry with cancellation, config, durable reload status, TUI notice and browser visibility. No prompt/tool replay, progress/hook/auth suppression, one durable exhaustion error. Race×3 and make check140functional11skips pass; partial-stream/general recovery remains open. [Evidence](../internal/provider-timeout-recovery-2026-09-27.md).
 
 - [-] Clone Pi0.87.1 terminal interaction/presentation and Piclaw3.2.4 queue/steer lifecycle in detail. Installed-method oracle8cases; first native fix separates Alt+Enter follow-up from Enter steering through stored composer claims. Race×3 and two native admission PTYs pass; restore-all/abort/media, exact tool-boundary ordering, queue display and web idle-Steer remain gaps. Gi queue deviations004/005 are migration gaps, not acceptance. [Contract](../internal/pi-tui-piclaw-queue-contract.md).

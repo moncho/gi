@@ -15,6 +15,11 @@ func (s *Server) handleSessionSearch(w http.ResponseWriter, r *http.Request, ses
 		writeJSON(w, 404, map[string]any{"error": "Session not found"})
 		return
 	}
+	view := r.URL.Query().Get("view")
+	if view != "" && view != "conversation" {
+		writeJSON(w, 400, map[string]any{"error": "Invalid message view"})
+		return
+	}
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	scope := r.URL.Query().Get("scope")
 	if scope == "" {
@@ -40,7 +45,11 @@ func (s *Server) handleSessionSearch(w http.ResponseWriter, r *http.Request, ses
 		writeJSON(w, 400, map[string]any{"error": "Invalid search query, scope or bounds"})
 		return
 	}
-	messages, err := s.store.SearchMessages(r.Context(), sessionID, q, scope, limit, offset)
+	search := s.store.SearchMessages
+	if view == "conversation" {
+		search = s.store.SearchConversationMessages
+	}
+	messages, err := search(r.Context(), sessionID, q, scope, limit, offset)
 	if err != nil {
 		writeJSON(w, 500, map[string]any{"error": "Search unavailable"})
 		return

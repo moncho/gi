@@ -4221,7 +4221,7 @@ func (r *sessionRunner) runAgentLoop(ctx context.Context, s *store.Store, turnID
 		}
 		logutil.WarnIfErr("add assistant tool_calls summary", s.AddMessage(ctx, store.NowID("msg"), sessionID, "assistant", toolCallSummary, map[string]any{
 			"kind": "tool_calls", "source": "inference", "model": model,
-			"turn_id": turnID, "agent_id": agentID,
+			"turn_id": turnID, "agent_id": agentID, "display_text": strings.TrimSpace(textContent),
 		}))
 
 		outcome := r.executeToolCallsPhase(ctx, s, turnID, sessionID, model, agentID, iter, convCtx, toolCalls, pendingSteering, lastToolFailureSig, repeatedToolFailureCount, &totalUsage)

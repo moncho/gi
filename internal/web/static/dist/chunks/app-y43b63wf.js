@@ -1348,6 +1348,139 @@ function ToolActivity({ tool }) {
     </div>`;
 }
 
+// web/src/gi-message-links.ts
+var MAX_LINKS = 8;
+function text(value, max) {
+  return typeof value === "string" ? value.slice(0, max) : "";
+}
+function remoteLinkUrl(value) {
+  if (typeof value !== "string" || value.length > 2048 || /[\s\\\u0000-\u001f\u007f]/.test(value))
+    return null;
+  try {
+    const url = new URL(value);
+    return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+function projectResourceLinks(blocks) {
+  let count = 0;
+  return blocks.flatMap((block) => {
+    if (block?.type !== "resource_link")
+      return [block];
+    const uri = remoteLinkUrl(block.uri);
+    if (!uri || count++ >= MAX_LINKS)
+      return [];
+    return [{
+      type: "resource_link",
+      uri,
+      title: text(block.title || block.name, 200),
+      description: text(block.description, 1000),
+      mimeType: text(block.mimeType, 100),
+      ...Number.isSafeInteger(block.size) && block.size >= 0 ? { size: block.size } : {}
+    }];
+  });
+}
+function projectLinkPreviews(payload) {
+  if (!Array.isArray(payload?.link_previews))
+    return null;
+  const seen = new Set, previews = [];
+  for (const entry of payload.link_previews) {
+    const url = remoteLinkUrl(entry?.url);
+    if (!url || seen.has(url))
+      continue;
+    seen.add(url);
+    previews.push({
+      url,
+      title: text(entry.title, 200),
+      description: text(entry.description, 1000),
+      site_name: new URL(url).hostname
+    });
+    if (previews.length === MAX_LINKS)
+      break;
+  }
+  return previews.length ? previews : null;
+}
+
+// web/src/gi-message-media.ts
+function projectMessageMedia(payload, sessionId) {
+  const blocks = projectResourceLinks(Array.isArray(payload?.content_blocks) ? payload.content_blocks : []);
+  const refs = Array.isArray(payload?.media) ? payload.media.filter((ref) => Number.isSafeInteger(ref?.media_id) && ref.media_id > 0 && (!ref.session_id || ref.session_id === sessionId)) : [];
+  if (!refs.length)
+    return { media_ids: [], content_blocks: blocks.length ? blocks : null };
+  const mediaBlocks = refs.map((ref) => ({
+    type: /^image\/(png|jpeg|gif|webp|avif|bmp|svg\+xml)$/i.test(ref.content_type || "") ? "image" : "file",
+    name: ref.filename || `attachment-${ref.media_id}`,
+    mime_type: ref.content_type || "application/octet-stream"
+  }));
+  return {
+    media_ids: refs.map((ref) => ref.media_id),
+    content_blocks: [...blocks.filter((block) => block?.type !== "image" && block?.type !== "file"), ...mediaBlocks]
+  };
+}
+
+// web/src/gi-conversation.ts
+var SYSTEM_AGENT_ID = "__gi_system__";
+var SYSTEM_AGENT = { id: SYSTEM_AGENT_ID, name: "System", avatar_url: null };
+function projectConversationMessage(m, fallbackSession) {
+  if (!["user", "assistant", "system"].includes(m?.role) || m.role !== "user" && m.payload?.kind === "tool_result")
+    return null;
+  let content = typeof m.content === "string" ? m.content : "";
+  if (m.role === "assistant" && m.payload?.kind === "tool_calls") {
+    if (typeof m.payload.display_text === "string")
+      content = m.payload.display_text;
+    else
+      content = content.split(/(?:^|\n)\[tool_call:/, 1)[0];
+    if (!content.trim())
+      return null;
+  }
+  const session = m.session_id || fallbackSession;
+  const user = m.role === "user";
+  return {
+    id: m.id,
+    chat_jid: `gi:${session}`,
+    timestamp: m.created_at,
+    content,
+    sender: user ? "user" : m.role === "system" ? "system" : "agent",
+    is_from_me: user,
+    is_bot_message: !user,
+    data: {
+      type: user ? "user_message" : "agent_response",
+      content,
+      thread_id: null,
+      agent_id: m.role === "system" ? SYSTEM_AGENT_ID : m.payload?.agent_id || (user ? null : "agent"),
+      ...projectMessageMedia(m.payload, session),
+      link_previews: projectLinkPreviews(m.payload),
+      content_meta: null,
+      kind: m.payload?.kind || null,
+      source: m.payload?.source || null,
+      clipped: m.payload?.clipped || false
+    }
+  };
+}
+function projectConversationEvent(post) {
+  if (post?.data?.type !== "system_message" && post?.sender !== "system")
+    return post;
+  return {
+    ...post,
+    is_from_me: false,
+    is_bot_message: true,
+    sender: "system",
+    data: { ...post.data, type: "agent_response", agent_id: SYSTEM_AGENT_ID }
+  };
+}
+function projectActivityStatus(activity) {
+  if (!activity || !["running", "cancelling"].includes(activity.status))
+    return null;
+  if (activity.status === "cancelling")
+    return { ...activity, type: "intent", title: "Cancelling…" };
+  if (activity.phase === "retry_wait")
+    return activity;
+  if (activity.tool && activity.tool.state !== "running")
+    return { ...activity, type: "waiting", title: "Waiting for model…" };
+  return activity;
+}
+
 // web/src/utils/storage.ts
 function getLocalStorageItem(key) {
   if (typeof window === "undefined" || !window.localStorage)
@@ -1526,77 +1659,6 @@ function createSelectionScope() {
     current() {
       return sessionId;
     }
-  };
-}
-
-// web/src/gi-message-links.ts
-var MAX_LINKS = 8;
-function text(value, max) {
-  return typeof value === "string" ? value.slice(0, max) : "";
-}
-function remoteLinkUrl(value) {
-  if (typeof value !== "string" || value.length > 2048 || /[\s\\\u0000-\u001f\u007f]/.test(value))
-    return null;
-  try {
-    const url = new URL(value);
-    return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password ? url.href : null;
-  } catch {
-    return null;
-  }
-}
-function projectResourceLinks(blocks) {
-  let count = 0;
-  return blocks.flatMap((block) => {
-    if (block?.type !== "resource_link")
-      return [block];
-    const uri = remoteLinkUrl(block.uri);
-    if (!uri || count++ >= MAX_LINKS)
-      return [];
-    return [{
-      type: "resource_link",
-      uri,
-      title: text(block.title || block.name, 200),
-      description: text(block.description, 1000),
-      mimeType: text(block.mimeType, 100),
-      ...Number.isSafeInteger(block.size) && block.size >= 0 ? { size: block.size } : {}
-    }];
-  });
-}
-function projectLinkPreviews(payload) {
-  if (!Array.isArray(payload?.link_previews))
-    return null;
-  const seen = new Set, previews = [];
-  for (const entry of payload.link_previews) {
-    const url = remoteLinkUrl(entry?.url);
-    if (!url || seen.has(url))
-      continue;
-    seen.add(url);
-    previews.push({
-      url,
-      title: text(entry.title, 200),
-      description: text(entry.description, 1000),
-      site_name: new URL(url).hostname
-    });
-    if (previews.length === MAX_LINKS)
-      break;
-  }
-  return previews.length ? previews : null;
-}
-
-// web/src/gi-message-media.ts
-function projectMessageMedia(payload, sessionId) {
-  const blocks = projectResourceLinks(Array.isArray(payload?.content_blocks) ? payload.content_blocks : []);
-  const refs = Array.isArray(payload?.media) ? payload.media.filter((ref) => Number.isSafeInteger(ref?.media_id) && ref.media_id > 0 && (!ref.session_id || ref.session_id === sessionId)) : [];
-  if (!refs.length)
-    return { media_ids: [], content_blocks: blocks.length ? blocks : null };
-  const mediaBlocks = refs.map((ref) => ({
-    type: /^image\/(png|jpeg|gif|webp|avif|bmp|svg\+xml)$/i.test(ref.content_type || "") ? "image" : "file",
-    name: ref.filename || `attachment-${ref.media_id}`,
-    mime_type: ref.content_type || "application/octet-stream"
-  }));
-  return {
-    media_ids: refs.map((ref) => ref.media_id),
-    content_blocks: [...blocks.filter((block) => block?.type !== "image" && block?.type !== "file"), ...mediaBlocks]
   };
 }
 
@@ -2216,7 +2278,7 @@ async function getTimeline(limit = 50, beforeId = null, chatJid = null, after = 
   const sessionId = chatJid?.startsWith("gi:") ? chatJid.slice(3) : null;
   if (!sessionId)
     return { posts: [] };
-  let url = `/api/sessions/${encodeURIComponent(sessionId)}/messages?limit=${limit}`;
+  let url = `/api/sessions/${encodeURIComponent(sessionId)}/messages?view=conversation&limit=${limit}`;
   if (beforeId)
     url += `&before=${encodeURIComponent(beforeId)}`;
   if (after)
@@ -2227,46 +2289,17 @@ async function getTimeline(limit = 50, beforeId = null, chatJid = null, after = 
     hasMore: data.has_more === true,
     before: data.before || null,
     after: data.after || null,
-    posts: messages.map((m) => ({
-      id: m.id,
-      chat_jid: chatJid,
-      content: m.content,
-      timestamp: m.created_at,
-      sender: m.role === "user" ? "user" : "agent",
-      is_from_me: m.role === "user",
-      is_bot_message: m.role === "assistant",
-      data: {
-        type: m.role === "assistant" ? "agent_response" : "user_message",
-        content: m.content,
-        thread_id: null,
-        agent_id: m.payload?.agent_id || (m.role === "assistant" ? "agent" : null),
-        ...projectMessageMedia(m.payload, sessionId),
-        content_meta: null,
-        link_previews: projectLinkPreviews(m.payload),
-        kind: m.payload?.kind || null,
-        source: m.payload?.source || null,
-        clipped: m.payload?.clipped || false
-      }
-    }))
+    posts: messages.map((m) => projectConversationMessage(m, sessionId)).filter(Boolean)
   };
 }
 async function searchPosts(query, limit = 50, offset = 0, chatJid = null, scope = "current", _rootChatJid = null) {
   const sessionId = chatJid?.startsWith("gi:") ? chatJid.slice(3) : null;
   if (!sessionId)
     return { posts: [] };
-  const params = new URLSearchParams({ q: query, scope, limit: String(limit), offset: String(offset) });
+  const params = new URLSearchParams({ q: query, scope, limit: String(limit), offset: String(offset), view: "conversation" });
   const data = await request(`/api/sessions/${encodeURIComponent(sessionId)}/search?${params}`);
   const messages = data.messages || [];
-  return { posts: messages.map((m) => ({
-    id: m.id,
-    chat_jid: sessionToChatJid(m.session_id),
-    content: m.content,
-    timestamp: m.created_at,
-    sender: m.role === "user" ? "user" : "agent",
-    is_from_me: m.role === "user",
-    is_bot_message: m.role === "assistant",
-    data: { type: m.role === "assistant" ? "agent_response" : "user_message", content: m.content, thread_id: null, agent_id: m.payload?.agent_id || (m.role === "assistant" ? "agent" : null), ...projectMessageMedia(m.payload, m.session_id), link_previews: projectLinkPreviews(m.payload) }
-  })) };
+  return { posts: messages.map((m) => projectConversationMessage(m, sessionId)).filter(Boolean) };
 }
 async function getSystemMetrics() {
   return request("/api/system-metrics").catch(() => null);
@@ -19864,11 +19897,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-t3xjwd4h.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-cd4npzkk.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-jy8qeefs.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-80mrxjgc.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-4zpx16s4.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-cn5fdsgr.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-gxjx60kr.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-nt1ez43g.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-xm57cx3s.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-5n9drvr7.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -21787,14 +21820,14 @@ function GiApp() {
       if (data?.id && data?.data && !searchView.capture().active) {
         const root = timelineRef.current;
         scrollRestore.current = { scope: selection.capture(), view: searchView.capture(), connection: connectionRevision.current, anchor: captureTimelineAnchor(root, readingAnchor.current), bottom: !root || Math.abs(root.scrollTop) < 80 };
-        setPosts((prev) => mergeMessagePages(prev, [data]));
+        setPosts((prev) => mergeMessagePages(prev, [projectConversationEvent(data)]));
         scrollToBottom();
       }
     }
     if (staleTerminal)
       return;
     if (eventType === "agent_status") {
-      setAgentStatus(data);
+      setAgentStatus(projectActivityStatus(data));
       const active = data?.status === "running" || data?.status === "cancelling";
       if (active && data.turn_id && currentTurnIdRef.current !== data.turn_id) {
         currentTurnIdRef.current = data.turn_id;
@@ -21803,6 +21836,15 @@ function GiApp() {
         thoughtBufferRef.current = "";
         setAgentDraft(null);
         setAgentThought(null);
+      }
+      if (!active) {
+        currentTurnIdRef.current = null;
+        setCurrentTurnId(null);
+        draftBufferRef.current = "";
+        thoughtBufferRef.current = "";
+        setAgentDraft(null);
+        setAgentThought(null);
+        setAgentPlan(null);
       }
       setIsAgentTurnActive(active);
       isAgentRunningRef.current = active;
@@ -21924,7 +21966,7 @@ function GiApp() {
         const admitted = new Set((queue.items || []).map((item) => item.metadata?.client_request_id).filter(Boolean));
         setOptimisticQueue((items) => items.filter((item) => !admitted.has(item.id)));
       }
-      setAgentStatus(status);
+      setAgentStatus(projectActivityStatus(status));
       const running = status?.status === "running" || status?.status === "cancelling";
       if (running && status.turn_id && currentTurnIdRef.current !== status.turn_id) {
         currentTurnIdRef.current = status.turn_id;
@@ -21933,6 +21975,15 @@ function GiApp() {
         thoughtBufferRef.current = "";
         setAgentDraft(null);
         setAgentThought(null);
+      }
+      if (!running) {
+        currentTurnIdRef.current = null;
+        setCurrentTurnId(null);
+        draftBufferRef.current = "";
+        thoughtBufferRef.current = "";
+        setAgentDraft(null);
+        setAgentThought(null);
+        setAgentPlan(null);
       }
       setIsAgentTurnActive(running);
       isAgentRunningRef.current = running;
@@ -22356,15 +22407,15 @@ function GiApp() {
                     onOpenWidget=${(w) => setFloatingWidget(w)}
                     onOpenAttachmentPreview=${setAttachmentPreview}
                     emptyMessage=${searchState.active ? searchState.query ? "No matching messages." : "Enter a search query." : "Send a message to get started."}
-                    agents=${agents}
+                    agents=${{ ...agents, [SYSTEM_AGENT_ID]: SYSTEM_AGENT }}
                     user=${userProfile}
                     reverse=${true}
                     removingPostIds=${removingPostIds}
                     searchQuery=${searchState.active ? searchState.query : ""}
                 />
-                ${activityFresh && activity?.tool && !activity?.compaction?.active && agentStatus?.phase !== "retry_wait" && fe`<${ToolActivity} tool=${activity.tool} />`}
+                ${activityFresh && activity?.status === "running" && activity?.tool?.state === "running" && !activity?.compaction?.active && agentStatus?.phase !== "retry_wait" && fe`<${ToolActivity} tool=${activity.tool} />`}
                 <${AgentStatus} key=${`${sessionId}:${currentTurnId || ""}`}
-                    status=${activity?.tool && agentStatus?.phase !== "retry_wait" || isCompactionStatus(agentStatus) ? null : agentStatus}
+                    status=${activity?.status === "running" && activity?.tool?.state === "running" && agentStatus?.phase !== "retry_wait" || isCompactionStatus(agentStatus) ? null : agentStatus}
                     draft=${agentDraft}
                     plan=${agentPlan}
                     thought=${agentThought}
@@ -22515,7 +22566,7 @@ function GiApp() {
         setContextUsage(state.context_usage);
     }
   }}
-                    agents=${agents}
+                    agents=${{ ...agents, [SYSTEM_AGENT_ID]: SYSTEM_AGENT }}
                     currentSessionAgent=${activeChatAgents.find((entry) => entry?.chat_jid === currentChatJid) || null}
                     agentStatus=${agentStatus}
                     agentDraft=${agentDraft}
@@ -22652,5 +22703,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=0FE1B988B93E86EB64756E2164756E21
-//# sourceMappingURL=app-wzg69126.js.map
+//# debugId=61BDAE05C9E28A5464756E2164756E21
+//# sourceMappingURL=app-y43b63wf.js.map

@@ -548,7 +548,12 @@ func (s *Server) handleMessages(w http.ResponseWriter, r *http.Request, sessionI
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if r.URL.Query().Has("limit") || r.URL.Query().Has("before") || r.URL.Query().Has("after") {
+	view := r.URL.Query().Get("view")
+	if view != "" && view != "conversation" {
+		writeJSON(w, 400, map[string]any{"error": "Invalid message view"})
+		return
+	}
+	if view == "conversation" || r.URL.Query().Has("limit") || r.URL.Query().Has("before") || r.URL.Query().Has("after") {
 		if _, err := s.store.GetSession(r.Context(), sessionID); err != nil {
 			writeJSON(w, 404, map[string]any{"error": "Session not found"})
 			return
@@ -562,7 +567,11 @@ func (s *Server) handleMessages(w http.ResponseWriter, r *http.Request, sessionI
 			}
 			limit = value
 		}
-		page, err := s.store.PageMessages(r.Context(), sessionID, r.URL.Query().Get("before"), r.URL.Query().Get("after"), limit)
+		pageMessages := s.store.PageMessages
+		if view == "conversation" {
+			pageMessages = s.store.PageConversationMessages
+		}
+		page, err := pageMessages(r.Context(), sessionID, r.URL.Query().Get("before"), r.URL.Query().Get("after"), limit)
 		if err != nil {
 			code := 500
 			if errors.Is(err, store.ErrMessageCursor) {

@@ -13,8 +13,7 @@ import { notifyModelSettlement } from './gi-model-invalidation.js';
 
 import { recordAppPerfRequest } from './ui/app-perf-tracing.js';
 import { sessionPickerAgents } from './gi-session-state.js';
-import { projectMessageMedia } from './gi-message-media.js';
-import { projectLinkPreviews } from './gi-message-links.js';
+import { projectConversationMessage } from './gi-conversation.js';
 import { composeTransfers } from './gi-compose-transfer.js';
 import { randomClientId } from './gi-random-id.js';
 import { recoverSubmittedPrompt, recoverPendingSends } from './gi-send-recovery.js';
@@ -131,34 +130,14 @@ function sessionToChatJid(sessionId: string | null) {
 export async function getTimeline(limit = 50, beforeId: string | null = null, chatJid: string | null = null, after: string | null = null) {
     const sessionId = chatJid?.startsWith('gi:') ? chatJid.slice(3) : null;
     if (!sessionId) return { posts: [] };
-    let url = `/api/sessions/${encodeURIComponent(sessionId)}/messages?limit=${limit}`;
+    let url = `/api/sessions/${encodeURIComponent(sessionId)}/messages?view=conversation&limit=${limit}`;
     if (beforeId) url += `&before=${encodeURIComponent(beforeId)}`;
     if (after) url += `&after=${encodeURIComponent(after)}`;
     const data = await request(url);
     const messages: any[] = data.messages || [];
     return {
         hasMore: data.has_more === true, before: data.before || null, after: data.after || null,
-        posts: messages.map((m: any) => ({
-            id: m.id,
-            chat_jid: chatJid,
-            content: m.content,
-            timestamp: m.created_at,
-            sender: m.role === 'user' ? 'user' : 'agent',
-            is_from_me: m.role === 'user',
-            is_bot_message: m.role === 'assistant',
-            data: {
-                type: m.role === 'assistant' ? 'agent_response' : 'user_message',
-                content: m.content,
-                thread_id: null,
-                agent_id: m.payload?.agent_id || (m.role === 'assistant' ? 'agent' : null),
-                ...projectMessageMedia(m.payload, sessionId),
-                content_meta: null,
-                link_previews: projectLinkPreviews(m.payload),
-                kind: m.payload?.kind || null,
-                source: m.payload?.source || null,
-                clipped: m.payload?.clipped || false,
-            },
-        })),
+        posts: messages.map((m: any) => projectConversationMessage(m,sessionId)).filter(Boolean),
     };
 }
 
@@ -169,15 +148,10 @@ export async function getPostsByHashtag(_hashtag: string, _limit = 50, _offset =
 export async function searchPosts(query: string, limit = 50, offset = 0, chatJid: string | null = null, scope = 'current', _rootChatJid: string | null = null) {
     const sessionId = chatJid?.startsWith('gi:') ? chatJid.slice(3) : null;
     if (!sessionId) return { posts: [] };
-    const params=new URLSearchParams({q:query,scope,limit:String(limit),offset:String(offset)});
+    const params=new URLSearchParams({q:query,scope,limit:String(limit),offset:String(offset),view:'conversation'});
     const data = await request(`/api/sessions/${encodeURIComponent(sessionId)}/search?${params}`);
     const messages: any[] = data.messages || [];
-    return { posts: messages.map((m: any) => ({
-        id: m.id, chat_jid: sessionToChatJid(m.session_id), content: m.content, timestamp: m.created_at,
-        sender: m.role === 'user' ? 'user' : 'agent',
-        is_from_me: m.role === 'user', is_bot_message: m.role === 'assistant',
-        data: { type: m.role === 'assistant' ? 'agent_response' : 'user_message', content: m.content, thread_id: null, agent_id: m.payload?.agent_id || (m.role === 'assistant' ? 'agent' : null), ...projectMessageMedia(m.payload, m.session_id), link_previews: projectLinkPreviews(m.payload) },
-    })) };
+    return { posts: messages.map((m: any) => projectConversationMessage(m,sessionId)).filter(Boolean) };
 }
 
 export async function getThread(threadId: number, _chatJid: string | null = null) {

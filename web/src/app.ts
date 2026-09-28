@@ -4,6 +4,7 @@ import { staleTerminalEvent } from './gi-turn-event.js';
 import { speechPlayback } from './gi-post-speech.js';
 import { useGiNotifications } from './gi-notifications.js';
 import { ToolActivity } from './gi-tool-activity.js';
+import { projectConversationEvent, projectActivityStatus, SYSTEM_AGENT_ID, SYSTEM_AGENT } from './gi-conversation.js';
 /**
  * app.ts — Gi entry point.
  *
@@ -653,7 +654,7 @@ function GiApp() {
             if (data?.id && data?.data && !searchView.capture().active) {
                 const root=timelineRef.current;
                 scrollRestore.current={scope:selection.capture(),view:searchView.capture(),connection:connectionRevision.current,anchor:captureTimelineAnchor(root,readingAnchor.current),bottom:!root||Math.abs(root.scrollTop)<80};
-                setPosts((prev: any[]) => mergeMessagePages(prev,[data]));
+                setPosts((prev: any[]) => mergeMessagePages(prev,[projectConversationEvent(data)]));
                 scrollToBottom();
             }
         }
@@ -664,12 +665,17 @@ function GiApp() {
 
         // Handle agent status events
         if (eventType === 'agent_status') {
-            setAgentStatus(data);
+            setAgentStatus(projectActivityStatus(data));
             const active = data?.status === 'running' || data?.status === 'cancelling';
             if (active && data.turn_id && currentTurnIdRef.current !== data.turn_id) {
                 currentTurnIdRef.current = data.turn_id; setCurrentTurnId(data.turn_id);
                 draftBufferRef.current = ''; thoughtBufferRef.current = '';
                 setAgentDraft(null); setAgentThought(null);
+            }
+            if (!active) {
+                currentTurnIdRef.current = null; setCurrentTurnId(null);
+                draftBufferRef.current = ''; thoughtBufferRef.current = '';
+                setAgentDraft(null); setAgentThought(null); setAgentPlan(null);
             }
             setIsAgentTurnActive(active);
             isAgentRunningRef.current = active;
@@ -768,12 +774,17 @@ function GiApp() {
                 const admitted = new Set((queue.items || []).map(item => item.metadata?.client_request_id).filter(Boolean));
                 setOptimisticQueue(items => items.filter(item => !admitted.has(item.id)));
             }
-            setAgentStatus(status);
+            setAgentStatus(projectActivityStatus(status));
             const running = status?.status === 'running' || status?.status === 'cancelling';
             if (running && status.turn_id && currentTurnIdRef.current !== status.turn_id) {
                 currentTurnIdRef.current = status.turn_id; setCurrentTurnId(status.turn_id);
                 draftBufferRef.current = ''; thoughtBufferRef.current = '';
                 setAgentDraft(null); setAgentThought(null);
+            }
+            if (!running) {
+                currentTurnIdRef.current = null; setCurrentTurnId(null);
+                draftBufferRef.current = ''; thoughtBufferRef.current = '';
+                setAgentDraft(null); setAgentThought(null); setAgentPlan(null);
             }
             setIsAgentTurnActive(running);
             isAgentRunningRef.current = running;
@@ -1120,15 +1131,15 @@ function GiApp() {
                     onOpenWidget=${(w: any) => setFloatingWidget(w)}
                     onOpenAttachmentPreview=${setAttachmentPreview}
                     emptyMessage=${searchState.active ? (searchState.query ? 'No matching messages.' : 'Enter a search query.') : 'Send a message to get started.'}
-                    agents=${agents}
+                    agents=${{...agents,[SYSTEM_AGENT_ID]:SYSTEM_AGENT}}
                     user=${userProfile}
                     reverse=${true}
                     removingPostIds=${removingPostIds}
                     searchQuery=${searchState.active ? searchState.query : ''}
                 />
-                ${activityFresh && activity?.tool && !activity?.compaction?.active && agentStatus?.phase !== 'retry_wait' && html`<${ToolActivity} tool=${activity.tool} />`}
+                ${activityFresh && activity?.status === 'running' && activity?.tool?.state === 'running' && !activity?.compaction?.active && agentStatus?.phase !== 'retry_wait' && html`<${ToolActivity} tool=${activity.tool} />`}
                 <${AgentStatus} key=${`${sessionId}:${currentTurnId || ''}`}
-                    status=${(activity?.tool && agentStatus?.phase !== 'retry_wait') || isCompactionStatus(agentStatus) ? null : agentStatus}
+                    status=${(activity?.status === 'running' && activity?.tool?.state === 'running' && agentStatus?.phase !== 'retry_wait') || isCompactionStatus(agentStatus) ? null : agentStatus}
                     draft=${agentDraft}
                     plan=${agentPlan}
                     thought=${agentThought}
@@ -1245,7 +1256,7 @@ function GiApp() {
                             if (state.context_usage !== undefined) setContextUsage(state.context_usage);
                         }
                     }}
-                    agents=${agents}
+                    agents=${{...agents,[SYSTEM_AGENT_ID]:SYSTEM_AGENT}}
                     currentSessionAgent=${activeChatAgents.find((entry: any) => entry?.chat_jid === currentChatJid) || null}
                     agentStatus=${agentStatus}
                     agentDraft=${agentDraft}

@@ -220,20 +220,21 @@ test('rapid reverse timeline swipe restores its originating session draft', asyn
   for(const id of [a,b]) expect((await (await request.get(`/api/sessions/${id}/turns`)).json()).turns || []).toHaveLength(0);
 });
 
-test('native status-panel surface shares session swipe navigation without submitting the draft', async ({ page, request }) => {
+test('active status-panel fixture shares session swipe navigation without submitting the draft', async ({ page, request }) => {
   const create = async (name: string) => { const r = await request.post('/api/sessions', { data: { agent_id: `functional-status-${name}-${Date.now()}` } }); expect(r.status()).toBe(201); return (await r.json()).id; };
   const a = await create('a'), b = await create('b');
   expect((await request.post(`/api/sessions/${a}/prompt`, { data: { prompt: 'native status history', model: 'test-model' } })).status()).toBe(202);
   await expect.poll(async () => ((await (await request.get(`/api/sessions/${a}/turns`)).json()).turns || [])[0]?.status).toBe('completed');
   await page.addInitScript(id => { localStorage.setItem('gi_session_id',id); Object.defineProperty(navigator,'userAgent',{configurable:true,value:'iPhone Safari'}); },a);
+  // Idle no longer manufactures a pane; use an explicitly active snapshot.
+  await page.route(`**/api/sessions/${a}/activity`,r=>r.fulfill({json:{status:'running',phase:'inference',turn_id:'swipe-fixture'}}));
   await page.goto(BASE_URL); await waitForAppShell(page);
   const input = page.locator('.compose-box textarea'); await input.fill('unsent status draft');
   await page.getByRole('button', { name: /Manage sessions for/ }).last().click(); await expect(page.locator(`.compose-session-popup [data-session-jid="gi:${b}"]`)).toBeVisible(); await page.keyboard.press('Escape');
   const panel = page.locator('.agent-status-panel'); await expect(panel).toBeVisible();
   await expect(page.locator('link[href^="/css/gi-status.css"]')).toHaveCount(1);
   await expect(panel).toHaveCSS('max-height', '40%'); await expect(panel).toHaveCSS('overflow-y','auto');
-  // Measuring preview overflow must not add disclosure chrome for an idle
-  // status that has no streamed thought/draft content.
+  // A status without streamed thought/draft content has no disclosure chrome.
   await expect(panel.getByRole('button', { name: /Show more|more lines/ })).toHaveCount(0);
   const size = await panel.boundingBox(), host = await page.locator('.container').boundingBox();
   expect(size!.height).toBeLessThanOrEqual(host!.height * 0.4 + 1);

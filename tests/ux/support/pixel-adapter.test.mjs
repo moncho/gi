@@ -26,6 +26,13 @@ test('both pixel hosts receive identical known context capacity using native cam
  expect(classic.contextWindow).toBe(native.contextWindow);expect(classic.tokens).toBe(native.tokens);expect(classic.percent).toBe(native.percent);
  expect(native.context_window).toBeUndefined();
 });
+test('conversation query is allowed only for Gi message views',async()=>{
+ await fixture('gi',async(page,a)=>{
+  const accepted=await page.request(a.origin,'/api/sessions/main/messages?view=conversation');expect(accepted.response.json.messages).toEqual([]);
+  await page.request(a.origin,'/api/sessions/main/messages?view=raw');await page.request(a.origin,'/api/runtime/config?view=conversation');expect(a.failures).toHaveLength(2);
+ });
+ await fixture('piclaw',async(page,a)=>{await page.request(a.origin,'/timeline?view=conversation');expect(a.failures).toHaveLength(1);});
+});
 test('undeclared writes, origins and wrong session scopes fail closed',()=>fixture('gi',async(page,a)=>{
  await page.request(a.origin,'/api/sessions','POST');await page.request('https://example.invalid','/api/sessions');await page.request(a.origin,'/api/sessions?chat_jid=wrong');
  expect(a.failures).toHaveLength(3);expect(()=>a.assert()).toThrow();

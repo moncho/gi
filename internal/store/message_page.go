@@ -26,6 +26,14 @@ func encodeMessageCursor(m Message) string {
 	return base64.RawURLEncoding.EncodeToString(raw)
 }
 func (s *Store) PageMessages(ctx context.Context, sessionID, before, after string, limit int) (MessagePage, error) {
+	return s.pageMessages(ctx, sessionID, before, after, limit, false)
+}
+
+func (s *Store) PageConversationMessages(ctx context.Context, sessionID, before, after string, limit int) (MessagePage, error) {
+	return s.pageMessages(ctx, sessionID, before, after, limit, true)
+}
+
+func (s *Store) pageMessages(ctx context.Context, sessionID, before, after string, limit int, conversation bool) (MessagePage, error) {
 	out := MessagePage{Messages: []Message{}}
 	if limit < 1 || limit > 100 || (before != "" && after != "") {
 		return out, ErrMessageCursor
@@ -51,7 +59,14 @@ func (s *Store) PageMessages(ctx context.Context, sessionID, before, after strin
 	if after != "" {
 		direction, order = ">", "asc"
 	}
-	query := `select id,session_id,role,content,payload_json,created_at from messages where session_id=?`
+	content := "content"
+	if conversation {
+		content = conversationContentSQL
+	}
+	query := `select id,session_id,role,` + content + `,payload_json,created_at from messages where session_id=?`
+	if conversation {
+		query += ` and (` + conversationVisibleSQL + `)`
+	}
 	args := []any{sessionID}
 	if cursor != "" {
 		query += ` and (created_at,id) ` + direction + ` (?,?)`

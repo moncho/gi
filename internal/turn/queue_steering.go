@@ -2,12 +2,14 @@ package turn
 
 import (
 	"context"
+	"errors"
+
 	"github.com/rcarmo/gi/internal/store"
 	"github.com/rcarmo/gi/internal/topics"
 )
 
-// Active Steer binds to the observed run. An explicitly empty active ID means
-// an observed idle session, never automatic fallback from a stale active run.
+// Active Steer binds to the observed run. After that latest run is released,
+// it may launch the same queued row. Only explicit idle Steer bypasses Stop.
 func (e *Engine) SteerQueuedTurn(ctx context.Context, sessionID, queuedID, activeID string) error {
 	runner := e.runner(sessionID)
 	runner.mu.Lock()
@@ -26,7 +28,16 @@ func (e *Engine) SteerQueuedTurn(ctx context.Context, sessionID, queuedID, activ
 			return store.ErrQueueConflict
 		}
 	} else if err := e.store.SteerQueuedTurn(opCtx, sessionID, queuedID, activeID); err != nil {
-		return err
+		if !errors.Is(err, store.ErrQueueConflict) {
+			return err
+		}
+		launched, launchErr := e.launchQueueActionLocked(opCtx, runner, sessionID, queuedID, "", true, activeID)
+		if launchErr != nil {
+			return launchErr
+		}
+		if !launched {
+			return store.ErrQueueConflict
+		}
 	}
 	if bus := e.Topics(); bus != nil {
 		bus.Publish(topics.Envelope{Topic: "session.queue", SessionID: sessionID, Type: "notice", Payload: map[string]any{"type": "queue_changed"}})

@@ -53,6 +53,16 @@ func (s *Store) ClaimSessionActiveTurn(ctx context.Context, sessionID, turnID, w
 }
 
 func (s *Store) ReleaseSessionActiveTurn(ctx context.Context, sessionID, claimToken string) error {
+	return s.releaseSessionActiveTurn(ctx, sessionID, claimToken, "")
+}
+
+// ReleaseFailedEndedSteer restores retry authority only while we still own the
+// selected claim and latest-run marker. A replaced claim cannot be rolled back.
+func (s *Store) ReleaseFailedEndedSteer(ctx context.Context, sessionID, claimToken, endedID string) error {
+	return s.releaseSessionActiveTurn(ctx, sessionID, claimToken, endedID)
+}
+
+func (s *Store) releaseSessionActiveTurn(ctx context.Context, sessionID, claimToken, previousRun string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -60,6 +70,12 @@ func (s *Store) ReleaseSessionActiveTurn(ctx context.Context, sessionID, claimTo
 	defer tx.Rollback()
 	if err := restoreBoundSteeringTx(ctx, tx, sessionID, claimToken); err != nil {
 		return err
+	}
+	if previousRun != "" {
+		if _, err := tx.ExecContext(ctx, `update session_last_run set turn_id=? where session_id=?
+		 and turn_id=(select turn_id from session_active_turns where session_id=? and claim_token=?)`, previousRun, sessionID, sessionID, claimToken); err != nil {
+			return err
+		}
 	}
 	if _, err := tx.ExecContext(ctx, `delete from session_active_turns where session_id = ? and (? = '' or claim_token = ?)`, sessionID, claimToken, claimToken); err != nil {
 		return err

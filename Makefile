@@ -270,6 +270,11 @@ test-piclaw-idle-steer:
 test-ux-idle-steer: test-idle-queue-steer
 	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/queue-idle-steer.spec.mjs'
 
+.PHONY: test-ux-ended-steer
+test-ux-ended-steer: build-web
+	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
+	GI_UX_ENDED_STEER=1 GI_UX_STEER=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/queue-ended-steer.spec.mjs $(UX_PARITY_ARGS)
+
 .PHONY: test-idle-queue-steer
 test-idle-queue-steer:
 	$(GO) test -race -count=3 ./internal/store ./internal/turn ./internal/web -run 'IdleQueue|QueueSteer|WebQueueHold'

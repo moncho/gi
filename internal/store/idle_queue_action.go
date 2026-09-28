@@ -8,10 +8,32 @@ import (
 // ClaimIdleQueueAction fences the exact queue row and observed hold in one
 // statement. The hold is not removed: this action authorises one row only.
 func (s *Store) ClaimIdleQueueAction(ctx context.Context, sessionID, queuedID, workerID, token, holdID string) (bool, error) {
+	return s.claimIdleQueueAction(ctx, sessionID, queuedID, workerID, token, holdID, "")
+}
+
+// ClaimEndedQueueSteer admits only the latest released terminal run. It cannot
+// bypass Stop or replay previously bound steering, even if it was returned.
+func (s *Store) ClaimEndedQueueSteer(ctx context.Context, sessionID, queuedID, workerID, token, endedID string) (bool, error) {
+	if endedID == "" || endedID == queuedID {
+		return false, ErrQueueConflict
+	}
+	return s.claimIdleQueueAction(ctx, sessionID, queuedID, workerID, token, "", endedID)
+}
+
+func (s *Store) claimIdleQueueAction(ctx context.Context, sessionID, queuedID, workerID, token, holdID, endedID string) (bool, error) {
 	res, err := s.db.ExecContext(ctx, `insert into session_active_turns(session_id,turn_id,worker_id,claim_token,claimed_at,updated_at)
  select ?,?,?,?,`+defaultNow+`,`+defaultNow+` where exists(select 1 from turns where id=? and session_id=? and status='queued' and phase!='manual_compaction')
  and coalesce((select stop_turn_id from web_queue_holds where session_id=?),'')=?
- on conflict(session_id) do nothing`, sessionID, queuedID, workerID, token, queuedID, sessionID, sessionID, holdID)
+ and (?='' or (
+  exists(select 1 from session_last_run l join turns old on old.id=l.turn_id
+   where l.session_id=? and l.turn_id=? and old.session_id=l.session_id
+   and old.status in ('completed','failed','cancelled','aborted'))
+  and exists(select 1 from turns q where q.id=? and q.session_id=? and q.phase<>'steer_returned'
+   and q.claimed_by is null and coalesce(json_extract(q.metadata_json,'$.operation'),'')<>'manual_compaction')
+  and not exists(select 1 from steering_queue where session_id=? and source_queue_id=?)
+ ))
+ on conflict(session_id) do nothing`, sessionID, queuedID, workerID, token, queuedID, sessionID, sessionID, holdID,
+		endedID, sessionID, endedID, queuedID, sessionID, sessionID, queuedID)
 	if err != nil {
 		return false, err
 	}

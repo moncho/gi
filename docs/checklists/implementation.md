@@ -4,6 +4,8 @@ Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-28
 
+- [x] Released-claim queued Steer fallback: latest-run marker plus atomic row/session/Stop fences; prompt-once launch and retry rollback. Installed method oracle8, pre-fix regression fails×3, native race×3, browser6/6, active18/18, idle6/6, check144functional11skips/209support7786assertions pass. `docs/internal/ended-queue-steer-2026-09-28.md` records scope/failures; cleanup-owned claim reservation remains open. No deployment/new mapping.
+
 - [x] Composer thinking picker: guarded adapter reuses validated session thinking, serialises mutations and refreshes rejected state without replay. Installed Piclaw oracle 6/6, native picker 30/30, model panel 42/42 and Settings thinking 21/21 per browser passed; check 144 functional/11 skipped and 209 support/7,786 assertions. Piclaw retains draft/open picker but loses select focus; Gi conditionally restores it without stealing newer focus. Review timeouts, failed/incomplete attempts and scope limits: `docs/internal/composer-thinking-picker-2026-09-28.md`. No deployment/new mapping.
 
 - [x] Queue Return now replaces text/refs/media instead of merge, matching installed Piclaw happy path. Async attachment fetch fences intervening edits; prepared recovery survives retry/reload and post-replacement typing; persist-before-delete/CAS retained. Installed browser6/6,native Return+refs24/24,check144functional11skips,207support7770assertions pass. Review timeout disclosed/no deployment/new mapping. [Evidence](../internal/queue-return-replacement-2026-09-28.md).

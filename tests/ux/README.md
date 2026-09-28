@@ -17,6 +17,8 @@ this current-session tool. See [the contract](../../docs/internal/message-retrie
 
 ## Compose/panel pixel gate
 
+`make test-ux-ended-steer` runs six disposable-claim browser journeys through the native Steer API after an observed run ends. It checks original-run fencing, one selected delivery, draft retention and reload. The [released-claim contract](../../docs/internal/ended-queue-steer-2026-09-28.md) records the oracle, native race tests and remaining cleanup-window gap.
+
 `make test-ux-model-panel` runs 42 browser cases, including the combobox/listbox contract, loading and switching guards, focus ownership after delayed mutations, and Tab order for an overflowing 43-model catalogue with unavailable thinking. `make test-model-panel-helpers` runs ten guarded-adapter/helper tests, including thinking mutation and keyboard ownership. See [model accessibility](../../docs/internal/model-panel.md#model-accessibility) for the passing matrix and screen-reader/device/pixel limits.
 
 `make test-piclaw-picker-thinking` exercises the installed Piclaw 3.2.4 picker with isolated model and command responses in six browser/viewport combinations. `make test-ux-picker-thinking` exercises native thinking selection in 30 cases: explicit/default levels, rejected changes, draft preservation, reload, next-provider-request capture, newer focus ownership, session switching and stale-token rejection without replay. The guarded adapter reuses the Settings thinking API. See [composer thinking results](../../docs/internal/composer-thinking-picker-2026-09-28.md) for the reference scope and retained failures.

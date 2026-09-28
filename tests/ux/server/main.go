@@ -524,7 +524,11 @@ func main() {
 			log.Fatalf("UX ready file: %v", err)
 		}
 	}
-	httpServer := &http.Server{Addr: addr, Handler: server.Handler()}
+	var handler http.Handler = server.Handler()
+	if os.Getenv("GI_UX_ENDED_STEER") != "" {
+		handler = endedSteerFixture(s, handler)
+	}
+	httpServer := &http.Server{Addr: addr, Handler: handler}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer stop()
 	if err := server.StartWorkspaceIndex(ctx); err != nil {

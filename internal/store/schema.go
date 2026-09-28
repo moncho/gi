@@ -172,6 +172,22 @@ func initSchema(db *sql.DB) error {
 			foreign key(turn_id) references turns(id) on delete cascade
 		);`,
 		`create index if not exists idx_session_active_turns_turn on session_active_turns(turn_id);`,
+		// Persist claim order after release; timestamps cannot fence replaced runs.
+		`create table if not exists session_last_run (
+			session_id text primary key references sessions(id) on delete cascade,
+			turn_id text not null
+		);`,
+		`create trigger if not exists session_last_run_insert after insert on session_active_turns begin
+			insert into session_last_run(session_id,turn_id) values(new.session_id,new.turn_id)
+			on conflict(session_id) do update set turn_id=excluded.turn_id;
+		end;`,
+		`create trigger if not exists session_last_run_update after update of turn_id on session_active_turns begin
+			insert into session_last_run(session_id,turn_id) values(new.session_id,new.turn_id)
+			on conflict(session_id) do update set turn_id=excluded.turn_id;
+		end;`,
+		// Upgrade active claims only. Do not infer already-released history.
+		`insert into session_last_run(session_id,turn_id) select session_id,turn_id from session_active_turns where true
+			on conflict(session_id) do nothing;`,
 		// A web Stop with pending work must survive cleanup and process restart.
 		`create table if not exists web_queue_holds (
 			session_id text primary key references sessions(id) on delete cascade,

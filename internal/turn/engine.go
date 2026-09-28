@@ -858,6 +858,10 @@ func (e *Engine) launchTurnWithWebResumeLocked(ctx context.Context, runner *sess
 // Explicit idle Steer bypasses the captured Stop hold for the selected item
 // only. Unlike Resume queue, it leaves the hold protecting sibling work.
 func (e *Engine) launchTurnWithQueueActionLocked(ctx context.Context, runner *sessionRunner, sessionID, turnID, stopTurnID string, selectedSteer bool) (bool, error) {
+	return e.launchQueueActionLocked(ctx, runner, sessionID, turnID, stopTurnID, selectedSteer, "")
+}
+
+func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRunner, sessionID, turnID, stopTurnID string, selectedSteer bool, endedID string) (bool, error) {
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
 	if hook := e.beforeLaunchClaimHook; hook != nil {
 		hook(opCtx, sessionID, turnID)
@@ -865,7 +869,9 @@ func (e *Engine) launchTurnWithQueueActionLocked(ctx context.Context, runner *se
 	claimToken := turnID
 	var claimed bool
 	var err error
-	if selectedSteer {
+	if endedID != "" {
+		claimed, err = e.store.ClaimEndedQueueSteer(opCtx, sessionID, turnID, "runner", claimToken, endedID)
+	} else if selectedSteer {
 		claimed, err = e.store.ClaimIdleQueueAction(opCtx, sessionID, turnID, "runner", claimToken, stopTurnID)
 	} else if stopTurnID == "" {
 		claimed, err = e.store.ClaimSessionActiveTurn(opCtx, sessionID, turnID, "runner", claimToken)
@@ -901,8 +907,14 @@ func (e *Engine) launchTurnWithQueueActionLocked(ctx context.Context, runner *se
 				cleanupErrs = append(cleanupErrs, fmt.Errorf("touch session queued after launch rollback: %w", err))
 			}
 		}
-		if err := e.store.ReleaseSessionActiveTurn(e.backgroundContext(), sessionID, claimToken); err != nil {
-			cleanupErrs = append(cleanupErrs, fmt.Errorf("release active claim after launch failure: %w", err))
+		var releaseErr error
+		if endedID != "" {
+			releaseErr = e.store.ReleaseFailedEndedSteer(e.backgroundContext(), sessionID, claimToken, endedID)
+		} else {
+			releaseErr = e.store.ReleaseSessionActiveTurn(e.backgroundContext(), sessionID, claimToken)
+		}
+		if releaseErr != nil {
+			cleanupErrs = append(cleanupErrs, fmt.Errorf("release active claim after launch failure: %w", releaseErr))
 		}
 		if runner.current == active {
 			runner.current = nil

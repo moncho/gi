@@ -60,7 +60,7 @@ The PTY fixture verifies admission and eventual completion, not the full model/t
 - [ ] Queue display and storage: text/media/references, per-session ownership, counts, identifiers, FIFO, one-at-a-time/all modes and reload.
 - [ ] Delivery transitions: idle, streaming, active tool, post-tool model, retry/error, abort, compaction, run-end race and session switch.
 - [ ] Atomic dequeue/abort restoration so recovered input cannot still execute from its old entry; preserve drafts and attachments on storage errors.
-- [ ] Piclaw web return/remove/reorder/Steer behaviour, including missing rows, restore failure, active-to-idle race and duplicate requests.
+- [ ] Piclaw web return/remove/reorder/Steer behaviour, including missing rows, restore failure, active-to-idle race and duplicate requests. [Released-claim fallback](ended-queue-steer-2026-09-28.md) now has bounded native coverage; cleanup-owned claim reservation and complete handoff timing still need work.
 - [ ] Differential reference/native PTYs and browser journeys, plus independent contract review before mapping IDs as passing.
 
 No production restart, validation-binary replacement or deployment is part of this change.

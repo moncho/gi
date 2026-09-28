@@ -4,7 +4,7 @@ Installed Piclaw 3.2.4 lets a queued item's Steer button send that item when no 
 
 ## Native admission
 
-`POST /api/sessions/:session/queue/:turn/steer` requires an explicit string `active_turn_id`. A nonempty value retains the existing strict active-run contract. An empty string means the caller observed idle; missing/null/nonstring values fail validation.
+`POST /api/sessions/:session/queue/:turn/steer` requires an explicit string `active_turn_id`. A nonempty value binds to the observed run, with the later [released-claim fallback](ended-queue-steer-2026-09-28.md) restricted to that latest terminal run and no Stop hold. An empty string means the caller observed idle; missing/null/nonstring values fail validation.
 
 Idle admission claims the exact queued row, session and observed Stop hold atomically. Foreign, cancelled, already claimed or already completed rows conflict. If a newer active claim or different hold wins the race, the request conflicts rather than steering a different run. The selected row keeps its turn identity and captured metadata.
 

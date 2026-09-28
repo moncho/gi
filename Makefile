@@ -306,6 +306,10 @@ test-piclaw-settings-shell:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
+.PHONY: test-piclaw-btw-panel
+test-piclaw-btw-panel:
+	$(BUN) tests/ux/oracle/piclaw-btw-panel-probe.mjs
+
 .PHONY: test-piclaw-widget-events test-piclaw-widget-persisted
 test-piclaw-widget-events:
 	$(BUN) tests/ux/oracle/piclaw-widget-lifecycle-probe.mjs
@@ -517,6 +521,12 @@ test-ux-recovery-controls:
 test-ux-outcomes:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_OUTCOMES=1' UX_LOCAL_SPEC='tests/ux/outcomes.spec.mjs tests/ux/message-copy.spec.mjs tests/ux/speech.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/13-outcomes.spec.ts
 	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+
+.PHONY: test-ux-btw-mount
+test-ux-btw-mount: build-web
+	@mkdir -p $(dir $(UX_LOCAL_BIN))
+	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
+	GI_UX_BTW_MOUNT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs
 
 .PHONY: test-ux-widget-persisted
 test-ux-widget-persisted:

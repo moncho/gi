@@ -62,31 +62,31 @@ test('capture persistence failure rejects readiness; recovery remains in memory 
   expect(errors.length).toBeGreaterThan(0);
 });
 
-test('queue return persistence gates deletion and retry never merges the durable ID twice', async () => {
+test('queue return replaces draft, gates deletion and retry preserves later edits', async () => {
   const disk=storage();let fail=true;const writes:any[]=[];
   const repo=createDraftRepository({load:disk.load,put:async (row,expected)=>{writes.push(structuredClone(row));if(fail)throw Error('quota');return disk.put(row,expected);}});
   repo.update('A',{text:'latest',fileRefs:['new']});
   const capture={...emptyDraft(),text:'queued',fileRefs:['old'],media:[new File(['bytes'],'queued.txt')]};
   const first=repo.prepareQueueReturn('A','turn1',capture);
   await expect(first.ready).rejects.toThrow('quota');
-  expect(repo.get('A').text).toBe('queued\n\nlatest');
-  repo.update('A',{text:'queued\n\nlatest\nconcurrent'});
+  expect(repo.get('A').text).toBe('queued');
+  repo.update('A',{text:'queued\nconcurrent'});
   fail=false;await repo.prepareQueueReturn('A','turn1',capture).ready;await repo.flushStable();
-  expect(repo.get('A').text).toBe('queued\n\nlatest\nconcurrent');
+  expect(repo.get('A').text).toBe('queued\nconcurrent');
   expect(disk.rows.get('A').queueReturns.turn1.state).toBe('prepared');
   const loaded=createDraftRepository(disk);await loaded.load();
   await loaded.prepareQueueReturn('A','turn1',capture).ready;
-  expect(loaded.get('A').media).toHaveLength(1);expect(loaded.get('A').fileRefs).toEqual(['old','new']);
+  expect(loaded.get('A').media).toHaveLength(1);expect(loaded.get('A').fileRefs).toEqual(['old']);
   await loaded.completeQueueReturn('A','turn1');expect(disk.rows.get('A').queueReturns.turn1.state).toBe('removed');
   expect(repo.get('B').text).toBe('');
 });
 
-test('distinct queue IDs with identical text remain distinct; retry keys do not duplicate', async()=>{
+test('distinct queue Returns replace rather than concatenate identical text', async()=>{
  const repo=createDraftRepository(storage());
  await repo.prepareQueueReturn('A','one',{...emptyDraft(),text:'same'}).ready;
  await repo.prepareQueueReturn('A','two',{...emptyDraft(),text:'same'}).ready;
  await repo.prepareQueueReturn('A','two',{...emptyDraft(),text:'same'}).ready;
- expect(repo.get('A').text).toBe('same\n\nsame');
+ expect(repo.get('A').text).toBe('same');
 });
 
 test('merge recognises already-restored prefix without losing current references', () => {
@@ -182,4 +182,13 @@ test('bootstrap retries cannot unfreeze a failed or conflicted repository; full 
  let fail=true;const bad=createDraftRepository({...db,load:async()=>{if(fail)throw Error('offline');return db.load()}});await expect(bad.load()).rejects.toThrow('offline');fail=false;
  await expect(bad.load()).rejects.toThrow('offline');await expect(bad.begin('A',draft('not sent')).ready).rejects.toThrow('offline');
  const fresh=createDraftRepository(db);await fresh.load();expect(fresh.get('A').text).toBe('durable');fresh.update('A',draft('after reload'));await fresh.flushStable();expect(db.rows.get('A').draft.text).toBe('after reload');
+});
+
+test('queue return fences text and media edits while recovery is pending',async()=>{
+ for(const patch of [{text:'typed later'},{media:[new File(['new'],'new.txt')]}]){
+  const repo=createDraftRepository(storage());repo.update('A',{text:'before'});await repo.flush();const expected=repo.captureQueueReturn('A');repo.update('A',patch);
+  expect(()=>repo.prepareQueueReturn('A','q',{...emptyDraft(),text:'queued'},expected)).toThrow('Draft changed');
+  expect(repo.hasQueueReturn('A','q')).toBe(false);expect(repo.get('A').text).toBe(patch.text||'before');
+  const fresh=repo.captureQueueReturn('A');await repo.prepareQueueReturn('A','q',{...emptyDraft(),text:'queued'},fresh).ready;expect(repo.get('A').text).toBe('queued');expect(repo.get('A').media).toEqual([]);
+ }
 });

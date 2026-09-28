@@ -27,15 +27,17 @@ Feature: Gi behaviour retained where installed Piclaw 3.2.4 differs
     Then the SVG remains escaped source code and no image preview appears
     And the source can still be copied
 
-  # Existing-code regression only; not an accepted clone deviation.
-  # User direction on 2026-09-27 requires Piclaw's queue return semantics.
+  # Piclaw replacement is now implemented; async recovery/persistence remains
+  # native-specific and is not a blanket queue parity mapping.
   @gi-ux-004 @migration-gap
-  Scenario: Queue return recovers text alongside a newer draft without losing media
-    Given a queued item and a newer editor draft with references or media
+  Scenario: Queue return replaces the draft with guarded durable recovery
+    Given a queued item and an editor draft with references or media
     When I return the queued item to Gi's editor
-    Then Gi preserves the latest draft alongside the recovered queued text
+    Then queued text and references replace the existing draft
+    And edits during attachment recovery prevent replacement and removal until explicit retry
     And recovery is persisted before the queued row is removed
     And failure or reload retains a recoverable item without duplicate recovery
+    And typing after replacement survives delayed removal responses
 
   # Bounded regression only; full Piclaw active/end-race parity remains open.
   # Explicit observed-idle actions now send the selected queued item.

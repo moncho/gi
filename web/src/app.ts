@@ -941,11 +941,12 @@ function GiApp() {
             } else if (action === 'return') {
                 const item = itemOrIndex;
                 if (item.chat_jid !== chat || item.pending) throw new Error('Queued item belongs to another session or has no durable ID');
+                const expectedDraft = drafts.captureQueueReturn(scope.sessionId);
                 const recovered = drafts.hasQueueReturn(scope.sessionId, item.id)
                     ? emptyDraft() : await recoverQueueDraft(item, parseQueuedContent(item.content));
-                const prepared = drafts.prepareQueueReturn(scope.sessionId, item.id, recovered);
-                // Publish the merge immediately; typing while persistence is in
-                // flight then writes on top of it instead of replacing it.
+                const prepared = drafts.prepareQueueReturn(scope.sessionId, item.id, recovered, expectedDraft);
+                // Publish the replacement immediately; later typing survives
+                // persistence/deletion and cannot be replaced by their replies.
                 if (selection.current() === scope.sessionId) {
                     setFileRefs(prepared.draft.fileRefs); setMessageRefs(prepared.draft.messageRefs);
                     setDraftRestore({sessionId: scope.sessionId, ...prepared.draft, token: randomClientId()});

@@ -23,7 +23,7 @@ async function fixture(page,request,info){
  return{main,child,queued,media,input,row,stored,release};
 }
 
-test('Gi no-loss deviation: recover queued item alongside the latest editor draft',async({page,request},info)=>{
+test('Return replaces the editor and fences recovery-time edits without duplicate recovery',async({page,request},info)=>{
  await attachGiDeviation(info,'@gi-ux-004');
  const{main,queued,media,input,row,stored,release}=await fixture(page,request,info);
  let unblock,held=false,delivered;const gate=new Promise(resolve=>{unblock=resolve;});const done=new Promise(resolve=>{delivered=resolve;});
@@ -35,8 +35,8 @@ test('Gi no-loss deviation: recover queued item alongside the latest editor draf
   deletes++;
   // Inspect committed IndexedDB before letting the actual DELETE run.
   const snapshot=await stored();expect(snapshot.recovery[queued.turn_id].state).toBe('prepared');
-  expect(snapshot.text).toContain('queued origin');expect(snapshot.text).toContain('concurrent latest');
-  expect(snapshot.media).toEqual(['queued.txt','new.txt']);expect(snapshot.fileRefs).toContain('folder/');expect(snapshot.messageRefs).toContain('source-message');
+  expect(snapshot.text).toBe('queued origin');
+  expect(snapshot.media).toEqual(['queued.txt']);expect(snapshot.fileRefs).toContain('folder/');expect(snapshot.messageRefs).toContain('source-message');
   if(failDelete){await route.abort('failed');return;}await route.continue();
  });
  try{
@@ -46,19 +46,23 @@ test('Gi no-loss deviation: recover queued item alongside the latest editor draf
   await page.evaluate(()=>{window.__put=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(value,...args){if(this.name==='drafts'&&Object.keys(value.queueReturns||{}).length)throw new DOMException('Recovery quota failure','QuotaExceededError');return window.__put.call(this,value,...args);};});
   unblock();await done;
   await expect(page.getByRole('alert').filter({hasText:'Queue action failed'})).toBeVisible();expect(deletes).toBe(0);
-  await expect(row).toBeVisible();await expect(input).toHaveValue('queued origin\n\nconcurrent latest');
+  await expect(page.getByRole('alert').filter({hasText:'Draft changed while returning'})).toBeVisible();
+  await expect(row).toBeVisible();await expect(input).toHaveValue('concurrent latest');
+  // Retry explicitly authorises replacement, but failed persistence keeps queue.
+  await row.getByRole('button',{name:'Return queued message to editor'}).click();
+  await expect(input).toHaveValue('queued origin');await expect(page.getByRole('alert').filter({hasText:'Queue action failed'})).toBeVisible();expect(deletes).toBe(0);
   await page.evaluate(()=>{IDBObjectStore.prototype.put=window.__put;});await page.unroute(mediaURL);
-  // Retry persists the existing merge, then an injected transport error retains
+  // Retry persists the existing replacement, then an injected transport error retains
   // the server row. A reload must preserve both draft and idempotency record.
   await row.getByRole('button',{name:'Return queued message to editor'}).click();
   await expect.poll(()=>deletes).toBe(1);await expect(row.getByRole('button',{name:'Return queued message to editor'})).toBeEnabled();
   await expect(page.getByRole('alert').filter({hasText:'Queue action failed'})).toBeVisible();
-  await page.reload();await expect(row).toBeVisible();await expect(input).toHaveValue('queued origin\n\nconcurrent latest');
+  await page.reload();await expect(row).toBeVisible();await expect(input).toHaveValue('queued origin');
   failDelete=false;await row.getByRole('button',{name:'Return queued message to editor'}).click();await expect.poll(()=>deletes).toBe(2);await expect(row).toHaveCount(0);
-  await expect(input).toHaveValue('queued origin\n\nconcurrent latest');await expect(input).toBeFocused();
-  await expect.poll(()=>input.evaluate(el=>el.selectionStart)).toBe('queued origin\n\nconcurrent latest'.length);
+  await expect(input).toHaveValue('queued origin');await expect(input).toBeFocused();
+  await expect.poll(()=>input.evaluate(el=>el.selectionStart)).toBe('queued origin'.length);
   await expect.poll(async()=> (await stored()).recovery[queued.turn_id].state).toBe('removed');
-  await expect(page.locator('.compose-file-pill[title="queued.txt"]')).toHaveCount(1);await expect(page.locator('.compose-file-pill[title="new.txt"]')).toHaveCount(1);
+  await expect(page.locator('.compose-file-pill[title="queued.txt"]')).toHaveCount(1);await expect(page.locator('.compose-file-pill[title="new.txt"]')).toHaveCount(0);
   const{turns}=await(await request.get(`/api/sessions/${main.id}/turns`)).json();expect(turns.find(t=>t.id===queued.turn_id).status).toBe('cancelled');
  }finally{unblock();release();}
 });
@@ -72,11 +76,12 @@ test('Gi consumed queue return retains recovered data and reports an incomplete 
  try{
   await input.fill('new unsent draft');await row.getByRole('button',{name:'Return queued message to editor'}).click();await expect.poll(()=>held).toBe(true);
   expect((await stored()).recovery[queued.turn_id].state).toBe('prepared');
+  await input.fill('queued origin edited after replacement');
   release();await expect.poll(async()=>{const{turns}=await(await request.get(`/api/sessions/${main.id}/turns`)).json();return turns.find(t=>t.id===queued.turn_id).status;},{timeout:15000}).toBe('completed');
   unblock();await expect(page.getByRole('alert').filter({hasText:'Queue action failed'})).toBeVisible();
-  await expect(input).toHaveValue('queued origin\n\nnew unsent draft');await expect(row).toHaveCount(0);
+  await expect(input).toHaveValue('queued origin edited after replacement');await expect(row).toHaveCount(0);
   await page.reload();await expect(page.getByRole('alert').filter({hasText:'Queue return incomplete'})).toBeVisible();
-  await expect(input).toHaveValue('queued origin\n\nnew unsent draft');
+  await expect(input).toHaveValue('queued origin edited after replacement');
  }finally{unblock();release();}
 });
 
@@ -91,6 +96,6 @@ test('Gi queue return after selection changes recovers only the origin',async({p
   await expect.poll(async()=> (await stored()).recovery?.[queued.turn_id]?.state).toBe('removed');
   await expect(input).toHaveValue('target draft');await expect(page.getByRole('alert')).toHaveCount(0);
   await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();
-  await expect(input).toHaveValue('queued origin\n\norigin draft');await expect(page.locator('.compose-file-pill[title="queued.txt"]')).toBeVisible();
+  await expect(input).toHaveValue('queued origin');await expect(page.locator('.compose-file-pill[title="queued.txt"]')).toBeVisible();
  }finally{unblock();release();}
 });

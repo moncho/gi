@@ -181,18 +181,23 @@ export function createDraftRepository(storage: DraftStorage, onError: (error: Er
             return copy(row.draft);
         },
         hasQueueReturn(id: string, queueId: string) { return Boolean(record(id).queueReturns?.[queueId]); },
-        prepareQueueReturn(id: string, queueId: string, captured: Draft) {
+        captureQueueReturn(id: string) { return copy(record(id).draft); },
+        prepareQueueReturn(id: string, queueId: string, captured: Draft, expected?: Draft) {
             const row = record(id);
             row.queueReturns ||= {};
             if (!row.queueReturns[queueId]) {
                 const current = row.draft;
-                row.draft = mergeDrafts(captured, current);
-                // Distinct durable IDs may intentionally contain identical text.
-                // Only the recovery key, not a text prefix, makes return idempotent.
-                row.draft.text = [captured.text, current.text].filter(Boolean).join('\n\n');
+                // Attachment recovery is asynchronous. Never replace text/files
+                // edited after the click; leave both sources for explicit retry.
+                if (expected && (current.text !== expected.text ||
+                    (['media','fileRefs','messageRefs'] as const).some(field => current[field].length !== expected[field].length || current[field].some((value, index) => value !== expected[field][index])))) {
+                    throw new Error('Draft changed while returning the queued item. Nothing was removed; retry Return to replace the current draft.');
+                }
+                row.draft = copy(captured);
                 row.queueReturns[queueId] = { state: 'prepared', recoveredAt: Date.now() };
             }
-            // Retry persists the existing merge; it must not prepend it again.
+            // Retry persists the prepared replacement and newer edits, not a
+            // second replacement which could erase typing since the first try.
             return { draft: copy(row.draft), ready: persist(id) };
         },
         queueReturnFailed(id: string, queueId: string, message: string) {

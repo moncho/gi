@@ -1985,15 +1985,18 @@ function createDraftRepository(storage, onError = () => {}, recover) {
     hasQueueReturn(id, queueId) {
       return Boolean(record(id).queueReturns?.[queueId]);
     },
-    prepareQueueReturn(id, queueId, captured) {
+    captureQueueReturn(id) {
+      return copy(record(id).draft);
+    },
+    prepareQueueReturn(id, queueId, captured, expected) {
       const row = record(id);
       row.queueReturns ||= {};
       if (!row.queueReturns[queueId]) {
         const current = row.draft;
-        row.draft = mergeDrafts(captured, current);
-        row.draft.text = [captured.text, current.text].filter(Boolean).join(`
-
-`);
+        if (expected && (current.text !== expected.text || ["media", "fileRefs", "messageRefs"].some((field) => current[field].length !== expected[field].length || current[field].some((value, index) => value !== expected[field][index])))) {
+          throw new Error("Draft changed while returning the queued item. Nothing was removed; retry Return to replace the current draft.");
+        }
+        row.draft = copy(captured);
         row.queueReturns[queueId] = { state: "prepared", recoveredAt: Date.now() };
       }
       return { draft: copy(row.draft), ready: persist(id) };
@@ -22311,11 +22314,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-sdjj575r.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-xn4fc13z.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-k3xy853e.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-mf0efj8r.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-2m8g0qe2.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-72q5b047.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-vxmj7k2n.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-mdqf8m9m.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-9n4mxjd1.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-eabpqddz.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -24608,8 +24611,9 @@ function GiApp() {
         const item = itemOrIndex;
         if (item.chat_jid !== chat || item.pending)
           throw new Error("Queued item belongs to another session or has no durable ID");
+        const expectedDraft = drafts.captureQueueReturn(scope.sessionId);
         const recovered = drafts.hasQueueReturn(scope.sessionId, item.id) ? emptyDraft() : await recoverQueueDraft(item, parseQueuedContent(item.content));
-        const prepared = drafts.prepareQueueReturn(scope.sessionId, item.id, recovered);
+        const prepared = drafts.prepareQueueReturn(scope.sessionId, item.id, recovered, expectedDraft);
         if (selection.current() === scope.sessionId) {
           setFileRefs(prepared.draft.fileRefs);
           setMessageRefs(prepared.draft.messageRefs);
@@ -25119,5 +25123,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=F77595A87AD08C4364756E2164756E21
-//# sourceMappingURL=app-4d0zwff9.js.map
+//# debugId=338EA3E7B7F0181964756E2164756E21
+//# sourceMappingURL=app-zy27sg5y.js.map

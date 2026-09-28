@@ -27,7 +27,7 @@ Installed release: `/opt/piclaw/current`, Piclaw 3.2.4, `@earendil-works/pi-codi
 | Pi Alt+Up | Clear all steering/follow-up queues; put steering then follow-up text before current draft | Open: Gi pops one local string and does not remove durable delivery |
 | Pi Escape while working | Abort and restore pending messages | Open: verify abort/queue/draft/media transaction and actual key dispatch |
 | Pi pending display | Distinct `Steering:` and `Follow-up:` rows and edit-all hint | Open: current Gi transcript/queue presentation differs |
-| Piclaw web Return | Return one queued row by replacing editor text/refs, then schedule removal | Open: Gi recovery-merge behaviour differs |
+| Piclaw web Return | Return one queued row by replacing editor text/refs, then schedule removal | Replacement now native-tested against installed browser oracle. Gi retains durable attachment recovery and persist-before-delete; edits during async recovery require explicit retry. |
 | Piclaw web Steer, active | Remove queued row, persist user message, steer active run | Partial Gi ownership fixture only; full exact contract open |
 | Piclaw web Steer, idle or run ending before admission | Dispatch as normal chat processing | Explicit idle send implemented with claim/hold fences; stale-active automatic fallback remains open (Gi conflicts for explicit retry). |
 | Piclaw Steer storage failure | Restore removed queued row and report error | Installed method/browser oracle verified; native idle storage failure retains row for retry. Full active-path parity remains open. |

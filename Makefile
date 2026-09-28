@@ -511,6 +511,14 @@ capture-gi-chat-baseline:
 test-pi-piclaw-queue-oracle:
 	$(BUN) tests/ux/oracle/pi-piclaw-queue-probe.mjs
 
+.PHONY: test-piclaw-queue-return test-ux-queue-return
+test-piclaw-queue-return:
+	$(BUN) tests/ux/oracle/piclaw-return-probe.mjs
+
+test-ux-queue-return:
+	$(BUN) test tests/ux/support/drafts.test.ts tests/ux/support/queue-return.test.ts
+	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/queue-return.spec.mjs tests/ux/message-reference-labels.spec.mjs'
+
 .PHONY: diagnose-webkit-unload
 diagnose-webkit-unload:
 	$(BUN) tests/ux/oracle/webkit-unload-diagnostic.mjs

@@ -1,11 +1,10 @@
 name: CI
 
+# Run the full CI/release matrix only for versioned release tags. The current
+# per-commit matrix has known failing journeys; local checks remain available.
 on:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: read

@@ -731,7 +731,17 @@ test-ux-session-panel: build-web
 
 .PHONY: test-ux-model-panel test-model-panel-helpers
 test-model-panel-helpers:
-	$(BUN) test tests/ux/support/model-panel.test.ts tests/ux/support/model-picker.test.ts tests/ux/support/model-accessibility.test.ts
+	$(BUN) test tests/ux/support/model-panel.test.ts tests/ux/support/model-picker.test.ts tests/ux/support/model-accessibility.test.ts tests/ux/support/model-thinking.test.ts
+
+.PHONY: test-piclaw-picker-thinking
+test-piclaw-picker-thinking:
+	$(BUN) tests/ux/oracle/piclaw-picker-thinking-probe.mjs
+
+.PHONY: test-ux-picker-thinking
+test-ux-picker-thinking: build-web
+	mkdir -p $(dir $(UX_LOCAL_BIN))
+	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
+	GI_UX_PICKER_THINKING=1 GI_UX_THINKING=1 GI_UX_THINKING_DEFAULT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/picker-thinking.spec.mjs $(UX_PARITY_ARGS)
 
 test-ux-model-panel: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))

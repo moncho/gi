@@ -4,6 +4,8 @@ Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-28
 
+- [x] Composer thinking picker: guarded adapter reuses validated session thinking, serialises mutations and refreshes rejected state without replay. Installed Piclaw oracle 6/6, native picker 30/30, model panel 42/42 and Settings thinking 21/21 per browser passed; check 144 functional/11 skipped and 209 support/7,786 assertions. Piclaw retains draft/open picker but loses select focus; Gi conditionally restores it without stealing newer focus. Review timeouts, failed/incomplete attempts and scope limits: `docs/internal/composer-thinking-picker-2026-09-28.md`. No deployment/new mapping.
+
 - [x] Queue Return now replaces text/refs/media instead of merge, matching installed Piclaw happy path. Async attachment fetch fences intervening edits; prepared recovery survives retry/reload and post-replacement typing; persist-before-delete/CAS retained. Installed browser6/6,native Return+refs24/24,check144functional11skips,207support7770assertions pass. Review timeout disclosed/no deployment/new mapping. [Evidence](../internal/queue-return-replacement-2026-09-28.md).
 
 - [x] Isolated WebKit reload-oracle symptom with minimal native HTTP/EventSource/presence page: same cancelled-request/access-control errors without Piclaw assets or routing; replacement stream connects and server receives presence. Chromium clean. Strict Piclaw gate remains failed; no waiver/product workaround/parity claim. [Control](../internal/webkit-reload-control-2026-09-28.md).

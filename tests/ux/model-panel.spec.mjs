@@ -101,7 +101,7 @@ for(const owner of ['composer','Settings'])test(`Accepted model response does no
  }finally{release?.();await env.close();}
 });
 
-test('Overflowing model list stays out of Tab order beside read-only thinking',async({page},info)=>{
+test('Overflowing model list stays out of Tab order beside unavailable thinking',async({page},info)=>{
  const env=await journeyEnvironment(info);
  try{
   const writes=[];
@@ -113,7 +113,7 @@ test('Overflowing model list stays out of Tab order beside read-only thinking',a
   });
   await page.goto(env.origin);const input=page.locator('.compose-box textarea');await expect(input).toBeFocused();await input.fill('Long catalogue draft');
   await page.getByRole('button',{name:'Open model picker',exact:true}).click();const panel=page.locator('.compose-model-catalogue'),box=page.getByRole('combobox',{name:'Search models',exact:true}),list=page.getByRole('listbox',{name:'Models',exact:true}),settings=panel.getByRole('button',{name:'Open Models settings',exact:true});
-  await expect(list).toHaveAttribute('aria-busy','false');await expect(panel.getByLabel('Thinking level (read-only)',{exact:true})).toBeDisabled();await expect.poll(()=>list.evaluate(e=>e.scrollHeight>e.clientHeight)).toBe(true);
+  await expect(list).toHaveAttribute('aria-busy','false');await expect(panel.getByRole('combobox',{name:'Thinking level',exact:true})).toBeDisabled();await expect.poll(()=>list.evaluate(e=>e.scrollHeight>e.clientHeight)).toBe(true);
   await expect(box).toBeFocused();await box.press('ArrowDown');await expect(box).toBeFocused();await box.press('Tab');await expect(settings).toBeFocused();await settings.press('Shift+Tab');await expect(box).toBeFocused();
   await box.fill('no-such-model');await expect(list.getByRole('option')).toHaveCount(0);await expect(box).not.toHaveAttribute('aria-activedescendant',/.+/);await box.press('Tab');await expect(panel.getByRole('button',{name:'Clear model search',exact:true})).toBeFocused();await page.keyboard.press('Tab');await expect(settings).toBeFocused();
   await panel.getByRole('button',{name:'Clear model search',exact:true}).click();await expect(box).toBeFocused();await expect(list.getByRole('option')).toHaveCount(43);await box.press('Tab');await expect(settings).toBeFocused();await page.keyboard.press('Escape');await expect(input).toHaveValue('Long catalogue draft');expect(writes).toEqual([]);

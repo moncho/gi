@@ -8434,6 +8434,8 @@ function modelPickerKey(event, entries, current, previous) {
   if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey && event.metaKey)
     return null;
   const target = event.target;
+  if (target?.closest?.("select"))
+    return null;
   const editing = Boolean(target?.closest?.('input, textarea, select, [contenteditable="true"]'));
   const searchJump = Boolean(target?.matches?.('input[type="search"]')) && (event.ctrlKey || event.metaKey) && ["Home", "End"].includes(event.key);
   if ((event.ctrlKey || event.metaKey) && !searchJump)
@@ -9651,6 +9653,7 @@ function ComposeBox({
   const modelHintTitle = switchingModel ? "Switching model…" : modelUsageTitleParts.join(" • ") || (showModelPickerHint ? "Select a model (tap to open model picker)" : `Current model: ${modelHintLabel}${modelHintSuffix} (tap to open model picker)`);
   const showComposeMetaRow = !searchMode && (showModelPickerHint || contextUsage);
   const emitModelState = (payload) => {
+    acceptThinkingState(payload);
     if (!payload || typeof payload !== "object")
       return;
     const modelLabel = payload.model ?? payload.current;
@@ -9922,6 +9925,47 @@ function ComposeBox({
     const next = `${current}${prefix}${snippet}`.trimStart();
     updateValue(next);
   };
+  const handleSelectThinking = async (event) => {
+    const control = event.currentTarget;
+    const requested = control.value;
+    control.value = thinkingState?.thinking_level || "";
+    if (modelMutationRef.current || loadingModels || !thinkingState?.thinking_configurable || thinkingState.current !== activeModel || !thinkingState.thinking_token)
+      return;
+    if (requested !== "" && !thinkingState.thinking_levels?.includes(requested))
+      return;
+    if (requested === (thinkingState.thinking_level || ""))
+      return;
+    thinkingFocusRef.current = document.activeElement === control;
+    modelMutationRef.current = true;
+    ++modelRevisionRef.current;
+    const mutationToken = onModelMutationStart?.();
+    setSwitchingModel(true);
+    setSubmitError("");
+    try {
+      const state = await selectAgentThinking(currentChatJid, activeModel, requested, thinkingState.thinking_token);
+      if (!mountedRef.current)
+        return;
+      emitModelState(state);
+    } catch (error) {
+      if (mountedRef.current) {
+        setSubmitError("Thinking selection failed: " + error.message);
+        try {
+          const state = await getAgentModels(currentChatJid);
+          if (mountedRef.current)
+            emitModelState(state);
+        } catch {
+          if (mountedRef.current)
+            setThinkingState(null);
+        }
+      }
+    } finally {
+      modelMutationRef.current = false;
+      onModelMutationEnd?.(mutationToken);
+      if (mountedRef.current) {
+        setSwitchingModel(false);
+      }
+    }
+  };
   const handleCycleModel = async () => {
     try {
       const available = normalizeModelPickerOptions(await getAgentModels(currentChatJid));
@@ -9933,6 +9977,20 @@ function ComposeBox({
       if (mountedRef.current)
         setSubmitError(`Model catalogue failed: ${error.message}`);
     }
+  };
+  const [thinkingState, setThinkingState] = F_(null);
+  const thinkingFocusRef = Q_(false);
+  W_(() => {
+    if (switchingModel || !thinkingFocusRef.current)
+      return;
+    thinkingFocusRef.current = false;
+    const control = modelPopupRef.current?.querySelector('select[aria-label="Thinking level"]');
+    if (control && !control.disabled && document.activeElement === document.body && !document.querySelector('.settings-dialog[aria-modal="true"]'))
+      control.focus({ preventScroll: true });
+  }, [switchingModel, thinkingState]);
+  const acceptThinkingState = (payload) => {
+    if (payload && typeof payload === "object")
+      setThinkingState(payload);
   };
   const modelMutationRef = Q_(false);
   const modelRevisionRef = Q_(0);
@@ -11010,7 +11068,10 @@ ${mediaIds.map((id, index) => {
                             </div>
                             <div class="compose-model-catalogue-footer">
                                 <div class="compose-model-catalogue-footer-start">
-                                    ${supportsThinking && thinkingLevel && fe`<label class="compose-model-catalogue-thinking" title="Thinking level is read-only in Gi"><span>Thinking</span><select aria-label="Thinking level (read-only)" disabled><option value=${thinkingLevel}>${thinkingLevel}</option></select></label>`}
+                                    ${supportsThinking && fe`<label class="compose-model-catalogue-thinking"><span>Thinking</span><select aria-label="Thinking level" value=${thinkingState?.thinking_level || ""} disabled=${loadingModels || switchingModel || !thinkingState?.thinking_configurable || thinkingState.current !== activeModel || !thinkingState.thinking_token} onChange=${handleSelectThinking}>
+                                        <option value="">Provider default</option>
+                                        ${(thinkingState?.thinking_levels || []).map((level) => fe`<option value=${level}>${level}</option>`)}
+                                    </select></label>`}
                                 </div>
                                 <button type="button" class="compose-model-popup-btn primary" disabled=${switchingModel} onClick=${() => {
     setShowModelPopup(false);
@@ -22314,11 +22375,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-72q5b047.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-vxmj7k2n.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-mdqf8m9m.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-9n4mxjd1.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-eabpqddz.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-axj9zy50.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-sfkr9wdq.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-21a8b7yw.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-xmnq4jyp.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-c2a3w8gz.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -25123,5 +25184,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=338EA3E7B7F0181964756E2164756E21
-//# sourceMappingURL=app-zy27sg5y.js.map
+//# debugId=28E1FDEDAC581F1464756E2164756E21
+//# sourceMappingURL=app-dtwgbftv.js.map

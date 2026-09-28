@@ -23,6 +23,7 @@ export function moveModelPickerIndex(current: number, length: number, key: strin
 export function modelPickerKey(event: KeyboardEvent, entries: {label: string; disabled: boolean}[], current: number, previous: any) {
     if (event.defaultPrevented || event.isComposing || event.altKey || (event.ctrlKey && event.metaKey)) return null;
     const target = event.target as Element;
+    if (target?.closest?.('select')) return null; // Native thinking selector owns these keys.
     const editing = Boolean(target?.closest?.('input, textarea, select, [contenteditable="true"]'));
     const searchJump = Boolean(target?.matches?.('input[type="search"]'))
         && (event.ctrlKey || event.metaKey) && ['Home', 'End'].includes(event.key);

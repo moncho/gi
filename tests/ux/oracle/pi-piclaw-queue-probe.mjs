@@ -9,6 +9,8 @@ const pi=path.join(root,'app/node_modules/@earendil-works/pi-coding-agent');
 const pkg=JSON.parse(await fs.readFile(path.join(pi,'package.json'),'utf8'));
 assert.equal(pkg.version,'0.87.1');assert.equal((await fs.readFile(path.join(root,'VERSION'),'utf8')).trim(),'3.2.4');
 const {InteractiveMode}=await import(pathToFileURL(path.join(pi,'dist/modes/interactive/interactive-mode.js')));
+const {TruncatedText}=await import(pathToFileURL(path.join(root,'app/node_modules/@earendil-works/pi-tui/dist/components/truncated-text.js')));
+const {initTheme}=await import(pathToFileURL(path.join(pi,'dist/modes/interactive/theme/theme.js')));initTheme('dark');
 const {AgentSession}=await import(pathToFileURL(path.join(pi,'dist/core/agent-session.js')));
 const {WebAgentControlPlaneService}=await import(pathToFileURL(path.join(root,'app/runtime/src/channels/web/agent/agent-control-plane-service.ts')));
 const out=path.resolve(process.env.ORACLE_OUTPUT||`test-results/ux-oracle/queue-semantics/run-${Date.now()}`);await fs.mkdir(out,{recursive:true});
@@ -23,6 +25,23 @@ await record('Pi Alt+Enter selects followUp while streaming and ordinary submit 
   assert.equal(text,'');assert(calls.some(c=>streaming?c[0]==='prompt'&&c[2].streamingBehavior==='followUp':c[0]==='submit'));cases.push({streaming,calls});
  }
  return cases;
+});
+await record('Pi pending rows take first line, truncate by display width and keep grapheme clusters',async()=>{
+ const children=[];
+ const shell={pendingMessagesContainer:{clear(){children.length=0;},addChild(child){children.push(child);}},getAllQueuedMessages(){return{steering:['e\u0301ax','🧑‍💻abc'],followUp:['first\nsecond']};},getAppKeyDisplay:()=> 'Alt+Up'};
+ InteractiveMode.prototype.updatePendingMessagesDisplay.call(shell);
+ assert.equal(children.length,5);
+ // TruncatedText has one cell of horizontal padding on each side here.
+ const plain=(index,width)=>children[index].render(width)[0].replace(/\x1b\[[0-9;]*m/g,'').trim().replace(/ +$/,'');
+ const cases=[
+  {index:1,width:14,want:'Steering:...'},
+  {index:2,width:15,want:'Steering: ...'},
+  {index:2,width:32,want:'Steering: 🧑‍💻abc'},
+  {index:3,width:32,want:'Follow-up: first'},
+  {index:4,width:32,want:'↳ Alt+Up to edit all queued...'},
+ ];
+ for(const item of cases)assert.equal(plain(item.index,item.width),item.want,JSON.stringify(item));
+ return cases.map(({index,width,want})=>({index,width,rendered:plain(index,width),want}));
 });
 await record('Pi dequeue restores all steering then followUps before newer editor text',async()=>{
  let text='newer draft';let cleared=0,aborted=0;

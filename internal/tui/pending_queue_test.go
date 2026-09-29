@@ -17,7 +17,7 @@ func TestPendingQueuePanelUsesDurableSteerThenFollowUp(t *testing.T) {
 	if _, err := c.store.EnqueueSteering(ctx, c.sessionID, "", "user", "steer now🙂", nil, nil, "one-at-a-time"); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"Steering: steer now🙂", "Follow-up: follow newline", "↳ /queue to inspect · Alt+Up restores text-only queue when safe"}
+	want := []string{"Steering: steer now🙂", "Follow-up: follow", "↳ /queue to inspect · Alt+Up restores text-only queue when safe"}
 	got := c.pendingQueueLines(80, 32)
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("panel=%q want=%q", got, want)
@@ -42,8 +42,29 @@ func TestPendingQueuePanelUsesDurableSteerThenFollowUp(t *testing.T) {
 	if got := c.pendingQueueLines(40, 12); len(got) != 1 || got[0] != "queue: 1 pending; /queue to inspect" {
 		t.Fatalf("small-terminal summary missing: %q", got)
 	}
-	if got := c.pendingQueueLines(12, 32); len(got) != 2 || strings.Contains(strings.Join(got, ""), "\n") || got[0] != "Steering: s…" {
+	if got := c.pendingQueueLines(12, 32); len(got) != 2 || strings.Contains(strings.Join(got, ""), "\n") || got[0] != "Steering:..." {
 		t.Fatalf("narrow panel should truncate without wrapping: %q", got)
+	}
+}
+
+func TestPendingRowTextMatchesPiFirstLineAndGraphemeCut(t *testing.T) {
+	cases := []struct {
+		text  string
+		width int
+		want  string
+	}{
+		{"Follow-up: first\nsecond", 30, "Follow-up: first"},
+		{"Steering: abcdefghijklmnop", 12, "Steering:..."},
+		{"Follow-up: 🧑‍💻abc", 13, "Follow-up:..."},
+		{"Steering: 🧑‍💻abc", 13, "Steering: ..."},
+		{"Steering: e\u0301ax", 12, "Steering:..."},
+		{"Steering: x\x1b[31mred", 35, "Steering: x [31mred"},
+		{"Steering: abcd", 2, ".."},
+	}
+	for _, tc := range cases {
+		if got := pendingRowText(tc.text, tc.width); got != tc.want {
+			t.Errorf("pendingRowText(%q,%d)=%q want %q", tc.text, tc.width, got, tc.want)
+		}
 	}
 }
 

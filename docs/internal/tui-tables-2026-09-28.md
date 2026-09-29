@@ -85,3 +85,35 @@ worktree upgrade to v0.22.1 also changes rendering APIs elsewhere; substituting
 its module files alone fails compilation, so that integration is not verified.
 The new test uses the shared `Calculate`/`RenderTree` APIs. No running TUI was
 replaced or service restarted.
+
+## Subsequent Unicode/scroll investigation (go-tui v0.22.1)
+
+The tmux/NBSP fix above does **not** establish correctness in Ghostty. A
+separate source-level defect exists: `wrapTableCell` used UAX #29 segmentation
+but go-tui's terminal renderer uses its own `NextCluster` segmentation. In
+particular `a\u200d👩` (an ASCII letter joined to an emoji) measures as 3 cells
+when segmented by UAX #29 and measured piecewise, but the go-tui renderer
+measures the whole cluster as 2. Subsequent padding and borders can therefore
+be positioned incorrectly. Table wrapping now uses `gotui.NextCluster`, the
+same cluster/width function as the terminal buffer. Preformatted Markdown code
+also previously wrapped at rune counts, splitting ZWJ sequences, flags and
+combining accents; it now wraps at go-tui cluster/cell boundaries. At extremely
+narrow widths (less than the four-cell code indent plus a wide glyph) it may
+still overflow rather than silently discard source glyphs.
+
+The ordinary Go suite now checks the mismatched segmentation case, grapheme-
+safe preformatted wrapping, scroll frame endcap cell coordinates, and that
+ANSI frame updates are valid UTF-8. These tests separate *bytes* and *buffer
+positions*, but neither simulates Ghostty's actual painting. To measure the
+terminal's cursor advance directly, run `make probe-tui-ghostty` **inside the
+affected Ghostty window, without tmux**. It briefly enters the alternate
+screen, queries cursor position after each glyph, restores the terminal, and
+prints terminal and go-tui widths side by side. It does not scroll the actual
+Gi TUI or prove that Ghostty's frame diff is correct. If any row reports
+`MISMATCH`, a width disagreement remains and should be addressed before
+claiming the visual issue resolved. The probe must not be piped or run in CI.
+
+Ghostty is not installed in this development environment. The direct Ghostty
+scroll reproduction and visual acceptance are **pending**; passing buffer or
+tmux tests must not be reported as Ghostty verification. The active Gi binary
+was not changed or restarted by this worktree.

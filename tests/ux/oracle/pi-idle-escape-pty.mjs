@@ -21,7 +21,13 @@ try{
  tm('send-keys','-t',pane,'Escape');await sleep(160);tm('send-keys','-t',pane,'-l','after');await wait(()=>cap().includes('probe-after'),'draft Escape retains input');
  const screen=cap();writeFileSync(join(out,'pi-idle-escape.txt'),screen);
  if(!screen.includes('probe-after'))throw Error('draft not retained');
- const result={pi:pkg.version,piclaw:'3.2.4',result:'pass',emptyEscapeInput:true,draftEscapeInput:true,scope:'Installed Pi disposable tmux, no session/model/provider; not a physical terminal or live inference'};
+ await sleep(600);tm('send-keys','-t',pane,'Escape');await sleep(110);tm('send-keys','-t',pane,'Escape');await sleep(160);
+ if(cap().includes('Session Tree'))throw Error('double Escape with nonempty draft opened selector');
+ tm('send-keys','-t',pane,'C-u');await sleep(600);
+ tm('send-keys','-t',pane,'Escape');await sleep(110);tm('send-keys','-t',pane,'Escape');
+ await wait(()=>cap().includes('Session Tree'),'empty double Escape tree selector');
+ writeFileSync(join(out,'pi-double-escape-tree.txt'),cap());
+ const result={pi:pkg.version,piclaw:'3.2.4',result:'pass',emptyEscapeInput:true,draftEscapeInput:true,emptyDoubleEscapeTree:true,draftDoubleEscapeNoTree:true,scope:'Installed Pi disposable tmux, no session/model/provider; not a physical terminal or live inference'};
  writeFileSync(join(out,'result.json'),JSON.stringify(result,null,2));console.log(JSON.stringify({out,...result},null,2));
 }catch(error){try{writeFileSync(join(out,'failure.txt'),cap());writeFileSync(join(out,'runtime.log'),readFileSync(join(dir,'runtime.log')))}catch{}throw error}
 finally{try{tm('kill-server')}catch{}rmSync(dir,{recursive:true,force:true})}

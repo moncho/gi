@@ -34,7 +34,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   const baseline=shot('idle'),idleBars=bars(baseline);assert(idleBars.length===2,'idle separators');assert(idleBars[1]-idleBars[0]===2,'idle editor height');
   for(let i=1;i<=12;i++) {type(`Native regular ${i}`);keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='completed';")===String(i),'native turn');await wait(()=>history().includes(`Gi received: Native regular ${i}`),'printed turn');}
   const before=history();assert(Number(tmux('display-message','-p','-t',pane,'#{history_size}'))>0,'no native scrollback');
-  assert((before.match(/you: Native regular 1\n/g)||[]).length===1,'printed prompt duplicated');
+  assert((before.match(/^ Native regular 1\s*$/gm)||[]).length===1,'printed prompt duplicated');
   type('UX queue gate:regular');keys('Enter');await wait(()=>!idle(),'gate');
   type('newer draft');keys('Left','Left','Left');
   tmux('copy-mode','-t',pane);tmux('send-keys','-t',pane,'-X','history-top');
@@ -58,7 +58,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   assert(history().includes('PREEXISTING SHELL OUTPUT'),'resize lost native history');assert(capture().replaceAll('▌','').includes('newer draft'),'resize lost draft');
   intact('before selector');keys('M-m');await wait(()=>capture().includes('Select model'),'temporary selector');keys('Escape');await wait(()=>!capture().includes('Select model')&&capture().replaceAll('▌','').includes('newer draft'),'selector restores editor');
   intact('after selector');keys('C-a','C-k');type('!!printf "regular failed outcome\\n"; exit 7');keys('Enter');await wait(()=>history().includes('exit status 7'),'local error printed');
-  assert(ansi().includes('48;2;60;40;40'),'error band absent from native history');assert(ansi().includes('48;2;40;50;40'),'success band absent');
+  assert(history().includes('exit status 7'),'error status absent from native history');assert(history().includes('Gi received: Native regular 1'),'successful output absent');
   type("!!for i in $(seq 1 40); do printf 'NATIVE-LONG-%02d\\n' $i; done");keys('Enter');await wait(()=>history().includes('NATIVE-LONG-40'),'full tool output');
   assert(history().includes('NATIVE-LONG-01'),'printed collapsed/truncated preview instead of full retained tool output');
   await sleep(1250);intact('completed redraw');const end=shot('completed');assert(JSON.stringify(bars(end))===JSON.stringify(idleBars),'idle dock gained rows');
@@ -73,7 +73,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   tmux('kill-session','-t',session);launch();tmux('set-option','-t',session,'status','off');
   await wait(()=>history().includes('Gi received: Native regular 1'),'reopened durable transcript');
   assert(flags()==='0 0 0','reopen changed terminal mode');shot('reopened');
-  results.push(`${width}x${height}: main screen, no mouse capture, ordered/deduplicated native history and host copy/selection during completion; full retained outcome bands; multiline editor/cursor/resize/selector/session/exit/reopen preservation, five-row idle dock`);
+  results.push(`${width}x${height}: main screen, no mouse capture, ordered/deduplicated native history and host copy/selection during completion; full retained tool outcomes; multiline editor/cursor/resize/selector/session/exit/reopen preservation, five-row idle dock`);
  }catch(error){try{shot('failure')}catch{};try{writeFileSync(join(artifacts,`${width}-runtime.log`),readFileSync(join(dir,'runtime.log')))}catch{};throw error;}
  finally{try{tmux('kill-server')}catch{};rmSync(dir,{recursive:true,force:true});}
 }

@@ -4771,22 +4771,22 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 	// go-tui word wrapping discards leading whitespace in rich text. Keep it
 	// as element padding so fenced code indentation survives the PTY renderer.
 	leading := len(line) - len(strings.TrimLeft(line, " "))
-	// Table cells and preformatted code require literal padding. go-tui's
-	// rich-text word wrapper otherwise folds their ASCII spaces.
+	// Table rows are already wrapped by the Markdown renderer. Preserve their
+	// literal ASCII padding by disabling a second rich-text word-wrap pass.
+	// Replacing it with NBSP breaks terminal grapheme handling (notably flags
+	// in tmux), so frame diffs can leave stale border cells while scrolling.
 	preformatted := leading > 0 || strings.HasPrefix(line, "|") || strings.HasPrefix(line, "+") || strings.HasPrefix(line, "│") || strings.HasPrefix(line, "┌") || strings.HasPrefix(line, "├") || strings.HasPrefix(line, "└")
 	line = line[leading:]
 	segments := parseTUIInlineSegments(line)
 	options := []gotui.Option{gotui.WithWidthPercent(100)}
+	if preformatted {
+		options = append(options, gotui.WithWrap(false))
+	}
 	if leading > 0 {
 		options = append(options, gotui.WithPaddingTRBL(0, 0, 0, leading))
 	}
 	if len(segments) == 1 && !segments[0].Code {
 		spans := transcriptLinkSpans(segments[0].Text, style)
-		if preformatted {
-			for i := range spans {
-				spans[i].Text = strings.ReplaceAll(spans[i].Text, " ", "\u00a0")
-			}
-		}
 		return gotui.New(append(options, gotui.WithRichText(spans...))...)
 	}
 	// A row of child Elements lays each styled fragment out independently. At
@@ -4804,14 +4804,13 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 			// spans, including the space following an ANSI style change.
 			// Non-breaking spaces keep code's exact visual width and prevent
 			// the following word from being pulled into the code span.
-			spans = append(spans, gotui.TextSpan{Text: strings.ReplaceAll(seg.Text, " ", "\u00a0"), Style: segStyle})
+			text := seg.Text
+			if !preformatted {
+				text = strings.ReplaceAll(text, " ", "\u00a0")
+			}
+			spans = append(spans, gotui.TextSpan{Text: text, Style: segStyle})
 		} else {
 			parts := transcriptLinkSpans(seg.Text, segStyle)
-			if preformatted {
-				for i := range parts {
-					parts[i].Text = strings.ReplaceAll(parts[i].Text, " ", "\u00a0")
-				}
-			}
 			spans = append(spans, parts...)
 		}
 	}

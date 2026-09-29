@@ -58,10 +58,23 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
   assert.equal(await researchPost.locator('.post-content').innerText(),researchText);
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   assert.equal(await input.inputValue(),'main fixture draft','installed Classic retains the textarea through fixture chat selection');
-  await page.waitForTimeout(200); // Let the old scoped stream report its expected cancellation.
+  await page.waitForTimeout(300); // Allow ordinary fixture polling and draft effects to settle.
+  assert.equal(await input.inputValue(),'main fixture draft','selected research chat retains textarea after fixture settling');
+  await input.fill('research fixture draft');
+  await trigger.click();await search.waitFor();await search.fill('Default fixture');
+  const backOption=popup.locator('[role="option"][data-testid="session-item"]');
+  await backOption.waitFor();assert.equal(await backOption.count(),1);
   assert.deepEqual(host.failures.filter(error=>!/^network: .*\/sse\/stream\?chat_jid=web%3Adefault (?:Load request cancelled|net::ERR_ABORTED)$/.test(error)),[]);
+  state.sessionId='web:default';
+  await search.press('Tab');await popup.waitFor({state:'detached'});
+  await page.waitForURL(u=>new URL(u).searchParams.get('chat_jid')==='web:default');
+  await mainPost.waitFor({state:'visible'});assert.equal(await researchPost.count(),0);
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await input.inputValue(),'research fixture draft','returning to main retains the current textarea, not the previous main text');
+  await page.waitForTimeout(200); // Let the old scoped streams report expected cancellations.
+  assert.deepEqual(host.failures.filter(error=>!/^network: .*\/sse\/stream\?chat_jid=web%3A(?:default|research) (?:Load request cancelled|net::ERR_ABORTED)$/.test(error)),[]);
   assert.equal(host.calls.some(c=>c.method!=='GET' && /\/agent\/(?:branches|active-chats)/.test(c.path)),false,'keyboard selection must not mutate the catalogue');
-  cases.push({browser:browserName,viewport:viewportName,filtered:true,escapeDismissed:true,focusRestored:true,queryReset:true,chatUnchangedBeforeTab:true,filteredKeyboardSelected:true,tabSelectedDisposableResearchChat:true,mainTimelineReplaced:true,textareaRetainedAfterSwitch:true});
+  cases.push({browser:browserName,viewport:viewportName,filtered:true,escapeDismissed:true,focusRestored:true,queryReset:true,chatUnchangedBeforeTab:true,filteredKeyboardSelected:true,tabSelectedDisposableResearchChat:true,mainTimelineReplaced:true,textareaRetainedAfterSwitch:true,textareaSharedOnRoundTrip:true});
  }finally{await host.dispose();await browser.close();}
 }
-console.log(JSON.stringify({scope:'Mounted installed Piclaw 3.2.4 Classic bundle with disposable read-only two-chat catalogue. Tab selects the fixture chat URL, replaces disposable posts and retains the textarea. No real history, draft reload, superseded-read race, backend branch action, typeahead/IME, or physical-input acceptance.',cases},null,2));
+console.log(JSON.stringify({scope:'Mounted installed Piclaw 3.2.4 Classic bundle with disposable read-only two-chat catalogue. Tab selects fixture chats and replaces disposable posts; the mounted textarea retains the latest text across a two-chat round trip. No real history, draft reload, superseded-read race, backend branch action, typeahead/IME, or physical-input acceptance.',cases},null,2));

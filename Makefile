@@ -298,7 +298,7 @@ test-message-reference-labels:
 test-piclaw-settings-title:
 	$(BUN) tests/ux/oracle/piclaw-settings-title-probe.mjs
 
-.PHONY: test-piclaw-settings-shell test-piclaw-settings-shortcut test-piclaw-settings-reopen
+.PHONY: test-piclaw-settings-shell test-piclaw-settings-shortcut test-piclaw-settings-reopen test-piclaw-settings-stepper
 test-piclaw-settings-shell:
 	$(BUN) tests/ux/oracle/piclaw-settings-shell-probe.mjs
 
@@ -307,6 +307,9 @@ test-piclaw-settings-shortcut:
 
 test-piclaw-settings-reopen:
 	$(BUN) tests/ux/oracle/piclaw-settings-reopen-probe.mjs
+
+test-piclaw-settings-stepper:
+	$(BUN) tests/ux/oracle/piclaw-settings-stepper-probe.mjs
 
 .PHONY: test-piclaw-editor-tabs
 test-piclaw-editor-tabs:

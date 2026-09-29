@@ -13,7 +13,7 @@ for every setting or subsection.
 | `001` | Three rapid Control-comma presses from a focused composer leave one Gi Settings dialog and portal; Escape restores composer focus. `GiSettings` opens in a capture-phase window listener without an editable-target guard. Installed Classic 3.2.4 blocks all three presses from its focused composer textarea, but opens one dialog after three presses from noneditable body focus. | **Target-sensitive Gi divergence.** The frozen scenario does not specify where focus starts; the Gi test does. Installed and Gi assertions cannot be merged into a whole-clause pass. Browser key events do not establish OS/physical shortcuts. |
 | `002` | Gi opens via hamburger, visits panes, then reopens while `/api/runtime/config` is held: General shows a cached snapshot in under one second, one portal, no draft/media loss or writes. Installed Piclaw 3.2.4 mounted Classic independently reopens with a cached General compose-upload value `64` while a second `/agent/settings-data` read is held; it renders within one second, then updates to `96` after release with one dialog and an intact draft. | Both times come from disposable browser fixtures, not a global latency SLO. Piclaw performs a fresh read on reopen while showing cached data; Gi's route and cached values differ. No production config mutation or whole-clause credit for every pane. |
 | `003` | Gi holds its first `/api/runtime/config` read, shows `Loading settings…` with General selected, then renders General values within two seconds. The existing installed Piclaw 3.2.4 shell probe instead opens after the Classic dialog module is already loaded: General remains interactive while `/agent/settings-data` is held, with no import-time loading shell in that sequence. | **Different first-open boundaries.** Gi's held-data shell is not Piclaw's lazy-import shell. Neither run observes an installed cold import-time shell or compares like-for-like loading; the frozen clause lacks whole-scenario parity. Timings are fixture-only. |
-| `004` | Compaction numeric spinbutton accepts typed `128000` without saving/mutating settings. | Typability only, not valid policy/application of that value. |
+| `004` | Gi Compaction's **Saved context window** spinbutton accepts typed `128000` without a PATCH. Installed Piclaw 3.2.4 has a different Compaction numeric text stepper: **semantic summary input limit** accepts `128000` within its 500–200000 range without a settings write; out-of-range `300000` is marked invalid while editing and clamps to `200000` on blur. | **Typability subset, different field and role.** The installed probe does not establish a Saved context window control, equivalent budget semantics, valid policy, settings save or live persistence. Do not merge the two field checks into whole-clause parity. |
 | `005` | General shows without other pane chunks; Models and subsequent built-ins load on click and cached revisits reuse modules. | Test is stricter about Gi's five pane chunks, but does not prove Piclaw's exact module graph. |
 
 Focused `make test-ux-parity` filter for all five tags previously passed
@@ -40,3 +40,10 @@ open showed no `.settings-dialog-loading-shell`. The focused Gi
 read and loading status. The Piclaw probe opens after its module has loaded;
 this comparison does not test Piclaw's cold dynamic import, so `003` stays
 unmapped as a complete scenario.
+
+`make test-piclaw-settings-stepper` passed **6/6** installed mounted Classic
+cases across Chromium/WebKit phone/tablet/desktop; the focused Gi
+`@ux-settings-dialog-004` run passed **6/6** separately. Both show typed
+`128000`. Their controls have different labels, roles and settings meanings;
+neither run saves a policy. The installed probe also checks the local invalid
+value and blur normalization without claiming downstream equivalence.

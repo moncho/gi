@@ -35,12 +35,16 @@ test('Steer during cancelling claim keeps selected row for retry after release',
   const turns=async()=>(await(await request.get(`${env.origin}/api/sessions/${id}/turns`)).json()).turns;
   const queuedMedia=(await turns()).find(t=>t.id==='selected').metadata.media;
   expect(queuedMedia).toHaveLength(1);expect(queuedMedia[0].filename).toBe('selected.txt');
+  const attachmentURL=`${env.origin}/api/media/${queuedMedia[0].media_id}/raw`;
+  const storedBytes=async()=>{const res=await request.get(attachmentURL);expect(res.status()).toBe(200);expect(res.headers()['content-type']).toContain('text/plain');return (await res.body()).toString('utf8')};
+  expect(await storedBytes()).toBe('selected media bytes');
   await page.reload();const row=page.locator('[data-queue-id="selected"]');const button=row.getByRole('button',{name:'Inject queued follow-up as steer',exact:true});await expect(button).toBeEnabled();
   expect((await request.post(`${env.origin}/__test/ended-steer/${id}/cancel`)).status()).toBe(204);
   const url=`${env.origin}/api/sessions/${id}/queue/selected/steer`,body={active_turn_id:'observed'};
   const conflict=page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST');await button.click();expect((await conflict).status()).toBe(409);
   expect((await turns()).find(t=>t.id==='selected').status).toBe('queued');
   expect((await turns()).find(t=>t.id==='selected').metadata.media).toEqual(queuedMedia);
+  expect(await storedBytes()).toBe('selected media bytes');
   await expect(row).toHaveCount(1);await expect(button).toBeDisabled();await expect(input).toHaveValue('keep draft during cleanup Ω');
   await expect(page.getByRole('alert')).toContainText('Queue action failed');
   expect((await request.post(`${env.origin}/__test/ended-steer/${id}/release-cancelled`)).status()).toBe(204);
@@ -53,6 +57,7 @@ test('Steer during cancelling claim keeps selected row for retry after release',
   const messages=(await(await request.get(`${env.origin}/api/sessions/${id}/messages`)).json()).messages;
   const delivered=messages.filter(m=>m.role==='user'&&m.content==='ended steer selected instruction');
   expect(delivered).toHaveLength(1);expect(delivered[0].payload.media).toEqual(queuedMedia);
+  expect(await storedBytes()).toBe('selected media bytes');
   await page.reload();await expect(input).toHaveValue('keep draft during cleanup Ω');await expect(row).toHaveCount(0);
  }finally{await env.close()}
 });

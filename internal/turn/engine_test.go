@@ -3161,7 +3161,11 @@ func TestHeartbeatCancelsTurnWhenActiveClaimDisappears(t *testing.T) {
 			return false
 		}
 	}, "streaming turn start")
-	if err := s.ReleaseSessionActiveTurn(ctx, "session_heartbeat_claim_lost", result.TurnID); err != nil {
+	_, claimToken, err := s.GetSessionActiveTurn(ctx, "session_heartbeat_claim_lost")
+	if err != nil || claimToken == "" {
+		t.Fatalf("read active claim: %q %v", claimToken, err)
+	}
+	if err := s.ReleaseSessionActiveTurn(ctx, "session_heartbeat_claim_lost", claimToken); err != nil {
 		t.Fatalf("release active claim externally: %v", err)
 	}
 	waitForCondition(t, 2*time.Second, func() bool {

@@ -15,7 +15,7 @@ import (
 // one transaction, so a failed save or competing claim cannot lose delivery.
 // The caller must supply the editor snapshot it has actually displayed.
 func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string, expected TUITextDraft) (TUITextDraft, []string, error) {
-	return s.restoreQueuedTUITextDraft(ctx, sessionID, "", expected)
+	return s.restoreQueuedTUITextDraft(ctx, sessionID, "", "", expected)
 }
 
 // AbortActiveTurnAndRestoreQueuedTUITextDraft is called only by the runner
@@ -23,14 +23,14 @@ func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string,
 // removals share one SQLite writer transaction; a conflict cancels nothing.
 // The runner must hold its session lock until it signals its worker after
 // this transaction commits.
-func (s *Store) AbortActiveTurnAndRestoreQueuedTUITextDraft(ctx context.Context, sessionID, activeTurnID string, expected TUITextDraft) (TUITextDraft, []string, error) {
-	if activeTurnID == "" {
+func (s *Store) AbortActiveTurnAndRestoreQueuedTUITextDraft(ctx context.Context, sessionID, activeTurnID, claimToken string, expected TUITextDraft) (TUITextDraft, []string, error) {
+	if activeTurnID == "" || claimToken == "" {
 		return TUITextDraft{}, nil, ErrQueueConflict
 	}
-	return s.restoreQueuedTUITextDraft(ctx, sessionID, activeTurnID, expected)
+	return s.restoreQueuedTUITextDraft(ctx, sessionID, activeTurnID, claimToken, expected)
 }
 
-func (s *Store) restoreQueuedTUITextDraft(ctx context.Context, sessionID, activeTurnID string, expected TUITextDraft) (TUITextDraft, []string, error) {
+func (s *Store) restoreQueuedTUITextDraft(ctx context.Context, sessionID, activeTurnID, claimToken string, expected TUITextDraft) (TUITextDraft, []string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return TUITextDraft{}, nil, err
@@ -47,7 +47,7 @@ func (s *Store) restoreQueuedTUITextDraft(ctx context.Context, sessionID, active
 	if activeTurnID != "" {
 		var raw string
 		if err := tx.QueryRowContext(ctx, `select t.metadata_json from session_active_turns a join turns t on t.id=a.turn_id
-			where a.session_id=? and a.turn_id=? and a.claim_token=? and t.session_id=? and t.status='running'`, sessionID, activeTurnID, activeTurnID, sessionID).Scan(&raw); err != nil {
+			where a.session_id=? and a.turn_id=? and a.claim_token=? and t.session_id=? and t.status='running'`, sessionID, activeTurnID, claimToken, sessionID).Scan(&raw); err != nil {
 			return TUITextDraft{}, nil, ErrQueueConflict
 		}
 		metadata, err := unmarshalJSONMap(raw)
@@ -104,7 +104,7 @@ func (s *Store) restoreQueuedTUITextDraft(ctx context.Context, sessionID, active
 		// A second frontend can observe a stale runner after another worker
 		// has already claimed queued work. Require the exact active claim.
 		var owner string
-		if err := tx.QueryRowContext(ctx, `select claim_token from session_active_turns where session_id=? and turn_id=?`, sessionID, activeTurnID).Scan(&owner); err != nil || owner != activeTurnID {
+		if err := tx.QueryRowContext(ctx, `select claim_token from session_active_turns where session_id=? and turn_id=?`, sessionID, activeTurnID).Scan(&owner); err != nil || owner != claimToken {
 			return TUITextDraft{}, nil, ErrQueueConflict
 		}
 	}
@@ -182,7 +182,7 @@ func (s *Store) restoreQueuedTUITextDraft(ctx context.Context, sessionID, active
 	}
 	if activeTurnID != "" {
 		res, err := tx.ExecContext(ctx, `update turns set status='cancelling', phase='cancelling', updated_at=`+defaultNow+`
-			where id=? and session_id=? and status='running' and exists(select 1 from session_active_turns where session_id=? and turn_id=? and claim_token=?)`, activeTurnID, sessionID, sessionID, activeTurnID, activeTurnID)
+			where id=? and session_id=? and status='running' and exists(select 1 from session_active_turns where session_id=? and turn_id=? and claim_token=?)`, activeTurnID, sessionID, sessionID, activeTurnID, claimToken)
 		if err != nil {
 			return TUITextDraft{}, nil, err
 		}

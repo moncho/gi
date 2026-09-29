@@ -84,8 +84,9 @@ type sessionRunner struct {
 }
 
 type runningTurn struct {
-	turnID string
-	cancel context.CancelFunc
+	turnID     string
+	claimToken string
+	cancel     context.CancelFunc
 }
 
 type ExtensionInfo struct {
@@ -707,7 +708,7 @@ func (e *Engine) AbortActiveAndRestoreTUITextDraft(ctx context.Context, sessionI
 		return store.TUITextDraft{}, nil, store.ErrQueueConflict
 	}
 	agentID, model := runner.resolveTurnAgentAndModel(opCtx, e.store, turn, sessionID, turn.Prompt)
-	restored, ids, err := e.store.AbortActiveTurnAndRestoreQueuedTUITextDraft(opCtx, sessionID, turnID, expected)
+	restored, ids, err := e.store.AbortActiveTurnAndRestoreQueuedTUITextDraft(opCtx, sessionID, turnID, runner.current.claimToken, expected)
 	if err != nil {
 		return store.TUITextDraft{}, nil, err
 	}
@@ -885,9 +886,11 @@ func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRun
 	if hook := e.beforeLaunchClaimHook; hook != nil {
 		hook(opCtx, sessionID, turnID)
 	}
-	claimToken := turnID
+	claimToken, err := store.NewActiveTurnClaimToken()
+	if err != nil {
+		return false, err
+	}
 	var claimed bool
-	var err error
 	if endedID != "" {
 		claimed, err = e.store.ClaimEndedQueueSteer(opCtx, sessionID, turnID, "runner", claimToken, endedID)
 	} else if selectedSteer {
@@ -902,7 +905,7 @@ func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRun
 		return false, nil
 	}
 	runCtx, cancel := context.WithCancel(e.backgroundContext())
-	active := &runningTurn{turnID: turnID, cancel: cancel}
+	active := &runningTurn{turnID: turnID, claimToken: claimToken, cancel: cancel}
 	runner.current = active
 	claimedTurn := false
 	rollbackPhase := "queued"
@@ -993,7 +996,7 @@ func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRun
 		if media, ok := claimedRecord.Metadata["media"]; ok {
 			payload["media"] = media
 		}
-		if err := e.store.PersistIdleQueuePrompt(opCtx, sessionID, turnID, claimedRecord.Prompt, payload); err != nil {
+		if err := e.store.PersistIdleQueuePrompt(opCtx, sessionID, turnID, claimToken, claimedRecord.Prompt, payload); err != nil {
 			return false, errors.Join(err, releaseClaim(true))
 		}
 	}
@@ -1010,10 +1013,9 @@ func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRun
 }
 
 func (r *sessionRunner) runTurn(s *store.Store, sessionID, turnID string, ctx context.Context, cancel context.CancelFunc, active *runningTurn) {
-	claimToken := turnID
 	defer cancel()
 	defer func() {
-		r.cleanupTurnRun(sessionID, claimToken, active)
+		r.cleanupTurnRun(sessionID, active.claimToken, active)
 	}()
 
 	run, err := r.setupTurnRun(ctx, s, sessionID, turnID)
@@ -1027,7 +1029,7 @@ func (r *sessionRunner) runTurn(s *store.Store, sessionID, turnID string, ctx co
 		return
 	}
 	sessionID = run.sessionID
-	go r.heartbeatActiveTurn(ctx, sessionID, claimToken, cancel)
+	go r.heartbeatActiveTurn(ctx, sessionID, active.claimToken, cancel)
 	r.runPreparedTurn(ctx, s, run)
 }
 

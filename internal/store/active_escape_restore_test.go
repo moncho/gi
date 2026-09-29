@@ -93,7 +93,7 @@ func TestAbortActiveTurnAndRestoreQueuedTUITextDraft(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			updated, ids, err := s.AbortActiveTurnAndRestoreQueuedTUITextDraft(ctx, sid, "active", draft)
+			updated, ids, err := s.AbortActiveTurnAndRestoreQueuedTUITextDraft(ctx, sid, "active", "active", draft)
 			if tc.fail {
 				if err == nil || len(ids) != 0 {
 					t.Fatalf("unsafe restore=%#v ids=%q err=%v", updated, ids, err)

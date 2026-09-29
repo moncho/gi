@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -33,6 +35,16 @@ type SteeringMessage struct {
 	Status        string         `json:"status"`
 	CreatedAt     string         `json:"created_at"`
 	UpdatedAt     string         `json:"updated_at"`
+}
+
+// NewActiveTurnClaimToken creates a fresh claim incarnation. Turn IDs identify
+// durable work; they must not serve as ownership tokens after release/reclaim.
+func NewActiveTurnClaimToken() (string, error) {
+	var data [16]byte
+	if _, err := rand.Read(data[:]); err != nil {
+		return "", err
+	}
+	return "claim-" + hex.EncodeToString(data[:]), nil
 }
 
 func (s *Store) ClaimSessionActiveTurn(ctx context.Context, sessionID, turnID, workerID, claimToken string) (bool, error) {

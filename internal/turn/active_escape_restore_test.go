@@ -94,7 +94,7 @@ func TestActiveEscapeRestoreWhileCompletionPending(t *testing.T) {
 // A foreign writer uses a separate SQLite connection. The runner owns only
 // its in-process lock; the transaction must fence all competing DB writes.
 func TestActiveEscapeRestoreFencesAndCancelsBeforeCleanup(t *testing.T) {
-	for _, reason := range []string{"text", "draft-writer", "active-steering", "foreign-claim"} {
+	for _, reason := range []string{"text", "draft-writer", "active-steering", "foreign-claim", "same-token-reclaim", "original-token-reclaim"} {
 		t.Run(reason, func(t *testing.T) {
 			ctx := context.Background()
 			path := t.TempDir() + "/gi.db"
@@ -147,6 +147,10 @@ func TestActiveEscapeRestoreFencesAndCancelsBeforeCleanup(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			_, originalToken, err := other.GetSessionActiveTurn(ctx, sid)
+			if err != nil || originalToken == "" || originalToken == active.TurnID {
+				t.Fatalf("runner must have a fresh claim token, got %q: %v", originalToken, err)
+			}
 			switch reason {
 			case "draft-writer":
 				if _, err := other.SaveTUITextDraft(ctx, sid, draft.Revision, store.TUITextSnapshot{Text: "new writer", Cursor: 10}); err != nil {
@@ -156,11 +160,20 @@ func TestActiveEscapeRestoreFencesAndCancelsBeforeCleanup(t *testing.T) {
 				if _, err := other.EnqueueSteering(ctx, sid, "", "user", "steer", nil, nil, "one-at-a-time"); err != nil {
 					t.Fatal(err)
 				}
-			case "foreign-claim":
-				if err := other.ReleaseSessionActiveTurn(ctx, sid, active.TurnID); err != nil {
+			case "foreign-claim", "same-token-reclaim", "original-token-reclaim":
+				if err := other.ReleaseSessionActiveTurn(ctx, sid, originalToken); err != nil {
 					t.Fatal(err)
 				}
-				ok, err := other.ClaimSessionActiveTurn(ctx, sid, active.TurnID, "other", "foreign")
+				if reason == "original-token-reclaim" {
+					if ok, err := other.ClaimSessionActiveTurn(ctx, sid, active.TurnID, "other", originalToken); err == nil || ok {
+						t.Fatalf("reused original claim token: claimed=%t err=%v", ok, err)
+					}
+				}
+				token := "foreign"
+				if reason == "same-token-reclaim" {
+					token = active.TurnID
+				}
+				ok, err := other.ClaimSessionActiveTurn(ctx, sid, active.TurnID, "other", token)
 				if err != nil || !ok {
 					t.Fatalf("foreign claim=%t: %v", ok, err)
 				}
@@ -203,18 +216,25 @@ func TestActiveEscapeRestoreFencesAndCancelsBeforeCleanup(t *testing.T) {
 				if err != nil || row.Status != "queued" {
 					t.Fatalf("follow-up changed=%#v %v", row, err)
 				}
-				if reason == "foreign-claim" {
-					// Restore the engine's claim so ordinary cancellation can clean up.
-					if err := other.ReleaseSessionActiveTurn(ctx, sid, "foreign"); err != nil {
-						t.Fatal(err)
-					}
-					ok, err := other.ClaimSessionActiveTurn(ctx, sid, active.TurnID, "runner", active.TurnID)
-					if err != nil || !ok {
-						t.Fatalf("reclaim=%t %v", ok, err)
-					}
-				}
+				// Cancellation still belongs to the runner. Release a foreign
+				// claim only after the provider has observed cancellation, then
+				// let normal cleanup hand off queued work without recycling tokens.
 				if err := e.CancelActiveTurn(ctx, sid, active.TurnID); err != nil {
 					t.Fatal(err)
+				}
+				if reason == "foreign-claim" || reason == "same-token-reclaim" || reason == "original-token-reclaim" {
+					select {
+					case <-sawCancel:
+					case <-time.After(5 * time.Second):
+						t.Fatal("provider did not observe cancellation")
+					}
+					token := "foreign"
+					if reason == "same-token-reclaim" {
+						token = active.TurnID
+					}
+					if err := other.ReleaseSessionActiveTurn(ctx, sid, token); err != nil {
+						t.Fatal(err)
+					}
 				}
 			}
 			closeRelease.Do(func() { close(release) })

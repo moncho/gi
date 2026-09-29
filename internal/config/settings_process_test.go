@@ -77,7 +77,7 @@ func TestSettingsProcessLockAndPolicyRestart(t *testing.T) {
 	}
 	for _, save := range []func() error{
 		func() error { return PersistModelSelection(root, "test", "test-model", "low", nil) }, func() error { return PersistClipboardMode(root, "native") },
-		func() error { return PersistScrollbackLimit(root, 123) }, func() error { return PersistTUIHistoryLimit(root, 456) }, func() error { return PersistTUIScrollbar(root, true) },
+		func() error { return PersistScrollbackLimit(root, 123) }, func() error { return PersistTUIHistoryLimit(root, 456) },
 	} {
 		if err = save(); !errors.Is(err, ErrSettingsConflict) {
 			t.Fatalf("legacy writer ignored shared lock: %v", err)
@@ -117,7 +117,7 @@ func TestSettingsRejectsFIFOAndSymlinkDirectory(t *testing.T) {
 	if _, err := ReadCompactionPolicy(root); err == nil {
 		t.Fatal("FIFO read")
 	}
-	if err := PersistTUIScrollbar(root, true); err == nil {
+	if err := PersistTUIHistoryLimit(root, 5); err == nil {
 		t.Fatal("FIFO replaced")
 	}
 	other := t.TempDir()

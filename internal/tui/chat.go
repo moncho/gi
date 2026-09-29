@@ -193,8 +193,6 @@ type chatTUI struct {
 	input                       *multilineInput
 	search                      transcriptSearch
 	textSelection               transcriptSelection
-	scrollbarDragging           bool
-	scrollbarGrab               int
 	selectionClicks             transcriptClickSequence
 	selectionClickSnapshot      transcriptSelection
 	nativeSelectionCopyPending  bool
@@ -580,8 +578,8 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 	}
 	watchers = append(watchers, gotui.OnTimer(80*time.Millisecond, c.tickTranscriptSelection))
 	watchers = append(watchers, gotui.OnTimer(120*time.Millisecond, func() { c.saveDurableDraft() }))
-	watchers = append(watchers, gotui.OnTimer(120*time.Millisecond, func() {
-		if c.hasRunningTranscriptBlock() && c.app != nil {
+	watchers = append(watchers, gotui.OnTimer(80*time.Millisecond, func() {
+		if (c.running || c.compaction.active || c.hasRunningTranscriptBlock()) && c.app != nil {
 			c.app.MarkDirty()
 		}
 	}))
@@ -2158,9 +2156,9 @@ func (c *chatTUI) renderModelMenu(width int) *gotui.Element {
 	if c.modelMenuError != "" {
 		search = "error: " + c.modelMenuError
 	}
-	menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText(search, width)), gotui.WithTextStyle(gotui.NewStyle().Dim())))
+	menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText(search, width)), gotui.WithTextStyle(piFg(piMuted))))
 	if len(c.modelMenuChoices) == 0 {
-		menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText("  no matching "+noun+"s", width)), gotui.WithTextStyle(gotui.NewStyle().Dim())))
+		menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText("  no matching "+noun+"s", width)), gotui.WithTextStyle(piFg(piMuted))))
 		return menu
 	}
 	for i := start; i < end; i++ {
@@ -2169,16 +2167,16 @@ func (c *chatTUI) renderModelMenu(width int) *gotui.Element {
 		style := gotui.NewStyle()
 		if i == c.modelMenuSelected {
 			prefix = "› "
-			style = style.Foreground(gotui.Cyan).Bold()
+			style = piFg(piAccent)
 		} else if canonicalModelRef(c.cfg.DefaultProvider, model) == canonicalModelRef(c.cfg.DefaultProvider, c.cfg.DefaultModel) {
 			prefix = "* "
-			style = style.Foreground(gotui.Cyan)
+			style = piFg(piSuccess)
 		}
 		prefix = fmt.Sprintf("%s%d. ", prefix, i+1)
 		label := prefix + c.modelPickerRowLabel(model, width-gotui.StringWidth(prefix))
 		if reason := c.modelPickerUnavailable(model); reason != "" {
 			label = fmt.Sprintf("× %d. %s · %s", i+1, model, reason)
-			style = gotui.NewStyle().Dim()
+			style = piFg(piDim)
 		}
 		menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText(label, width)), gotui.WithTextStyle(style)))
 	}
@@ -2352,9 +2350,6 @@ func (c *chatTUI) HandleMouse(me gotui.MouseEvent) bool {
 		return true
 	}
 	if c.workspaceIndex.active {
-		return true
-	}
-	if c.handleTranscriptScrollbar(me) {
 		return true
 	}
 	if c.handleTranscriptSelection(me) {
@@ -2773,8 +2768,6 @@ func (c *chatTUI) handleCommand(text string) {
 		c.appendTranscript(c.scrollbackCommand(fields)...)
 	case "/history-limit":
 		c.appendTranscript(c.historyLimitCommand(fields)...)
-	case "/scrollbar":
-		c.appendTranscript(c.scrollbarCommand(fields)...)
 	case "/settings", "/config":
 		c.appendTranscript(c.settingsLines()...)
 	case "/approvals":
@@ -3874,7 +3867,6 @@ func (c *chatTUI) settingsLines() []string {
 		fmt.Sprintf("- scrollback_limit: %d", c.currentScrollbackLimit()),
 		fmt.Sprintf("- clipboard_mode: %s", clipboardMode),
 		fmt.Sprintf("- history_limit: %d", c.currentHistoryLimit()),
-		fmt.Sprintf("- scrollbar: %v", c.cfg.TUIScrollbar),
 		"- shortcuts: Ctrl+L/Alt+L model cycle, Ctrl+T/Alt+T thinking cycle, Ctrl+R history search, Tab path completion, @path completion, F6/F7 transcript block select, F8 expand/collapse",
 		"settings: session",
 		fmt.Sprintf("- session_id: %s", c.sessionID),
@@ -3904,36 +3896,6 @@ func (c *chatTUI) scrollbackCommand(fields []string) []string {
 	lines := []string{fmt.Sprintf("sys: scrollback limit set to %d", limit)}
 	if err := config.PersistScrollbackLimit(c.cfg.WorkspaceRoot, limit); err != nil {
 		lines = append(lines, fmt.Sprintf("warn: failed to persist scrollback limit: %v", err))
-	}
-	return lines
-}
-
-func (c *chatTUI) scrollbarCommand(fields []string) []string {
-	if len(fields) == 1 {
-		state := "off"
-		if c.cfg.TUIScrollbar {
-			state = "on"
-		}
-		return []string{fmt.Sprintf("sys: scrollbar: %s", state)}
-	}
-	value := strings.ToLower(strings.TrimSpace(fields[1]))
-	enabled := false
-	switch value {
-	case "on", "true", "1", "yes", "enabled":
-		enabled = true
-	case "off", "false", "0", "no", "disabled":
-		enabled = false
-	default:
-		return []string{"sys: usage /scrollbar <on|off>"}
-	}
-	c.cfg.TUIScrollbar = enabled
-	state := "off"
-	if enabled {
-		state = "on"
-	}
-	lines := []string{fmt.Sprintf("sys: scrollbar set to %s", state)}
-	if err := config.PersistTUIScrollbar(c.cfg.WorkspaceRoot, enabled); err != nil {
-		lines = append(lines, fmt.Sprintf("warn: failed to persist scrollbar setting: %v", err))
 	}
 	return lines
 }
@@ -4166,11 +4128,10 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 		gotui.WithWidthPercent(100),
 		gotui.WithHeight(transcriptHeight),
 		gotui.WithScrollable(gotui.ScrollVertical),
+		// Pi has no transcript scrollbar; the full width belongs to content.
+		gotui.WithScrollbarHidden(true),
 		gotui.WithScrollOffset(0, c.transcriptScroll),
 		gotui.WithDirection(gotui.Column),
-	}
-	if c.cfg.TUIScrollbar {
-		transcriptOptions = append(transcriptOptions, gotui.WithScrollbarStyle(gotui.NewStyle().Dim()))
 	}
 	c.validateTranscriptSelection(contentWidth, transcriptHeight)
 	transcript := gotui.New(transcriptOptions...)
@@ -4198,7 +4159,9 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 		previousKind := ""
 		for _, block := range blocks {
 			transcript.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
-			previousKind = block.Kind
+			if block.Kind != "thinking_indicator" {
+				previousKind = block.Kind
+			}
 		}
 	}
 	if c.stickToBottom {
@@ -4207,7 +4170,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	}
 	root.AddChild(transcript)
 	if len(pendingLines) > 0 {
-		root.AddChild(c.renderLineBlock(pendingLines, gotui.NewStyle().Dim()))
+		root.AddChild(c.renderLineBlock(pendingLines, piFg(piDim)))
 	}
 	if c.modelMenuOpen {
 		root.AddChild(c.renderModelMenu(contentWidth))
@@ -4217,35 +4180,24 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	}
 
 	if len(widgetLines) > 0 {
-		root.AddChild(c.renderLineBlock(widgetLines, gotui.NewStyle().Foreground(gotui.Blue)))
+		root.AddChild(c.renderLineBlock(widgetLines, gotui.NewStyle()))
 	}
 
-	separatorText := c.horizontalRule(contentWidth)
-	if c.search.active {
-		separatorText = c.transcriptSearchLabel(contentWidth)
-	}
-	if c.textSelection.active {
-		separatorText = c.selectionSeparator(contentWidth)
-	}
-	inputTopSep := gotui.New(
-		gotui.WithWidthPercent(100),
-		gotui.WithText(separatorText),
-		gotui.WithTextStyle(gotui.NewStyle().Dim()),
-	)
-	root.AddChild(inputTopSep)
-
+	// The editor must lay out before its borders so overflow counts are current.
 	inputEl := app.MountPersistent(c, inputSlot, func() gotui.Component { return activeInput })
 	c.inputRegion = inputEl
+	switch {
+	case c.textSelection.active:
+		root.AddChild(borderElement([]gotui.TextSpan{{Text: c.selectionSeparator(contentWidth), Style: piFg(c.editorBorderColor())}}))
+	case c.search.active:
+		root.AddChild(borderElement([]gotui.TextSpan{{Text: c.transcriptSearchLabel(contentWidth), Style: piFg(c.editorBorderColor())}}))
+	default:
+		root.AddChild(c.renderEditorTopBorder(activeInput, contentWidth))
+	}
 	root.AddChild(inputEl)
+	root.AddChild(c.renderEditorBottomBorder(activeInput, contentWidth))
 
-	inputBottomSep := gotui.New(
-		gotui.WithWidthPercent(100),
-		gotui.WithText(c.horizontalRule(contentWidth)),
-		gotui.WithTextStyle(gotui.NewStyle().Dim()),
-	)
-	root.AddChild(inputBottomSep)
-
-	root.AddChild(c.renderLineBlock(footerLines, gotui.NewStyle().Dim()))
+	root.AddChild(c.renderLineBlock(footerLines, piFg(piDim)))
 
 	return root
 }
@@ -4847,7 +4799,7 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 		}
 		segStyle := style
 		if seg.Code {
-			segStyle = gotui.NewStyle().Foreground(gotui.BrightBlack).Dim()
+			segStyle = style.Foreground(piMdCode)
 			// go-tui's rich-text word wrapper collapses ASCII spaces in
 			// spans, including the space following an ANSI style change.
 			// Non-breaking spaces keep code's exact visual width and prevent
@@ -5061,85 +5013,57 @@ func tuiErrorDedupKey(line string) string {
 	return msg
 }
 
-// diffLineStyle returns a PiSwift-style color for unified-diff lines in tool/bash
+// diffLineStyle returns Pi's toolDiff* color for unified-diff lines in tool/bash
 // output: green for additions, red for removals, dim for hunk/diff headers.
 func diffLineStyle(line string) (gotui.Style, bool) {
 	trimmed := strings.TrimLeft(line, " ")
 	switch {
-	case strings.HasPrefix(trimmed, "+++") || strings.HasPrefix(trimmed, "---"):
-		return gotui.NewStyle().Dim(), true
-	case strings.HasPrefix(trimmed, "@@"):
-		return gotui.NewStyle().Foreground(gotui.Cyan), true
+	case strings.HasPrefix(trimmed, "+++") || strings.HasPrefix(trimmed, "---") || strings.HasPrefix(trimmed, "@@"):
+		return piFg(piMuted), true
 	case strings.HasPrefix(trimmed, "+"):
-		return gotui.NewStyle().Foreground(gotui.Green), true
+		return piFg(piSuccess), true
 	case strings.HasPrefix(trimmed, "-"):
-		return gotui.NewStyle().Foreground(gotui.Red), true
+		return piFg(piError), true
 	}
 	return gotui.Style{}, false
 }
 
+// transcriptBlockPalette maps transcript blocks to Pi's dark theme roles:
+// tool titles use toolTitle (bold), output toolOutput, bash commands bashMode,
+// thinking thinkingText (italic), custom/hook messages customMessageLabel and
+// customMessageText, status lines dim, errors error. Assistant Markdown uses
+// the terminal's default foreground, as Pi's Markdown component does.
 func transcriptBlockPalette(kind, status string, selected bool) (gotui.Style, gotui.Style, gotui.Style, string, gotui.Style) {
-	fg := gotui.White
-	switch kind {
-	case "tool":
-		fg = gotui.Cyan
-	case "thought":
-		fg = gotui.Magenta
-	case "hook", "route", "dispatcher", "subturn":
-		fg = gotui.Blue
-	case "local":
-		fg = gotui.Magenta
-	case "bash":
-		fg = gotui.Cyan
-	case "compact":
-		fg = gotui.Yellow
-	case "error":
-		fg = gotui.Red
-	case "user":
-		fg = gotui.Green
-	}
-	switch status {
-	case "error":
-		fg = gotui.Red
-	case "ok":
-		fg = gotui.Green
-	case "running":
-		fg = gotui.Cyan
-	case "skipped":
-		fg = gotui.Yellow
-	}
-	head := gotui.NewStyle().Foreground(fg).Bold()
-	body := gotui.NewStyle().Foreground(fg)
-	hint := gotui.NewStyle().Dim()
-	border := gotui.NewStyle().Foreground(fg)
+	head := gotui.NewStyle()
+	body := gotui.NewStyle()
+	hint := piFg(piMuted)
+	border := piFg(piBorderMuted)
 	selectedHint := "F6/F7 select · F8 toggle · click to expand"
 	if selected {
 		border = border.Bold()
 		selectedHint = "selected · F6/F7 move · F8 toggle · click to expand"
 	}
-	if kind == "system" || kind == "plain" || kind == "assistant" {
-		head = gotui.NewStyle()
-		body = gotui.NewStyle()
-		hint = gotui.NewStyle().Dim()
-		border = gotui.NewStyle().Foreground(gotui.BrightBlack)
-		if kind == "assistant" {
-			head = gotui.NewStyle().Bold()
-		}
-		if kind == "system" {
-			head = gotui.NewStyle().Dim()
-			body = gotui.NewStyle().Dim()
-		}
+	failed := status == "error" || status == "failed"
+	switch kind {
+	case "user":
+		head, body = piFg(piText), piFg(piText)
+	case "tool":
+		head, body = piFg(piText).Bold(), piFg(piMuted)
+	case "bash", "local":
+		head, body = piFg(piBashMode).Bold(), piFg(piMuted)
+	case "thought", "thinking", "thinking_indicator":
+		head, body = piFg(piThinkingText).Italic(), piFg(piThinkingText).Italic()
+	case "hook", "route", "dispatcher", "subturn", "compact":
+		head, body = piFg(piAccent).Bold(), piFg(piMuted)
+	case "error":
+		head, body = piFg(piError).Bold(), piFg(piError)
+	case "system":
+		head, body = piFg(piDim), piFg(piDim)
 	}
-	if kind == "user" || kind == "tool" || kind == "bash" || kind == "local" || kind == "error" {
-		// Output stays neutral on the terminal background; errors use text color.
-		head = gotui.NewStyle().Foreground(piText).Bold()
-		body = gotui.NewStyle().Foreground(piText)
-		if kind == "error" || status == "error" || status == "failed" {
-			head = head.Foreground(piError)
-		}
-		if kind == "user" {
-			head = gotui.NewStyle().Foreground(piText)
-		}
+	if failed && kind != "user" {
+		head = piFg(piError).Bold()
+	} else if status == "skipped" {
+		head = piFg(piWarning).Bold()
 	}
 	return head, body, hint, selectedHint, border
 }
@@ -5149,7 +5073,7 @@ func brailleSpinnerFrame(t time.Time) string {
 	if t.IsZero() {
 		t = time.Now()
 	}
-	idx := int((t.UnixMilli() / 120) % int64(len(frames)))
+	idx := int((t.UnixMilli() / 80) % int64(len(frames)))
 	if idx < 0 {
 		idx = 0
 	}
@@ -5157,6 +5081,10 @@ func brailleSpinnerFrame(t time.Time) string {
 }
 
 func (c *chatTUI) renderTranscriptBlock(block transcriptRenderableBlock) *gotui.Element {
+	if block.Kind == "thinking_indicator" {
+		// Pi shows turn activity in the editor's top border, not the transcript.
+		return gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(0))
+	}
 	return padTranscriptBlock(c.renderTranscriptBlockContent(block), block)
 }
 
@@ -5164,9 +5092,9 @@ func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) 
 	if block.Kind == "user" || block.Kind == "assistant" {
 		if block.MarkdownSource != "" {
 			message := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
-			// Account for message-band padding and the potential scrollbar.
+			// Account for message-band padding.
 			_, _, horizontal := transcriptSpacing(block.Kind)
-			for _, line := range renderMarkdownTranscript("", block.MarkdownSource, max(1, c.currentContentWidth()-2*horizontal-1)) {
+			for _, line := range renderMarkdownTranscript("", block.MarkdownSource, max(1, c.currentContentWidth()-2*horizontal)) {
 				message.AddChild(c.renderInlineStyledLine(line, block.BodyStyle))
 			}
 			return message

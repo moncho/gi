@@ -262,5 +262,5 @@ func (c *chatTUI) workspaceIndexHeight() int {
 	return 0
 }
 func (c *chatTUI) renderWorkspaceIndex(width int) *gotui.Element {
-	return c.renderLineBlock(c.workspaceIndexLines(width), gotui.NewStyle().Foreground(gotui.Cyan))
+	return c.renderLineBlock(c.workspaceIndexLines(width), gotui.NewStyle())
 }

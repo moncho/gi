@@ -62,7 +62,9 @@ func (c *chatTUI) flushRegularTranscript() {
 		}
 		block.Expanded = true
 		root.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
-		previousKind = block.Kind
+		if block.Kind != "thinking_indicator" {
+			previousKind = block.Kind
+		}
 	}
 	c.regularPrinted = end
 	c.app.PrintAboveElement(root)
@@ -143,31 +145,30 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100), gotui.WithHeight(dock))
 	c.transcriptBlockRefs = nil
 	if previewHeight > 0 {
-		preview := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100), gotui.WithHeight(previewHeight), gotui.WithScrollable(gotui.ScrollVertical))
+		preview := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100), gotui.WithHeight(previewHeight), gotui.WithScrollable(gotui.ScrollVertical), gotui.WithScrollbarHidden(true))
 		previousKind := c.regularPreviousKind()
 		for _, block := range c.buildTranscriptRenderableBlocks(pending) {
 			preview.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
-			previousKind = block.Kind
+			if block.Kind != "thinking_indicator" {
+				previousKind = block.Kind
+			}
 		}
 		preview.ScrollToBottom()
 		root.AddChild(preview)
 	}
 	if len(queue) > 0 {
-		root.AddChild(c.renderLineBlock(queue, gotui.NewStyle().Dim()))
+		root.AddChild(c.renderLineBlock(queue, piFg(piDim)))
 	}
 	if c.modelMenuOpen {
 		root.AddChild(c.renderModelMenu(w))
 	}
 	if len(widgets) > 0 {
-		root.AddChild(c.renderLineBlock(widgets, gotui.NewStyle().Foreground(gotui.Blue)))
+		root.AddChild(c.renderLineBlock(widgets, gotui.NewStyle()))
 	}
-	separator := func() *gotui.Element {
-		return gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(1), gotui.WithText(c.horizontalRule(w)), gotui.WithTextStyle(gotui.NewStyle().Dim()))
-	}
-	root.AddChild(separator())
+	root.AddChild(c.renderEditorTopBorder(c.input, w))
 	root.AddChild(input)
-	root.AddChild(separator())
-	root.AddChild(c.renderLineBlock(footer, gotui.NewStyle().Dim()))
+	root.AddChild(c.renderEditorBottomBorder(c.input, w))
+	root.AddChild(c.renderLineBlock(footer, piFg(piDim)))
 	c.inputRegion = input
 	return root
 }

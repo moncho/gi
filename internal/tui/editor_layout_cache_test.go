@@ -32,7 +32,7 @@ func TestEditorLayoutCacheReuseAndCompleteInvalidation(t *testing.T) {
 		t.Fatal("cache differs from fresh viewport")
 	}
 	for _, change := range []func(){
-		func() { m.cursorPos-- }, func() { m.width-- }, func() { m.border = gotui.BorderRounded }, func() { m.Blur() }, func() { m.Focus() }, func() { m.cursorRune = '|' }, func() { m.text += "different" },
+		func() { m.cursorPos-- }, func() { m.width-- }, func() { m.border = gotui.BorderRounded }, func() { m.Blur() }, func() { m.Focus() }, func() { m.text += "different" },
 	} {
 		previous := m.layoutCache
 		change()

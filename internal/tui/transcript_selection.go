@@ -185,17 +185,11 @@ func (c *chatTUI) handleTranscriptSelection(me gotui.MouseEvent) bool {
 		}
 		r := c.transcriptRegion.Rect()
 		viewWidth, _ := c.transcriptRegion.ViewportSize()
-		// go-tui's ViewportSize includes its visible scrollbar column even
-		// though child layout reserves that cell when vertical overflow exists.
-		_, maxScroll := c.transcriptRegion.MaxScroll()
-		if maxScroll > 0 {
-			viewWidth--
-		}
 		if viewWidth < 1 || me.X >= r.X+viewWidth {
 			c.selectionClicks = transcriptClickSequence{}
 			c.selectionClickSnapshot = transcriptSelection{}
 			return false
-		} // scrollbar retains its own hit region
+		}
 		clicks := c.selectionClicks
 		if !c.selectionSnapshotCurrent(&c.selectionClickSnapshot) || me.Mod != 0 {
 			clicks = transcriptClickSequence{}

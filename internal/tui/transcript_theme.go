@@ -1,14 +1,59 @@
 package tui
 
-import gotui "github.com/grindlemire/go-tui"
+import (
+	"strings"
 
-// The user message alone gets a background; transcript output stays on the
-// terminal background. Keep the user color independent of the ANSI palette.
-var (
-	piUserBg = gotui.RGBColor(0x34, 0x35, 0x41)
-	piText   = gotui.RGBColor(0xd4, 0xd4, 0xd4)
-	piError  = gotui.RGBColor(0xf4, 0x87, 0x71)
+	gotui "github.com/grindlemire/go-tui"
 )
+
+// Pi's built-in dark theme (theme/dark.json), resolved to truecolor by Pi's
+// own okhsl conversion. Keep these values in sync with Pi, not the ANSI
+// palette, so gi and Pi render the same colors in the same terminal.
+// The user message alone gets a background; transcript output stays on the
+// terminal background.
+var (
+	piText            = gotui.RGBColor(222, 224, 225)
+	piMuted           = gotui.RGBColor(157, 165, 169)
+	piDim             = gotui.RGBColor(126, 136, 142)
+	piAccent          = gotui.RGBColor(167, 152, 215)
+	piError           = gotui.RGBColor(234, 127, 129)
+	piWarning         = gotui.RGBColor(205, 154, 34)
+	piSuccess         = gotui.RGBColor(104, 183, 141)
+	piThinkingText    = gotui.RGBColor(150, 160, 164)
+	piUserBg          = gotui.RGBColor(33, 59, 73)
+	piMdCode          = piAccent
+	piBashMode        = gotui.RGBColor(94, 178, 134)
+	piBorderMuted     = gotui.RGBColor(118, 129, 134)
+	piThinkingOff     = gotui.RGBColor(108, 118, 123)
+	piThinkingMinimal = gotui.RGBColor(104, 128, 141)
+	piThinkingLow     = gotui.RGBColor(84, 137, 164)
+	piThinkingMedium  = gotui.RGBColor(97, 133, 204)
+	piThinkingHigh    = gotui.RGBColor(151, 118, 229)
+	piThinkingXhigh   = gotui.RGBColor(222, 84, 193)
+	piThinkingMax     = gotui.RGBColor(254, 84, 98)
+)
+
+func piFg(c gotui.Color) gotui.Style { return gotui.NewStyle().Foreground(c) }
+
+// Pi colors the editor border (and the embedded working status) by thinking
+// level, or with bashMode while the draft is a `!` shell command.
+func piThinkingBorderColor(level string) gotui.Color {
+	switch strings.ToLower(strings.TrimSpace(level)) {
+	case "minimal":
+		return piThinkingMinimal
+	case "low":
+		return piThinkingLow
+	case "medium":
+		return piThinkingMedium
+	case "high":
+		return piThinkingHigh
+	case "xhigh":
+		return piThinkingXhigh
+	case "max":
+		return piThinkingMax
+	}
+	return piThinkingOff
+}
 
 func transcriptBand(kind, status string) (gotui.Color, bool) {
 	if kind == "user" {
@@ -68,7 +113,7 @@ func transcriptSpacing(kind string) (separator, vertical, horizontal int) {
 		return 0, 1, 1
 	case "assistant":
 		return 1, 0, 1
-	case "tool", "bash", "local", "error", "thought", "thinking", "thinking_indicator", "hook", "route", "dispatcher", "subturn", "compact":
+	case "tool", "bash", "local", "error", "thought", "thinking", "hook", "route", "dispatcher", "subturn", "compact":
 		return 1, 0, 1
 	default:
 		return 0, 0, 0
@@ -104,6 +149,9 @@ func assistantGapBefore(previousKind, nextKind string) int {
 }
 
 func (c *chatTUI) renderTranscriptBlockAfter(block transcriptRenderableBlock, previousKind string) *gotui.Element {
+	if block.Kind == "thinking_indicator" {
+		return c.renderTranscriptBlock(block)
+	}
 	content := c.renderTranscriptBlock(block)
 	if assistantGapBefore(previousKind, block.Kind) == 0 {
 		return content

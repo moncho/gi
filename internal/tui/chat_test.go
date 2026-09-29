@@ -2088,7 +2088,7 @@ func TestMultilineInputPlaceholderShowsFocusState(t *testing.T) {
 	inp.Focus()
 	inp.blink = false
 	lines = inp.renderLines()
-	if len(lines) != 1 || lines[0].text != "▌" || !lines[0].placeholder {
+	if len(lines) != 1 || lines[0].text != "" || lines[0].cursor != 0 || lines[0].cursorEnd != 0 || !lines[0].placeholder {
 		t.Fatalf("focused placeholder lines = %#v", lines)
 	}
 }
@@ -2175,7 +2175,7 @@ func TestMultilineInputCursorRenderingWithinText(t *testing.T) {
 	inp.blink = false
 	inp.cursorPos = 2
 	lines := inp.renderLines()
-	if len(lines) != 1 || lines[0].text != "ab▌cd" {
+	if len(lines) != 1 || lines[0].text != "abcd" || lines[0].cursor != 2 || lines[0].cursorEnd != 3 {
 		t.Fatalf("cursor render lines = %#v", lines)
 	}
 }
@@ -2683,25 +2683,6 @@ func TestModelCommandOpensCursorNavigableMenu(t *testing.T) {
 	}
 	if c.cfg.DefaultModel != "bootstrap" {
 		t.Fatalf("expected selected model bootstrap, got %q", c.cfg.DefaultModel)
-	}
-}
-
-func TestScrollbarCommandDefaultsOffAndPersists(t *testing.T) {
-	root := t.TempDir()
-	c := &chatTUI{cfg: config.RuntimeConfig{WorkspaceRoot: root}}
-	if c.cfg.TUIScrollbar {
-		t.Fatal("expected scrollbar to default off")
-	}
-	lines := c.scrollbarCommand([]string{"/scrollbar", "on"})
-	if !c.cfg.TUIScrollbar {
-		t.Fatal("expected scrollbar command to enable option")
-	}
-	if got := strings.Join(lines, "\n"); !strings.Contains(got, "scrollbar set to on") {
-		t.Fatalf("expected confirmation, got %q", got)
-	}
-	cfg := config.Load(root)
-	if !cfg.TUIScrollbar {
-		t.Fatal("expected scrollbar setting to persist")
 	}
 }
 

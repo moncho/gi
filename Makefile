@@ -57,7 +57,7 @@ endef
 	build-web build \
 	run start stop restart status logs \
 	test vet bun-checks check \
-	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-input-history test-tui-sessions test-tui-source-copy test-tui-markdown test-tui-scrollbar \
+	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-input-history test-tui-sessions test-tui-source-copy test-tui-markdown \
 	clean
 
 # ── Help and bootstrap ──────────────────────────────────────────────────
@@ -722,8 +722,6 @@ test-tui-compaction:
 	$(GO) test -c -o bin/gi-tui-compaction-test ./internal/tui
 	$(BUN) scripts/test-tui-compaction.mjs
 
-test-tui-scrollbar: build
-	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-scrollbar.mjs
 
 .PHONY: test-tui-queue-input test-tui-queue-input-core test-tui-queue-input-binary test-tui-queue-restore test-tui-queue-escape-restore test-tui-queue-display
 test-tui-queue-input: build
@@ -850,7 +848,7 @@ test-tui-smoke: build
 	chmod +x scripts/test-tui-smoke.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
 
-test-tui-gherkin: build test-tui-markdown test-tui-inline-prose test-tui-scrollbar
+test-tui-gherkin: build test-tui-markdown test-tui-inline-prose
 	chmod +x scripts/test-tui-gherkin.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin scripts/test-tui-gherkin.sh
 

@@ -42,13 +42,7 @@ type transcriptSearch struct {
 // Index the same retained, wrapped and collapsed output the fullscreen renderer
 // displays. Tool metadata and hidden lines never become phantom search matches.
 func (c *chatTUI) renderedTranscriptRows(width int) []transcriptSearchRow {
-	rows := c.transcriptRowsAtWidth(width)
-	// go-tui reserves one column whenever vertical content overflows. Match
-	// that layout even when no custom scrollbar style was chosen.
-	if len(rows) > c.transcriptViewportHeight() && width > 1 {
-		return c.transcriptRowsAtWidth(width - 1)
-	}
-	return rows
+	return c.transcriptRowsAtWidth(width)
 }
 
 func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
@@ -58,6 +52,9 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 	var rows []transcriptSearchRow
 	previousKind := ""
 	for _, block := range c.buildTranscriptRenderableBlocks(c.visibleTranscript()) {
+		if block.Kind == "thinking_indicator" {
+			continue
+		}
 		gap := assistantGapBefore(previousKind, block.Kind)
 		previousWidth := c.outputWidth
 		if block.MarkdownSource != "" {
@@ -65,7 +62,9 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 		}
 		el := c.renderTranscriptBlockAfter(block, previousKind)
 		c.outputWidth = previousWidth
-		previousKind = block.Kind
+		if block.Kind != "thinking_indicator" {
+			previousKind = block.Kind
+		}
 		height := max(1, el.HeightForWidth(width))
 		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(height))
 		root.AddChild(el)

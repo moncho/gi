@@ -27,7 +27,9 @@ func TestEditorViewportTracksCursorWithoutChangingDraft(t *testing.T) {
 				}
 				markers := 0
 				for _, line := range lines {
-					markers += strings.Count(line.text, "▌")
+					if line.cursor >= 0 {
+						markers++
+					}
 					if !utf8.ValidString(line.text) || gotui.StringWidth(line.text) > width {
 						t.Fatalf("width%d overflow %q", width, line.text)
 					}
@@ -54,11 +56,11 @@ func TestEditorViewportTracksCursorWithoutChangingDraft(t *testing.T) {
 			}
 			m.maxLines = 2
 			lines := m.renderLines()
-			if len(lines) != 2 || !strings.Contains(lines[1].text, "▌") {
+			if len(lines) != 2 || lines[1].cursor < 0 {
 				t.Fatal("shrunk viewport lost cursor", lines)
 			}
 			m.SetText("")
-			if lines = m.renderLines(); len(lines) != 1 || lines[0].text != "▌" {
+			if lines = m.renderLines(); len(lines) != 1 || lines[0].text != "" || lines[0].cursor != 0 {
 				t.Fatal("idle height", lines)
 			}
 		})
@@ -66,20 +68,23 @@ func TestEditorViewportTracksCursorWithoutChangingDraft(t *testing.T) {
 }
 
 func TestEditorViewportCellWrappingAndIndependentState(t *testing.T) {
-	m := newMultilineInput(5, "", nil, nil)
+	m := newMultilineInput(6, "", nil, nil)
 	m.SetText("中🙂e\u0301")
 	lines := m.renderLines()
 	if len(lines) != 1 || lines[0].text != "中🙂e\u0301" {
 		t.Fatal(lines)
 	}
+	m.width = 5
 	m.Focus()
 	m.cursorPos = 3
 	lines = m.renderLines()
 	if m.Text() != "中🙂e\u0301" || m.cursorPos != 3 {
 		t.Fatal("split draft")
 	}
-	if lines[0].text != "中🙂▌" || lines[1].text != "e\u0301" {
-		t.Fatal("cursor split combining cluster", lines)
+	// Pi wraps between CJK characters and highlights the whole cluster
+	// containing the cursor instead of inserting a marker.
+	if len(lines) != 2 || lines[0].text != "中" || lines[1].text != "🙂e\u0301" || lines[1].text[lines[1].cursor:lines[1].cursorEnd] != "e\u0301" {
+		t.Fatalf("cursor split combining cluster %#v", lines)
 	}
 	for _, line := range lines {
 		if gotui.StringWidth(line.text) > 5 {
@@ -89,7 +94,7 @@ func TestEditorViewportCellWrappingAndIndependentState(t *testing.T) {
 	m.SetText("first\r\nlast")
 	m.maxLines = 1
 	lines = m.renderLines()
-	if lines[0].text != "last▌" {
+	if lines[0].text != "last" || lines[0].cursor != 4 || lines[0].cursorEnd != 4 {
 		t.Fatal("CRLF", lines)
 	}
 	// Independent search and composer instances cannot share scroll positions.

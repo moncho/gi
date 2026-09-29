@@ -28,7 +28,6 @@ type RuntimeConfig struct {
 	ScrollbackLimit      int                    `json:"scrollback_limit"`
 	TUIHistoryLimit      int                    `json:"tui_history_limit"`
 	TUIClipboardMode     string                 `json:"tui_clipboard_mode"`
-	TUIScrollbar         bool                   `json:"tui_scrollbar"`
 	Compaction           CompactionSettings     `json:"compaction"`
 	Retry                ProviderRetrySettings  `json:"retry"`
 	Hooks                HookSettings           `json:"hooks"`
@@ -105,7 +104,6 @@ type piSettings struct {
 	TUIScrollbackLimit   int                    `json:"tuiScrollbackLimit"`
 	TUIHistoryLimit      int                    `json:"tuiHistoryLimit"`
 	TUIClipboardMode     string                 `json:"tuiClipboardMode"`
-	TUIScrollbar         bool                   `json:"tuiScrollbar"`
 	Compaction           CompactionSettings     `json:"compaction"`
 	Retry                ProviderRetrySettings  `json:"retry"`
 	Hooks                HookSettings           `json:"hooks"`
@@ -142,7 +140,6 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.ScrollbackLimit = ps.TUIScrollbackLimit
 		cfg.TUIHistoryLimit = ps.TUIHistoryLimit
 		cfg.TUIClipboardMode = normalizeClipboardMode(ps.TUIClipboardMode)
-		cfg.TUIScrollbar = ps.TUIScrollbar
 		cfg.Compaction = ps.Compaction
 		cfg.Retry = ps.Retry
 		cfg.Hooks = ps.Hooks
@@ -246,10 +243,6 @@ func PersistScrollbackLimit(workspaceRoot string, limit int) error {
 		return errors.New("scrollback limit must be > 0")
 	}
 	return persistPiFields(workspaceRoot, map[string]any{"tuiScrollbackLimit": limit})
-}
-
-func PersistTUIScrollbar(workspaceRoot string, enabled bool) error {
-	return persistPiFields(workspaceRoot, map[string]any{"tuiScrollbar": enabled})
 }
 
 func PersistTUIHistoryLimit(workspaceRoot string, limit int) error {

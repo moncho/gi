@@ -3,6 +3,7 @@ package tui
 import (
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/clipperhouse/uax29/v2/graphemes"
@@ -14,12 +15,12 @@ type multilineInput struct {
 	width            int
 	maxLines         int // zero leaves standalone inputs unbounded
 	scrollRow        int
+	totalRows        int
 	layoutCache      *editorLayoutCache // immutable, one entry per input snapshot
 	border           gotui.BorderStyle
 	placeholder      string
 	placeholderStyle gotui.Style
 	textStyle        gotui.Style
-	cursorRune       rune
 	autoFocus        bool
 	suspended        bool
 	onSubmit         func(string)
@@ -49,7 +50,6 @@ func newMultilineInput(width int, placeholder string, onSubmit func(string), onC
 		placeholder:      placeholder,
 		placeholderStyle: gotui.NewStyle().Dim(),
 		textStyle:        gotui.NewStyle(),
-		cursorRune:       '▌',
 		autoFocus:        true,
 		onSubmit:         onSubmit,
 		onChange:         onChange,
@@ -156,7 +156,7 @@ func (m *multilineInput) Render(app *gotui.App) *gotui.Element {
 	lines := m.renderLines()
 	help := m.helpLine()
 	if help != "" {
-		lines = append(lines, renderedLine{text: help, placeholder: true})
+		lines = append(lines, renderedLine{text: help, placeholder: true, cursor: -1})
 	}
 	totalHeight := len(lines)
 	if totalHeight < 1 {
@@ -180,21 +180,54 @@ func (m *multilineInput) Render(app *gotui.App) *gotui.Element {
 		if line.placeholder {
 			style = m.placeholderStyle
 		}
-		root.AddChild(gotui.New(gotui.WithText(line.text), gotui.WithTextStyle(style), gotui.WithHeight(1), gotui.WithWrap(false)))
+		root.AddChild(renderEditorLine(line, style))
 	}
 	return root
+}
+
+// renderEditorLine draws Pi's fake cursor: the grapheme under the cursor in
+// reverse video, or a reverse-video space at the end of the line. The draft
+// text itself is never shifted by a cursor glyph.
+func renderEditorLine(line renderedLine, style gotui.Style) *gotui.Element {
+	options := []gotui.Option{gotui.WithHeight(1), gotui.WithWrap(false)}
+	if line.cursor < 0 {
+		return gotui.New(append(options, gotui.WithText(line.text), gotui.WithTextStyle(style))...)
+	}
+	before, under, after := line.text[:line.cursor], line.text[line.cursor:line.cursorEnd], line.text[line.cursorEnd:]
+	if under == "" {
+		under = " "
+	}
+	spans := make([]gotui.TextSpan, 0, 3)
+	if before != "" {
+		spans = append(spans, gotui.TextSpan{Text: before, Style: style})
+	}
+	spans = append(spans, gotui.TextSpan{Text: under, Style: style.Reverse()})
+	if after != "" {
+		spans = append(spans, gotui.TextSpan{Text: after, Style: style})
+	}
+	return gotui.New(append(options, gotui.WithRichText(spans...))...)
 }
 
 type renderedLine struct {
 	text        string
 	placeholder bool
+	// cursor/cursorEnd are byte offsets of the reverse-video cursor grapheme
+	// in text; cursor < 0 means no cursor, cursor == cursorEnd a trailing cell.
+	cursor, cursorEnd int
+}
+
+// displayText is the row as painted, including a trailing cursor cell.
+func (l renderedLine) displayText() string {
+	if l.cursor >= 0 && l.cursor == l.cursorEnd {
+		return l.text + " "
+	}
+	return l.text
 }
 
 type editorLayoutKey struct {
 	text          string
 	width, cursor int
 	focused       bool
-	marker        rune
 }
 type editorLayoutCache struct {
 	key       editorLayoutKey
@@ -202,23 +235,28 @@ type editorLayoutCache struct {
 	cursorRow int
 }
 
+// editorLayoutWidth mirrors Pi's Editor with paddingX 0: one column is
+// reserved so a cursor at the end of a full row still fits.
+func editorLayoutWidth(width int) int {
+	return max(1, width-1)
+}
+
 func (m *multilineInput) renderLines() []renderedLine {
-	if m.text == "" {
-		m.layoutCache = nil
-		m.scrollRow = 0
-		if m.focused {
-			return []renderedLine{{text: string(m.cursorRune), placeholder: true}}
-		}
-		return []renderedLine{{text: "", placeholder: true}}
-	}
 	visibleWidth := m.width
 	if m.border != gotui.BorderNone {
 		visibleWidth -= 2
 	}
-	if visibleWidth < 1 {
-		visibleWidth = 1
+	visibleWidth = editorLayoutWidth(visibleWidth)
+	key := editorLayoutKey{text: m.text, width: visibleWidth, cursor: m.cursorPos, focused: m.focused}
+	if m.text == "" {
+		m.layoutCache = nil
+		m.scrollRow = 0
+		m.totalRows = 1
+		if m.focused {
+			return []renderedLine{{placeholder: true, cursor: 0, cursorEnd: 0}}
+		}
+		return []renderedLine{{placeholder: true, cursor: -1}}
 	}
-	key := editorLayoutKey{text: m.text, width: visibleWidth, cursor: m.cursorPos, focused: m.focused, marker: m.cursorRune}
 	cached := m.layoutCache
 	if cached == nil || cached.key != key {
 		lines, cursorRow := m.layoutLines(visibleWidth)
@@ -226,6 +264,7 @@ func (m *multilineInput) renderLines() []renderedLine {
 		m.layoutCache = cached
 	}
 	lines, cursorRow := cached.lines, cached.cursorRow
+	m.totalRows = len(lines)
 	limit := m.maxLines
 	if limit <= 0 || len(lines) <= limit {
 		m.scrollRow = 0
@@ -242,58 +281,152 @@ func (m *multilineInput) renderLines() []renderedLine {
 	return lines[m.scrollRow : m.scrollRow+limit : m.scrollRow+limit]
 }
 
+// hiddenRows reports rows above and below the last rendered viewport, for
+// Pi's "↑ N more" / "↓ N more" editor borders.
+func (m *multilineInput) hiddenRows() (above, below int) {
+	visible := m.totalRows - m.scrollRow
+	if m.maxLines > 0 {
+		visible = min(visible, m.maxLines)
+	}
+	return m.scrollRow, max(0, m.totalRows-m.scrollRow-visible)
+}
+
+type editorGrapheme struct {
+	text      string
+	width     int
+	runeStart int
+	runeCount int
+}
+
+// layoutLines ports Pi's Editor.layoutText/wordWrapLine: logical lines wrap at
+// word boundaries (or between CJK characters), falling back to grapheme
+// breaks for words longer than the row. The cursor is a rune offset.
 func (m *multilineInput) layoutLines(visibleWidth int) ([]renderedLine, int) {
-	lines := []renderedLine{}
-	var line strings.Builder
-	column, runeOffset, cursorRow := 0, 0, -1
 	cursorPos := max(0, min(m.cursorPos, utf8.RuneCountInString(m.text)))
-	flush := func() { lines = append(lines, renderedLine{text: line.String()}); line.Reset(); column = 0 }
-	emit := func(value string, cursor bool) {
-		width := gotui.StringWidth(value)
-		// A one-column terminal cannot paint a two-cell glyph. Substitute only
-		// its display cell; the draft and logical cursor remain byte-identical.
-		if width > visibleWidth {
-			value = "�"
-			width = 1
+	lines := []renderedLine{}
+	cursorRow := -1
+	var logical []editorGrapheme
+	lineStart := 0
+	runeOffset := 0
+	flushLogical := func(lineEnd int) {
+		hasCursor := cursorPos >= lineStart && cursorPos <= lineEnd && cursorRow < 0
+		// Grapheme index holding the cursor; len(logical) means end of line.
+		cursorIndex := len(logical)
+		if hasCursor {
+			for i, g := range logical {
+				if cursorPos < g.runeStart+g.runeCount {
+					cursorIndex = i
+					break
+				}
+			}
 		}
-		if column+width > visibleWidth && column > 0 {
-			flush()
+		chunks := editorWordWrap(logical, visibleWidth)
+		for ci, chunk := range chunks {
+			inChunk := false
+			if hasCursor {
+				if ci == len(chunks)-1 {
+					inChunk = cursorIndex >= chunk[0]
+				} else {
+					inChunk = cursorIndex >= chunk[0] && cursorIndex < chunk[1]
+				}
+			}
+			var b strings.Builder
+			line := renderedLine{cursor: -1}
+			for i := chunk[0]; i < chunk[1]; i++ {
+				if inChunk && m.focused && i == cursorIndex {
+					line.cursor = b.Len()
+				}
+				b.WriteString(logical[i].text)
+				if inChunk && m.focused && i == cursorIndex {
+					line.cursorEnd = b.Len()
+				}
+			}
+			line.text = b.String()
+			if inChunk {
+				cursorRow = len(lines)
+				if m.focused && cursorIndex >= chunk[1] {
+					line.cursor, line.cursorEnd = len(line.text), len(line.text)
+				}
+			}
+			lines = append(lines, line)
 		}
-		if cursor {
-			cursorRow = len(lines)
-		}
-		line.WriteString(value)
-		column += width
+		logical = logical[:0]
 	}
 	it := graphemes.FromString(m.text)
 	for it.Next() {
 		cluster := it.Value()
 		count := utf8.RuneCountInString(cluster)
-		// Cursor movement is still rune-based. If it falls inside a grapheme,
-		// display the marker before that cluster without splitting its bytes.
-		if cursorRow < 0 && cursorPos < runeOffset+count {
-			if m.focused {
-				emit(string(m.cursorRune), true)
-			} else {
-				cursorRow = len(lines)
-			}
-		}
 		if cluster == "\n" || cluster == "\r\n" {
-			flush()
-		} else {
-			emit(cluster, false)
+			flushLogical(runeOffset)
+			runeOffset += count
+			lineStart = runeOffset
+			continue
 		}
+		width := gotui.StringWidth(cluster)
+		// A one-column terminal cannot paint a two-cell glyph. Substitute only
+		// its display cell; the draft and logical cursor remain byte-identical.
+		if width > visibleWidth {
+			cluster, width = "�", 1
+		}
+		logical = append(logical, editorGrapheme{text: cluster, width: width, runeStart: runeOffset, runeCount: count})
 		runeOffset += count
 	}
+	flushLogical(runeOffset)
 	if cursorRow < 0 {
-		if m.focused {
-			emit(string(m.cursorRune), true)
-		} else {
-			cursorRow = len(lines)
+		cursorRow = len(lines) - 1
+	}
+	return lines, cursorRow
+}
+
+// editorWordWrap returns [start,end) grapheme ranges, as Pi's wordWrapLine.
+func editorWordWrap(segments []editorGrapheme, maxWidth int) [][2]int {
+	total := 0
+	for _, g := range segments {
+		total += g.width
+	}
+	if len(segments) == 0 || total <= maxWidth {
+		return [][2]int{{0, len(segments)}}
+	}
+	var chunks [][2]int
+	currentWidth, chunkStart := 0, 0
+	wrapOppIndex, wrapOppWidth := -1, 0
+	for i, g := range segments {
+		isWs := isEditorWhitespace(g.text)
+		if currentWidth+g.width > maxWidth {
+			if wrapOppIndex >= 0 && currentWidth-wrapOppWidth+g.width <= maxWidth {
+				chunks = append(chunks, [2]int{chunkStart, wrapOppIndex})
+				chunkStart = wrapOppIndex
+				currentWidth -= wrapOppWidth
+			} else if chunkStart < i {
+				chunks = append(chunks, [2]int{chunkStart, i})
+				chunkStart = i
+				currentWidth = 0
+			}
+			wrapOppIndex = -1
+		}
+		currentWidth += g.width
+		if i+1 < len(segments) {
+			next := segments[i+1]
+			nextWs := isEditorWhitespace(next.text)
+			if isWs && !nextWs {
+				wrapOppIndex, wrapOppWidth = i+1, currentWidth
+			} else if !isWs && !nextWs && (isEditorCJK(g.text) || isEditorCJK(next.text)) {
+				wrapOppIndex, wrapOppWidth = i+1, currentWidth
+			}
 		}
 	}
-	flush()
-	return lines, cursorRow
+	return append(chunks, [2]int{chunkStart, len(segments)})
+}
+
+func isEditorWhitespace(s string) bool {
+	r, _ := utf8.DecodeRuneInString(s)
+	return unicode.IsSpace(r)
+}
+
+func isEditorCJK(s string) bool {
+	r, _ := utf8.DecodeRuneInString(s)
+	return unicode.In(r, unicode.Han, unicode.Hiragana, unicode.Katakana, unicode.Hangul) ||
+		(r >= 0x3000 && r <= 0x303f) || (r >= 0xff00 && r <= 0xffef)
 }
 
 func (m *multilineInput) helpLine() string {

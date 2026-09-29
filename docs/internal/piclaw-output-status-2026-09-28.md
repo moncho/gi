@@ -32,7 +32,7 @@ A review found that returning a persistence error directly from the pipe writer 
 - Final `make ux-parity-inventory`: 204 support tests / 7,747 assertions passed. Classic remains 97 mapped / 144 unmapped; Shared remains 30 mapped / 12 unmapped.
 - Focused follow-up review confirmed the noisy-writer blocker resolved and found no new blocker in that scope. An initial broader runtime investigation timed out.
 
-The old `test-piclaw-chat-lifecycle` WebKit reload probe still fails with presence/SSE cancellation/access-control errors. An attempted settle-before-reload change did not fix it and was reverted. The new Output comparison does not reload Piclaw and does not supersede that failure. Native Gi reload is covered separately.
+The full `test-piclaw-chat-lifecycle` WebKit desktop probe still fails at reload with presence/SSE cancellation/access-control errors; it was reproduced again on 29 September 2026. Chromium desktop passed the full probe separately. A bounded `ORACLE_TRANSIENT_ONLY=1` mode now stops before reload and checks idle, Thoughts/Draft previews, Output, Waiting after tool completion and terminal provider-error cleanup against the installed UI and event translator: **6/6** Chromium/WebKit phone/tablet/desktop, with no pre-reload fixture request failures. This does not resolve the WebKit reload failure or test persisted replies. Native Gi reload is covered separately.
 
 The asset fixture now recognises WebKit's cancellation wording for the single unscoped Gi bootstrap stream, as it already did for Chromium. It requires a live replacement; scoped, repeated, topic and Piclaw cancellations remain failures. A native generated manifest route is explicitly supplied by the comparison harness.
 

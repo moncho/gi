@@ -8,6 +8,7 @@ import {installPixelHost} from '../support/pixel-adapter.mjs';
 const root=process.env.PICLAW_ORACLE_ROOT||'/opt/piclaw/current';
 const browserName=process.env.ORACLE_BROWSER||'chromium';
 const viewportName=process.env.ORACLE_VIEWPORT||'desktop';
+const transientOnly=process.env.ORACLE_TRANSIENT_ONLY==='1';
 const sizes={desktop:{width:1213,height:688},tablet:{width:820,height:1180},phone:{width:390,height:844}};
 assert(['chromium','webkit'].includes(browserName)&&sizes[viewportName]);
 const output=path.resolve(process.env.ORACLE_OUTPUT||`test-results/ux-oracle/chat-lifecycle/${browserName}-${viewportName}/run-${Date.now()}`);
@@ -28,7 +29,7 @@ const base={chat_jid:state.sessionId,agent_id:'default',thread_id:'301',turn_id:
 const emitter={};
 for(const [key,event] of Object.entries({status:'agent_status',thought:'agent_thought',thoughtDelta:'agent_thought_delta',draft:'agent_draft',draftDelta:'agent_draft_delta',response:'agent_response',generatedWidgetOpen:'generated_widget_open',generatedWidgetDelta:'generated_widget_delta',generatedWidgetFinal:'generated_widget_final',generatedWidgetClose:'generated_widget_close',generatedWidgetError:'generated_widget_error',modelChanged:'model_changed'}))emitter[key]=payload=>{frames.push({event,payload});if(key==='status')statusSnapshot={status:['done','error'].includes(payload.type)?'idle':'active',data:{...base,...payload}};host.emit(event,{...base,...payload});};
 const handler=createStreamingEventHandler({emitter,agentId:'default',threadId:'301',turnId:'oracle-turn',displayUpdateIntervalMs:0,includeDraftFull:()=>true,includeThoughtFull:()=>true});
-const report={release:reference.release,browser:browserName,viewport:viewportName,scope:'Installed Piclaw event translator plus shipped UI; isolated synthetic agent events and timeline. No provider, production backend persistence or physical-device acceptance.',frames,observations};
+const report={release:reference.release,browser:browserName,viewport:viewportName,scope:'Installed Piclaw event translator plus shipped UI; isolated synthetic agent events and timeline. No provider, production backend persistence or physical-device acceptance.',transientOnly,frames,observations};
 const capture=async name=>{await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));observations.push({name,posts:await page.locator('.post').evaluateAll(es=>es.map(e=>({author:e.querySelector('.post-author')?.textContent,text:e.querySelector('.post-content')?.textContent}))),panels:await page.locator('.agent-status-panel').evaluateAll(es=>es.map(e=>({text:e.textContent,html:e.outerHTML}))),bodyText:await page.locator('body').innerText()});await page.screenshot({path:path.join(output,`${name}.png`)});};
 try{
  const html=(await fs.readFile(path.join(root,'app/runtime/web/static/classic/index.html'),'utf8')).replaceAll('__PICLAW_SANITIZE_SVG_FENCES_FLAG__','1');
@@ -64,6 +65,10 @@ try{
  await page.waitForFunction(()=>window.__chatOracleErrorFrames?.length>0);report.transientErrorPanels=await page.evaluate(()=>window.__chatOracleErrorFrames);await capture('provider-error');
  assert.equal(await page.locator('.post').count(),1,'error status is not a user input');
  assert(report.transientErrorPanels.every(p=>p.draftPanes===0&&p.thoughtPanes===0),'terminal error itself clears previews without a fixture reset');
+ if(transientOnly){
+  host.assert(); // No pre-reload request failure may be hidden by the narrow mode.
+  report.result='pass';
+ }else{
  // A fresh idle snapshot is independently authoritative; do not infer UI teardown from a fixture flag.
  statusSnapshot=idle;
  await page.reload();await page.locator('.compose-box textarea').waitFor();await host.connected();await capture('idle-reload');
@@ -75,6 +80,7 @@ try{
  assert.equal(await page.locator('#post-302 li').innerText(),'Inspected the workspace');
  host.assert();
  report.result='pass';
+ }
 }catch(e){report.result='fail';report.error=String(e);process.exitCode=1;await capture('failure').catch(()=>{});}
 finally{report.failures=host.failures;report.calls=host.calls;report.assets=host.assets;await fs.writeFile(path.join(output,'evidence.json'),JSON.stringify(report,null,2));await host.dispose();await browser.close();}
 console.log(JSON.stringify({result:report.result,error:report.error,output,observations:observations.map(o=>({name:o.name,authors:o.posts.map(p=>p.author),panels:o.panels.map(p=>p.text)}))},null,2));

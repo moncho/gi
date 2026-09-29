@@ -306,6 +306,10 @@ test-piclaw-settings-shell:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
+.PHONY: test-piclaw-recovery-display
+test-piclaw-recovery-display:
+	$(BUN) tests/ux/oracle/piclaw-recovery-display-probe.mjs
+
 .PHONY: test-piclaw-card-rejection
 test-piclaw-card-rejection:
 	$(BUN) tests/ux/oracle/piclaw-card-rejection-probe.mjs

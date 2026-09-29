@@ -86,6 +86,9 @@ func main() {
 		if os.Getenv("GI_UX_MESSAGE_RETRIEVAL") != "" && serveMessageRetrieval(w, body, emit) {
 			return
 		}
+		if os.Getenv("GI_UX_DIRECT_REPLY_STEER") != "" && serveDirectReplySteer(w, body, gates, emit) {
+			return
+		}
 		content := "provider checkpoint"
 		if strings.Contains(string(raw), "UX preview expand") && len(match) > 1 {
 			lines := func(kind string, start, end int) string {

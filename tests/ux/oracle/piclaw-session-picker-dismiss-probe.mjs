@@ -1,5 +1,5 @@
 // Mounted installed Piclaw 3.2.4 Classic with a disposable two-chat catalogue.
-// Search/Escape checks do not invoke live backend branch actions or physical input.
+// Search, Escape and filtered keyboard checks use read-only fixtures, not live backend branch actions or physical input.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -33,7 +33,24 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
   await page.waitForFunction(()=>{const results=document.querySelector('[data-testid="session-popup"] .compose-session-popup-results');return results?.textContent?.includes('web:research')&&results?.textContent?.includes('web:default');});
   await search.press('Escape');await popup.waitFor({state:'detached'});await page.waitForFunction(()=>document.activeElement?.getAttribute('data-testid')==='session-switcher');
   assert.equal(new URL(page.url()).searchParams.get('chat_jid'),null);
-  cases.push({browser:browserName,viewport:viewportName,filtered:true,escapeDismissed:true,focusRestored:true,queryReset:true,chatUnchanged:true});
+  await trigger.click();await search.waitFor();await search.fill('Research fixture');
+  const option=popup.locator('[role="option"][data-testid="session-item"]');
+  await option.waitFor();assert.equal(await option.count(),1);
+  for(const key of ['Home','End','ArrowDown']){
+   await search.press(key);
+   assert.equal(await option.getAttribute('aria-selected'),'true',`${key} must keep sole filtered entry selected`);
+   assert.equal(await search.evaluate(el=>el===document.activeElement),true,'search retains keyboard focus');
+  }
+  // Classic treats Tab as activation when an entry is selected; Gi uses native
+  // focus traversal. Switch only into the disposable, read-only second chat.
+  // The adapter enforces the selected chat scope on subsequent GET/SSE reads.
+  host.assert();state.sessionId='web:research';
+  await search.press('Tab');await popup.waitFor({state:'detached'});
+  await page.waitForURL(u=>new URL(u).searchParams.get('chat_jid')==='web:research');
+  await page.waitForTimeout(200); // Let the old scoped stream report its expected cancellation.
+  assert.deepEqual(host.failures.filter(error=>!/^network: .*\/sse\/stream\?chat_jid=web%3Adefault (?:Load request cancelled|net::ERR_ABORTED)$/.test(error)),[]);
+  assert.equal(host.calls.some(c=>c.method!=='GET' && /\/agent\/(?:branches|active-chats)/.test(c.path)),false,'keyboard selection must not mutate the catalogue');
+  cases.push({browser:browserName,viewport:viewportName,filtered:true,escapeDismissed:true,focusRestored:true,queryReset:true,chatUnchangedBeforeTab:true,filteredKeyboardSelected:true,tabSelectedDisposableResearchChat:true});
  }finally{await host.dispose();await browser.close();}
 }
-console.log(JSON.stringify({scope:'Mounted installed Piclaw 3.2.4 Classic bundle with disposable read-only two-chat catalogue. No actual session mutation, typeahead/IME, backend action, or physical-input acceptance.',cases},null,2));
+console.log(JSON.stringify({scope:'Mounted installed Piclaw 3.2.4 Classic bundle with disposable read-only two-chat catalogue. Tab selects the fixture chat URL; no real history, backend branch action, typeahead/IME, or physical-input acceptance.',cases},null,2));

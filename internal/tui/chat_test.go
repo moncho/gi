@@ -1001,15 +1001,33 @@ func TestHandleEventStatusRendering(t *testing.T) {
 	}
 }
 
-func TestRestoreQueuedDraftMovesLastQueuedTextToEditor(t *testing.T) {
-	c := &chatTUI{queuedDrafts: []string{"first", "second"}, status: "Queued follow-up"}
-	c.input = newMultilineInput(80, "", c.onSubmit, nil)
+func TestRestoreQueuedDraftMovesAllDurableTextBeforeEditor(t *testing.T) {
+	c := durableTestChat(t)
+	ctx := context.Background()
+	c.input.SetText("newer 中文🙂")
+	c.input.cursorPos = 3
+	c.saveDurableDraft()
+	for i, text := range []string{"first", "second"} {
+		if _, err := c.store.CreateTurnWithStatus(ctx, fmt.Sprintf("restore-%d", i), "A", "queued", text, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c.queuedDrafts = []string{"first", "second"}
 	c.restoreQueuedDraft()
-	if got := c.input.Text(); got != "second" {
+	if got := c.input.Text(); got != "first\n\nsecond\n\nnewer 中文🙂" {
 		t.Fatalf("restored draft = %q", got)
 	}
-	if c.status != "Restored queued draft" || len(c.queuedDrafts) != 1 || c.queuedDrafts[0] != "first" {
-		t.Fatalf("unexpected restore state status=%q queued=%#v", c.status, c.queuedDrafts)
+	if c.input.cursorPos != len([]rune("first\n\nsecond\n\n"))+3 || c.status != "Restored 2 queued messages" || len(c.queuedDrafts) != 0 {
+		t.Fatalf("restore cursor/status/ghosts=%d %q %#v", c.input.cursorPos, c.status, c.queuedDrafts)
+	}
+	queued, err := c.store.ListQueuedTurns(ctx, "A")
+	if err != nil || len(queued) != 0 {
+		t.Fatalf("durable delivery not removed: %v %v", queued, err)
+	}
+	c.switchSession("B")
+	c.switchSession("A")
+	if c.input.Text() != "first\n\nsecond\n\nnewer 中文🙂" {
+		t.Fatalf("restored draft lost on switch: %q", c.input.Text())
 	}
 }
 

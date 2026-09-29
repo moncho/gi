@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -2437,14 +2438,43 @@ func (c *chatTUI) focusInput() {
 }
 
 func (c *chatTUI) restoreQueuedDraft() {
-	if len(c.queuedDrafts) == 0 || c.input == nil {
+	if c.input == nil || c.store == nil || c.sessionID == "" || !c.durableDrafts {
 		return
 	}
-	idx := len(c.queuedDrafts) - 1
-	draft := c.queuedDrafts[idx]
-	c.queuedDrafts = c.queuedDrafts[:idx]
-	c.input.SetText(draft)
-	c.status = "Restored queued draft"
+	d := c.textDrafts[c.sessionID]
+	if d == nil || d.frozen || d.err != nil || c.editorAskActive {
+		c.showQueueCommand([]string{"queue: draft not ready; /draft to inspect"})
+		return
+	}
+	// Slash commands are ephemeral, not saved journal text. Never replace one
+	// or dequeue its underlying work while the editor contains it.
+	if strings.HasPrefix(strings.TrimSpace(c.input.Text()), "/") {
+		c.showQueueCommand([]string{"queue: finish the command before restoring queued text"})
+		return
+	}
+	if !c.saveDurableDraft() {
+		return
+	}
+	if d.local != c.editorSnapshot() {
+		c.showQueueCommand([]string{"queue: editor changed; /draft to inspect"})
+		return
+	}
+	ctx, cancel := c.draftContext()
+	restored, ids, err := c.store.RestoreQueuedTUITextDraft(ctx, c.sessionID, d.pair.Text)
+	cancel()
+	if err != nil {
+		if err != sql.ErrNoRows {
+			c.showQueueCommand([]string{"queue: restore failed; delivery unchanged: " + err.Error()})
+		}
+		return
+	}
+	d.pair.Text = restored
+	d.local = restored.TUITextSnapshot
+	c.applyDraftSnapshot(d.local)
+	c.queuedDrafts = nil
+	c.queueSnapshot = nil
+	c.publishQueueCommandChange(c.sessionID)
+	c.status = fmt.Sprintf("Restored %d queued messages", len(ids))
 	if c.app != nil {
 		c.app.MarkDirty()
 	}

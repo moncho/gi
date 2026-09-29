@@ -24,7 +24,7 @@ Installed release: `/opt/piclaw/current`, Piclaw 3.2.4, `@earendil-works/pi-codi
 | Pi Alt+Enter, streaming | Separate follow-up, only after pending work finishes | Fixed in this change: was the same callback/intent as Enter |
 | Pi Alt+Enter, idle | Ordinary submission | Native PTY verified with explicit modified-key sequence |
 | Pi Shift+Enter/Ctrl+J | Newline, no submit | Unit regression retained |
-| Pi Alt+Up | Clear all steering/follow-up queues; put steering then follow-up text before current draft | Open: Gi pops one local string and does not remove durable delivery |
+| Pi Alt+Up | Clear all steering/follow-up queues; put steering then follow-up text before current draft | Text-only Gi queued turns now restore in durable queue order before the current draft and atomically cancel delivery. Native store/TUI and disposable fullscreen/regular PTY+SQLite checks pass. Pending active Steer and media-bearing turns fail closed; whole Pi queue parity remains open. |
 | Pi Escape while working | Abort and restore pending messages | Open: verify abort/queue/draft/media transaction and actual key dispatch |
 | Pi pending display | Distinct `Steering:` and `Follow-up:` rows and edit-all hint | Open: current Gi transcript/queue presentation differs |
 | Piclaw web Return | Return one queued row by replacing editor text/refs, then schedule removal | Replacement now native-tested against installed browser oracle. Gi retains durable attachment recovery and persist-before-delete; edits during async recovery require explicit retry. |
@@ -59,7 +59,7 @@ The PTY fixture verifies admission and eventual completion. A separate Go test q
 - [ ] Pi terminal: regular scrollback versus fullscreen viewport, footer, progress, resize, Unicode cell widths, mouse/selection/link precedence and terminal-protocol differences.
 - [ ] Queue display and storage: text/media/references, per-session ownership, counts, identifiers, FIFO, one-at-a-time/all modes and reload.
 - [ ] Delivery transitions: idle, streaming, active tool, post-tool model, retry/error, abort, compaction, run-end race and session switch.
-- [ ] Atomic dequeue/abort restoration so recovered input cannot still execute from its old entry; preserve drafts and attachments on storage errors.
+- [ ] Complete dequeue/abort restoration, including active Steer, media-bearing queued turns and Escape abort. Text-only Alt+Up now persists draft and cancels queued turns in one transaction; conflict/storage failure leaves delivery intact.
 - [ ] Piclaw web return/remove/reorder/Steer behaviour, including missing rows, restore failure, active-to-idle race and duplicate requests. [Released-claim fallback](ended-queue-steer-2026-09-28.md) now has bounded native coverage; cleanup-owned claim reservation and complete handoff timing still need work.
 - [ ] Differential reference/native PTYs and browser journeys, plus independent contract review before mapping IDs as passing.
 

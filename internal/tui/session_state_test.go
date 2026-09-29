@@ -263,9 +263,11 @@ func TestSessionMissingModelMetadataDoesNotInheritPreviousSession(t *testing.T) 
 }
 
 func TestSessionQueueRestoreDoesNotReplaceAssistantStream(t *testing.T) {
-	c := sessionTestChat(t)
+	c := durableTestChat(t)
 	c.draft = "assistant stream"
-	c.queuedDrafts = []string{"followup"}
+	if _, err := c.store.CreateTurnWithStatus(context.Background(), "followup", "A", "queued", "followup", nil); err != nil {
+		t.Fatal(err)
+	}
 	c.restoreQueuedDraft()
 	if c.input.Text() != "followup" || c.draft != "assistant stream" {
 		t.Fatal("editor draft contaminated assistant stream")

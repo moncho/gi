@@ -100,7 +100,7 @@ func (c *chatTUI) closeModelPickerScreen() {
 	w, h := c.app.Size()
 	c.app.Dispatch(gotui.ResizeEvent{Width: w, Height: h})
 	if c.modelMenuResized {
-		c.app.PrintAboveln("sys: terminal resized to %dx%d", w, h)
+		c.scheduleRegularReflow()
 	}
 	c.modelMenuResized = false
 	c.modelMenuRenderedHeight = 0

@@ -219,6 +219,7 @@ type chatTUI struct {
 	regularPrinted              int
 	regularSessionPending       bool
 	regularWidth, regularHeight int
+	regularReflowGen            int
 	footerUsage                 *footerUsageCache
 	footerAuth                  *footerAuthCache
 	transcriptScroll            int

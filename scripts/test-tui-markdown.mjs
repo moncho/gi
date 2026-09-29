@@ -16,7 +16,7 @@ const wait=async(fn,label)=>{const end=Date.now()+15000;while(Date.now()<end){if
 const assert=(ok,label)=>{if(!ok)throw Error(label);};
 const quote=s=>`'${s.replaceAll("'","''")}'`;
 const fixtures=[
- {name:'plain-output',source:'Plain assistant output',lines:['Plain assistant output','shell','  if ready { return 42 }'],absent:['last hidden line']},
+ {name:'plain-output',source:'Plain assistant output',lines:['Plain assistant output','$ ...','  if ready { return 42 }','last hidden line'],absent:[]},
  {name:'heading-list',source:'# Rendered heading\n\nA **bold** and *italic* phrase.\n\n- alpha item\n- beta item',
   lines:['RENDERED HEADING','================','A bold and italic phrase.','• alpha item','• beta item'],absent:['**bold**','*italic*','# Rendered heading']},
  {name:'code-quote',source:'> Quoted words\n\nUse `inline()` now.\n\n```js\nconst answer = 42;\n  return answer;\n```',
@@ -100,14 +100,16 @@ for(const scenario of scenarios){
   // boundaries while comparing visible text, rather than requiring contiguous
   // bytes that cease to exist when a heading is styled span by span.
   const backgrounds=styled.replace(/\x1b\[(?!48;2;|49m)[0-9;]*m/g,'');
-  assert(/\x1b\[48;2;52;53;65m[\s\S]*Markdown[\s\S]*\x1b\[49m[\s\S]*(?:Plain assistant output|RENDERED HEADING|Use |Name)/.test(backgrounds),
+  assert(/\x1b\[48;2;33;59;73m[\s\S]*Markdown[\s\S]*\x1b\[49m[\s\S]*(?:Plain assistant output|RENDERED HEADING|Use |Name)/.test(backgrounds),
    'user background band or assistant terminal-background reset missing');
   if(fixture.name==='plain-output'){
+   // Pi: assistant text on the terminal background; the tool call on toolSuccessBg.
    const output=backgrounds.slice(backgrounds.indexOf('Plain assistant output'));
-   assert(!/\x1b\[48;2;/.test(output), 'assistant/tool output has a colored background');
+   assert(!/\x1b\[48;2;[0-9;]*m[^\x1b]*Plain assistant output/.test(backgrounds), 'assistant output has a colored background');
+   assert(/\x1b\[48;2;37;65;49m/.test(output), 'tool success band missing');
   }
   if(fixture.name==='code-quote'){
-   assert(/Use \x1b\[2m\x1b\[90minline\(\)\x1b\[0m now\./.test(styled),
+   assert(/Use (?:\x1b\[[0-9;]*m)*\x1b\[38;2;167;152;215minline\(\)(?:\x1b\[[0-9;]*m)* now\./.test(styled),
     'inline ANSI style split the sentence or leaked into following words');
   }
   if(fixture.name==='table-link'){
@@ -118,7 +120,9 @@ for(const scenario of scenarios){
   shot('initial');
   tm('send-keys','-t',pane,'-l','unsent draft');await wait(()=>cap().includes('unsent draft'),'draft');
   tm('resize-window','-t','proof','-x',String(width+8),'-y',String(height+3));await wait(()=>cap().includes('%/'),'resized Markdown');
-  tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent draft'),'resize round trip');
+  tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent draft')&&cap().includes('test-model • low'),'resize round trip');
+  // Like Pi, regular mode re-renders its retained transcript once resizing settles.
+  await sleep(400);
   check('resized');shot('resized');
   assert(sql('select count(*) from messages;')===(fixture.name==='plain-output'?'3':'2'),'rendering or draft submitted a message');
   results.push(`${scenario.name}: stored projection, ANSI, viewport, resize, draft`);

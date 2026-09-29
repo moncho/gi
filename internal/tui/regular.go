@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	gotui "github.com/grindlemire/go-tui"
 )
@@ -70,6 +71,55 @@ func (c *chatTUI) flushRegularTranscript() {
 	c.app.PrintAboveElement(root)
 }
 
+// Terminals disagree on what a resize does to the rows above an inline
+// widget: some reflow or pull history down, others leave the old widget band
+// behind. Pi therefore re-renders everything on any width or height change
+// (clear screen and scrollback, then emit all lines). Gi does the same with its
+// retained transcript once resizing settles, after go-tui's own resize redraw.
+const regularReflowDelay = 80 * time.Millisecond
+
+func (c *chatTUI) scheduleRegularReflow() {
+	if !c.regularMode || c.app == nil {
+		return
+	}
+	c.regularReflowGen++
+	gen, app := c.regularReflowGen, c.app
+	time.AfterFunc(regularReflowDelay, func() {
+		app.QueueUpdate(func() {
+			if gen == c.regularReflowGen {
+				c.reflowRegular()
+			}
+		})
+	})
+}
+
+func (c *chatTUI) reflowRegular() {
+	if !c.regularMode || c.app == nil || c.workspaceIndex.active || c.modelMenuAltScreen {
+		return
+	}
+	c.app.Terminal().Clear()
+	if c.sessionID != "" && !c.regularSessionPending {
+		c.app.PrintAboveln("sys: session %s", c.sessionID)
+	}
+	if end := min(c.regularPrinted, len(c.transcript)); end > 0 {
+		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
+		previousKind := ""
+		for _, block := range c.buildTranscriptRenderableBlocks(c.transcript[:end]) {
+			if block.Kind == "thinking_indicator" {
+				continue
+			}
+			block.Expanded = true
+			root.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
+			previousKind = block.Kind
+		}
+		c.app.PrintAboveElement(root)
+	}
+	// Same-size resize: full dock redraw without moving the widget.
+	w, h := c.app.Size()
+	c.app.Dispatch(gotui.ResizeEvent{Width: w, Height: h})
+	c.app.MarkDirty()
+}
+
 func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	w, h := app.Size()
 	if c.workspaceIndex.active && c.regularWidth != 0 && (w != c.regularWidth || h != c.regularHeight) {
@@ -82,9 +132,7 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 		app.Terminal().ClearToEnd()
 	}
 	if !c.workspaceIndex.active && !c.modelMenuAltScreen && c.regularWidth != 0 && (w != c.regularWidth || h != c.regularHeight) {
-		// The inline renderer invalidates history geometry on width changes.
-		// Re-establish it conservatively before any dynamic dock growth.
-		app.PrintAboveln("sys: terminal resized to %dx%d", w, h)
+		c.scheduleRegularReflow()
 	}
 	c.regularWidth, c.regularHeight = w, h
 	c.outputWidth, c.outputHeight = w, h

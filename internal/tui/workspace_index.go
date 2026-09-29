@@ -128,10 +128,10 @@ func (c *chatTUI) closeWorkspaceIndex() {
 		c.app.Terminal().ExitAltScreen()
 		w, h := c.app.Size()
 		c.app.Dispatch(gotui.ResizeEvent{Width: w, Height: h})
-		// Width changes invalidate go-tui's inline history geometry. Establish
-		// it on the restored main screen before the editor can grow again.
+		// A resize while the selector owned the screen invalidates the main
+		// screen's rows; re-render the retained transcript as Pi does.
 		if p.resized {
-			c.app.PrintAboveln("sys: terminal resized to %dx%d", w, h)
+			c.scheduleRegularReflow()
 		}
 	}
 	c.transcriptScroll, c.stickToBottom = p.savedScroll, p.savedFollow

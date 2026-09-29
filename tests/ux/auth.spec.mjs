@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import {existsSync,readFileSync,writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {authEnvironment,totp} from './support/auth-environment.mjs';
+import {journeyEnvironment} from './support/journey-environment.mjs';
 import {loadCorpus} from './support/catalogue.mjs';
 const composerName='Message (Enter to send, Shift+Enter for newline)...';
 async function source(info,id){await info.attach('gherkin',{body:loadCorpus().find(x=>x.id===id).steps.join('\n'),contentType:'text/plain'});}
@@ -9,6 +10,28 @@ async function source(info,id){await info.attach('gherkin',{body:loadCorpus().fi
 // Browser bootstrap API prerequisites only: no setup controls or automatic
 // enrolment. This does not earn the frozen first-owner Settings journey.
 const setupAPI=(page,operation,body={})=>page.evaluate(async({operation,body})=>{const r=await fetch('/api/auth/setup/'+operation,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return {status:r.status,body:await r.json(),cache:r.headers.get('cache-control')};},{operation,body});
+
+// Untagged gap check: this is the Gi entry, not the copied Classic OOBE shell.
+test('Gi mounted empty-model bootstrap does not render Classic provider-missing OOBE',async({page},info)=>{
+ const env=await journeyEnvironment(info);let runtimeResponses=0,modelResponses=0;
+ try{
+  await page.route('**/api/runtime/config',async route=>{
+   const response=await route.fetch();expect(response.status()).toBe(200);
+   const data=await response.json();runtimeResponses++;
+   await route.fulfill({json:{...data,current:'',default_model:'',model_options:[],enabled_models:[]}});
+  });
+  await page.route(/\/api\/sessions\/[^/]+\/model(?:\?.*)?$/,async route=>{
+   const response=await route.fetch();expect(response.status()).toBe(200);
+   const data=await response.json();modelResponses++;
+   await route.fulfill({json:{...data,current:'',model:'',model_options:[],models:[]}});
+  });
+  await page.goto(env.origin);await expect(page.locator('.compose-box textarea')).toBeVisible();
+  await expect.poll(()=>runtimeResponses).toBeGreaterThanOrEqual(1);
+  await expect.poll(()=>modelResponses).toBeGreaterThanOrEqual(1);
+  await expect(page.locator('.oobe-panel')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Open settings',exact:true})).toHaveCount(0);
+ }finally{await page.unrouteAll({behavior:'wait'});await env.close();}
+});
 
 test('Browser-bound setup atomically creates one owner and resists stale other-browser finish',async({page,context,browser},info)=>{
  const env=await authEnvironment(page,info,{enrolled:false});const otherContext=await browser.newContext();const other=await otherContext.newPage();

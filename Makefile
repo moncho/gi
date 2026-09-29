@@ -306,12 +306,15 @@ test-piclaw-settings-shell:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
-.PHONY: test-piclaw-login-policy test-piclaw-login-preemption
+.PHONY: test-piclaw-login-policy test-piclaw-login-preemption test-piclaw-oobe-panel
 test-piclaw-login-policy:
 	$(BUN) tests/ux/oracle/piclaw-login-policy-probe.mjs
 
 test-piclaw-login-preemption:
 	$(BUN) tests/ux/oracle/piclaw-login-preemption-probe.mjs
+
+test-piclaw-oobe-panel:
+	$(BUN) tests/ux/oracle/piclaw-oobe-panel-probe.mjs
 
 .PHONY: test-piclaw-notification-presence test-piclaw-notification-leader
 test-piclaw-notification-presence:

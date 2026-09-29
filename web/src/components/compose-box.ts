@@ -1460,6 +1460,10 @@ export function ComposeBox({
                     return;
                 }
                 const uncertain = requestDispatched && ['TypeError', 'AbortError'].includes(error?.name);
+                // A navigation can cancel both the POST response and its receipt
+                // lookup after the server accepted the turn. Keep the persisted
+                // capture for the next page's receipt reconciliation.
+                if (uncertain && !mountedRef.current) return;
                 const message = uncertain ? `Delivery is unknown; check the timeline before resending. ${detail}` : detail;
                 if (clearAfterSubmit) {
                     restoreDraft(message);

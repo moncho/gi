@@ -10583,6 +10583,8 @@ ${mediaIds.map((id, index) => {
           return;
         }
         const uncertain = requestDispatched && ["TypeError", "AbortError"].includes(error?.name);
+        if (uncertain && !mountedRef.current)
+          return;
         const message = uncertain ? `Delivery is unknown; check the timeline before resending. ${detail}` : detail;
         if (clearAfterSubmit) {
           restoreDraft(message);
@@ -22739,11 +22741,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-ty07c858.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-trpydzrh.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-9ajy9rm5.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-9cfa79eg.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-x4wjhr7r.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-6mnntz5h.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-21daehxz.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-kwwpcyxm.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-0t4yjya9.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-1dapcgeg.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -25515,5 +25517,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=E42AA8BC758C502E64756E2164756E21
-//# sourceMappingURL=app-mje3gn51.js.map
+//# debugId=20C2C6D99A847B3A64756E2164756E21
+//# sourceMappingURL=app-fvz38aaq.js.map

@@ -6,7 +6,7 @@ import {
   getGiProviders,
   saveGiProviderKey,
   removeGiProviderKey
-} from "./app-mje3gn51.js";
+} from "./app-fvz38aaq.js";
 
 // web/src/gi-settings-providers.ts
 function GiSettingsProviders() {
@@ -126,4 +126,4 @@ export {
 };
 
 //# debugId=45C15057B85C7F6C64756E2164756E21
-//# sourceMappingURL=gi-settings-providers-9cfa79eg.js.map
+//# sourceMappingURL=gi-settings-providers-0t4yjya9.js.map

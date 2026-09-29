@@ -18,6 +18,21 @@ async function setup(page,info,startTurn=true){
  return{origin,input,id,turn,read,release:()=>fixture.release(token),drop(){blockSSE=true;for(const r of streams)r.destroy()},resume(){blockSSE=false},async close(){fixture.release(token);server.closeAllConnections();await new Promise(r=>server.close(r));await fixture.close()}};
 }
 
+test('HTTP immediate reload after Return keeps one accepted turn or a recoverable draft',async({page},info)=>{
+ const h=await setup(page,info,false);const errors=[];let reloaded=false;page.on('pageerror',e=>{if(reloaded)errors.push(e.message)});let posts=0;
+ try{
+  const text=`immediate reload ${info.project.name} ${Date.now()} 中文`;
+  page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith(`/api/sessions/${h.id}/prompt`))posts++});
+  await h.input.fill(text);await h.input.press('Enter');await page.reload();reloaded=true;
+  await expect(h.input).toBeVisible();
+  const turns=(await h.read(`/api/sessions/${h.id}/turns`)).turns||[];
+  expect(turns.filter(t=>t.prompt===text)).toHaveLength(turns.length===0?0:1);
+  if(turns.length){await expect(h.input).toHaveValue('');await expect(page.locator('.post.agent-post .post-content').filter({hasText:text})).toHaveCount(1)}
+  else await expect(h.input).toHaveValue(text);
+  expect(posts).toBeLessThanOrEqual(1);expect(errors).toEqual([]);
+ }finally{await h.close()}
+});
+
 test('HTTP Stop cancels the addressed running turn without submitting or clearing the next draft',async({page},info)=>{
  const h=await setup(page,info);try{
   await h.input.fill('next unsent draft 中文');const posts=[];page.on('request',r=>{if(r.method()==='POST')posts.push({path:new URL(r.url()).pathname,body:r.postDataJSON()})});

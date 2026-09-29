@@ -57,11 +57,17 @@ func TestListPendingTUIMessagesOrdersAndScopesDelivery(t *testing.T) {
 	if _, err := s.CreateTurnWithStatus(ctx, "continuation", sid, "queued", "", map[string]any{"continue": true}); err != nil {
 		t.Fatal(err)
 	}
-	check([]PendingTUIMessage{initial[1], initial[2]})
+	if _, err := s.CreateTurnWithStatus(ctx, "media-only", sid, "queued", "", map[string]any{"media": []any{map[string]any{"media_id": 7, "session_id": sid}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.EnqueueSteering(ctx, sid, "", "user", "", map[string]any{"media": []any{map[string]any{"media_id": 8, "session_id": sid}}}, nil, "one-at-a-time"); err != nil {
+		t.Fatal(err)
+	}
+	check([]PendingTUIMessage{initial[1], {Kind: "Steering", Text: "[attachment]"}, initial[2], {Kind: "Follow-up", Text: "[attachment]"}})
 	if _, err := s.db.ExecContext(ctx, `update steering_queue set status='dequeued' where content='steer two'`); err != nil {
 		t.Fatal(err)
 	}
-	check([]PendingTUIMessage{initial[2]})
+	check([]PendingTUIMessage{{Kind: "Steering", Text: "[attachment]"}, initial[2], {Kind: "Follow-up", Text: "[attachment]"}})
 	other, err := s.ListPendingTUIMessages(ctx, "other-display")
 	if err != nil || !reflect.DeepEqual(other, []PendingTUIMessage{{"Follow-up", "foreign"}}) {
 		t.Fatalf("other session=%#v: %v", other, err)

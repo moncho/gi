@@ -19,12 +19,17 @@ func (s *Store) ListPendingTUIMessages(ctx context.Context, sessionID string) ([
 	rows, err := s.db.QueryContext(ctx, `
 		select kind, text from (
 			select 0 as group_order, id as position, created_at, cast(id as text) as item_id,
-				'Steering' as kind, content as text
+				'Steering' as kind,
+				case when content = '' and (json_array_length(media_json) > 0 or json_array_length(json_extract(payload_json, '$.media')) > 0)
+					then '[attachment]' else content end as text
 			from steering_queue where session_id = ? and status = 'queued'
 			union all
 			select 1 as group_order, queue_position as position, created_at, id as item_id,
-				'Follow-up' as kind, prompt as text
-			from turns where session_id = ? and status = 'queued' and prompt != ''
+				'Follow-up' as kind,
+				case when prompt = '' and json_array_length(json_extract(metadata_json, '$.media')) > 0
+					then '[attachment]' else prompt end as text
+			from turns where session_id = ? and status = 'queued'
+					and (prompt != '' or json_array_length(json_extract(metadata_json, '$.media')) > 0)
 		) order by group_order, position, created_at, item_id`, sessionID, sessionID)
 	if err != nil {
 		return nil, err

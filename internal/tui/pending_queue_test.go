@@ -86,6 +86,27 @@ func TestPendingQueuePanelFollowsSelectedSession(t *testing.T) {
 	}
 }
 
+func TestPendingQueuePanelMediaOnlyTurnIsVisible(t *testing.T) {
+	c := sessionTestChat(t)
+	ctx := context.Background()
+	if _, err := c.store.CreateTurnWithStatus(ctx, "media-only", c.sessionID, "queued", "", map[string]any{"media": []any{map[string]any{"media_id": 7, "session_id": c.sessionID}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.store.CreateTurnWithStatus(ctx, "internal-continuation", c.sessionID, "queued", "", map[string]any{"continue": true}); err != nil {
+		t.Fatal(err)
+	}
+	if got := c.pendingQueueLines(80, 32); len(got) != 2 || got[0] != "Follow-up: [attachment]" {
+		t.Fatalf("media-only queued work hidden: %q", got)
+	}
+	listed := strings.Join(c.queueCommand([]string{"/queue"}), "\n")
+	if !strings.Contains(listed, "media-only  [attachment]") || strings.Contains(listed, "internal-continuation  [attachment]") {
+		t.Fatalf("queue inspection lost attachment identity: %s", listed)
+	}
+	if turn, err := c.store.GetTurn(ctx, "media-only"); err != nil || turn.Status != "queued" || turn.Metadata["media"] == nil {
+		t.Fatalf("display changed delivery: %#v %v", turn, err)
+	}
+}
+
 func TestPendingRowTextMatchesPiFirstLineAndGraphemeCut(t *testing.T) {
 	cases := []struct {
 		text  string

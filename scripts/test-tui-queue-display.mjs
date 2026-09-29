@@ -22,6 +22,13 @@ for(const mode of ['fullscreen','regular']){
   sql(`update steering_queue set status='returned' where session_id=${quote(sid)} and content='external steering' and status='queued';`);
   await wait(()=>!cap().includes('↳ /queue to inspect · Alt+Up restores text-only queue'),'other process queue cleared without TUI input');
   writeFileSync(join(out,mode+'-external-cleared.txt'),cap());
+  sql(`insert into turns(id,session_id,status,phase,prompt,metadata_json,created_at,updated_at,queue_position) values('external-media',${quote(sid)},'queued','queued','',json_object('media',json_array(json_object('media_id',7,'session_id',${quote(sid)}))),strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now'),1);`);
+  await wait(()=>cap().includes('Follow-up: [attachment]'),'media-only pending item visible');
+  writeFileSync(join(out,mode+'-media-only.txt'),cap());
+  send('/queue');await wait(()=>cap().includes('external-media  [attachment]'),'media-only inspectable by ID');
+  if(sql("select status from turns where id='external-media';")!=='queued')throw Error('media-only display changed queued turn');
+  sql(`update turns set status='cancelled',phase='aborted' where id='external-media' and status='queued';`);
+  await wait(()=>!cap().includes('Follow-up: [attachment]'),'media-only pending display cleared');
   // Switching changes only the selected session's pending view and editor.
   // Use Gi's session creation command: a bare SQL session lacks its required
   // runtime identity, so /switch correctly rejects it.
@@ -56,7 +63,7 @@ for(const mode of ['fullscreen','regular']){
   await wait(()=>{const screen=cap();return !screen.includes('↳ /queue to inspect · Alt+Up restores text-only queue')&&!screen.includes('queue: 2 pending; /queue to inspect')},'pending panel clear');
   if(sql("select count(*) from messages where role='user' and content in ('steer at boundary','follow after completion');")!=='2')throw Error('pending display disrupted delivery');
   if(sql("select count(*) from kv_store where namespace='tui_text_draft_v1' and value like '%unsubmitted draft%';")!=='1')throw Error('pending display changed draft');
-  results.push({mode,result:'pass',sessionSwitchIsolated:true,externalUpdateWithoutInput:true,steeringBeforeFollowUp:true,draftPreserved:true,clearedAfterDelivery:true});
+  results.push({mode,result:'pass',mediaOnlyVisible:true,sessionSwitchIsolated:true,externalUpdateWithoutInput:true,steeringBeforeFollowUp:true,draftPreserved:true,clearedAfterDelivery:true});
  }catch(e){results.push({mode,result:'fail',error:String(e)});try{writeFileSync(join(out,mode+'-failure.txt'),cap());writeFileSync(join(out,mode+'-runtime.log'),readFileSync(join(dir,'runtime.log')))}catch{}}
  finally{writeFileSync(join(gates,'held'),'go');try{tm('kill-server')}catch{}rmSync(dir,{recursive:true,force:true})}
 }

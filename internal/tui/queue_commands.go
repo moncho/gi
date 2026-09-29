@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	gotui "github.com/grindlemire/go-tui"
+	"github.com/rcarmo/gi/internal/store"
 	"github.com/rcarmo/gi/internal/topics"
 )
 
@@ -145,7 +146,14 @@ func (c *chatTUI) queueCommand(fields []string) []string {
 		}
 		item := items[index-len(steering)]
 		// IDs are complete; only the advisory prompt preview is shortened/sanitised.
-		lines = append(lines, fmt.Sprintf("  %s  %s", item.ID, selectorText(item.Prompt, 40)))
+		// A media-only turn is still durable queued work, not an empty row.
+		preview := item.Prompt
+		if preview == "" {
+			if refs, err := store.NormalizeMediaReferences(item.Metadata["media"]); err == nil && len(refs) > 0 {
+				preview = "[attachment]"
+			}
+		}
+		lines = append(lines, fmt.Sprintf("  %s  %s", item.ID, selectorText(preview, 40)))
 	}
 	lines = append(lines, queueUsage)
 	return lines

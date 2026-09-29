@@ -72,10 +72,12 @@ func (c *chatTUI) flushRegularTranscript() {
 }
 
 // Terminals disagree on what a resize does to the rows above an inline
-// widget: some reflow or pull history down, others leave the old widget band
-// behind. Pi therefore re-renders everything on any width or height change
-// (clear screen and scrollback, then emit all lines). Gi does the same with its
-// retained transcript once resizing settles, after go-tui's own resize redraw.
+// widget: some reflow or pull history down (and go-tui then clears them),
+// others leave the old widget band behind. Pi re-renders everything after a
+// size change. Gi does the same for the visible screen once resizing settles:
+// clear the screen (not scrollback, which belongs to the user's shell and to
+// earlier output) and re-print the newest retained transcript rows that fit
+// above the dock at the new width, then fully redraw the dock.
 const regularReflowDelay = 80 * time.Millisecond
 
 func (c *chatTUI) scheduleRegularReflow() {
@@ -93,29 +95,78 @@ func (c *chatTUI) scheduleRegularReflow() {
 	})
 }
 
+// regularTranscriptRows renders the printed transcript at width into a
+// buffer (all blocks expanded, as printed to scrollback).
+func (c *chatTUI) regularTranscriptRows(width int) (*gotui.Buffer, int) {
+	end := min(c.regularPrinted, len(c.transcript))
+	if end <= 0 || width <= 0 {
+		return nil, 0
+	}
+	root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width))
+	previousKind := ""
+	for _, block := range c.buildTranscriptRenderableBlocks(c.transcript[:end]) {
+		if block.Kind == "thinking_indicator" {
+			continue
+		}
+		block.Expanded = true
+		root.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
+		previousKind = block.Kind
+	}
+	height := root.HeightForWidth(width)
+	if height <= 0 {
+		return nil, 0
+	}
+	buf := gotui.NewBuffer(width, height)
+	root.RenderTo(buf, width, height)
+	return buf, height
+}
+
+// regularReflowChanges paints the newest transcript rows, bottom-aligned, into
+// the screen rows above the dock. Cells are written in place: nothing scrolls,
+// so the terminal's scrollback (shell history, earlier output) is untouched.
+func (c *chatTUI) regularReflowChanges(width, rows int) []gotui.CellChange {
+	if rows <= 0 || width <= 0 {
+		return nil
+	}
+	buf, height := c.regularTranscriptRows(width)
+	changes := make([]gotui.CellChange, 0, rows*4)
+	offset := height - rows // transcript row shown on screen row 0
+	for y := 0; y < rows; y++ {
+		src := y + offset
+		if buf == nil || src < 0 {
+			changes = append(changes, gotui.CellChange{X: 0, Y: y, EraseToEOL: true})
+			continue
+		}
+		last := -1
+		for x := 0; x < width; x++ {
+			if cell := buf.Cell(x, src); !(cell.Rune == 0 || cell.Rune == ' ') || cell.Style != (gotui.Style{}) {
+				last = x
+			}
+		}
+		for x := 0; x <= last; x++ {
+			cell := buf.Cell(x, src)
+			if cell.Width == 0 && cell.Rune == 0 && x > 0 && buf.Cell(x-1, src).Width == 2 {
+				continue // continuation of a wide cluster
+			}
+			if cell.Rune == 0 {
+				cell = gotui.Cell{Rune: ' ', Style: cell.Style, Width: 1, Link: cell.Link}
+			}
+			changes = append(changes, gotui.CellChange{X: x, Y: y, Cell: cell})
+		}
+		changes = append(changes, gotui.CellChange{X: last + 1, Y: y, EraseToEOL: true})
+	}
+	return changes
+}
+
 func (c *chatTUI) reflowRegular() {
 	if !c.regularMode || c.app == nil || c.workspaceIndex.active || c.modelMenuAltScreen {
 		return
 	}
-	c.app.Terminal().Clear()
-	if c.sessionID != "" && !c.regularSessionPending {
-		c.app.PrintAboveln("sys: session %s", c.sessionID)
-	}
-	if end := min(c.regularPrinted, len(c.transcript)); end > 0 {
-		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
-		previousKind := ""
-		for _, block := range c.buildTranscriptRenderableBlocks(c.transcript[:end]) {
-			if block.Kind == "thinking_indicator" {
-				continue
-			}
-			block.Expanded = true
-			root.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
-			previousKind = block.Kind
-		}
-		c.app.PrintAboveElement(root)
+	w, h := c.app.Size()
+	if changes := c.regularReflowChanges(w, h-c.app.InlineHeight()); len(changes) > 0 {
+		c.app.Terminal().Flush(changes)
 	}
 	// Same-size resize: full dock redraw without moving the widget.
-	w, h := c.app.Size()
 	c.app.Dispatch(gotui.ResizeEvent{Width: w, Height: h})
 	c.app.MarkDirty()
 }

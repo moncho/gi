@@ -20,7 +20,9 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const ansi=()=>tmux('capture-pane','-e','-p','-t',pane);
  const keys=(...args)=>tmux('send-keys','-t',pane,...args),type=text=>keys('-l',text);
  const shot=name=>{const text=capture();writeFileSync(join(artifacts,`${width}x${height}-${name}.txt`),text+'\n');writeFileSync(join(artifacts,`${width}x${height}-${name}.ansi`),ansi());return text;};
- const bars=text=>text.split('\n').map((line,i)=>/^\s*─{10,}\s*$/.test(line)?i:-1).filter(i=>i>=0);
+ // The editor's top/bottom borders are the last two full rules; Pi's `!!`
+ // command blocks draw their own rules in the transcript above.
+ const bars=text=>text.split('\n').map((line,i)=>/^\s*─{10,}\s*$/.test(line)?i:-1).filter(i=>i>=0).slice(-2);
  const color=rgb=>ansi().includes(`48;2;${rgb}`);
  const idle=()=>sql('select count(*) from session_active_turns;')==='0';
  try{

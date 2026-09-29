@@ -25,7 +25,17 @@ func endedSteerFixture(s *store.Store, next http.Handler) http.Handler {
 				}
 			}
 			if err == nil {
-				_, err = s.CreateTurnWithStatus(ctx, "selected", session, "queued", "ended steer selected instruction", map[string]any{"model": "ux-local/gate"})
+				metadata := map[string]any{"model": "ux-local/gate"}
+				if r.URL.Query().Get("media") == "1" {
+					var attachment *store.Media
+					attachment, err = s.CreateMedia(ctx, session, "selected.txt", "text/plain", []byte("selected media bytes"), nil)
+					if err == nil {
+						metadata["media"] = []any{map[string]any{"id": store.MediaRefID(attachment.ID), "media_id": attachment.ID, "session_id": session, "filename": attachment.Filename, "content_type": attachment.ContentType}}
+					}
+				}
+				if err == nil {
+					_, err = s.CreateTurnWithStatus(ctx, "selected", session, "queued", "ended steer selected instruction", metadata)
+				}
 			}
 		case "end":
 			err = s.UpdateTurnStatusAndPhase(ctx, "observed", "completed", "completed")

@@ -31,13 +31,16 @@ test('Steer during cancelling claim keeps selected row for retry after release',
  try{
   await page.goto(env.origin);const input=page.locator('.compose-box textarea');await expect(input).toBeVisible();await input.fill('keep draft during cleanup Ω');
   const id=await page.evaluate(()=>localStorage.getItem('gi_session_id'));
-  expect((await request.post(`${env.origin}/__test/ended-steer/${id}/seed`)).status()).toBe(204);
+  expect((await request.post(`${env.origin}/__test/ended-steer/${id}/seed?media=1`)).status()).toBe(204);
+  const turns=async()=>(await(await request.get(`${env.origin}/api/sessions/${id}/turns`)).json()).turns;
+  const queuedMedia=(await turns()).find(t=>t.id==='selected').metadata.media;
+  expect(queuedMedia).toHaveLength(1);expect(queuedMedia[0].filename).toBe('selected.txt');
   await page.reload();const row=page.locator('[data-queue-id="selected"]');const button=row.getByRole('button',{name:'Inject queued follow-up as steer',exact:true});await expect(button).toBeEnabled();
   expect((await request.post(`${env.origin}/__test/ended-steer/${id}/cancel`)).status()).toBe(204);
   const url=`${env.origin}/api/sessions/${id}/queue/selected/steer`,body={active_turn_id:'observed'};
   const conflict=page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST');await button.click();expect((await conflict).status()).toBe(409);
-  const turns=async()=>(await(await request.get(`${env.origin}/api/sessions/${id}/turns`)).json()).turns;
   expect((await turns()).find(t=>t.id==='selected').status).toBe('queued');
+  expect((await turns()).find(t=>t.id==='selected').metadata.media).toEqual(queuedMedia);
   await expect(row).toHaveCount(1);await expect(button).toBeDisabled();await expect(input).toHaveValue('keep draft during cleanup Ω');
   await expect(page.getByRole('alert')).toContainText('Queue action failed');
   expect((await request.post(`${env.origin}/__test/ended-steer/${id}/release-cancelled`)).status()).toBe(204);
@@ -48,7 +51,8 @@ test('Steer during cancelling claim keeps selected row for retry after release',
   await expect.poll(async()=>(await turns()).find(t=>t.id==='selected')?.status).toBe('completed');
   await expect(row).toHaveCount(0);expect((await request.post(url,{data:body})).status()).toBe(409);
   const messages=(await(await request.get(`${env.origin}/api/sessions/${id}/messages`)).json()).messages;
-  expect(messages.filter(m=>m.role==='user'&&m.content==='ended steer selected instruction')).toHaveLength(1);
+  const delivered=messages.filter(m=>m.role==='user'&&m.content==='ended steer selected instruction');
+  expect(delivered).toHaveLength(1);expect(delivered[0].payload.media).toEqual(queuedMedia);
   await page.reload();await expect(input).toHaveValue('keep draft during cleanup Ω');await expect(row).toHaveCount(0);
  }finally{await env.close()}
 });

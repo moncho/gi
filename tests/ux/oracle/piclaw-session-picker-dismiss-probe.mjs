@@ -19,10 +19,17 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
   const html=(await fs.readFile(path.join(root,'app/runtime/web/static/classic/index.html'),'utf8')).replaceAll('__PICLAW_SANITIZE_SVG_FENCES_FLAG__','1');
   await page.route('**/agent/active-chats*',r=>r.fulfill({json:{chats}}));
   await page.route('**/agent/branches*',r=>r.fulfill({json:{chats}}));
-  // Desktop prewarm may request the second chat without navigating to it.
-  await page.route('**/timeline?*',r=>new URL(r.request().url()).searchParams.get('chat_jid')==='web:research'?r.fulfill({json:{posts:[],has_more:false}}):r.fallback());
+  const post=(id,content,chat_jid)=>({id,timestamp:state.now,chat_jid,data:{type:'agent_response',content,agent_id:'default',is_bot_message:true}});
+  const mainText='Main fixture timeline β',researchText='Research fixture timeline γ';
+  await page.route('**/timeline?*',r=>{
+   const chat=new URL(r.request().url()).searchParams.get('chat_jid')||'web:default';
+   return r.fulfill({json:{posts:chat==='web:research'?[post(902,researchText,chat)]:[post(901,mainText,'web:default')],has_more:false}});
+  });
   await page.route(host.origin+'/',r=>r.fulfill({contentType:'text/html',body:html}));
   await page.goto(host.origin);await host.connected();
+  const mainPost=page.locator('#post-901'),researchPost=page.locator('#post-902');
+  await mainPost.waitFor({state:'visible'});assert.equal(await researchPost.count(),0);
+  const input=page.locator('.compose-box textarea');await input.fill('main fixture draft');
   const trigger=page.locator('[data-testid="session-switcher"]').first(),popup=page.locator('[data-testid="session-popup"]'),search=popup.locator('.compose-session-search');
   await trigger.waitFor();await trigger.click();await search.waitFor();await search.fill('Research fixture');
   await page.waitForFunction(()=>{const results=document.querySelector('[data-testid="session-popup"] .compose-session-popup-results');return results?.textContent?.includes('web:research')&&!results?.textContent?.includes('web:default');});
@@ -47,10 +54,14 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
   host.assert();state.sessionId='web:research';
   await search.press('Tab');await popup.waitFor({state:'detached'});
   await page.waitForURL(u=>new URL(u).searchParams.get('chat_jid')==='web:research');
+  await researchPost.waitFor({state:'visible'});assert.equal(await mainPost.count(),0);
+  assert.equal(await researchPost.locator('.post-content').innerText(),researchText);
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await input.inputValue(),'main fixture draft','installed Classic retains the textarea through fixture chat selection');
   await page.waitForTimeout(200); // Let the old scoped stream report its expected cancellation.
   assert.deepEqual(host.failures.filter(error=>!/^network: .*\/sse\/stream\?chat_jid=web%3Adefault (?:Load request cancelled|net::ERR_ABORTED)$/.test(error)),[]);
   assert.equal(host.calls.some(c=>c.method!=='GET' && /\/agent\/(?:branches|active-chats)/.test(c.path)),false,'keyboard selection must not mutate the catalogue');
-  cases.push({browser:browserName,viewport:viewportName,filtered:true,escapeDismissed:true,focusRestored:true,queryReset:true,chatUnchangedBeforeTab:true,filteredKeyboardSelected:true,tabSelectedDisposableResearchChat:true});
+  cases.push({browser:browserName,viewport:viewportName,filtered:true,escapeDismissed:true,focusRestored:true,queryReset:true,chatUnchangedBeforeTab:true,filteredKeyboardSelected:true,tabSelectedDisposableResearchChat:true,mainTimelineReplaced:true,textareaRetainedAfterSwitch:true});
  }finally{await host.dispose();await browser.close();}
 }
-console.log(JSON.stringify({scope:'Mounted installed Piclaw 3.2.4 Classic bundle with disposable read-only two-chat catalogue. Tab selects the fixture chat URL; no real history, backend branch action, typeahead/IME, or physical-input acceptance.',cases},null,2));
+console.log(JSON.stringify({scope:'Mounted installed Piclaw 3.2.4 Classic bundle with disposable read-only two-chat catalogue. Tab selects the fixture chat URL, replaces disposable posts and retains the textarea. No real history, draft reload, superseded-read race, backend branch action, typeahead/IME, or physical-input acceptance.',cases},null,2));

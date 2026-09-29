@@ -3,6 +3,7 @@ package turn
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -17,6 +18,17 @@ import (
 // work. A TUI Escape handler cannot infer a restoration-safe boundary from a
 // successful CancelActiveTurn call.
 func TestCancelActiveTurnReturnsBeforeWorkerCleanupAndRestore(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		withSteering bool
+	}{{"text-only", false}, {"pending-steering", true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			testCancelRestoreBoundary(t, tc.withSteering)
+		})
+	}
+}
+
+func testCancelRestoreBoundary(t *testing.T, withSteering bool) {
 	ctx := context.Background()
 	s := openTestStore(t)
 	defer s.Close()
@@ -66,6 +78,12 @@ func TestCancelActiveTurnReturnsBeforeWorkerCleanupAndRestore(t *testing.T) {
 	if err != nil || !queued.Queued {
 		t.Fatalf("follow-up admission=%#v: %v", queued, err)
 	}
+	if withSteering {
+		steered, err := e.SubmitPrompt(ctx, RunInput{SessionID: sid, Prompt: "pending steer", Model: "mock-tool"})
+		if err != nil || steered.Queued || steered.TurnID != active.TurnID {
+			t.Fatalf("active steering admission=%#v: %v", steered, err)
+		}
+	}
 	if err := e.CancelActiveTurn(ctx, sid, active.TurnID); err != nil {
 		t.Fatal(err)
 	}
@@ -94,27 +112,51 @@ func TestCancelActiveTurnReturnsBeforeWorkerCleanupAndRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 	restored, ids, err := s.RestoreQueuedTUITextDraft(ctx, sid, draft)
-	if err != nil || len(ids) != 1 || ids[0] != queued.TurnID || restored.Text != "later follow-up\n\nnewer draft" {
+	followStatus := "cancelled"
+	if withSteering {
+		if !errors.Is(err, store.ErrQueueConflict) || len(ids) != 0 {
+			t.Fatalf("active Steer must reject restore, got %#v ids=%q: %v", restored, ids, err)
+		}
+		followStatus = "completed"
+		if saved, loadErr := s.LoadTUITextDraft(ctx, sid); loadErr != nil || saved.Text != "newer draft" {
+			t.Fatalf("conflicting restore changed draft=%#v: %v", saved, loadErr)
+		}
+	} else if err != nil || len(ids) != 1 || ids[0] != queued.TurnID || restored.Text != "later follow-up\n\nnewer draft" {
 		t.Fatalf("unfenced restore=%#v ids=%q: %v", restored, ids, err)
 	}
 	follow, err = s.GetTurn(ctx, queued.TurnID)
-	if err != nil || follow.Status != "cancelled" {
-		t.Fatalf("restored follow-up still deliverable=%#v: %v", follow, err)
+	if err != nil || follow.Status != map[bool]string{true: "queued", false: "cancelled"}[withSteering] {
+		t.Fatalf("follow-up status before cleanup=%#v: %v", follow, err)
 	}
 	close(release)
 	waitForCondition(t, 5*time.Second, func() bool {
 		first, firstErr := s.GetTurn(ctx, active.TurnID)
 		follow, followErr := s.GetTurn(ctx, queued.TurnID)
 		_, _, claimErr := s.GetSessionActiveTurn(ctx, sid)
-		return firstErr == nil && followErr == nil && first.Status == "cancelled" && follow.Status == "cancelled" && claimErr == sql.ErrNoRows
-	}, "cancelled run and restored queue cleanup")
+		depth, depthErr := s.SteeringQueueLength(ctx, sid)
+		return firstErr == nil && followErr == nil && depthErr == nil && depth == 0 && first.Status == "cancelled" && follow.Status == followStatus && claimErr == sql.ErrNoRows
+	}, "cancelled run and queue cleanup")
 	messages, err := s.ListMessages(ctx, sid)
 	if err != nil {
 		t.Fatal(err)
 	}
+	followUsers, steeringUsers := 0, 0
 	for _, message := range messages {
-		if message.Role == "user" && message.Content == "later follow-up" {
-			t.Fatalf("restored queued turn was delivered after cleanup: %#v", message)
+		if message.Role != "user" {
+			continue
 		}
+		switch message.Content {
+		case "later follow-up":
+			followUsers++
+		case "pending steer":
+			steeringUsers++
+		}
+	}
+	if withSteering {
+		if followUsers != 1 || steeringUsers != 1 {
+			t.Fatalf("failed restore must deliver both queued items once: follow=%d steer=%d", followUsers, steeringUsers)
+		}
+	} else if followUsers != 0 || steeringUsers != 0 {
+		t.Fatalf("restored queued turn was delivered: follow=%d steer=%d", followUsers, steeringUsers)
 	}
 }

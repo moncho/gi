@@ -126,7 +126,9 @@ func TestEditorViewportBudgetAndMenuReserve(t *testing.T) {
 		c.openModelMenu()
 		height := c.modelMenuHeight()
 		c.boundEditor(size[1], pad, footer, 0, height, false)
-		if size[1] >= 18 && 2*pad+footer+2+len(c.input.renderLines())+height+4 > size[1] {
+		// Pi's model selector replaces the editor: spacer + selector + footer
+		// must fit the screen.
+		if size[1] >= 18 && 2*pad+footer+1+height > size[1] {
 			t.Fatal("menu/editor hides transcript", size, height, c.input.maxLines)
 		}
 		c.closeModelMenu()

@@ -11,32 +11,35 @@ import (
 )
 
 type RuntimeConfig struct {
-	WorkspaceRoot        string                 `json:"workspace_root"`
-	AssistantName        string                 `json:"assistant_name"`
-	AssistantAvatar      string                 `json:"assistant_avatar"`
-	UserName             string                 `json:"user_name"`
-	UserAvatar           string                 `json:"user_avatar"`
-	UserAvatarBackground string                 `json:"user_avatar_background"`
-	DefaultProvider      string                 `json:"default_provider"`
-	DefaultModel         string                 `json:"default_model"`
-	DefaultThinkingLevel string                 `json:"default_thinking_level"`
-	EnabledModels        []string               `json:"enabled_models"`
-	Agents               AgentsConfig           `json:"agents"`
-	Session              SessionConfig          `json:"session"`
-	Routing              ModelRoutingConfig     `json:"routing"`
-	MaxIterations        int                    `json:"max_iterations"`
-	ScrollbackLimit      int                    `json:"scrollback_limit"`
-	TUIHistoryLimit      int                    `json:"tui_history_limit"`
-	TUIClipboardMode     string                 `json:"tui_clipboard_mode"`
-	Compaction           CompactionSettings     `json:"compaction"`
-	Retry                ProviderRetrySettings  `json:"retry"`
-	Hooks                HookSettings           `json:"hooks"`
-	Peering              PeeringSettings        `json:"peering"`
-	Passkeys             PasskeySettings        `json:"passkeys"`
-	InboundWork          InboundWorkSettings    `json:"inbound_work"`
-	WorkspaceIndex       WorkspaceIndexSettings `json:"workspace_index"`
-	SystemPrompt         string                 `json:"-"`
-	Discovery            skills.Discovery       `json:"-"`
+	WorkspaceRoot        string             `json:"workspace_root"`
+	AssistantName        string             `json:"assistant_name"`
+	AssistantAvatar      string             `json:"assistant_avatar"`
+	UserName             string             `json:"user_name"`
+	UserAvatar           string             `json:"user_avatar"`
+	UserAvatarBackground string             `json:"user_avatar_background"`
+	DefaultProvider      string             `json:"default_provider"`
+	DefaultModel         string             `json:"default_model"`
+	DefaultThinkingLevel string             `json:"default_thinking_level"`
+	EnabledModels        []string           `json:"enabled_models"`
+	Agents               AgentsConfig       `json:"agents"`
+	Session              SessionConfig      `json:"session"`
+	Routing              ModelRoutingConfig `json:"routing"`
+	MaxIterations        int                `json:"max_iterations"`
+	ScrollbackLimit      int                `json:"scrollback_limit"`
+	TUIHistoryLimit      int                `json:"tui_history_limit"`
+	TUIClipboardMode     string             `json:"tui_clipboard_mode"`
+	// EnabledModelsConfigured is false when EnabledModels is gi's built-in
+	// fallback; Pi then has no "scoped" model list.
+	EnabledModelsConfigured bool                   `json:"-"`
+	Compaction              CompactionSettings     `json:"compaction"`
+	Retry                   ProviderRetrySettings  `json:"retry"`
+	Hooks                   HookSettings           `json:"hooks"`
+	Peering                 PeeringSettings        `json:"peering"`
+	Passkeys                PasskeySettings        `json:"passkeys"`
+	InboundWork             InboundWorkSettings    `json:"inbound_work"`
+	WorkspaceIndex          WorkspaceIndexSettings `json:"workspace_index"`
+	SystemPrompt            string                 `json:"-"`
+	Discovery               skills.Discovery       `json:"-"`
 }
 
 type piclawConfig struct {
@@ -166,6 +169,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 	if strings.TrimSpace(cfg.DefaultProvider) == "" {
 		cfg.DefaultProvider = "opencode-zen"
 	}
+	cfg.EnabledModelsConfigured = len(cfg.EnabledModels) > 0
 	if len(cfg.EnabledModels) == 0 {
 		cfg.EnabledModels = []string{"opencode-zen/minimax-m2.5-free"}
 	}

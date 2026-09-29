@@ -56,7 +56,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   const lines=capture().replaceAll('▌','').split('\n');assert(lines.some((line,i)=>line.trim()==='newer draft'&&lines[i+1]?.trim()==='second line'),'multiline rows merged after resize');
   shot('multiline-resized');keys('C-a','C-k');type('newer draft');await sleep(100);
   assert(history().includes('PREEXISTING SHELL OUTPUT'),'resize lost native history');assert(capture().replaceAll('▌','').includes('newer draft'),'resize lost draft');
-  intact('before selector');keys('M-m');await wait(()=>capture().includes('Select model'),'temporary selector');keys('Escape');await wait(()=>!capture().includes('Select model')&&capture().replaceAll('▌','').includes('newer draft'),'selector restores editor');
+  intact('before selector');keys('M-m');await wait(()=>capture().includes('Ctrl+S to set as default'),'temporary selector');keys('Escape');await wait(()=>!capture().includes('Ctrl+S to set as default')&&capture().replaceAll('▌','').includes('newer draft'),'selector restores editor');
   intact('after selector');keys('C-a','C-k');type('!!printf "regular failed outcome\\n"; exit 7');keys('Enter');await wait(()=>history().includes('(exit 7)'),'local error printed');
   assert(ansi().includes('38;2;94;178;134'),'bashMode command color absent from native history');assert(history().includes('Gi received: Native regular 1'),'successful output absent');
   type("!!for i in $(seq 1 40); do printf 'NATIVE-LONG-%02d\\n' $i; done");keys('Enter');await wait(()=>history().includes('NATIVE-LONG-40'),'full tool output');

@@ -22,6 +22,13 @@ func collectElementTexts(element *gotui.Element) []string {
 	if element.Text() != "" {
 		texts = append(texts, element.Text())
 	}
+	if spans := element.RichText(); len(spans) > 0 {
+		var b strings.Builder
+		for _, span := range spans {
+			b.WriteString(span.Text)
+		}
+		texts = append(texts, b.String())
+	}
 	for _, child := range element.Children() {
 		texts = append(texts, collectElementTexts(child)...)
 	}

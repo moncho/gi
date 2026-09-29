@@ -220,6 +220,8 @@ type chatTUI struct {
 	regularSessionPending       bool
 	regularWidth, regularHeight int
 	regularReflowGen            int
+	modelMenuScope              string // Pi selector scope: "scoped" or "all"
+	modelMenuDefault            string // saved default model (Pi's "default" badge)
 	slash                       slashMenu
 	slashLastText               string
 	footerUsage                 *footerUsageCache
@@ -1656,6 +1658,24 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 		return c.sessionRenameKeys()
 	}
 	if c.modelMenuOpen {
+		if c.modelMenuKind == "model" {
+			// Pi's selector: Escape/Ctrl+C cancel, Tab scope, Ctrl+S save default.
+			return gotui.KeyMap{
+				gotui.OnPreemptStop(gotui.KeyCtrlC, func(ke gotui.KeyEvent) { c.closeModelMenu() }),
+				gotui.OnPreemptStop(gotui.KeyEscape, func(ke gotui.KeyEvent) { c.closeModelMenu() }),
+				gotui.OnPreemptStop(gotui.KeyTab, func(ke gotui.KeyEvent) { c.toggleModelMenuScope() }),
+				gotui.OnPreemptStop(gotui.Rune('s').Ctrl(), func(ke gotui.KeyEvent) { c.acceptModelMenuAsDefault() }),
+				gotui.OnPreemptStop(gotui.KeyUp, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(-1) }),
+				gotui.OnPreemptStop(gotui.KeyDown, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(1) }),
+				gotui.OnPreemptStop(gotui.KeyPageUp, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(-5) }),
+				gotui.OnPreemptStop(gotui.KeyPageDown, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(5) }),
+				gotui.OnPreemptStop(gotui.KeyHome, func(ke gotui.KeyEvent) { c.setModelMenuSelection(0) }),
+				gotui.OnPreemptStop(gotui.KeyEnd, func(ke gotui.KeyEvent) { c.setModelMenuSelection(len(c.modelMenuChoices) - 1) }),
+				gotui.OnPreemptStop(gotui.KeyEnter, func(ke gotui.KeyEvent) { c.acceptModelMenuSelection() }),
+				gotui.OnPreemptStop(gotui.KeyBackspace, func(ke gotui.KeyEvent) { c.modelMenuBackspace() }),
+				gotui.OnFocused(gotui.AnyRune, func(ke gotui.KeyEvent) { c.modelMenuTypeRune(ke.Rune) }),
+			}
+		}
 		return gotui.KeyMap{
 			gotui.OnStop(gotui.KeyCtrlC, func(ke gotui.KeyEvent) { c.app.Stop() }),
 			gotui.OnPreemptStop(gotui.KeyEscape, func(ke gotui.KeyEvent) { c.backFromSessionActions() }),
@@ -1770,6 +1790,19 @@ func (c *chatTUI) openModelMenu() {
 	c.modelMenuError = ""
 	c.modelMenuOpen = true
 	c.modelMenuKind = "model"
+	c.modelMenuDefault = c.modelMenuDefaultLabel()
+	c.modelMenuScope = "all"
+	if scoped, _ := c.modelMenuScopes(); len(scoped) > 0 {
+		// Pi opens on the scoped (enabled) models when there are any.
+		c.modelMenuScope = "scoped"
+		choices = scoped
+		selected = 0
+		for i, model := range choices {
+			if canonicalModelRef(c.cfg.DefaultProvider, model) == current {
+				selected = i
+			}
+		}
+	}
 	c.captureModelPickerMetadata()
 	c.openModelPickerScreen()
 	c.modelMenuValues = nil
@@ -1860,11 +1893,15 @@ func filterModelMenuChoices(all []string, query string) []string {
 func (c *chatTUI) applyModelMenuFilter() {
 	c.modelMenuChoices = filterModelMenuChoices(c.modelMenuAll, c.modelMenuQuery)
 	if c.modelMenuKind == "model" {
+		// Pi's model selector: token fuzzy filter over id/provider/name
+		// (plus gi's context/reasoning metadata), best matches first.
+		items := make([]slashItem, len(c.modelMenuAll))
+		for i, label := range c.modelMenuAll {
+			items[i] = slashItem{name: label, description: label + " " + c.modelMenuMetadata[label].search}
+		}
 		c.modelMenuChoices = nil
-		for _, label := range c.modelMenuAll {
-			if fuzzyMatch(c.modelMenuQuery, label+" "+c.modelMenuMetadata[label].search) {
-				c.modelMenuChoices = append(c.modelMenuChoices, label)
-			}
+		for _, it := range piFuzzyFilter(items, c.modelMenuQuery, func(it slashItem) string { return it.description }) {
+			c.modelMenuChoices = append(c.modelMenuChoices, it.name)
 		}
 	}
 	c.modelMenuSelected = 0
@@ -1909,6 +1946,7 @@ func (c *chatTUI) closeModelMenu() {
 	c.resetModelMenuMetadata()
 	c.modelMenuError = ""
 	c.modelMenuKind = ""
+	c.modelMenuScope, c.modelMenuDefault = "", ""
 	c.modelMenuValues = nil
 	c.modelMenuChoices = nil
 	c.modelMenuAll = nil
@@ -2122,6 +2160,13 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
+	if c.modelMenuKind == "model" {
+		width := c.currentContentWidth()
+		if c.app != nil {
+			width, _ = c.app.Size()
+		}
+		return len(c.piModelSelectorRows(width))
+	}
 	rows := c.modelMenuVisibleRows()
 	if len(c.modelMenuChoices) < rows {
 		rows = len(c.modelMenuChoices)
@@ -2131,6 +2176,9 @@ func (c *chatTUI) modelMenuHeight() int {
 }
 
 func (c *chatTUI) renderModelMenu(width int) *gotui.Element {
+	if c.modelMenuKind == "model" {
+		return c.renderPiModelSelector(width)
+	}
 	if c.modelMenuKind == "session-rename" {
 		return c.renderSessionRename(width)
 	}
@@ -4146,11 +4194,18 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	if inputHeight < 1 {
 		inputHeight = 1
 	}
-	reservedHeight := (padding * 2) + len(footerLines) + len(pendingLines) + len(widgetLines) + inputHeight + 2 + menuHeight
+	// Pi's model selector replaces the editor (and its borders) while open.
+	piSelector := c.modelMenuOpen && c.modelMenuKind == "model"
+	editorRows := inputHeight + 2
+	if piSelector {
+		editorRows = 0
+	}
+	reservedHeight := (padding * 2) + len(footerLines) + len(pendingLines) + len(widgetLines) + editorRows + menuHeight
 	transcriptHeight := h - reservedHeight
-	if transcriptHeight < 4 {
+	if transcriptHeight < 4 && !piSelector {
 		transcriptHeight = 4
 	}
+	transcriptHeight = max(0, transcriptHeight)
 	transcriptOptions := []gotui.Option{
 		gotui.WithWidthPercent(100),
 		gotui.WithHeight(transcriptHeight),
@@ -4199,7 +4254,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	if len(pendingLines) > 0 {
 		root.AddChild(c.renderLineBlock(pendingLines, piFg(piDim)))
 	}
-	if c.modelMenuOpen {
+	if c.modelMenuOpen && !piSelector {
 		root.AddChild(c.renderModelMenu(contentWidth))
 	}
 	if c.workspaceIndex.active {
@@ -4214,6 +4269,10 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	inputEl := app.MountPersistent(c, inputSlot, func() gotui.Component { return activeInput })
 	c.inputRegion = inputEl
 	switch {
+	case piSelector:
+		root.AddChild(c.renderPiModelSelector(contentWidth))
+		root.AddChild(c.renderFooter(contentWidth))
+		return root
 	case c.textSelection.active:
 		root.AddChild(borderElement([]gotui.TextSpan{{Text: c.selectionSeparator(contentWidth), Style: piFg(c.editorBorderColor())}}))
 	case c.search.active:

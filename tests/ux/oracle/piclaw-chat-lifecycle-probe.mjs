@@ -9,6 +9,7 @@ const root=process.env.PICLAW_ORACLE_ROOT||'/opt/piclaw/current';
 const browserName=process.env.ORACLE_BROWSER||'chromium';
 const viewportName=process.env.ORACLE_VIEWPORT||'desktop';
 const transientOnly=process.env.ORACLE_TRANSIENT_ONLY==='1';
+const disclosureOnly=process.env.ORACLE_DISCLOSURE_ONLY==='1';
 const sizes={desktop:{width:1213,height:688},tablet:{width:820,height:1180},phone:{width:390,height:844}};
 assert(['chromium','webkit'].includes(browserName)&&sizes[viewportName]);
 const output=path.resolve(process.env.ORACLE_OUTPUT||`test-results/ux-oracle/chat-lifecycle/${browserName}-${viewportName}/run-${Date.now()}`);
@@ -29,7 +30,7 @@ const base={chat_jid:state.sessionId,agent_id:'default',thread_id:'301',turn_id:
 const emitter={};
 for(const [key,event] of Object.entries({status:'agent_status',thought:'agent_thought',thoughtDelta:'agent_thought_delta',draft:'agent_draft',draftDelta:'agent_draft_delta',response:'agent_response',generatedWidgetOpen:'generated_widget_open',generatedWidgetDelta:'generated_widget_delta',generatedWidgetFinal:'generated_widget_final',generatedWidgetClose:'generated_widget_close',generatedWidgetError:'generated_widget_error',modelChanged:'model_changed'}))emitter[key]=payload=>{frames.push({event,payload});if(key==='status')statusSnapshot={status:['done','error'].includes(payload.type)?'idle':'active',data:{...base,...payload}};host.emit(event,{...base,...payload});};
 const handler=createStreamingEventHandler({emitter,agentId:'default',threadId:'301',turnId:'oracle-turn',displayUpdateIntervalMs:0,includeDraftFull:()=>true,includeThoughtFull:()=>true});
-const report={release:reference.release,browser:browserName,viewport:viewportName,scope:'Installed Piclaw event translator plus shipped UI; isolated synthetic agent events and timeline. No provider, production backend persistence or physical-device acceptance.',transientOnly,frames,observations};
+const report={release:reference.release,browser:browserName,viewport:viewportName,scope:'Installed Piclaw event translator plus shipped UI; isolated synthetic agent events and timeline. No provider, production backend persistence or physical-device acceptance.',transientOnly,disclosureOnly,frames,observations};
 const capture=async name=>{await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));observations.push({name,posts:await page.locator('.post').evaluateAll(es=>es.map(e=>({author:e.querySelector('.post-author')?.textContent,text:e.querySelector('.post-content')?.textContent}))),panels:await page.locator('.agent-status-panel').evaluateAll(es=>es.map(e=>({text:e.textContent,html:e.outerHTML}))),bodyText:await page.locator('body').innerText()});await page.screenshot({path:path.join(output,`${name}.png`)});};
 try{
  const html=(await fs.readFile(path.join(root,'app/runtime/web/static/classic/index.html'),'utf8')).replaceAll('__PICLAW_SANITIZE_SVG_FENCES_FLAG__','1');
@@ -37,6 +38,17 @@ try{
  await page.route('**/agent/status?*',r=>r.fulfill({json:{status:statusSnapshot,model:state.model,context:state.model.context_usage,metrics:state.metrics,errors:[]}}));
  await page.route('**/timeline?*',r=>r.fulfill({json:{posts,has_more:false}}));
  await page.route('**/agent/picker-pins',r=>r.fulfill({json:{scope:'chat-lifecycle-fixture',revision:0,models:[],sessions:[]}}));
+ if(disclosureOnly){
+  await page.route('**/agent/thought?*',r=>{
+   const params=new URL(r.request().url()).searchParams;
+   assert.equal(params.get('turn_id'),'oracle-turn');assert(['thought','draft'].includes(params.get('panel')));
+   return r.fulfill({json:{text:`${params.get('panel')} source\n${Array.from({length:14},(_,i)=>`preview line ${String(i+1).padStart(2,'0')}`).join('\n')}`,totalLines:15}});
+  });
+  await page.route('**/agent/thought/visibility',r=>{
+   const body=r.request().postDataJSON();assert.equal(body.turn_id,'oracle-turn');assert(['thought','draft'].includes(body.panel));assert.equal(typeof body.expanded,'boolean');
+   return r.fulfill({json:{ok:true}});
+  });
+ }
  await page.goto(host.origin);await page.locator('.compose-box textarea').waitFor();await host.connected();
  await page.locator('#post-301').waitFor();await capture('idle');
  assert.equal(await page.locator('.agent-status-panel').count(),0,'idle must not fabricate a status pane');
@@ -48,6 +60,35 @@ try{
  handler({type:'message_update',assistantMessageEvent:{type:'text_delta',delta:'Let me take a look around.',contentIndex:1}});
  await page.getByText('Let me take a look around.',{exact:false}).first().waitFor();await capture('previews');
  assert.equal(await page.locator('.post').count(),1,'streaming previews are not extra user posts');
+ if(disclosureOnly){
+  const lines=Array.from({length:14},(_,i)=>`preview line ${String(i+1).padStart(2,'0')}`);
+  const extra='\n'+lines.join('\n');
+  handler({type:'message_update',assistantMessageEvent:{type:'thinking_delta',delta:extra,contentIndex:0}});
+  handler({type:'message_update',assistantMessageEvent:{type:'text_delta',delta:extra,contentIndex:1}});
+  const panel=key=>page.locator(`[data-panel-key="${key}"]`);
+  for(const key of ['thought','draft']){
+   const item=panel(key),button=item.getByRole('button',{name:/more…/});
+   await button.waitFor();
+   assert.equal(await item.getAttribute('data-expanded'),'false');
+   await page.waitForFunction(key=>document.querySelector(`[data-panel-key="${key}"] .agent-thinking-body`)?.textContent?.includes('preview line 14'),key);
+   const collapsed=await item.locator('.agent-thinking-body').innerText();
+   assert.deepEqual(collapsed.split('\n').filter(line=>line.startsWith('preview line ')),lines.slice(-9),`${key} shows newest nine source lines while collapsed`);
+   await button.click();assert.equal(await item.getAttribute('data-expanded'),'true');
+   assert((await item.locator('.agent-thinking-body').innerText()).includes('preview line 01'),`${key} retains older source lines`);
+   assert.equal(await panel(key==='thought'?'draft':'thought').getAttribute('data-expanded'),'false','other panel remains collapsed');
+   await item.getByRole('button',{name:/less/}).click();assert.equal(await item.getAttribute('data-expanded'),'false');
+  }
+  await panel('thought').getByRole('button',{name:/more…/}).click();
+  const thought=panel('thought');
+  await page.locator('.compose-box textarea').focus();await page.keyboard.press('Escape');
+  assert.equal(await thought.getAttribute('data-expanded'),'true','editable Escape leaves disclosure open');
+  await thought.locator('.agent-thinking-title').click();await page.keyboard.press('Shift+Escape');
+  assert.equal(await thought.getAttribute('data-expanded'),'true','modified Escape leaves disclosure open');
+  await thought.locator('.agent-thinking-title').click();await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>document.querySelector('[data-panel-key="thought"]')?.getAttribute('data-expanded')==='false');
+  assert.equal(await page.locator('.post').count(),1,'disclosure does not add conversation posts');
+  await capture('disclosure');host.assert();report.result='pass';
+ }else{
  handler({type:'tool_execution_start',toolCallId:'call-shell',toolName:'bash',args:{command:'pwd; ls -la'}});
  handler({type:'tool_execution_update',toolCallId:'call-shell',toolName:'bash',partialResult:{content:[{type:'text',text:'/fixture\n---\ndrwx------ .pi\nNo skills matched the query.'}]}});
  await page.locator('[data-panel-key="tool-output"]').waitFor();await capture('tool-output');
@@ -86,6 +127,7 @@ try{
  assert.equal(await page.locator('#post-302 li').innerText(),'Inspected the workspace');
  host.assert();
  report.result='pass';
+ }
  }
 }catch(e){report.result='fail';report.error=String(e);process.exitCode=1;await capture('failure').catch(()=>{});}
 finally{report.failures=host.failures;report.reloadUnloadEvents=host.reloadUnloadEvents;report.calls=host.calls;report.assets=host.assets;await fs.writeFile(path.join(output,'evidence.json'),JSON.stringify(report,null,2));await host.dispose();await browser.close();}

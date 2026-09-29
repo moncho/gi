@@ -29,6 +29,11 @@ for(const id of ['@gi-preview-002','@ux-thoughts-002','@ux-thoughts-003','@ux-th
       // Installed renderer clips to the newest nine source lines; disclosure
       // signals retained earlier text even when these lines fit the scroll box.
       await expect(body).not.toContainText('line 01');await expect(body).toContainText('line 12');
+      // The build mounts pinned Piclaw status.ts: verify the source-line tail,
+      // not just the existence of clipping or a scrollable CSS box.
+      const kind=panel===thought?'Thought':'Draft';
+      await expect.poll(async()=>[...(await body.innerText()).matchAll(new RegExp(`${kind} line (\\d{2})`,'g'))].map(m=>m[1]))
+        .toEqual(['04','05','06','07','08','09','10','11','12']);
       await expect(panel.getByRole('button',{name:'more…',exact:true})).toBeVisible();
     }
     f.more();

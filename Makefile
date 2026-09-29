@@ -725,7 +725,7 @@ test-tui-compaction:
 test-tui-scrollbar: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-scrollbar.mjs
 
-.PHONY: test-tui-queue-input test-tui-queue-input-core test-tui-queue-input-binary test-tui-queue-restore test-tui-queue-escape-baseline test-tui-queue-escape-restore test-tui-queue-display
+.PHONY: test-tui-queue-input test-tui-queue-input-core test-tui-queue-input-binary test-tui-queue-restore test-tui-queue-escape-restore test-tui-queue-display
 test-tui-queue-input: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-input.mjs
 
@@ -734,9 +734,6 @@ test-tui-queue-input-binary:
 
 test-tui-queue-restore: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-restore.mjs
-
-test-tui-queue-escape-baseline: build
-	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-escape-baseline.mjs
 
 test-tui-queue-escape-restore: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-escape-restore.mjs

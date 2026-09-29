@@ -13,11 +13,9 @@ import (
 	goai "github.com/rcarmo/go-ai"
 )
 
-// A foreign writer uses a separate SQLite connection. The runner owns only
-// its in-process lock; the transaction must fence all competing DB writes.
 // Completion can be paused after the provider has answered but before the
-// worker finalizes. A cancellation request must not be overwritten by a
-// late successful finalization.
+// worker finalizes. A committed Escape restore must take precedence over a
+// late successful finalization and must not redeliver the restored queue.
 func TestActiveEscapeRestoreWhileCompletionPending(t *testing.T) {
 	ctx := context.Background()
 	s := openTestStore(t)
@@ -63,14 +61,15 @@ func TestActiveEscapeRestoreWhileCompletionPending(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := e.CancelActiveTurn(ctx, sid, active.TurnID); err != nil {
-		t.Fatal(err)
+	restored, ids, err := e.AbortActiveAndRestoreTUITextDraft(ctx, sid, active.TurnID, draft)
+	if err != nil || len(ids) != 1 || ids[0] != queued.TurnID || restored.Text != "queued text\n\nunsent" {
+		t.Fatalf("Escape restore=%#v ids=%q: %v", restored, ids, err)
 	}
-	if persisted, err := s.LoadTUITextDraft(ctx, sid); err != nil || persisted != draft {
-		t.Fatalf("cancellation changed unsent text=%#v: %v", persisted, err)
+	if persisted, err := s.LoadTUITextDraft(ctx, sid); err != nil || persisted != restored {
+		t.Fatalf("Escape restore not durable=%#v: %v", persisted, err)
 	}
-	if pending, err := s.GetTurn(ctx, queued.TurnID); err != nil || pending.Status != "queued" {
-		t.Fatalf("cancellation changed queued delivery=%#v: %v", pending, err)
+	if pending, err := s.GetTurn(ctx, queued.TurnID); err != nil || pending.Status != "cancelled" {
+		t.Fatalf("restored queued turn still deliverable=%#v: %v", pending, err)
 	}
 	close(release)
 	waitForCondition(t, 5*time.Second, func() bool {
@@ -81,8 +80,19 @@ func TestActiveEscapeRestoreWhileCompletionPending(t *testing.T) {
 	if err != nil || turn.Status != "cancelled" {
 		t.Fatalf("committed abort overwritten by completion: %#v: %v", turn, err)
 	}
+	messages, err := s.ListMessages(ctx, sid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, message := range messages {
+		if message.Role == "user" && message.Content == "queued text" {
+			t.Fatalf("restored queued prompt redelivered: %#v", message)
+		}
+	}
 }
 
+// A foreign writer uses a separate SQLite connection. The runner owns only
+// its in-process lock; the transaction must fence all competing DB writes.
 func TestActiveEscapeRestoreFencesAndCancelsBeforeCleanup(t *testing.T) {
 	for _, reason := range []string{"text", "draft-writer", "active-steering", "foreign-claim"} {
 		t.Run(reason, func(t *testing.T) {

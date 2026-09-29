@@ -41,7 +41,7 @@ func (s *Store) claimIdleQueueAction(ctx context.Context, sessionID, queuedID, w
 
 // PersistIdleQueuePrompt is the final launch barrier, after all fallible launch
 // preparation. A crash/retry may reuse this exact durable prompt, never add it twice.
-func (s *Store) PersistIdleQueuePrompt(ctx context.Context, sessionID, turnID, prompt string, payload map[string]any) error {
+func (s *Store) PersistIdleQueuePrompt(ctx context.Context, sessionID, turnID, claimToken, prompt string, payload map[string]any) error {
 	ownedPayload := make(map[string]any, len(payload)+2)
 	for key, value := range payload {
 		ownedPayload[key] = value
@@ -58,15 +58,15 @@ func (s *Store) PersistIdleQueuePrompt(ctx context.Context, sessionID, turnID, p
 	}
 	defer tx.Rollback()
 	var owned bool
-	if err = tx.QueryRowContext(ctx, `select exists(select 1 from session_active_turns where session_id=? and turn_id=? and claim_token=?)`, sessionID, turnID, turnID).Scan(&owned); err != nil {
+	if err = tx.QueryRowContext(ctx, `select exists(select 1 from session_active_turns where session_id=? and turn_id=? and claim_token=?)`, sessionID, turnID, claimToken).Scan(&owned); err != nil {
 		return err
 	}
 	if !owned {
 		return ErrQueueConflict
 	}
 	_, err = tx.ExecContext(ctx, `insert into messages(id,session_id,role,content,payload_json,created_at)
- select ?,?,'user',?,?,`+defaultNow+` where exists(select 1 from session_active_turns where session_id=? and turn_id=?)
- and not exists(select 1 from messages where session_id=? and role='user' and json_extract(payload_json,'$.turn_id')=? and json_extract(payload_json,'$.idle_queue_action')=1)`, NowID("msg"), sessionID, prompt, string(raw), sessionID, turnID, sessionID, turnID)
+ select ?,?,'user',?,?,`+defaultNow+` where exists(select 1 from session_active_turns where session_id=? and turn_id=? and claim_token=?)
+ and not exists(select 1 from messages where session_id=? and role='user' and json_extract(payload_json,'$.turn_id')=? and json_extract(payload_json,'$.idle_queue_action')=1)`, NowID("msg"), sessionID, prompt, string(raw), sessionID, turnID, claimToken, sessionID, turnID)
 	if err != nil {
 		return err
 	}

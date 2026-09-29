@@ -172,6 +172,19 @@ func initSchema(db *sql.DB) error {
 			foreign key(turn_id) references turns(id) on delete cascade
 		);`,
 		`create index if not exists idx_session_active_turns_turn on session_active_turns(turn_id);`,
+		// Reject a released claim token if another writer tries to reuse it.
+		// Backfill live legacy claims before enabling the insert trigger.
+		`create table if not exists session_claim_tokens (
+			session_id text not null references sessions(id) on delete cascade,
+			claim_token text not null,
+			primary key(session_id, claim_token)
+		);`,
+		`insert into session_claim_tokens(session_id,claim_token)
+			select session_id,claim_token from session_active_turns where true
+			on conflict(session_id,claim_token) do nothing;`,
+		`create trigger if not exists session_claim_token_insert after insert on session_active_turns begin
+			insert into session_claim_tokens(session_id,claim_token) values(new.session_id,new.claim_token);
+		end;`,
 		// Persist claim order after release; timestamps cannot fence replaced runs.
 		`create table if not exists session_last_run (
 			session_id text primary key references sessions(id) on delete cascade,

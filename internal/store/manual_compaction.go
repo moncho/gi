@@ -3,7 +3,10 @@ package store
 import "context"
 
 // AdmitManualCompaction never queues behind other work or redirects to steering.
-func (s *Store) AdmitManualCompaction(ctx context.Context, sessionID, turnID, expected, model string) error {
+func (s *Store) AdmitManualCompaction(ctx context.Context, sessionID, turnID, claimToken, expected, model string) error {
+	if claimToken == "" {
+		return ErrQueueConflict
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -31,7 +34,7 @@ func (s *Store) AdmitManualCompaction(ctx context.Context, sessionID, turnID, ex
 	if err != nil {
 		return err
 	}
-	if _, err = tx.ExecContext(ctx, `insert into session_active_turns(session_id,turn_id,worker_id,claim_token,claimed_at,updated_at) values(?,?,'runner',?,`+defaultNow+`,`+defaultNow+`)`, sessionID, turnID, turnID); err != nil {
+	if _, err = tx.ExecContext(ctx, `insert into session_active_turns(session_id,turn_id,worker_id,claim_token,claimed_at,updated_at) values(?,?,'runner',?,`+defaultNow+`,`+defaultNow+`)`, sessionID, turnID, claimToken); err != nil {
 		return err
 	}
 	if _, err = tx.ExecContext(ctx, `insert into turn_events(turn_id,session_id,seq,event_type,payload_json,created_at) values(?,?,1,'turn.submitted','{"phase":"queue","checkpoint":true,"intent":"compact","operation":"manual_compaction"}',`+defaultNow+`)`, turnID, sessionID); err != nil {

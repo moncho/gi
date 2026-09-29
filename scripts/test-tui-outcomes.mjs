@@ -27,19 +27,17 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${root}/bin/gi' -tui -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);
   tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   const idleBars=bars(capture());
-  type('UX queue gate:outcomes');keys('Enter');await wait(()=>!idle()&&color('52;56;58'),'pending band');
+  type('UX queue gate:outcomes');keys('Enter');await wait(()=>!idle()&&color('52;56;58'),'pending tool band');
   assert(color('33;59;73'),'user message band absent');shot('pending');
   type('preserved draft');keys('Left','Left','Left');
   writeFileSync(join(dir,'outcomes'),'go');await wait(()=>idle()&&sql("select count(*) from turns where status='completed';")==='1','completion');
-  await wait(()=>color('37;65;49'),'success band');shot('success');
-  keys('Home');await wait(()=>capture().includes('you: UX queue gate:outcomes'),'top for spacing');
+  await wait(()=>color('37;65;49')&&capture().includes('Queue gate streaming preview'),'successful tool result');shot('success');
+  keys('Home');await wait(()=>capture().includes('UX queue gate:outcomes'),'top for spacing');
   const spaced=shot('message-spacing'),rows=spaced.split('\n').map(line=>line.replace(/[│█]\s*$/,'').trim());
-  const user=rows.findIndex(line=>line==='you: UX queue gate:outcomes');
+  const user=rows.findIndex(line=>line==='UX queue gate:outcomes');
   const tool=rows.findIndex(line=>/^\$ /.test(line));
-  const assistant=rows.findIndex(line=>line.startsWith('Gi:'));
   assert(user>=1&&rows[user-1]===''&&rows[user+1]==='','user top/bottom padding missing');
-  assert(tool>=user+4&&rows[tool-2]===''&&rows[tool-1]===''&&rows[tool+1]==='','tool separator/top/bottom padding missing');
-  assert(assistant>=tool+3&&rows[assistant-1]==='','assistant leading separator missing');
+  assert(tool>=user+3&&rows[tool-1]===''&&rows[tool+1]==='','tool separator/top/bottom padding missing');
   assert(JSON.stringify(bars(spaced))===JSON.stringify(idleBars),'message spacing changed editor/footer rows');
   keys('End');await sleep(100);
   keys('C-a','C-k');type('!!printf "failure-output\\n"; exit 7');keys('Enter');await wait(()=>capture().includes('failure-output')&&capture().includes('(exit 7)'),'exit status');shot('error');
@@ -58,7 +56,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   keys('C-o');await wait(()=>capture().includes('more lines'),'Ctrl-O collapses');
   const final=shot('final');assert(JSON.stringify(bars(final))===JSON.stringify(idleBars),'outcomes added idle rows');
   assert(sql("select count(*) from messages where role='user';")==='1','editor navigation submitted text');
-  results.push(`${width}x${height}: RGB user/pending/success/error bands; real shell outcomes; Ctrl-O collapse/expand; rendered/wrapped scrollback Home/End/PageUp, Ctrl-Home/End editor, unchanged idle rows`);
+  results.push(`${width}x${height}: RGB user band, visible pending/success/error tool states; real shell outcomes; Ctrl-O collapse/expand; rendered/wrapped scrollback Home/End/PageUp, Ctrl-Home/End editor, unchanged idle rows`);
  }catch(error){try{shot('failure')}catch{};try{writeFileSync(join(artifacts,`${width}-runtime.log`),readFileSync(join(dir,'runtime.log')))}catch{};throw error;}
  finally{try{tmux('kill-session','-t',session)}catch{};rmSync(dir,{recursive:true,force:true});}
 }

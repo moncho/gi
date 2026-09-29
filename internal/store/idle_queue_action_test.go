@@ -20,7 +20,7 @@ func TestIdleQueuePromptOwnsIdentityAndDeduplicates(t *testing.T) {
 	}
 	wrong := map[string]any{"turn_id": "foreign", "idle_queue_action": false}
 	for _, payload := range []map[string]any{nil, wrong} {
-		if err = s.PersistIdleQueuePrompt(ctx, "a", "q", "original", payload); err != nil {
+		if err = s.PersistIdleQueuePrompt(ctx, "a", "q", "q", "original", payload); err != nil {
 			t.Fatal(err)
 		}
 	}

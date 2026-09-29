@@ -75,12 +75,16 @@ func (e *Engine) SubmitManualCompaction(ctx context.Context, sessionID, expected
 	}
 	model := inference.SessionModel(session.State, inference.SessionModelChoice{Model: e.runtimeCfg.DefaultModel}).Model
 	id := store.NowID("turn")
-	if err = e.store.AdmitManualCompaction(ctx, sessionID, id, expected, model); err != nil {
+	claimToken, err := store.NewActiveTurnClaimToken()
+	if err != nil {
+		return nil, err
+	}
+	if err = e.store.AdmitManualCompaction(ctx, sessionID, id, claimToken, expected, model); err != nil {
 		return nil, err
 	}
 	// Admission already committed the claim and submitted checkpoint together.
 	runCtx, cancel := context.WithCancel(e.backgroundContext())
-	active := &runningTurn{turnID: id, cancel: cancel}
+	active := &runningTurn{turnID: id, claimToken: claimToken, cancel: cancel}
 	r.current = active
 	go func() { r.mu.Lock(); r.mu.Unlock(); r.runTurn(e.store, sessionID, id, runCtx, cancel, active) }()
 	e.PublishRuntimeTurnEvent("turn_submitted", sessionID, id, "", "running", "setup", map[string]any{"operation": "manual_compaction"})

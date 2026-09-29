@@ -34,7 +34,7 @@ func TestManualCompactionAdmissionAtomicClaimAndEvent(t *testing.T) {
 				if _, err = s.DB().Exec(`create trigger reject_submit before insert on turn_events begin select raise(abort,'event failed'); end`); err != nil {
 					t.Fatal(err)
 				}
-				if err = s.AdmitManualCompaction(ctx, "A", "manual", token, "test-model"); err == nil {
+				if err = s.AdmitManualCompaction(ctx, "A", "manual", "manual-claim", token, "test-model"); err == nil {
 					t.Fatal("expected rollback")
 				}
 				for _, table := range []string{"turns", "session_active_turns", "turn_events"} {
@@ -55,7 +55,7 @@ func TestManualCompactionAdmissionAtomicClaimAndEvent(t *testing.T) {
 				wg.Add(1)
 				go func(i int) {
 					defer wg.Done()
-					results <- s.AdmitManualCompaction(ctx, "A", fmt.Sprintf("manual%d", i), token, "test-model")
+					results <- s.AdmitManualCompaction(ctx, "A", fmt.Sprintf("manual%d", i), fmt.Sprintf("manual-claim-%d", i), token, "test-model")
 				}(i)
 			}
 			wg.Wait()
@@ -74,7 +74,7 @@ func TestManualCompactionAdmissionAtomicClaimAndEvent(t *testing.T) {
 				t.Fatal(turns, err)
 			}
 			active, claim, err := s.GetSessionActiveTurn(ctx, "A")
-			if err != nil || active != turns[0].ID || claim != active {
+			if err != nil || active != turns[0].ID || (claim != "manual-claim-0" && claim != "manual-claim-1") {
 				t.Fatal(active, claim, err)
 			}
 			events, err := s.ListTurnEvents(ctx, active)

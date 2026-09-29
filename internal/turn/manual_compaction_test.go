@@ -117,7 +117,7 @@ func TestManualCompactionRecoveryDoesNotReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = s.AdmitManualCompaction(ctx, "A", "manual", store.ContextToken(snapshot), "test-model"); err != nil {
+	if err = s.AdmitManualCompaction(ctx, "A", "manual", "manual-claim", store.ContextToken(snapshot), "test-model"); err != nil {
 		t.Fatal(err)
 	}
 	if next, err := s.GetNextQueuedTurn(ctx, "A"); err != sql.ErrNoRows || next != nil {

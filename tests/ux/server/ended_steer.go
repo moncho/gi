@@ -32,6 +32,13 @@ func endedSteerFixture(s *store.Store, next http.Handler) http.Handler {
 			if err == nil {
 				err = s.ReleaseSessionActiveTurn(ctx, session, "observed")
 			}
+		case "cancel":
+			err = s.UpdateTurnStatusAndPhase(ctx, "observed", "cancelling", "cancelling")
+		case "release-cancelled":
+			err = s.UpdateTurnStatusAndPhase(ctx, "observed", "cancelled", "aborted")
+			if err == nil {
+				err = s.ReleaseSessionActiveTurn(ctx, session, "observed")
+			}
 		default:
 			http.NotFound(w, r)
 			return

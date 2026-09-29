@@ -4749,10 +4749,15 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 }
 
 func (r *sessionRunner) prepareAgentIteration(ctx context.Context, sessionID, turnID, model, agentID string, iter int, convCtx *goai.Context, pendingSteering []store.SteeringMessage) ([]store.SteeringMessage, error) {
-	if steerMsgs, err := r.dequeueSteeringMessages(ctx, sessionID, turnID); err != nil {
-		log.Printf("steering dequeue error: %v", err)
-	} else if len(steerMsgs) > 0 {
-		pendingSteering = append(pendingSteering, steerMsgs...)
+	// A previous boundary may already have dequeued one message. Do not poll
+	// again in this iteration: one-at-a-time must reach the next model request
+	// before another queued message is admitted (as in Pi's agent loop).
+	if len(pendingSteering) == 0 {
+		if steerMsgs, err := r.dequeueSteeringMessages(ctx, sessionID, turnID); err != nil {
+			log.Printf("steering dequeue error: %v", err)
+		} else if len(steerMsgs) > 0 {
+			pendingSteering = steerMsgs
+		}
 	}
 	if len(pendingSteering) > 0 {
 		r.injectSteeringMessages(ctx, sessionID, turnID, convCtx, pendingSteering)

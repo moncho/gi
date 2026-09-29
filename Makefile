@@ -652,7 +652,7 @@ test-ux-speech-contract:
 capture-gi-chat-baseline:
 	$(BUN) tests/ux/oracle/gi-chat-baseline-probe.mjs
 
-.PHONY: test-pi-piclaw-queue-oracle test-pi-tool-boundary-steer test-pi-direct-reply-steer
+.PHONY: test-pi-piclaw-queue-oracle test-pi-tool-boundary-steer test-pi-direct-reply-steer test-pi-steering-modes
 test-pi-piclaw-queue-oracle:
 	$(BUN) tests/ux/oracle/pi-piclaw-queue-probe.mjs
 
@@ -661,6 +661,9 @@ test-pi-tool-boundary-steer:
 
 test-pi-direct-reply-steer:
 	$(BUN) tests/ux/oracle/pi-direct-reply-steer-probe.mjs
+
+test-pi-steering-modes:
+	$(BUN) tests/ux/oracle/pi-steering-mode-order-probe.mjs
 
 .PHONY: test-piclaw-queue-reorder test-piclaw-queue-return test-ux-queue-return
 test-piclaw-queue-reorder:

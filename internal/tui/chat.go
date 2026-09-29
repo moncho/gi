@@ -1979,11 +1979,11 @@ func (c *chatTUI) modelMenuVisibleRows() int {
 	if c.input != nil {
 		input := *c.input
 		input.width = max(1, width-padding)
-		input.maxLines = editorViewportRows(height, height-padding-len(c.footerLines(width))-len(c.extensionWidgetLines())-2-4-3)
+		input.maxLines = editorViewportRows(height, height-padding-len(c.footerLines(width))-len(c.pendingQueueLines(width-padding, height))-len(c.extensionWidgetLines())-2-4-3)
 		inputRows = max(1, len(input.renderLines()))
 	}
 	// Leave transcript, editor/separators and the existing footer intact.
-	available := height - padding - len(c.footerLines(width)) - len(c.extensionWidgetLines()) - inputRows - 2 - 4 - 2
+	available := height - padding - len(c.footerLines(width)) - len(c.pendingQueueLines(width-padding, height)) - len(c.extensionWidgetLines()) - inputRows - 2 - 4 - 2
 	return min(6, max(1, available))
 }
 
@@ -4115,12 +4115,13 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	c.input.width = contentWidth
 	c.input.suspended = c.workspaceIndex.active || c.modelMenuOpen
 	footerLines := c.footerLines(contentWidth)
+	pendingLines := c.pendingQueueLines(contentWidth, h)
 	widgetLines := c.extensionWidgetLines()
 	if c.editorAskActive {
 		widgetLines = append(widgetLines, "? "+c.editorAskPrompt+"  (Enter submit · Esc cancel)")
 	}
 	menuHeight := c.modelMenuHeight() + c.workspaceIndexHeight()
-	c.boundEditor(h, padding, len(footerLines), len(widgetLines), menuHeight, false)
+	c.boundEditor(h, padding, len(footerLines), len(widgetLines)+len(pendingLines), menuHeight, false)
 	activeInput := c.input
 	inputSlot := 0
 	if c.search.active {
@@ -4134,7 +4135,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	if inputHeight < 1 {
 		inputHeight = 1
 	}
-	reservedHeight := (padding * 2) + len(footerLines) + len(widgetLines) + inputHeight + 2 + menuHeight
+	reservedHeight := (padding * 2) + len(footerLines) + len(pendingLines) + len(widgetLines) + inputHeight + 2 + menuHeight
 	transcriptHeight := h - reservedHeight
 	if transcriptHeight < 4 {
 		transcriptHeight = 4
@@ -4183,6 +4184,9 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 		transcript.ScrollToBottom()
 	}
 	root.AddChild(transcript)
+	if len(pendingLines) > 0 {
+		root.AddChild(c.renderLineBlock(pendingLines, gotui.NewStyle().Dim()))
+	}
 	if c.modelMenuOpen {
 		root.AddChild(c.renderModelMenu(contentWidth))
 	}

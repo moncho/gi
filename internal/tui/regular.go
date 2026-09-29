@@ -113,6 +113,7 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	c.input.width = w
 	c.input.suspended = c.modelMenuOpen
 	footer := c.footerLines(w)
+	queue := c.pendingQueueLines(w, h)
 	widgets := c.extensionWidgetLines()
 	if c.editorAskActive {
 		widgets = append(widgets, "? "+c.editorAskPrompt+" (Enter submit · Esc cancel)")
@@ -134,10 +135,10 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 			}
 		}
 	}
-	c.boundEditor(h, 0, len(footer), len(widgets)+previewHeight, menuHeight, true)
+	c.boundEditor(h, 0, len(footer), len(widgets)+len(queue)+previewHeight, menuHeight, true)
 	input := app.MountPersistent(c, 0, func() gotui.Component { return c.input })
 	inputHeight := max(1, input.HeightForWidth(w))
-	dock := min(h-1, 2+inputHeight+len(footer)+len(widgets)+menuHeight+previewHeight)
+	dock := min(h-1, 2+inputHeight+len(footer)+len(widgets)+len(queue)+menuHeight+previewHeight)
 	app.SetInlineHeight(max(1, dock))
 	root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100), gotui.WithHeight(dock))
 	c.transcriptBlockRefs = nil
@@ -150,6 +151,9 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 		}
 		preview.ScrollToBottom()
 		root.AddChild(preview)
+	}
+	if len(queue) > 0 {
+		root.AddChild(c.renderLineBlock(queue, gotui.NewStyle().Dim()))
 	}
 	if c.modelMenuOpen {
 		root.AddChild(c.renderModelMenu(w))

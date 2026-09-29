@@ -8,6 +8,39 @@ import (
 
 var ErrQueueConflict = errors.New("queue changed; refresh and retry")
 
+// PendingTUIMessage is a read-only projection of undelivered work, not an
+// admission or restoration claim. Steering appears before follow-ups as in Pi.
+type PendingTUIMessage struct {
+	Kind string
+	Text string
+}
+
+func (s *Store) ListPendingTUIMessages(ctx context.Context, sessionID string) ([]PendingTUIMessage, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		select kind, text from (
+			select 0 as group_order, id as position, created_at, cast(id as text) as item_id,
+				'Steering' as kind, content as text
+			from steering_queue where session_id = ? and status = 'queued'
+			union all
+			select 1 as group_order, queue_position as position, created_at, id as item_id,
+				'Follow-up' as kind, prompt as text
+			from turns where session_id = ? and status = 'queued' and prompt != ''
+		) order by group_order, position, created_at, item_id`, sessionID, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var messages []PendingTUIMessage
+	for rows.Next() {
+		var item PendingTUIMessage
+		if err := rows.Scan(&item.Kind, &item.Text); err != nil {
+			return nil, err
+		}
+		messages = append(messages, item)
+	}
+	return messages, rows.Err()
+}
+
 // Queue order is separate from immutable admission timestamps and turn events.
 func (s *Store) ListQueuedTurns(ctx context.Context, sessionID string) ([]Turn, error) {
 	rows, err := s.db.QueryContext(ctx, `select id, session_id, status, phase, prompt, metadata_json, created_at, updated_at from turns where session_id = ? and status = 'queued' order by queue_position, created_at, id`, sessionID)

@@ -8,7 +8,7 @@ require (
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/grindlemire/go-tui v0.22.1
 	github.com/klauspost/compress v1.20.0
-	github.com/rcarmo/go-ai v0.80.11-0.20260922224840-c2d0231d8bef
+	github.com/rcarmo/go-ai v0.80.11-0.20260929222234-5a41b41aada5
 	github.com/rcarmo/go-joker v1.8.1-0.20260529215339-bc07acfdb01c
 	github.com/yuin/goldmark v1.8.6
 	golang.org/x/crypto v0.57.0

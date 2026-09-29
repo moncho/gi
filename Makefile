@@ -306,9 +306,12 @@ test-piclaw-settings-shell:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
-.PHONY: test-piclaw-notification-presence
+.PHONY: test-piclaw-notification-presence test-piclaw-notification-leader
 test-piclaw-notification-presence:
 	$(BUN) tests/ux/oracle/piclaw-notification-presence-probe.mjs
+
+test-piclaw-notification-leader:
+	$(BUN) tests/ux/oracle/piclaw-notification-leader-probe.mjs
 
 .PHONY: test-piclaw-recovery-classic-shapes
 test-piclaw-recovery-classic-shapes:

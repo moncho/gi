@@ -22,6 +22,21 @@ for(const mode of ['fullscreen','regular']){
   sql(`update steering_queue set status='returned' where session_id=${quote(sid)} and content='external steering' and status='queued';`);
   await wait(()=>!cap().includes('↳ /queue to inspect · Alt+Up restores text-only queue'),'other process queue cleared without TUI input');
   writeFileSync(join(out,mode+'-external-cleared.txt'),cap());
+  // Switching changes only the selected session's pending view and editor.
+  // Use Gi's session creation command: a bare SQL session lacks its required
+  // runtime identity, so /switch correctly rejects it.
+  send('/new');await wait(()=>sql('select count(*) from sessions;')==='2','new session with identity');
+  const other=sql(`select id from sessions where id!=${quote(sid)} limit 1;`);
+  send(`/switch ${sid}`);await wait(()=>cap().includes(sid),'origin after new session');
+  sql(`insert into turns(id,session_id,status,phase,prompt,metadata_json,created_at,updated_at,queue_position) values('other-follow',${quote(other)},'queued','queued','other session follow','{}',strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now'),1);`);
+  sql(`insert into turns(id,session_id,status,phase,prompt,metadata_json,created_at,updated_at,queue_position) values('origin-follow',${quote(sid)},'queued','queued','origin session follow','{}',strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now'),2);`);
+  await wait(()=>cap().includes('Follow-up: origin session follow'),'origin pending after external writes');
+  send(`/switch ${other}`);await wait(()=>{const screen=cap();return screen.includes('Follow-up: other session follow')&&!screen.includes('Follow-up: origin session follow')},'switch to other pending panel');
+  writeFileSync(join(out,mode+'-other-session.txt'),cap());
+  send(`/switch ${sid}`);await wait(()=>{const screen=cap();return screen.includes('Follow-up: origin session follow')&&!screen.includes('Follow-up: other session follow')},'return to origin pending panel');
+  if(sql("select count(*) from turns where id in ('other-follow','origin-follow') and status='queued';")!=='2')throw Error('switch changed other session queue');
+  sql(`update turns set status='cancelled',phase='aborted' where id in ('other-follow','origin-follow') and status='queued';`);
+  await wait(()=>!cap().includes('↳ /queue to inspect · Alt+Up restores text-only queue'),'session switch queue cleanup');
   send('UX queue gate:held');await wait(()=>sql("select count(*) from turn_events where event_type='tool.started';")==='1','held shell');
   send('steer at boundary');await wait(()=>sql("select count(*) from steering_queue where content='steer at boundary' and status='queued';")==='1','steer');
   tm('send-keys','-t',pane,'-l','follow after completion');altEnter();await wait(()=>sql("select count(*) from turns where prompt='follow after completion' and status='queued';")==='1','follow-up');
@@ -41,7 +56,7 @@ for(const mode of ['fullscreen','regular']){
   await wait(()=>{const screen=cap();return !screen.includes('↳ /queue to inspect · Alt+Up restores text-only queue')&&!screen.includes('queue: 2 pending; /queue to inspect')},'pending panel clear');
   if(sql("select count(*) from messages where role='user' and content in ('steer at boundary','follow after completion');")!=='2')throw Error('pending display disrupted delivery');
   if(sql("select count(*) from kv_store where namespace='tui_text_draft_v1' and value like '%unsubmitted draft%';")!=='1')throw Error('pending display changed draft');
-  results.push({mode,result:'pass',externalUpdateWithoutInput:true,steeringBeforeFollowUp:true,draftPreserved:true,clearedAfterDelivery:true});
+  results.push({mode,result:'pass',sessionSwitchIsolated:true,externalUpdateWithoutInput:true,steeringBeforeFollowUp:true,draftPreserved:true,clearedAfterDelivery:true});
  }catch(e){results.push({mode,result:'fail',error:String(e)});try{writeFileSync(join(out,mode+'-failure.txt'),cap());writeFileSync(join(out,mode+'-runtime.log'),readFileSync(join(dir,'runtime.log')))}catch{}}
  finally{writeFileSync(join(gates,'held'),'go');try{tm('kill-server')}catch{}rmSync(dir,{recursive:true,force:true})}
 }

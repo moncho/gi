@@ -47,6 +47,45 @@ func TestPendingQueuePanelUsesDurableSteerThenFollowUp(t *testing.T) {
 	}
 }
 
+func TestPendingQueuePanelFollowsSelectedSession(t *testing.T) {
+	c := sessionTestChat(t)
+	ctx := context.Background()
+	for _, item := range []struct{ session, id, prompt string }{{"A", "a-queued", "A follow"}, {"B", "b-queued", "B follow"}} {
+		if _, err := c.store.CreateTurnWithStatus(ctx, item.id, item.session, "queued", item.prompt, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c.input.SetText("A draft")
+	if got := strings.Join(c.pendingQueueLines(80, 32), "\n"); !strings.Contains(got, "A follow") || strings.Contains(got, "B follow") {
+		t.Fatalf("A panel=%q", got)
+	}
+	if !c.switchSession("B") {
+		t.Fatal("switch to B")
+	}
+	if got := strings.Join(c.pendingQueueLines(80, 32), "\n"); !strings.Contains(got, "B follow") || strings.Contains(got, "A follow") {
+		t.Fatalf("B panel=%q", got)
+	}
+	c.input.SetText("B draft")
+	if !c.switchSession("A") {
+		t.Fatal("switch to A")
+	}
+	if got := strings.Join(c.pendingQueueLines(80, 32), "\n"); !strings.Contains(got, "A follow") || strings.Contains(got, "B follow") {
+		t.Fatalf("returned A panel=%q", got)
+	}
+	if c.input.Text() != "A draft" {
+		t.Fatalf("A draft lost: %q", c.input.Text())
+	}
+	if !c.switchSession("B") || c.input.Text() != "B draft" {
+		t.Fatalf("B draft lost: %q", c.input.Text())
+	}
+	for _, item := range []struct{ session, id string }{{"A", "a-queued"}, {"B", "b-queued"}} {
+		turn, err := c.store.GetTurn(ctx, item.id)
+		if err != nil || turn.SessionID != item.session || turn.Status != "queued" {
+			t.Fatalf("switch changed queued turn %s: %#v %v", item.id, turn, err)
+		}
+	}
+}
+
 func TestPendingRowTextMatchesPiFirstLineAndGraphemeCut(t *testing.T) {
 	cases := []struct {
 		text  string

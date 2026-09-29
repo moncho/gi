@@ -40,7 +40,8 @@ export function projectActivityStatus(activity: any) {
     if (!activity || !['running','cancelling'].includes(activity.status)) return null;
     if(activity.status==='cancelling')return {...activity,type:'intent',title:'Cancelling…'};
     if(activity.phase==='retry_wait')return activity;
-    if(activity.tool && activity.tool.state !== 'running')return {status:'running',turn_id:activity.turn_id,type:'waiting',title:'Waiting for model...'};
+    if(activity.tool && activity.tool.state !== 'running')return {status:'running',turn_id:activity.turn_id,type:'waiting',
+        title:activity.tool.state==='failed'?'Reviewing failed tool result...':'Waiting for model...'};
     if(activity.tool?.state === 'running') {
         const tool=activity.tool;
         return {status:'running',turn_id:activity.turn_id,type:tool.output_preview?'tool_status':'tool_call',

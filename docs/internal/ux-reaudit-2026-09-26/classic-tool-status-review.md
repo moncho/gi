@@ -19,8 +19,15 @@ Piclaw 3.2.4 event translator and shipped browser assets alongside Gi's
 adapter. Its synthetic tool start/update/end shows call arguments, a bounded
 Output preview, and Waiting for model after completion. A separate thought
 and draft preview survives that intra-turn transition, with no tool-result
-conversation post; an idle event clears all three panes. The fixture does
-not test an authoritative reload. A separate installed lifecycle probe now
+conversation post; an idle event clears all three panes. A follow-up installed
+translator and mounted-UI probe passed **6/6**: a successful tool shows
+`Waiting for model...`, while a failed tool shows `Reviewing failed tool
+result...`. The mounted Gi Output fixture separately passed **6/6** with the
+same two titles, no tool-result post and no revived Output pane. Gi's status
+adapter now distinguishes the failed state; a Go store regression verifies
+that the failed occurrence remains visible while its turn is still running.
+The fixture does not test an authoritative reload or a live failed-tool wait.
+A separate installed lifecycle probe now
 passes **6/6** synthetic Chromium/WebKit viewport cases including idle reload
 and a fixture assistant post: WebKit unload presence/SSE errors match a minimal
 control and are recorded only in explicit reload windows with a required

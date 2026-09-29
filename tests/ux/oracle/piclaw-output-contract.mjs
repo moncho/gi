@@ -20,6 +20,11 @@ handler({type:'tool_execution_update',toolCallId:'call',toolName:'shell',partial
 const running=statuses.at(-1);
 handler({type:'tool_execution_end',toolCallId:'call',toolName:'shell',result:{content:[{type:'text',text:'done'}]},isError:false});
 const waiting=statuses.at(-1);assert.equal(waiting.type,'waiting');
+const failedStatuses=[];
+const failedHandler=createStreamingEventHandler({emitter:{status:p=>failedStatuses.push(p)},agentId:'default',threadId:'1',turnId:'output-turn',displayUpdateIntervalMs:0});
+failedHandler({type:'tool_execution_start',toolCallId:'failed-call',toolName:'shell',args:{command:'exit 7'}});
+failedHandler({type:'tool_execution_end',toolCallId:'failed-call',toolName:'shell',result:{content:[{type:'text',text:'fixture error'}]},isError:true});
+const failedWait=failedStatuses.at(-1);assert.equal(failedWait.type,'waiting');assert.equal(failedWait.title,'Reviewing failed tool result...');
 const report={scope:'Installed event translator and shipped browser assets versus Gi adapter. Bounded synthetic lifecycle; no provider/device/reload acceptance.',cases:[]};
 for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [viewportName,viewport] of Object.entries({phone:{width:390,height:844},tablet:{width:820,height:1180},desktop:{width:1440,height:900}})){
  const browser=await type.launch({headless:true});const observations={};
@@ -64,6 +69,11 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
    assert((await thought.textContent()).includes('Inspect tool arguments before response.'),'thought survives the intra-turn wait');
    assert((await draft.textContent()).includes('Draft response stays in progress.'),'draft survives the intra-turn wait');
    assert.equal(await page.locator('.post').count(),0,'tool result must not become a conversation post');
+   if(hostName==='piclaw'){piclawStatus={status:'active',data:{...failedWait,chat_jid:state.sessionId,turn_id:'output-turn'}};host.emit('agent_status',piclawStatus.data);}
+   else{activity={...activity,tool:{...activity.tool,state:'failed'}};host.emit('agent_status',{...activity,chat_jid:'gi:main'});}
+   await page.getByText('Reviewing failed tool result...', {exact:true}).first().waitFor();
+   assert.equal(await pane.count(),0,'failed post-tool wait must not revive Output');
+   assert.equal(await page.locator('.post').count(),0,'failed tool result must not become a post');
    if(hostName==='piclaw'){piclawStatus={status:'idle',data:null};host.emit('agent_status',{type:'done',chat_jid:state.sessionId,turn_id:'output-turn'});}
    else{activity={status:'idle',turn_id:'output-turn'};host.emit('agent_status',{...activity,chat_jid:'gi:main'});}
    await page.waitForFunction(()=>document.querySelectorAll('.agent-status-panel').length===0);

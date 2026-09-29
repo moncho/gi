@@ -55,6 +55,9 @@ func TestToolActivityOccurrenceIdentityBoundsAndTerminalTiming(t *testing.T) {
 	if final["state"] != "failed" || final["duration_ms"] == nil || final["finished_at"] == "" {
 		t.Fatal(final)
 	}
+	if activity, err := s.SessionActivity(ctx, "A"); err != nil || activity["status"] != "running" || activity["tool"].(map[string]any)["state"] != "failed" {
+		t.Fatal("failed tool must remain visible while the turn is running", activity, err)
+	}
 	if got := get(); got["duration_ms"] != final["duration_ms"] {
 		t.Fatal("duration drift", got)
 	}

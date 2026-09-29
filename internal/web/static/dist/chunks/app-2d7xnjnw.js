@@ -1447,7 +1447,12 @@ function projectActivityStatus(activity) {
   if (activity.phase === "retry_wait")
     return activity;
   if (activity.tool && activity.tool.state !== "running")
-    return { status: "running", turn_id: activity.turn_id, type: "waiting", title: "Waiting for model..." };
+    return {
+      status: "running",
+      turn_id: activity.turn_id,
+      type: "waiting",
+      title: activity.tool.state === "failed" ? "Reviewing failed tool result..." : "Waiting for model..."
+    };
   if (activity.tool?.state === "running") {
     const tool = activity.tool;
     return {
@@ -22818,11 +22823,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-wbcx9428.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-1h8yaw9c.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-fwtrcyme.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-zwpxj07t.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-qqyvzac6.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-0ewkwbjd.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-3mg8x10f.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-yf1jrbnp.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-b4estnen.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-wj9c1far.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -25594,5 +25599,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=C01ED9737EAD8BC064756E2164756E21
-//# sourceMappingURL=app-7jzkk61t.js.map
+//# debugId=B07CD9361AE70ABC64756E2164756E21
+//# sourceMappingURL=app-2d7xnjnw.js.map

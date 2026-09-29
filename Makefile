@@ -414,9 +414,12 @@ UX_SETTINGS_PROJECTS ?=
 test-ux-settings-title: test-piclaw-settings-title
 	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/settings-shell.spec.mjs tests/ux/gi-settings.spec.mjs $(UX_SETTINGS_PROJECTS)'
 
-.PHONY: test-piclaw-output-oracle
+.PHONY: test-piclaw-output-oracle test-piclaw-failed-tool-wait
 test-piclaw-output-oracle: build-web
 	$(BUN) tests/ux/oracle/piclaw-output-contract.mjs
+
+test-piclaw-failed-tool-wait:
+	$(BUN) tests/ux/oracle/piclaw-failed-tool-wait-probe.mjs
 
 .PHONY: test-piclaw-tool-output test-piclaw-tool-output-window
 test-piclaw-tool-output-window:

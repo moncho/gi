@@ -16,6 +16,7 @@ test('only known tool-call summaries strip synthetic suffixes; prose/media survi
 test('idle activity metadata never creates a working/completed panel',()=>{
  expect(projectActivityStatus({status:'idle',tool:{state:'completed'}})).toBeNull();
  expect(projectActivityStatus({status:'running',tool:{state:'completed'}})?.title).toBe('Waiting for model...');
+ expect(projectActivityStatus({status:'running',tool:{state:'failed'}})?.title).toBe('Reviewing failed tool result...');
  const retry={status:'running',phase:'retry_wait',title:'Retrying'};expect(projectActivityStatus(retry)).toBe(retry);
  expect(projectActivityStatus({status:'cancelling'})?.title).toBe('Cancelling…');
 });

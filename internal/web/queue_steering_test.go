@@ -81,6 +81,71 @@ func TestQueueSteerAPIRequiresMatchingActiveRun(t *testing.T) {
 	call(http.MethodDelete, "/api/sessions/A/queue/q", "", 200)
 }
 
+// Piclaw's row-ID API treats an absent row as an idempotent removal and
+// consumes blank content even if it carries media. Gi has durable turn IDs:
+// stale IDs must conflict, and a media-only turn must keep its attachment
+// reachable through claim release rather than silently dropping it.
+func TestQueueSteerMissingAndMediaOnlyRowsKeepDurableOwnership(t *testing.T) {
+	ctx := context.Background()
+	s, err := store.Open(filepath.Join(t.TempDir(), "blank-steer.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	e := turn.New(s)
+	defer e.Close()
+	if _, err := s.CreateSession(ctx, "A", "A", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateTurnWithStatus(ctx, "run", "A", "running", "active", nil); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := s.ClaimSessionActiveTurn(ctx, "A", "run", "fixture", "run"); err != nil || !ok {
+		t.Fatal(ok, err)
+	}
+	media, err := s.CreateMedia(ctx, "A", "attached.txt", "text/plain", []byte("media-only bytes"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	refs := []any{map[string]any{"id": store.MediaRefID(media.ID), "media_id": media.ID, "session_id": "A", "filename": media.Filename}}
+	if _, err := s.CreateTurnWithStatus(ctx, "media-only", "A", "queued", "", map[string]any{"media": refs}); err != nil {
+		t.Fatal(err)
+	}
+	server := New(s, e, config.RuntimeConfig{}).Handler()
+	steer := func(id string) int {
+		t.Helper()
+		w := httptest.NewRecorder()
+		server.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/sessions/A/queue/"+id+"/steer", strings.NewReader(`{"active_turn_id":"run"}`)))
+		return w.Code
+	}
+	if code := steer("missing"); code != http.StatusConflict {
+		t.Fatalf("stale ID status=%d", code)
+	}
+	if code := steer("media-only"); code != http.StatusOK {
+		t.Fatalf("media-only Steer status=%d", code)
+	}
+	if code := steer("media-only"); code != http.StatusConflict {
+		t.Fatalf("duplicate Steer status=%d", code)
+	}
+	if err := s.UpdateTurnStatusAndPhase(ctx, "run", "cancelled", "aborted"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ReleaseSessionActiveTurn(ctx, "A", "run"); err != nil {
+		t.Fatal(err)
+	}
+	queued, err := s.GetTurn(ctx, "media-only")
+	if err != nil || queued.Status != "queued" || queued.Phase != "steer_returned" || queued.Metadata["media"] == nil {
+		t.Fatalf("media-only delivery after release=%#v: %v", queued, err)
+	}
+	_, content, err := s.GetMediaContent(ctx, media.ID)
+	if err != nil || string(content) != "media-only bytes" {
+		t.Fatalf("media-only bytes=%q: %v", content, err)
+	}
+	if messages, err := s.ListMessages(ctx, "A"); err != nil || len(messages) != 0 {
+		t.Fatalf("phantom user message=%#v: %v", messages, err)
+	}
+}
+
 func TestIdleQueueSteerAPIExplicitStateAndSelectedOwnership(t *testing.T) {
 	ctx := context.Background()
 	s, err := store.Open(filepath.Join(t.TempDir(), "idle-steer.db"))

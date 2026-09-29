@@ -35,14 +35,18 @@ test('Steer during cancelling claim keeps selected row for retry after release',
   await page.reload();const row=page.locator('[data-queue-id="selected"]');const button=row.getByRole('button',{name:'Inject queued follow-up as steer',exact:true});await expect(button).toBeEnabled();
   expect((await request.post(`${env.origin}/__test/ended-steer/${id}/cancel`)).status()).toBe(204);
   const url=`${env.origin}/api/sessions/${id}/queue/selected/steer`,body={active_turn_id:'observed'};
-  expect((await request.post(url,{data:body})).status()).toBe(409);
+  const conflict=page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST');await button.click();expect((await conflict).status()).toBe(409);
   const turns=async()=>(await(await request.get(`${env.origin}/api/sessions/${id}/turns`)).json()).turns;
   expect((await turns()).find(t=>t.id==='selected').status).toBe('queued');
-  await expect(row).toHaveCount(1);await expect(input).toHaveValue('keep draft during cleanup Ω');
+  await expect(row).toHaveCount(1);await expect(button).toBeDisabled();await expect(input).toHaveValue('keep draft during cleanup Ω');
+  await expect(page.getByRole('alert')).toContainText('Queue action failed');
   expect((await request.post(`${env.origin}/__test/ended-steer/${id}/release-cancelled`)).status()).toBe(204);
-  expect((await request.post(url,{data:body})).status()).toBe(200);
+  // This fixture changes SQLite without emitting a completion event. The UI
+  // should regain the retry affordance on its 10s selected-state safety poll.
+  await expect(button).toBeEnabled({timeout:16000});
+  const retried=page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST');await button.click();expect((await retried).status()).toBe(200);
   await expect.poll(async()=>(await turns()).find(t=>t.id==='selected')?.status).toBe('completed');
-  expect((await request.post(url,{data:body})).status()).toBe(409);
+  await expect(row).toHaveCount(0);expect((await request.post(url,{data:body})).status()).toBe(409);
   const messages=(await(await request.get(`${env.origin}/api/sessions/${id}/messages`)).json()).messages;
   expect(messages.filter(m=>m.role==='user'&&m.content==='ended steer selected instruction')).toHaveLength(1);
   await page.reload();await expect(input).toHaveValue('keep draft during cleanup Ω');await expect(row).toHaveCount(0);

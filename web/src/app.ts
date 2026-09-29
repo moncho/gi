@@ -871,7 +871,7 @@ function GiApp() {
         const preserveSelection = (event: Event) => {
             const target = event.target instanceof Element ? event.target : null;
             const eligibleSurface = target && (timeline.contains(target) || target.closest('.agent-status-panel')?.parentElement === surface);
-            if (!eligibleSurface || ownsHorizontalGesture(target, surface) || window.getSelection()?.toString()) event.stopImmediatePropagation();
+            if (!eligibleSurface || ownsHorizontalGesture(target, surface) || window.getSelection()?.toString().trim()) event.stopImmediatePropagation();
         };
         // Run on this host before the supplied listeners, after target handlers
         // so excluded inputs keep their own touch/wheel behaviour.

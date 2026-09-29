@@ -329,6 +329,36 @@ test('@ux-mobile-001 Eligible timeline swipe selects adjacent session and wraps 
  await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(last);await expect(input).toHaveValue('wrap draft');
 });
 
+test('Gi mounted timeline admits whitespace-only selection but blocks selected text on touch swipe',async({page,request})=>{
+ const token=`selection-swipe-${Date.now()}`;
+ const create=async name=>{const r=await request.post('/api/sessions',{data:{agent_id:`${token}-${name}`,title:`${token}-${name}`}});expect(r.status()).toBe(201);return(await r.json()).id;};
+ const current=await create('current'),other=await create('other');
+ const sessions=(await(await request.get('/api/sessions')).json()).sessions;
+ const ordered=sessions.filter(s=>!s.state?.archived_at).sort((a,b)=>{
+  const active=s=>s.state?.status==='running'||s.state?.status==='queued'||Number(s.state?.queue_count||0)>0;
+  return Number(active(b))-Number(active(a))||`gi:${a.id}`.localeCompare(`gi:${b.id}`);
+ }).map(s=>s.id);
+ expect(ordered).toContain(current);expect(ordered).toContain(other);
+ const adjacent=ordered[(ordered.indexOf(current)+1)%ordered.length];
+ await page.addInitScript(id=>{localStorage.setItem('gi_session_id',id);Object.defineProperty(navigator,'userAgent',{configurable:true,value:'iPhone Safari'});},current);
+ await page.goto('/');const input=page.getByRole('textbox',{name:inputName,exact:true});await expect(input).toBeVisible();await input.fill('selection draft');
+ const timeline=page.locator('.timeline').first();await expect(timeline).toBeVisible();
+ const gesture=async text=>timeline.evaluate((el,value)=>{
+  const span=document.createElement('span');span.style.whiteSpace='pre';span.textContent=value==='   '?'A   B':value;el.appendChild(span);
+  const range=document.createRange();if(value==='   '){range.setStart(span.firstChild,1);range.setEnd(span.firstChild,4);}else range.selectNodeContents(span);
+  const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
+  const observed=selection.toString();
+  for(const [name,x] of [['touchstart',190],['touchmove',85],['touchend',85]]){
+   const touch={identifier:1,target:el,clientX:x,clientY:150},event=new Event(name,{bubbles:true,cancelable:true});
+   Object.defineProperty(event,'touches',{value:name==='touchend'?[]:[touch]});Object.defineProperty(event,'changedTouches',{value:[touch]});el.dispatchEvent(event);
+  }
+  return observed;
+ },text);
+ const selected=()=>page.evaluate(()=>localStorage.getItem('gi_session_id'));
+ expect(await gesture('Selected words')).toBe('Selected words');await page.waitForTimeout(250);expect(await selected()).toBe(current);await expect(input).toHaveValue('selection draft');
+ expect(await gesture('   ')).toBe('   ');await expect.poll(selected).toBe(adjacent);await expect(input).toHaveValue('');
+});
+
 test('@ux-mobile-005 Primarily vertical movement cancels the current timeline swipe',async({page,request},info)=>{
  const scenario=loadCorpus().find(row=>row.id==='@ux-mobile-005');expect(scenario).toBeTruthy();
  await info.attach('gherkin',{body:scenario.steps.join('\n'),contentType:'text/plain'});

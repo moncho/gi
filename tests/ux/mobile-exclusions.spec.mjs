@@ -56,6 +56,6 @@ test('@ux-mobile-002 Stored-image attachment preview excludes a real modal gestu
   const modal=page.locator('.attachment-preview-modal');await expect(modal).toBeVisible();
   await input.fill('unsent modal draft');await swipe(modal.locator('img').first());await page.waitForTimeout(200);
   expect(await page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(main);await expect(modal).toBeVisible();await expect(input).toHaveValue('unsent modal draft');
-  await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);
+  await modal.getByRole('button',{name:'Close',exact:true}).click();await expect(modal).toHaveCount(0);
   await swipe(page.locator('.timeline').first());await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).not.toBe(main);
 });

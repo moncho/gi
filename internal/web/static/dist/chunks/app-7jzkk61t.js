@@ -22818,11 +22818,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-wptay95y.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-pg7zj57b.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-4kpfqg5g.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-hvdbwwet.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-w5vzmxbk.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-wbcx9428.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-1h8yaw9c.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-fwtrcyme.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-zwpxj07t.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-qqyvzac6.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -25027,7 +25027,7 @@ function GiApp() {
     const preserveSelection = (event) => {
       const target = event.target instanceof Element ? event.target : null;
       const eligibleSurface = target && (timeline.contains(target) || target.closest(".agent-status-panel")?.parentElement === surface);
-      if (!eligibleSurface || ownsHorizontalGesture(target, surface) || window.getSelection()?.toString())
+      if (!eligibleSurface || ownsHorizontalGesture(target, surface) || window.getSelection()?.toString().trim())
         event.stopImmediatePropagation();
     };
     surface.addEventListener("pointerdown", preserveSelection);
@@ -25594,5 +25594,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=F51312A71051E08F64756E2164756E21
-//# sourceMappingURL=app-dhe7zx8a.js.map
+//# debugId=C01ED9737EAD8BC064756E2164756E21
+//# sourceMappingURL=app-7jzkk61t.js.map

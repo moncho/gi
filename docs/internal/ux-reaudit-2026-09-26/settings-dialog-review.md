@@ -12,7 +12,7 @@ for every setting or subsection.
 |---|---|---|
 | `001` | Three rapid Control-comma presses from a focused composer leave one Gi Settings dialog and portal; Escape restores composer focus. `GiSettings` opens in a capture-phase window listener without an editable-target guard. Installed Classic 3.2.4 blocks all three presses from its focused composer textarea, but opens one dialog after three presses from noneditable body focus. | **Target-sensitive Gi divergence.** The frozen scenario does not specify where focus starts; the Gi test does. Installed and Gi assertions cannot be merged into a whole-clause pass. Browser key events do not establish OS/physical shortcuts. |
 | `002` | Gi opens via hamburger, visits panes, then reopens while `/api/runtime/config` is held: General shows a cached snapshot in under one second, one portal, no draft/media loss or writes. Installed Piclaw 3.2.4 mounted Classic independently reopens with a cached General compose-upload value `64` while a second `/agent/settings-data` read is held; it renders within one second, then updates to `96` after release with one dialog and an intact draft. | Both times come from disposable browser fixtures, not a global latency SLO. Piclaw performs a fresh read on reopen while showing cached data; Gi's route and cached values differ. No production config mutation or whole-clause credit for every pane. |
-| `003` | Held first runtime-config read shows immediate `Loading settings…`, General selected first, values resolve within two seconds without blank shell. | Same fixture timing boundary. |
+| `003` | Gi holds its first `/api/runtime/config` read, shows `Loading settings…` with General selected, then renders General values within two seconds. The existing installed Piclaw 3.2.4 shell probe instead opens after the Classic dialog module is already loaded: General remains interactive while `/agent/settings-data` is held, with no import-time loading shell in that sequence. | **Different first-open boundaries.** Gi's held-data shell is not Piclaw's lazy-import shell. Neither run observes an installed cold import-time shell or compares like-for-like loading; the frozen clause lacks whole-scenario parity. Timings are fixture-only. |
 | `004` | Compaction numeric spinbutton accepts typed `128000` without saving/mutating settings. | Typability only, not valid policy/application of that value. |
 | `005` | General shows without other pane chunks; Models and subsequent built-ins load on click and cached revisits reuse modules. | Test is stricter about Gi's five pane chunks, but does not prove Piclaw's exact module graph. |
 
@@ -32,3 +32,11 @@ across Chromium/WebKit phone/tablet/desktop. The focused Gi `002` journey
 passed **6/6** separately; it includes draft/media ownership and pane visits that the
 installed probe did not exercise. The installed fixture held a second read;
 it did not verify live settings persistence or latency under network load.
+
+The existing `make test-piclaw-settings-shell` probe passed **6/6** again:
+General was present while its first data request was held, and the ordinary
+open showed no `.settings-dialog-loading-shell`. The focused Gi
+`@ux-settings-dialog-003` run passed **6/6** with its own held runtime-config
+read and loading status. The Piclaw probe opens after its module has loaded;
+this comparison does not test Piclaw's cold dynamic import, so `003` stays
+unmapped as a complete scenario.

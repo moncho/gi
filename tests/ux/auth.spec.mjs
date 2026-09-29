@@ -182,6 +182,27 @@ test('@ux-auth-004 Native policy failure hides credentials and Retry restores lo
  }finally{release();writeFileSync(env.authPath,saved);await env.close();}
 });
 
+test('Gi mounted passkey-only policy shows the passkey button inside its sign-in form (auth-003 gap)',async({page},info)=>{
+ const env=await authEnvironment(page,info);
+ const policy={mode:'single-user',enrolled:true,authenticated:false,totp_enabled:false,
+  browser_login_available:true,setup_available:false,totp_login_available:false,
+  passkeys_enabled:true,passkey_login_available:true};
+ const writes=[];page.on('request',r=>{if(!['GET','HEAD'].includes(r.method()))writes.push(new URL(r.url()).pathname);});
+ try{
+  await page.route('**/api/auth/status',route=>route.fulfill({json:policy}));
+  await page.goto(env.origin);
+  const passkey=page.getByRole('button',{name:'Sign in with passkey',exact:true});
+  await expect(passkey).toBeVisible();
+  const browserPasskeyReady=await page.evaluate(()=>Boolean(window.isSecureContext&&window.PublicKeyCredential&&navigator.credentials?.create&&navigator.credentials?.get));
+  expect(await passkey.isEnabled()).toBe(browserPasskeyReady);
+  await expect(page.getByRole('textbox',{name:'Authentication code',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Sign in',exact:true})).toHaveCount(0);
+  await expect(page.locator('.gi-auth form')).toBeVisible();
+  expect(await passkey.evaluate(el=>el.closest('form')!==null)).toBe(true);
+  expect(writes).toEqual([]);
+ }finally{await page.unrouteAll({behavior:'wait'});await env.close();}
+});
+
 test('Browser gate rejects malformed policy and false-success login without mounting the app',async({page},info)=>{
  const env=await authEnvironment(page,info);
  try{

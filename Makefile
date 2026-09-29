@@ -306,6 +306,10 @@ test-piclaw-settings-shell:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
+.PHONY: test-piclaw-login-policy
+test-piclaw-login-policy:
+	$(BUN) tests/ux/oracle/piclaw-login-policy-probe.mjs
+
 .PHONY: test-piclaw-notification-presence test-piclaw-notification-leader
 test-piclaw-notification-presence:
 	$(BUN) tests/ux/oracle/piclaw-notification-presence-probe.mjs

@@ -9,7 +9,7 @@ contracts, without byte-level or whole-feature parity credit.
 | ID | Gi assertion/code path | Bounded result |
 |---|---|---|
 | `023` | Gi `rendering.spec.mjs` checks computed table display, auto layout, full post width and Unicode rows on a stored assistant message. Mounted Piclaw 3.2.4 independently renders the same Markdown text from a disposable assistant post: computed `display:table`, `table-layout:auto`, table width within 1 px of its parent, two rows and Chinese text. | Each path passed **6/6** across Chromium/WebKit phone/tablet/desktop. Source CSS alone is insufficient; both browser measurements establish this geometry subset. Piclaw fixture does not test persisted backend content or pixel equivalence. |
-| `024` | Same spec checks a top-right code-copy button and observes a trusted native `copy` event containing exact code text, not markup. `post.ts` renders the action. | Tagged 6/6; clipboard behavior is browser-emulated, not physical permission acceptance. |
+| `024` | Gi's `rendering.spec.mjs` checks a top-right code-copy button and a trusted native `copy` event containing exact code text, not markup. Mounted installed Piclaw 3.2.4 independently renders the same fenced code from a disposable assistant post: button within 12 px of the block's top/right, trusted `copy` event with exact Unicode/source text and draft retained. | Each path passed **6/6** across Chromium/WebKit phone/tablet/desktop. This is browser copy-event evidence, not OS clipboard persistence/paste or physical permission acceptance. |
 | `025` | `remote-links.spec.mjs` checks resource/preview new tabs, `noopener noreferrer`, null opener/referrer, retained draft and stored messages. `post.ts` includes isolated link attributes. | Tagged 6/6 with `GI_UX_LINKS=1` fixture, not a live remote target trust audit. |
 | `026` | `outcomes.spec.mjs` checks a recovered chip after timestamp on the same metadata row, persistence through reload/search, and absence on an ordinary turn. | Tagged 6/6 with `GI_UX_OUTCOMES=1` stale-claim fixture. |
 | `027` | `speech-contract.spec.mjs` checks speakable native assistant text and supported/unsupported browser speech APIs; `gi-post-speech.ts` normalizes text and checks synthesis methods. | Tagged 6/6 with `GI_UX_SPEECH=1`; no actual audible output/physical-device validation. |
@@ -22,4 +22,8 @@ a whole product gate, deployed Gi check, or physical/pixel parity.
 cases, while focused Gi `@ux-timeline-023` passed **6/6** on native stored
 messages. The installed probe uses disposable timeline data, not a live
 provider. It confirms fidelity of Gi's existing table layout contract without
-porting the other timeline features. No frozen text or production code changed.
+porting the other timeline features. `make test-piclaw-code-copy` and focused
+Gi `@ux-timeline-024` each passed **6/6** separately with the same code text.
+The installed oracle uses disposable timeline data. Neither run tests OS
+clipboard persistence or the other rendering/action clauses. No frozen text
+or production code changed.

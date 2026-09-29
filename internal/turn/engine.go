@@ -4922,7 +4922,7 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 	defer func() {
 		_, _ = r.engine.emitHook(ctx, HookRequest{Name: HookToolExecutionEnd, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"count": len(toolCalls)}})
 	}()
-	for i, call := range toolCalls {
+	for _, call := range toolCalls {
 		if ctx.Err() != nil {
 			r.finishTurn(s, turnID, sessionID, agentID, model, "cancelled", "Turn cancelled during tool execution", "")
 			outcome.terminated = true
@@ -4966,18 +4966,6 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 				logutil.WarnIfErr("add injected tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", displayResult, map[string]any{"kind": "tool_result", "tool_call_id": call.ID, "tool_name": call.Name, "is_error": false, "turn_id": turnID, "source": "hook", "hook_phase": "tool_call"}))
 				outcome.lastToolFailureSig = ""
 				outcome.repeatedToolFailureCount = 0
-				if steerMsgs, err := r.dequeueSteeringMessages(ctx, sessionID, turnID); err != nil {
-					log.Printf("steering dequeue error after hook tool response: %v", err)
-				} else if len(steerMsgs) > 0 {
-					outcome.pendingSteering = append(outcome.pendingSteering, steerMsgs...)
-					if i+1 < len(toolCalls) {
-						r.skipRemainingToolCalls(ctx, sessionID, turnID, convCtx, toolCalls, i+1)
-						outcome.skipRemainingTools = true
-					}
-				}
-				if outcome.skipRemainingTools || len(outcome.pendingSteering) > 0 {
-					return outcome
-				}
 				continue
 			}
 			if resp.Block {
@@ -5120,15 +5108,15 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 			outcome.lastToolFailureSig = ""
 			outcome.repeatedToolFailureCount = 0
 		}
+	}
+	// Pi drains the assistant's tool-call batch before polling steering for the
+	// next model turn. A message queued during one tool must not suppress later
+	// calls from the same response; the queued row stays recoverable until here.
+	if ctx.Err() == nil {
 		if steerMsgs, err := r.dequeueSteeringMessages(ctx, sessionID, turnID); err != nil {
-			log.Printf("steering dequeue error after tool: %v", err)
-		} else if len(steerMsgs) > 0 {
+			log.Printf("steering dequeue after tool batch: %v", err)
+		} else {
 			outcome.pendingSteering = append(outcome.pendingSteering, steerMsgs...)
-			if i+1 < len(toolCalls) {
-				r.skipRemainingToolCalls(ctx, sessionID, turnID, convCtx, toolCalls, i+1)
-				outcome.skipRemainingTools = true
-			}
-			return outcome
 		}
 	}
 	return outcome

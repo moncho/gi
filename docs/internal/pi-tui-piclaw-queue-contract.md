@@ -13,14 +13,14 @@ Installed release: `/opt/piclaw/current`, Piclaw 3.2.4, `@earendil-works/pi-codi
 - Piclaw `runtime/src/channels/web/handlers/agent.ts`: compose submission and streaming queue admission.
 - Piclaw `runtime/src/channels/web/runtime/queued-followup-lifecycle-service.ts`: deferred/placeholder queue ownership and lifecycle.
 
-`make test-pi-piclaw-queue-oracle` invokes installed production methods with in-memory collaborators. Eight cases record method inputs, outputs and events. This verifies bounded method behaviour, not keyboard dispatch, persistence, actual tool-boundary delivery or complete UI parity.
+`make test-pi-piclaw-queue-oracle` invokes installed production methods with in-memory collaborators. Eight cases record method inputs, outputs and events. `make test-pi-tool-boundary-steer` separately runs the installed Pi 0.87.1 agent loop with two sequential disposable tools and a steering message queued during the first. Both tool results precede the steering message and second model request. These are bounded method fixtures; neither covers keyboard dispatch, Piclaw storage, a real provider or complete UI parity.
 
 ## Input and delivery distinctions
 
 | Surface/action | Reference behaviour | Gi status |
 |---|---|---|
 | Pi Enter, idle | Submit normally | Existing; further presentation audit needed |
-| Pi Enter, streaming | Queue steering after current assistant turn and tool calls, before next model call | Admission exists; complete boundary ordering needs native-provider proof |
+| Pi Enter, streaming | Queue steering after current assistant turn and tool-call batch, before next model call | Gi now drains a two-call sequential batch before dequeueing steering. Installed Pi method and native Go fixtures pass separately; real-provider and full turn ordering remain open. |
 | Pi Alt+Enter, streaming | Separate follow-up, only after pending work finishes | Fixed in this change: was the same callback/intent as Enter |
 | Pi Alt+Enter, idle | Ordinary submission | Native PTY verified with explicit modified-key sequence |
 | Pi Shift+Enter/Ctrl+J | Newline, no submit | Unit regression retained |
@@ -50,7 +50,7 @@ Tests:
 
 A narrow independent review attempt timed out; no independent approval is recorded.
 
-The PTY fixture verifies admission and eventual completion, not the full model/tool execution ordering contract. Shell-fixture steering can follow a different loop from provider inference. It must not receive parity credit for the latter.
+The PTY fixture verifies admission and eventual completion. A separate Go test queues a durable Steer during the first of two registered tool calls, checks both results and events before the persisted steering message, and rejects a synthetic skipped tool result. Focused turn/store race×3, native queue Steer browser 18/18, inventory 222/8017 and `make check` (144 passed, 11 skipped) passed. The Pi and Go fixtures do not establish a real-provider turn, parallel tools, physical keyboard dispatch or whole queue parity.
 
 ## Remaining acceptance work
 

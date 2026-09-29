@@ -20,7 +20,7 @@ Object.assign(state,{theme:'dark',sessionId:'web:default',userName:'Validation U
 const {createStreamingEventHandler}=await import(pathToFileURL(path.join(root,'app/runtime/src/channels/web/sse/agent-events.ts')).href);
 const browser=await ({chromium,webkit}[browserName]).launch({headless:true});
 const page=await browser.newPage({viewport:sizes[viewportName],serviceWorkers:'block'});
-const host=await installPixelHost({page,host:'piclaw',root,state,reference,allowPresenceBeacon:true});
+const host=await installPixelHost({page,host:'piclaw',root,state,reference,allowPresenceBeacon:true,allowWebkitReloadUnload:true});
 const frames=[],observations=[];
 const posts=[{id:301,timestamp:state.now,chat_jid:state.sessionId,data:{type:'user_message',content:'situate yourself',agent_id:'default',is_bot_message:false}}];
 const idle={status:'idle',state:'idle',chat_jid:state.sessionId,data:null};
@@ -71,10 +71,16 @@ try{
  }else{
  // A fresh idle snapshot is independently authoritative; do not infer UI teardown from a fixture flag.
  statusSnapshot=idle;
- await page.reload();await page.locator('.compose-box textarea').waitFor();await host.connected();await capture('idle-reload');
+ if(browserName==='webkit')host.beginReload();
+ await page.reload();await page.locator('.compose-box textarea').waitFor();await host.connected();
+ if(browserName==='webkit')await host.endReload();
+ await capture('idle-reload');
  assert.equal(await page.locator('.agent-status-panel').count(),0);
  posts.push({id:302,timestamp:state.now,chat_jid:state.sessionId,data:{type:'agent_response',content:'**Ready.**\n\n- Inspected the workspace',agent_id:'default',is_bot_message:true}});
- await page.reload();await page.locator('#post-302').waitFor();await host.connected();await capture('assistant-post');
+ if(browserName==='webkit')host.beginReload();
+ await page.reload();await page.locator('#post-302').waitFor();await host.connected();
+ if(browserName==='webkit')await host.endReload();
+ await capture('assistant-post');
  assert.equal(await page.locator('#post-302.agent-post').count(),1);
  assert.equal(await page.locator('#post-302 strong').innerText(),'Ready.');
  assert.equal(await page.locator('#post-302 li').innerText(),'Inspected the workspace');
@@ -82,5 +88,5 @@ try{
  report.result='pass';
  }
 }catch(e){report.result='fail';report.error=String(e);process.exitCode=1;await capture('failure').catch(()=>{});}
-finally{report.failures=host.failures;report.calls=host.calls;report.assets=host.assets;await fs.writeFile(path.join(output,'evidence.json'),JSON.stringify(report,null,2));await host.dispose();await browser.close();}
+finally{report.failures=host.failures;report.reloadUnloadEvents=host.reloadUnloadEvents;report.calls=host.calls;report.assets=host.assets;await fs.writeFile(path.join(output,'evidence.json'),JSON.stringify(report,null,2));await host.dispose();await browser.close();}
 console.log(JSON.stringify({result:report.result,error:report.error,output,observations:observations.map(o=>({name:o.name,authors:o.posts.map(p=>p.author),panels:o.panels.map(p=>p.text)}))},null,2));

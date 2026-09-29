@@ -20,8 +20,12 @@ adapter. Its synthetic tool start/update/end shows call arguments, a bounded
 Output preview, and Waiting for model after completion. A separate thought
 and draft preview survives that intra-turn transition, with no tool-result
 conversation post; an idle event clears all three panes. The fixture does
-not test an authoritative reload. A stricter shipped-WebKit lifecycle reload
-probe still reports SSE and presence cancellation/access-control errors.
+not test an authoritative reload. A separate installed lifecycle probe now
+passes **6/6** synthetic Chromium/WebKit viewport cases including idle reload
+and a fixture assistant post: WebKit unload presence/SSE errors match a minimal
+control and are recorded only in explicit reload windows with a required
+replacement connection. This does not validate production routing or a stored
+backend reply.
 
 `make test-piclaw-concurrent-tools` passed **6/6** installed translator/UI
 fixtures. With two synthetic overlapping calls, completion of the first

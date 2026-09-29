@@ -3,17 +3,36 @@ import {readFile,realpath} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {createHash} from 'node:crypto';
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.woff2':'font/woff2'};
-export async function installPixelHost({page,host,root,state,reference,allowPresenceBeacon=false}){
+export async function installPixelHost({page,host,root,state,reference,allowPresenceBeacon=false,allowWebkitReloadUnload=false}){
  if(!['gi','piclaw'].includes(host))throw Error(`Unknown pixel host: ${host}`);
- const failures=[],calls=[],assets={},streams=new Map(),streamAborts=[];
- const onError=e=>failures.push(`page: ${e.message}`);
+ const failures=[],calls=[],assets={},streams=new Map(),streamAborts=[],reloadUnloadEvents=[],activeRequests=new Set();
+ let reloadWindow=null;
+ const webkitReload=allowWebkitReloadUnload&&host==='piclaw'&&page.context().browser()?.browserType().name()==='webkit';
+ const recordReloadUnload=(kind,value)=>{
+  if(!webkitReload||!reloadWindow||reloadWindow[kind])return false;
+  reloadWindow[kind]=true;reloadUnloadEvents.push({reload:reloadWindow.number,kind,value});return true;
+ };
+ const onError=e=>{
+  if(e.message===`/${new URL(origin).host}/agent/push/presence due to access control checks.`&&reloadWindow?.presence&&recordReloadUnload('presencePageError',e.message))return;
+  failures.push(`page: ${e.message}`);
+ };
  const onFailed=r=>{const error=r.failure()?.errorText,url=new URL(r.url()),path=url.pathname;
   // Gi aborts the initial unscoped fetch stream on session activation. Retain
   // that cancellation as evidence and require a live replacement at capture.
   if(host==='gi'&&path==='/sse/stream'&&!url.search&&['net::ERR_ABORTED','Load request cancelled'].includes(error)&&streamAborts.length===0){streamAborts.push({path,error});return;}
+  // WebKit reports the old document's stream and presence request as failed
+  // during reload. Only this explicitly opened window and these exact old
+  // requests qualify; every other failure still fails the fixture.
+  if(url.origin===origin&&['net::ERR_ABORTED','Load request cancelled'].includes(error)){
+   if(reloadWindow?.oldRequests.has(r)&&path==='/sse/stream'&&r.method()==='GET'&&url.searchParams.size===1&&url.searchParams.get('chat_jid')===state.sessionId&&recordReloadUnload('stream',r.url()))return;
+   // sendBeacon can be created by pagehide after beginReload captured requests.
+   if(path==='/agent/push/presence'&&r.method()==='POST'&&!url.search&&recordReloadUnload('presence',r.url()))return;
+  }
   failures.push(`network: ${r.url()} ${error}`);
  };
- page.on('pageerror',onError);page.on('requestfailed',onFailed);
+ const onRequest=r=>activeRequests.add(r),onFinished=r=>activeRequests.delete(r);
+ const onRequestFailed=r=>{onFailed(r);activeRequests.delete(r);};
+ page.on('pageerror',onError);page.on('request',onRequest);page.on('requestfinished',onFinished);page.on('requestfailed',onRequestFailed);
  const server=createServer((req,res)=>{const u=new URL(req.url,'http://fixture');if(allowPresenceBeacon&&host==='piclaw'&&req.method==='POST'&&u.pathname==='/agent/push/presence'&&!u.search){calls.push({method:req.method,path:u.pathname,query:'',nativeBeacon:true});req.resume();res.writeHead(200,{'Content-Type':'application/json'});res.end('{"ok":true}');return;}if(req.method!=='GET'||!['/sse/stream','/sse/topics'].includes(u.pathname)){failures.push(`Unexpected native request ${req.method} ${u.pathname}`);res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-store'});res.write(': pixel fixture\n\n');streams.set(res,u.pathname);res.on('close',()=>streams.delete(res));});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
  const session={id:'main',title:state.sessionLabel,scope:{agent_id:'web'},state:{selected_model:state.model.current},created_at:state.now,updated_at:state.now,status:'idle',parent_session_id:null};
@@ -60,10 +79,17 @@ export async function installPixelHost({page,host,root,state,reference,allowPres
   }catch(e){failures.push(e.message);return route.fulfill({status:500,json:{error:e.message}});}
  };
  await page.route('**/*',handler);
- return {origin,assets,calls,failures,streamAborts,
+ return {origin,assets,calls,failures,streamAborts,reloadUnloadEvents,
+  beginReload(){if(!webkitReload||reloadWindow)throw Error('WebKit reload allowance unavailable or already active');reloadWindow={number:reloadUnloadEvents.filter(e=>e.kind==='reloadEnd').length+1,oldStreams:new Set([...streams].filter(([,path])=>path==='/sse/stream').map(([res])=>res)),oldRequests:new Set(activeRequests)};},
+  async endReload(){if(!reloadWindow)throw Error('No active WebKit reload allowance');
+   for(let n=0;n<40&&[...reloadWindow.oldStreams].some(res=>streams.has(res));n++)await page.waitForTimeout(25);
+   const replacement=[...streams].some(([res,path])=>path==='/sse/stream'&&!reloadWindow.oldStreams.has(res));
+   if(!replacement||[...reloadWindow.oldStreams].some(res=>streams.has(res)))throw Error('Old stream not closed or replacement stream not connected');
+   reloadUnloadEvents.push({reload:reloadWindow.number,kind:'reloadEnd',value:'replacement connected'});reloadWindow=null;this.assert();
+  },
   assert(){if(failures.length)throw Error(failures.join('; '));if(![...streams.values()].includes('/sse/stream'))throw Error('No connected fixture stream');},
   async connected(extra={}){for(let n=0;n<100&&!([...streams.values()].includes('/sse/stream'));n++)await page.waitForTimeout(50);this.assert();for(const [s,path]of streams)if(path==='/sse/stream')s.write(`event: connected\ndata: ${JSON.stringify({chat_jid:state.sessionId,...extra})}\n\n`);},
   emit(event,payload){this.assert();for(const [s,path]of streams)if(path==='/sse/stream')s.write(`event: ${event}\ndata: ${JSON.stringify({chat_jid:state.sessionId,...payload})}\n\n`);},
-  async dispose(){page.off('pageerror',onError);page.off('requestfailed',onFailed);await page.unroute('**/*',handler);for(const s of streams.keys())s.end();server.closeAllConnections();await new Promise(r=>server.close(r));}
+  async dispose(){page.off('pageerror',onError);page.off('request',onRequest);page.off('requestfinished',onFinished);page.off('requestfailed',onRequestFailed);await page.unroute('**/*',handler);for(const s of streams.keys())s.end();server.closeAllConnections();await new Promise(r=>server.close(r));}
  };
 }

@@ -16,9 +16,11 @@ for(const mode of ['fullscreen','regular']){
   for(const text of ['escape first','escape second']){tm('send-keys','-t',pane,'-l',text);altEnter();await wait(()=>sql(`select count(*) from turns where prompt=${quote(text)} and status='queued';`)==='1',`queue ${text}`)}
   tm('send-keys','-t',pane,'-l','newer draft');await wait(()=>sql(`select json_extract(value,'$.text') from kv_store where namespace='tui_text_draft_v1' and key=${quote(sid)};`)==='newer draft','draft');
   tm('send-keys','-t',pane,'Escape');await sleep(250);
+  tm('send-keys','-t',pane,'-l',' still editing');
+  await wait(()=>sql(`select json_extract(value,'$.text') from kv_store where namespace='tui_text_draft_v1' and key=${quote(sid)};`)==='newer draft still editing','Escape retains composer focus and newer draft');
   const activeStatus=sql(`select status from turns where id=${quote(active)};`);const queued=sql("select count(*) from turns where prompt in ('escape first','escape second') and status='queued';");const draft=sql(`select json_extract(value,'$.text') from kv_store where namespace='tui_text_draft_v1' and key=${quote(sid)};`);
-  // Baseline: Gi Escape blurs input; it does not consume queued delivery or stop the active run.
-  if(activeStatus!=='running'||queued!=='2'||draft!=='newer draft')throw Error(`unexpected Escape state: active=${activeStatus} queued=${queued} draft=${JSON.stringify(draft)}`);
+  // Baseline: Gi Escape retains editor focus, but still does not restore queued delivery or stop the active run.
+  if(activeStatus!=='running'||queued!=='2'||draft!=='newer draft still editing')throw Error(`unexpected Escape state: active=${activeStatus} queued=${queued} draft=${JSON.stringify(draft)}`);
   writeFileSync(join(out,mode+'-escape.txt'),cap());
   writeFileSync(join(gates,'held'),'go');await wait(()=>sql("select count(*) from turns where status in ('running','queued');")==='0','normal queue handoff');
   if(sql("select count(*) from messages where role='user' and content in ('escape first','escape second');")!=='2')throw Error('queued delivery lost after Escape');

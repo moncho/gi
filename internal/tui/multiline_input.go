@@ -141,13 +141,13 @@ func (m *multilineInput) KeyMap() gotui.KeyMap {
 				m.onRestoreQueued()
 			}
 		}),
-		gotui.OnFocused(gotui.KeyEscape, func(ke gotui.KeyEvent) {
-			if m.onEscape != nil && m.onEscape() {
-				return
+		gotui.OnFocused(gotui.KeyEscape, func(_ gotui.KeyEvent) {
+			if m.onEscape != nil {
+				m.onEscape()
 			}
-			if app := ke.App(); app != nil {
-				app.BlurFocused()
-			}
+			// Pi's editor retains focus after an idle Escape. Selection and
+			// compaction handlers may consume the key, but no fallback blurs
+			// the composer or discards its draft.
 		}),
 	}
 }

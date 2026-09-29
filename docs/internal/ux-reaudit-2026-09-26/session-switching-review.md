@@ -11,6 +11,7 @@ establish whole-feature or physical-input acceptance.
 
 | Frozen ID | Gi clause evidence and handler | Boundary |
 |---|---|---|
+| `@ux-session-002` picker groups | `session.spec.mjs:169–208` creates current, pinned, active, tree, other and archived native sessions and checks group order, current marker, active archive-action exclusion and retained draft. Focused Gi run passed 6/6. Installed 3.2.4 mounted picker with six disposable entries in mixed source order also rendered Current, Pinned, Active, This session tree, Other sessions, Archived in that order, with one selected current row and a pressed Pin control on the pinned row; 6/6 Chromium/WebKit phone/tablet/desktop. | Classic's section headings use `role=presentation` and the current row uses `aria-selected`; Gi exposes named groups and `aria-current`. No assistive-technology equivalence was tested. Piclaw reads pin JIDs from `piclaw:session-picker-preferences:v1`, whereas the Gi fixture pins via its session API. The installed fixture does not test real parent graph, branch actions, live mutation/refresh, persistence after reload, or physical input. Group display only; no whole-clause parity. |
 | `@ux-session-001` selected timeline | `tests/ux/session.spec.mjs:556–600` creates two native sessions with different completed messages, holds the old session's message response, selects research in the real picker and checks selection, correct timeline/draft and rejection of the late old read. The focused native journey passed 6/6. Installed Piclaw 3.2.4 selects a disposable research chat by Tab and replaces the main fixture post with the research fixture post in 6/6 mounted browser cases. | Installed fixture does not hold a superseded timeline read, use stored backend messages or test switching back. Its textarea still contains `main fixture draft` after selection and a 300 ms settle. After typing `research fixture draft` and switching back, the main post returns but the textarea still contains `research fixture draft` (6/6). Gi's native test switches to the research draft and restores the main draft on return. The installed fixture does not test draft reload, stored per-chat drafts or physical picker acceptance. |
 | `@ux-session-002` groups | `session.spec.mjs:169–212` checks Current, Pinned, Active, This session tree, Other sessions and Archived in order, current marker and an active-entry action gate. Gi `web/src/ui/compose-session-switcher.ts:112–157` groups current metadata. | Fixture-created catalogue; no fresh-browser/all-client roster acceptance. |
 | `@ux-session-003` search | `session.spec.mjs:405–452` searches identifier and model metadata, navigates a filtered list with keyboard and preserves drafts while selecting. Gi `compose-session-switcher.ts:112–129` matches metadata and `compose-box.ts` renders it. Installed Piclaw's mounted picker filters a disposable two-chat list for the research name and restores both on query reset; Home, End and ArrowDown retain the sole filtered selection and Tab activates it, changing the fixture URL to `web:research`. | Gi's tagged native search/arrow/Enter journey passed 6/6 separately. Its untagged Tab-focus journey passed 6/6: Tab moves to Pin and then the row without selecting, while installed Classic uses Tab to activate the selected row. Model metadata and physical IME were not compared in the installed probe. |
@@ -27,9 +28,11 @@ assertions and source above bound the six findings.
 3.2.4 mounted Classic cases across Chromium/WebKit phone/tablet/desktop. It checks
 search, Escape and single-result keyboard selection, including Tab activation.
 Piclaw's fixture post replacement and shared textarea across a two-chat
-round trip are now observed; superseded reads, draft reload, grouped roster actions, backend
-archive/restore, real sessions and physical input still need separate comparison.
-Gi's focused `@ux-session-001`, `@ux-session-003` and untagged Tab-focus runs
-passed **6/6** each;
-the earlier focused `@ux-session-003/006` run passed **12/12**. Inventory passed 218 helper tests
-and 8,004 assertions without adding whole-clause parity credit.
+round trip are observed. `make test-piclaw-session-groups` passed **6/6**
+separate installed Piclaw 3.2.4 cases with read-only, mixed-order catalogue
+entries and local pinned preference. Gi's focused `@ux-session-002` passed
+**6/6**; focused `001`, `003` and untagged Tab-focus runs also passed **6/6**
+each. The earlier focused `003/006` run passed **12/12**. Superseded reads,
+draft reload, grouped roster actions, backend archive/restore, real sessions
+and physical input still need separate comparison. The earlier inventory
+passed 218 helper tests and 8,004 assertions without whole-clause parity credit.

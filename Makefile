@@ -339,7 +339,7 @@ test-piclaw-outcome-chip:
 test-piclaw-editor-tabs:
 	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
 
-.PHONY: test-piclaw-login-policy test-piclaw-login-preemption test-piclaw-oobe-panel test-piclaw-invitation-totp test-piclaw-invitation-boundaries test-piclaw-invitation-passkey test-piclaw-family-privacy test-piclaw-pwa-icons test-piclaw-swipe-selection test-piclaw-session-picker-dismiss
+.PHONY: test-piclaw-login-policy test-piclaw-login-preemption test-piclaw-oobe-panel test-piclaw-invitation-totp test-piclaw-invitation-boundaries test-piclaw-invitation-passkey test-piclaw-family-privacy test-piclaw-pwa-icons test-piclaw-swipe-selection test-piclaw-session-picker-dismiss test-piclaw-session-groups
 test-piclaw-login-policy:
 	$(BUN) tests/ux/oracle/piclaw-login-policy-probe.mjs
 
@@ -369,6 +369,9 @@ test-piclaw-swipe-selection:
 
 test-piclaw-session-picker-dismiss:
 	$(BUN) tests/ux/oracle/piclaw-session-picker-dismiss-probe.mjs
+
+test-piclaw-session-groups:
+	$(BUN) tests/ux/oracle/piclaw-session-groups-probe.mjs
 
 .PHONY: test-piclaw-notification-presence test-piclaw-notification-leader
 test-piclaw-notification-presence:

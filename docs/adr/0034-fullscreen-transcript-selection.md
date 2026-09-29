@@ -14,10 +14,12 @@ Rows and columns come from the same rendered-cell snapshot used by fullscreen se
 
 ## Clipboard policy and ownership
 
-The existing `tuiClipboardMode` setting remains authoritative:
+Updated policy: an absent/empty `tuiClipboardMode` defaults fullscreen selection to OSC 52, while plain `/copy` remains transcript-only. Config loading preserves unset separately from explicit `off`. Regular-mode selection remains terminal-owned. This supersedes the original inherited opt-in default for fullscreen selection only.
+
+Explicit `tuiClipboardMode` settings remain authoritative (invalid modes fail closed as `off`):
 
 - `off`: keep selection and show an opt-in hint, without a clipboard write.
-- `osc52`: emit the existing OSC 52 sequence, rejecting content above 64 KiB before writing.
+- `osc52`: emit the existing OSC 52 sequence, rejecting content above 64 KiB before writing. Report “Selection sent to terminal (OSC 52)”, not clipboard success.
 - `native`/`auto`: use the existing native helper selection and two-second timeout. Run outside the UI loop, with one outstanding native write per frontend so clipboard operations cannot complete out of order. A busy copy can be retried.
 
 A selection snapshots the session generation, retained transcript, expansion/search state, terminal dimensions and viewport dimensions. Output, resize, search changes, picker activation or session switching invalidate that selection instead of copying text that moved underneath it. Already-dispatched external clipboard writes cannot be retracted; their completion notices are fenced by selection and session ownership. Clipboard failure retains a current selection for retry. OSC 52 acceptance by a terminal is not an acknowledgement from the desktop clipboard.
@@ -28,7 +30,7 @@ The saved WIP's tool-click regression had two causes: a stationary press at an e
 
 ## Evidence
 
-`make test-tui-selection` runs real tmux PTYs at 60×18, 100×22 and 140×36. Each isolated tmux server enables clipboard reception, so the test reads actual OSC 52 data rather than mocking the renderer. Native shell turns provide history. Tests cover forward/reverse drags, release/Ctrl-C/Ctrl-X copy, highlight/Escape/editor preservation, held-edge selection of offscreen output, resize and new-output invalidation, normal tool-click expansion, clipboard opt-out, picker cancellation and unchanged idle row count.
+`make test-tui-selection` runs real tmux PTYs at 60×18, 100×22 and 140×36. Each isolated tmux server enables clipboard reception, so the test reads actual OSC 52 data rather than mocking the renderer. Native shell turns provide history. The harness starts with no clipboard setting to cover default dispatch. Tests cover forward/reverse drags, release/Ctrl-C/Ctrl-X copy, highlight/Escape/editor preservation, held-edge selection of offscreen output, resize and new-output invalidation, normal tool-click expansion, clipboard opt-out, picker cancellation and unchanged idle row count.
 
 Unit tests cover padded wide/combining cells, reverse selections, partial-wide-cell boundaries, stationary edge presses, click hit identity, search/session/resize/output invalidation, clipboard error/size handling, one pending native write and stale completion notices. Full Go tests/vet, terminal race suite repeated three times, all outcome/search/reading/regular/session/model/compaction/smoke/Gherkin suites, 29 helpers and 70/70 functional browser tests pass.
 

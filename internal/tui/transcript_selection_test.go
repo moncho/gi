@@ -7,12 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rcarmo/gi/internal/config"
+
 	gotui "github.com/grindlemire/go-tui"
 )
 
 func selectionFixture(t *testing.T, width, height int) *chatTUI {
 	t.Helper()
 	c := sessionTestChat(t)
+	c.cfg.TUIClipboardMode = "off" // Most geometry tests intentionally suppress clipboard writes.
 	c.outputWidth = width
 	c.cfg.AssistantName = "Gi"
 	c.transcript = nil
@@ -499,5 +502,43 @@ func TestTranscriptWordSelectionWideHalfAndEdgeDrag(t *testing.T) {
 	}
 	if c.textSelection.end.col < 1 {
 		t.Fatal("word edge lost range")
+	}
+}
+
+func TestTranscriptSelectionDefaultClipboardAndExplicitOff(t *testing.T) {
+	for _, mode := range []string{"", "osc52", "off", "bogus"} {
+		t.Run(mode, func(t *testing.T) {
+			root := t.TempDir()
+			if mode != "" {
+				if err := config.PersistClipboardMode(root, mode); err != nil {
+					t.Fatal(err)
+				}
+			}
+			c := selectionFixture(t, 60, 18)
+			c.cfg.TUIClipboardMode = config.Load(root).TUIClipboardMode
+			var clipboard bytes.Buffer
+			c.osc52Writer = &clipboard
+			c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MousePress, X: 1, Y: 1})
+			c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MouseDrag, X: 22, Y: 4})
+			c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MouseRelease, X: 22, Y: 4})
+			if mode == "off" || mode == "bogus" {
+				if clipboard.Len() != 0 || !strings.Contains(c.textSelection.notice, "Clipboard off") {
+					t.Fatal("explicit opt-out ignored")
+				}
+				return
+			}
+			seq, err := osc52Sequence(c.textSelection.text())
+			if err != nil || clipboard.String() != seq {
+				t.Fatal("release did not send selected bytes")
+			}
+			if c.textSelection.notice != "Selection sent to terminal (OSC 52)" {
+				t.Fatal(c.textSelection.notice)
+			}
+			clipboard.Reset()
+			c.copyTranscriptSelection()
+			if clipboard.String() != seq {
+				t.Fatal("repeat copy changed policy")
+			}
+		})
 	}
 }

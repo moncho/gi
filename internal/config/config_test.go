@@ -197,3 +197,30 @@ func TestLoadPasskeyRelyingPartyConfiguration(t *testing.T) {
 		t.Fatal("passkeys enabled by default")
 	}
 }
+
+func TestLoadClipboardModePreservesUnsetAndExplicitPolicy(t *testing.T) {
+	for _, tc := range []struct{ value, want string }{
+		{"", ""}, {`"tuiClipboardMode":""`, ""},
+		{`"tuiClipboardMode":"off"`, "off"},
+		{`"tuiClipboardMode":" OSC52 "`, "osc52"},
+		{`"tuiClipboardMode":"native"`, "native"},
+		{`"tuiClipboardMode":"auto"`, "auto"},
+		{`"tuiClipboardMode":"bogus"`, "off"},
+	} {
+		t.Run(tc.value, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(root, ".pi"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(root, ".pi", "settings.json"), []byte("{"+tc.value+"}"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if got := Load(root).TUIClipboardMode; got != tc.want {
+				t.Fatalf("mode = %q, want %q", got, tc.want)
+			}
+		})
+	}
+	if got := Load(t.TempDir()).TUIClipboardMode; got != "" {
+		t.Fatalf("fresh workspace mode = %q", got)
+	}
+}

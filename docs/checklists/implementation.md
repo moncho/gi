@@ -1,5 +1,8 @@
 # gi implementation checklist
 
+- [x] Default fullscreen mouse-selection copy to OSC 52 when clipboard mode is unset; preserve explicit off/native/auto and transcript-only `/copy`, report terminal dispatch truthfully, and add fresh-workspace/opt-out regression coverage. Go tests/vet/build/hook checks pass. [Policy and validation limits](../internal/tui-clipboard-media.md#selection-default-regression-coverage).
+- [ ] Rerun selection-default PTY/browser/race acceptance on a provisioned host: current attempts blocked by missing sqlite3, missing Playwright browser binaries and unsupported ARM64 ThreadSanitizer VMA range.
+
 Status: Active
 Date: 2026-04-22
 Last updated: 2026-09-28

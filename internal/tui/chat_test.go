@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -1482,9 +1483,10 @@ func TestCopyLastAssistantLinesFallsBackToTranscript(t *testing.T) {
 	if err := s.AddMessage(ctx, "msg_assistant_copy", "session_copy", "assistant", "answer\nsecond line", nil); err != nil {
 		t.Fatalf("add assistant message: %v", err)
 	}
-	c := &chatTUI{store: s, sessionID: "session_copy"}
+	var clipboard bytes.Buffer
+	c := &chatTUI{store: s, sessionID: "session_copy", cfg: config.Load(t.TempDir()), osc52Writer: &clipboard}
 	joined := strings.Join(c.copyLastAssistantLines(), "\n")
-	if strings.Contains(joined, "\x1b]52") {
+	if clipboard.Len() != 0 || strings.Contains(joined, "\x1b]52") {
 		t.Fatalf("copy fallback should not emit OSC 52 escape sequences: %q", joined)
 	}
 	for _, want := range []string{"copy: clipboard unavailable; last assistant message follows", "copy: answer", "  second line"} {

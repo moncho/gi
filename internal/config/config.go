@@ -233,7 +233,8 @@ func PersistClipboardMode(workspaceRoot, mode string) error {
 
 func normalizeClipboardMode(mode string) string {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case "osc52", "native", "auto":
+	// Preserve unset so interactive selection and /copy can have different defaults.
+	case "", "osc52", "native", "auto":
 		return strings.ToLower(strings.TrimSpace(mode))
 	default:
 		return "off"

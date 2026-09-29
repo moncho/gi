@@ -3856,6 +3856,10 @@ func (c *chatTUI) settingsLines() []string {
 	if len(c.cfg.EnabledModels) > 0 {
 		enabledModels = strings.Join(c.cfg.EnabledModels, ", ")
 	}
+	clipboardMode := c.cfg.TUIClipboardMode
+	if clipboardMode == "" {
+		clipboardMode = "default (selection: osc52; /copy: off)"
+	}
 	return []string{
 		"settings: runtime",
 		fmt.Sprintf("- workspace: %s", compactMaybe(c.cfg.WorkspaceRoot, c.compactOutput(), 48)),
@@ -3868,7 +3872,7 @@ func (c *chatTUI) settingsLines() []string {
 		fmt.Sprintf("- enabled_models: %s", enabledModels),
 		"settings: editor",
 		fmt.Sprintf("- scrollback_limit: %d", c.currentScrollbackLimit()),
-		fmt.Sprintf("- clipboard_mode: %s", c.cfg.TUIClipboardMode),
+		fmt.Sprintf("- clipboard_mode: %s", clipboardMode),
 		fmt.Sprintf("- history_limit: %d", c.currentHistoryLimit()),
 		fmt.Sprintf("- scrollbar: %v", c.cfg.TUIScrollbar),
 		"- shortcuts: Ctrl+L/Alt+L model cycle, Ctrl+T/Alt+T thinking cycle, Ctrl+R history search, Tab path completion, @path completion, F6/F7 transcript block select, F8 expand/collapse",

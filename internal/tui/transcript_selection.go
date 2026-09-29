@@ -352,6 +352,10 @@ func (c *chatTUI) copyTranscriptSelection() {
 		return
 	}
 	mode, _, _ := c.copyModeFromArgs(nil)
+	// Mouse selection is an explicit copy gesture; /copy keeps its transcript-only default.
+	if strings.TrimSpace(c.cfg.TUIClipboardMode) == "" {
+		mode = "osc52"
+	}
 	switch mode {
 	case "osc52":
 		if len(text) > osc52PayloadLimit {
@@ -361,7 +365,7 @@ func (c *chatTUI) copyTranscriptSelection() {
 		if err := c.writeOSC52(text); err != nil {
 			c.selectionNotice("Copy failed")
 		} else {
-			c.selectionNotice("Selection copied (OSC 52)")
+			c.selectionNotice("Selection sent to terminal (OSC 52)")
 		}
 	case "native", "auto":
 		if c.nativeSelectionCopyPending {

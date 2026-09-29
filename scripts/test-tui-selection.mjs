@@ -14,7 +14,7 @@ const assert=(v,label)=>{if(!v)throw Error(label)};
 const results=[];
 try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const dir=mkdtempSync(join(tmpdir(),'gi-selection-')),session=`gi-selection-${width}`,pane=session+':0.0',db=join(dir,'gi.db');
- mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model','bootstrap'],tuiClipboardMode:'osc52'}));
+ mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model','bootstrap']}));
  const sql=q=>run('sqlite3',['-cmd','.timeout 5000',db,q]).trim();
  const capture=()=>tmux('capture-pane','-p','-t',pane).replace(/\s+$/,'');
  const ansi=()=>tmux('capture-pane','-e','-p','-t',pane);
@@ -40,7 +40,7 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   keys('Escape');await wait(()=>!capture().includes('Selection'),'clear before triple');sequence(clickBytes(wordCol,row).repeat(3));await wait(()=>clip().includes('you: SELECT-01 unicode 中文🙂'),'triple-click line');shot('line');keys('Escape');await wait(()=>!capture().includes('Selection'),'clear word/line');
   tmux('set-buffer','reverse word sentinel');sequence(clickBytes(wordCol,secondRow)+`\x1b[<0;${wordCol+1};${secondRow+1}M`);mouse(32,wordCol,row);mouse(0,wordCol,row,true);await wait(()=>clip().startsWith('SELECT-01')&&clip().endsWith('SELECT-02'),'reverse word-range drag');keys('Escape');await wait(()=>!capture().includes('Selection'),'clear word drag');
   assert(JSON.stringify(bars(capture()))===JSON.stringify(idleBars),'word selection added rows');
-  tmux('set-buffer','sentinel');await drag(col,row,col+24,secondRow);await wait(()=>capture().includes('Selection copied'),'release copy');
+  tmux('set-buffer','sentinel');await drag(col,row,col+24,secondRow);await wait(()=>capture().includes('Selection sent to terminal (OSC 52)'),'release copy');
   const copied=clip();assert(copied.includes('SELECT-01')&&copied.includes('SELECT-02'),'copy missing native rows');assert(!copied.includes('\x1b'),'ANSI in copied selection');
   assert(ansi().includes('48;2;212;212;212'),'highlight absent');shot('selected');
   tmux('set-buffer','reset');keys('C-c');await wait(()=>clip()===copied,'Ctrl-C selection copy');keys('C-x');await wait(()=>clip()===copied,'Ctrl-X selection copy');
@@ -48,12 +48,12 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   assert(JSON.stringify(bars(capture()))===JSON.stringify(idleBars),'selection added idle rows');
   type('X');await sleep(120);assert(capture().replaceAll('▌','').includes('selection drXaft'),'selection changed cursor');keys('BSpace');
   // Drag in reverse copies the same visible rows.
-  await drag(col+24,secondRow,col,row);await wait(()=>capture().includes('Selection copied'),'reverse copy');assert(clip()===copied,'reverse differs');keys('Escape');await sleep(120);
+  await drag(col+24,secondRow,col,row);await wait(()=>capture().includes('Selection sent to terminal (OSC 52)'),'reverse copy');assert(clip()===copied,'reverse differs');keys('Escape');await sleep(120);
   // Hold below the viewport. The timer scrolls without more mouse motion.
   mouse(0,col,row+1);await sleep(100);mouse(32,col+24,idleBars[0]-1);await sleep(2400);mouse(0,col+24,idleBars[0]-1,true);
-  await wait(()=>capture().includes('Selection copied'),'edge copy');assert(clip().includes('SELECT-03'),'edge scroll failed to select offscreen output');shot('edge-scroll');
+  await wait(()=>capture().includes('Selection sent to terminal (OSC 52)'),'edge copy');assert(clip().includes('SELECT-03'),'edge scroll failed to select offscreen output');shot('edge-scroll');
   keys('Escape');await sleep(120);keys('Home');await wait(()=>capture().includes('you: SELECT-01'),'top before resize');
-  await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Selection copied'),'resize selection');const beforeResize=clip();
+  await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Selection sent to terminal (OSC 52)'),'resize selection');const beforeResize=clip();
   tmux('resize-window','-t',session,'-x','80','-y','24');await sleep(180);tmux('resize-window','-t',session,'-x',String(width),'-y',String(height));await sleep(180);
   assert(!capture().includes('Selection'),'resize retained invalid selection');assert(clip()===beforeResize,'resize copied unexpected data');
   // Current output invalidates a held selection before a delayed release.
@@ -75,7 +75,7 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Clipboard off'),'selection before picker');
   keys('M-s');await wait(()=>capture().includes('Select session'),'session picker');keys('Escape');await wait(()=>!capture().includes('Select session'),'picker closed');assert(!capture().includes('Selection'),'picker retained selection');
   assert(capture().replaceAll('▌','').includes('final unsent draft'),'picker lost editor');
-  results.push(`${width}x${height}: native SGR double-word/triple-line/reverse-word and forward/reverse drag, OSC52 release/Ctrl-C/Ctrl-X clipboard, highlight/Escape/editor preservation, held edge autoscroll, resize/new-output invalidation; zero idle rows`);
+  results.push(`${width}x${height}: native SGR double-word/triple-line/reverse-word and forward/reverse drag, default OSC52 release/Ctrl-C/Ctrl-X clipboard (unset mode), explicit opt-out, highlight/Escape/editor preservation, held edge autoscroll, resize/new-output invalidation; zero idle rows`);
  }catch(error){try{shot('failure')}catch{};try{writeFileSync(join(artifacts,`${width}-runtime.log`),readFileSync(join(dir,'runtime.log')))}catch{};throw error;}
  finally{try{tmux('kill-session','-t',session)}catch{};rmSync(dir,{recursive:true,force:true});}
 }}finally{try{tmux('kill-server')}catch{}}

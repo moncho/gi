@@ -27,6 +27,17 @@ control and are recorded only in explicit reload windows with a required
 replacement connection. This does not validate production routing or a stored
 backend reply.
 
+`make test-piclaw-tool-output-window` exercised twelve controlled installed
+translator cases, including empty/whitespace/trailing-newline text, a 120-line
+window, 2/3/4-byte UTF-8 cutoffs, multiple text blocks and a reported
+truncation flag. The installed translator preserves source whitespace and
+trailing blank lines. Each orphaned continuation byte at a 12 KiB cutoff
+renders U+FFFD. Gi's Go preview now preserves the text and matches the bounded
+byte-window decoding; focused race tests passed three runs, the mounted
+Output oracle passed **6/6**, and native tool lifecycle passed **12/12**
+separately. Multiple blocks and result-supplied truncation metadata are not
+Go-string acceptance.
+
 `make test-piclaw-concurrent-tools` passed **6/6** installed translator/UI
 fixtures. With two synthetic overlapping calls, completion of the first
 emits a status for the second, retaining its Output and carrying the first

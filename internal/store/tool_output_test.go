@@ -10,8 +10,17 @@ import (
 )
 
 func TestToolOutputPreviewWindow(t *testing.T) {
-	if ToolOutputPreview(" \r\n ") != nil {
+	if ToolOutputPreview("") != nil {
 		t.Fatal("empty output")
+	}
+	if p := ToolOutputPreview("  \r\n  "); p["output_preview"] != "  \n  " || p["output_total_lines"] != 2 || p["output_preview_lines"] != 2 || p["output_truncated"] != false {
+		t.Fatalf("whitespace must remain visible: %v", p)
+	}
+	if p := ToolOutputPreview("  first  \r\nsecond\r\n"); p["output_preview"] != "  first  \nsecond\n" || p["output_total_lines"] != 3 || p["output_preview_lines"] != 3 {
+		t.Fatalf("surrounding whitespace and trailing newline: %v", p)
+	}
+	if p := ToolOutputPreview("first\n"); p["output_preview"] != "first\n" || p["output_preview_lines"] != 2 || p["output_total_lines"] != 2 || p["output_truncated"] != false {
+		t.Fatalf("trailing blank line: %v", p)
 	}
 	var lines []string
 	for i := 0; i < 120; i++ {
@@ -23,8 +32,28 @@ func TestToolOutputPreviewWindow(t *testing.T) {
 	}
 	p = ToolOutputPreview(strings.Repeat("β🙂", 4000))
 	text := p["output_preview"].(string)
-	if len(text) > 12*1024 || !utf8.ValidString(text) || p["output_truncated"] != true {
+	if !utf8.ValidString(text) || p["output_truncated"] != true {
 		t.Fatal("invalid byte window")
+	}
+	// Classic slices bytes before decoding. The decoded string can exceed
+	// 12 KiB when a partial leading rune is replaced by U+FFFD.
+	p = ToolOutputPreview(strings.Repeat("β", 6145) + "x")
+	text = p["output_preview"].(string)
+	if len(text) != 12*1024+2 || !strings.HasPrefix(text, "�") || !strings.HasSuffix(text, "x") || p["output_truncated"] != true {
+		t.Fatalf("UTF-8 cutoff: bytes=%d prefix=%q payload=%v", len(text), []rune(text)[:min(5, len([]rune(text)))], p["output_truncated"])
+	}
+	for _, tc := range []struct {
+		text, prefix string
+		bytes        int
+	}{
+		{strings.Repeat("€", 4097) + "x", "��€", 12*1024 + 4},
+		{strings.Repeat("🙂", 3073) + "x", "���🙂", 12*1024 + 6},
+	} {
+		p = ToolOutputPreview(tc.text)
+		text = p["output_preview"].(string)
+		if len(text) != tc.bytes || !strings.HasPrefix(text, tc.prefix) || !strings.HasSuffix(text, "x") || !utf8.ValidString(text) {
+			t.Fatalf("multibyte cutoff: bytes=%d prefix=%q", len(text), []rune(text)[:min(5, len([]rune(text)))])
+		}
 	}
 }
 

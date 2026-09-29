@@ -19,7 +19,7 @@ Configure Marked with Piclaw's `breaks: true` and `gfm: true` when publishing th
 
 ## Runtime data
 
-Native `tool.output` events hold a bounded status preview: the newest 100 lines and at most 12 KiB, matching the installed translator's limits. UTF-8 clipping starts at a rune boundary. Identity includes turn, call and occurrence because a provider can reuse call IDs.
+Native `tool.output` events hold a bounded status preview: the newest 100 source lines, then the last 12 KiB of their UTF-8 bytes, matching the installed translator's limits. A byte cutoff within a multibyte character replaces each orphaned continuation byte with U+FFFD when decoded for the status panel; the resulting valid UTF-8 text can exceed 12 KiB by up to six bytes. Whitespace and trailing newlines remain in the preview. Identity includes turn, call and occurrence because a provider can reuse call IDs.
 
 The reporter persists before notifying clients, throttles intermediate snapshots to 250 ms and flushes the final output. Shell stdout/stderr can stream; tools with only a return value supply their final preview. Raw tool results and model history retain their existing contracts. A preview-persistence failure fails the turn closed. Shell writers kill the command process group and continue draining rather than stranding a child on a full pipe.
 
@@ -27,6 +27,6 @@ Snapshots restore running Output after reload. A terminal tool in an active turn
 
 ## Verification and limits
 
-`make test-piclaw-output-oracle` executes the installed translator and shipped browser assets independently of the vendored copy, then compares Output DOM, text and selected computed styles against Gi. It covers collapsed/expanded content, sanitisation, waiting and idle transitions in Chromium and WebKit at three viewport sizes. It does not compare screenshot bytes.
+`make test-piclaw-tool-output-window` exercises the installed translator's whitespace, line and byte windows separately. `make test-piclaw-output-oracle` executes the installed translator and shipped browser assets independently of the vendored copy, then compares Output DOM, text and selected computed styles against Gi. It covers collapsed/expanded content, sanitisation, waiting and idle transitions in Chromium and WebKit at three viewport sizes. It does not compare screenshot bytes.
 
 Native tool lifecycle, Thoughts/Draft, store reload/identity, failure and race tests remain separate gates. This decision does not accept the entire web UX, multi-tool concurrency, provider/device parity or the still-failing older WebKit reload oracle.

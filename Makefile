@@ -1044,3 +1044,8 @@ test-auth-state:
 .PHONY: test-tui-table-scroll
 test-tui-table-scroll:
 	GI_TABLE_SCROLL_PTY=1 $(GO) test -count=1 ./internal/tui -run '^TestMarkdownTableScrollTerminal$$' -v
+
+# Run interactively in the affected Ghostty window, without tmux.
+.PHONY: probe-tui-ghostty
+probe-tui-ghostty:
+	$(GO) run ./tests/tui-ghostty-probe

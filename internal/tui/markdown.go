@@ -6,6 +6,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	gotui "github.com/grindlemire/go-tui"
+
 	"github.com/yuin/goldmark"
 	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -369,23 +371,30 @@ func wrapWithPrefix(text string, width int, prefix string) []string {
 }
 
 func wrapPreformattedWithPrefix(text string, width int, prefix string) []string {
-	prefixWidth := utf8.RuneCountInString(prefix)
-	contentWidth := width - prefixWidth
-	if contentWidth < 8 {
-		contentWidth = 8
-	}
-	runes := []rune(text)
-	if len(runes) == 0 {
+	prefixWidth := markdownRenderedWidth(prefix)
+	contentWidth := max(2, width-prefixWidth)
+	if text == "" {
 		return []string{prefix}
 	}
-	out := make([]string, 0, (len(runes)/contentWidth)+1)
-	for len(runes) > contentWidth {
-		out = append(out, prefix+string(runes[:contentWidth]))
-		runes = runes[contentWidth:]
-		prefix = strings.Repeat(" ", prefixWidth)
+	var out []string
+	var line strings.Builder
+	used := 0
+	for text != "" {
+		cluster, cells, size := gotui.NextCluster(text)
+		if size == 0 {
+			break
+		}
+		text = text[size:]
+		if used > 0 && used+cells > contentWidth {
+			out = append(out, prefix+line.String())
+			prefix = strings.Repeat(" ", prefixWidth)
+			line.Reset()
+			used = 0
+		}
+		line.WriteString(cluster)
+		used += cells
 	}
-	out = append(out, prefix+string(runes))
-	return out
+	return append(out, prefix+line.String())
 }
 
 func wrapLongRunes(word string, width int) []string {

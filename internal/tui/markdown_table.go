@@ -3,7 +3,6 @@ package tui
 import (
 	"strings"
 
-	"github.com/clipperhouse/uax29/v2/graphemes"
 	gotui "github.com/grindlemire/go-tui"
 )
 
@@ -88,10 +87,16 @@ type tableGlyph struct {
 func wrapTableCell(text string, width int) []string {
 	var glyphs []tableGlyph
 	for _, segment := range parseTUIInlineSegments(text) {
-		iter := graphemes.FromString(segment.Text)
-		for iter.Next() {
-			g := iter.Value()
-			glyphs = append(glyphs, tableGlyph{g, gotui.StringWidth(g), segment.Code})
+		// Use the renderer's cluster boundaries as well as its cell widths.
+		// UAX #29 and go-tui disagree for some ZWJ sequences; measuring
+		// separately segmented glyphs can shift every following grid border.
+		for rest := segment.Text; rest != ""; {
+			g, width, size := gotui.NextCluster(rest)
+			if size == 0 {
+				break
+			}
+			glyphs = append(glyphs, tableGlyph{g, width, segment.Code})
+			rest = rest[size:]
 		}
 	}
 	if len(glyphs) == 0 {

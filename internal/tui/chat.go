@@ -2438,6 +2438,12 @@ func (c *chatTUI) focusInput() {
 }
 
 func (c *chatTUI) restoreQueuedDraft() {
+	c.restoreQueuedDraftForActive("")
+}
+
+// Escape uses this only for an observed active run. Unlike Alt+Up, it must
+// commit the cancellation request and the editor restore together.
+func (c *chatTUI) restoreQueuedDraftForActive(activeID string) {
 	if c.input == nil || c.store == nil || c.sessionID == "" || !c.durableDrafts {
 		return
 	}
@@ -2460,7 +2466,16 @@ func (c *chatTUI) restoreQueuedDraft() {
 		return
 	}
 	ctx, cancel := c.draftContext()
-	restored, ids, err := c.store.RestoreQueuedTUITextDraft(ctx, c.sessionID, d.pair.Text)
+	var restored store.TUITextDraft
+	var ids []string
+	var err error
+	if activeID == "" {
+		restored, ids, err = c.store.RestoreQueuedTUITextDraft(ctx, c.sessionID, d.pair.Text)
+	} else if c.engine != nil {
+		restored, ids, err = c.engine.AbortActiveAndRestoreTUITextDraft(ctx, c.sessionID, activeID, d.pair.Text)
+	} else {
+		err = store.ErrQueueConflict
+	}
 	cancel()
 	if err != nil {
 		if err != sql.ErrNoRows {
@@ -2475,6 +2490,9 @@ func (c *chatTUI) restoreQueuedDraft() {
 	c.queueSnapshot = nil
 	c.publishQueueCommandChange(c.sessionID)
 	c.status = fmt.Sprintf("Restored %d queued messages", len(ids))
+	if activeID != "" {
+		c.status = fmt.Sprintf("Stopped active turn; restored %d queued messages", len(ids))
+	}
 	if c.app != nil {
 		c.app.MarkDirty()
 	}

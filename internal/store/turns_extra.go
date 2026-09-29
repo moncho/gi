@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/rcarmo/gi/internal/store/internalx"
@@ -120,11 +121,44 @@ func (s *Store) GetNextQueuedTurn(ctx context.Context, sessionID string) (*Turn,
 }
 
 func (s *Store) UpdateTurnStatusAndPhase(ctx context.Context, turnID, status, phase string) error {
+	return s.updateTurnStatusAndPhase(ctx, turnID, status, phase, "")
+}
+
+// FinalizeRunningTurn linearizes worker completion against an Escape/cancel
+// request from another connection. A cancellation that wins the status race
+// takes precedence over a late success or failure; a terminal turn is never
+// finalized twice. Call before publishing terminal events or responses.
+func (s *Store) FinalizeRunningTurn(ctx context.Context, turnID, status, phase string) (string, error) {
+	if status != "cancelled" {
+		err := s.updateTurnStatusAndPhase(ctx, turnID, status, phase, "running")
+		if err == nil {
+			return status, nil
+		}
+		if !errors.Is(err, ErrQueueConflict) {
+			return "", err
+		}
+	}
+	if err := s.updateTurnStatusAndPhase(ctx, turnID, "cancelled", "aborted", "cancelling"); err == nil {
+		return "cancelled", nil
+	} else if status == "cancelled" && errors.Is(err, ErrQueueConflict) {
+		// A worker can observe cancellation before the status request is stored.
+		if err := s.updateTurnStatusAndPhase(ctx, turnID, "cancelled", "aborted", "running"); err == nil {
+			return "cancelled", nil
+		} else {
+			return "", err
+		}
+	} else {
+		return "", err
+	}
+}
+
+func (s *Store) updateTurnStatusAndPhase(ctx context.Context, turnID, status, phase, expectedStatus string) error {
 	res, err := s.db.ExecContext(ctx, `update turns set status = ?, phase = ?, updated_at = `+defaultNow+` where id = ?
+		and (? = '' or turns.status = ?)
 		and (? not in ('queued','running','completed') or not exists (
 			select 1 from turn_failures f where f.turn_id = turns.id
 			and (f.hold_state <> 'none' or coalesce(f.resolution_state,'') <> '')
-		))`, status, phase, turnID, status)
+		))`, status, phase, turnID, expectedStatus, expectedStatus, status)
 	if err != nil {
 		return fmt.Errorf("update turn status and phase: %w", err)
 	}
@@ -134,6 +168,9 @@ func (s *Store) UpdateTurnStatusAndPhase(ctx context.Context, turnID, status, ph
 	}
 	if rows == 0 {
 		if _, err := s.GetTurn(ctx, turnID); err == nil {
+			if expectedStatus != "" {
+				return ErrQueueConflict
+			}
 			return ErrFailureConflict
 		}
 		return fmt.Errorf("update turn status and phase: %w", sql.ErrNoRows)

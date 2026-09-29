@@ -422,7 +422,20 @@ func (c *chatTUI) handleTranscriptEscape() bool {
 		c.clearTranscriptSelection()
 		return true
 	}
-	return c.handleCompactionEscape()
+	if c.handleCompactionEscape() {
+		return true
+	}
+	if c.engine == nil || c.store == nil || c.sessionID == "" {
+		return false
+	}
+	ctx, cancel := c.draftContext()
+	activeID, _, err := c.store.GetSessionActiveTurn(ctx, c.sessionID)
+	cancel()
+	if err == nil && activeID != "" {
+		c.restoreQueuedDraftForActive(activeID)
+		return true
+	}
+	return false
 }
 
 func (c *chatTUI) finishTranscriptCopy(generation uint64, err error) {

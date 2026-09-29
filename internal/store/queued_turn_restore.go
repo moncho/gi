@@ -15,6 +15,22 @@ import (
 // one transaction, so a failed save or competing claim cannot lose delivery.
 // The caller must supply the editor snapshot it has actually displayed.
 func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string, expected TUITextDraft) (TUITextDraft, []string, error) {
+	return s.restoreQueuedTUITextDraft(ctx, sessionID, "", expected)
+}
+
+// AbortActiveTurnAndRestoreQueuedTUITextDraft is called only by the runner
+// owning activeTurnID. The cancellation request, draft write and queue
+// removals share one SQLite writer transaction; a conflict cancels nothing.
+// The runner must hold its session lock until it signals its worker after
+// this transaction commits.
+func (s *Store) AbortActiveTurnAndRestoreQueuedTUITextDraft(ctx context.Context, sessionID, activeTurnID string, expected TUITextDraft) (TUITextDraft, []string, error) {
+	if activeTurnID == "" {
+		return TUITextDraft{}, nil, ErrQueueConflict
+	}
+	return s.restoreQueuedTUITextDraft(ctx, sessionID, activeTurnID, expected)
+}
+
+func (s *Store) restoreQueuedTUITextDraft(ctx context.Context, sessionID, activeTurnID string, expected TUITextDraft) (TUITextDraft, []string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return TUITextDraft{}, nil, err
@@ -27,6 +43,20 @@ func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string,
 	}
 	if changed, err := res.RowsAffected(); err != nil || changed != 1 {
 		return TUITextDraft{}, nil, ErrQueueConflict
+	}
+	if activeTurnID != "" {
+		var raw string
+		if err := tx.QueryRowContext(ctx, `select t.metadata_json from session_active_turns a join turns t on t.id=a.turn_id
+			where a.session_id=? and a.turn_id=? and a.claim_token=? and t.session_id=? and t.status='running'`, sessionID, activeTurnID, activeTurnID, sessionID).Scan(&raw); err != nil {
+			return TUITextDraft{}, nil, ErrQueueConflict
+		}
+		metadata, err := unmarshalJSONMap(raw)
+		if err != nil {
+			return TUITextDraft{}, nil, err
+		}
+		if metadata["media"] != nil || metadata["tui_media_claim"] != nil || metadata["initial_steering"] != nil || metadata["operation"] == "manual_compaction" {
+			return TUITextDraft{}, nil, ErrQueueConflict
+		}
 	}
 	rows, err := tx.QueryContext(ctx, `select id, prompt, metadata_json from turns where session_id=? and status='queued' order by queue_position, created_at, id`, sessionID)
 	if err != nil {
@@ -57,7 +87,7 @@ func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string,
 	if err != nil {
 		return TUITextDraft{}, nil, err
 	}
-	if len(ids) == 0 {
+	if len(ids) == 0 && activeTurnID == "" {
 		return TUITextDraft{}, nil, sql.ErrNoRows
 	}
 	// Restoration is an editor action, not a cross-session dequeue: leave
@@ -70,6 +100,14 @@ func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string,
 	if claimed {
 		return TUITextDraft{}, nil, ErrQueueConflict
 	}
+	if activeTurnID != "" {
+		// A second frontend can observe a stale runner after another worker
+		// has already claimed queued work. Require the exact active claim.
+		var owner string
+		if err := tx.QueryRowContext(ctx, `select claim_token from session_active_turns where session_id=? and turn_id=?`, sessionID, activeTurnID).Scan(&owner); err != nil || owner != activeTurnID {
+			return TUITextDraft{}, nil, ErrQueueConflict
+		}
+	}
 	// An active Steer (including one not backed by a queued turn) is a
 	// separate delivery path. Do not claim to clear the entire queue while it
 	// could still be delivered by the running turn.
@@ -80,6 +118,18 @@ func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string,
 	if bound {
 		return TUITextDraft{}, nil, ErrQueueConflict
 	}
+	if activeTurnID != "" {
+		// A completed or asynchronously claimed steering row is still owned
+		// by this run. Its prompt cannot be represented by the queued text
+		// draft; do not report an edit-all cancellation that drops it.
+		var taken bool
+		if err := tx.QueryRowContext(ctx, `select exists(select 1 from steering_queue where session_id=? and turn_id=? and status in ('queued','claimed','dequeued'))`, sessionID, activeTurnID).Scan(&taken); err != nil {
+			return TUITextDraft{}, nil, err
+		}
+		if taken {
+			return TUITextDraft{}, nil, ErrQueueConflict
+		}
+	}
 	media, err := updateTUIMediaDraftTx(ctx, tx, sessionID, nil)
 	if err != nil {
 		return TUITextDraft{}, nil, err
@@ -87,9 +137,12 @@ func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string,
 	if media.Claim != nil || len(media.Pending) > 0 {
 		return TUITextDraft{}, nil, ErrTUIDraftHeld
 	}
-	prefix := strings.Join(prompts, "\n\n") + "\n\n"
-	if expected.Text == "" {
-		prefix = strings.TrimSuffix(prefix, "\n\n")
+	prefix := ""
+	if len(prompts) > 0 {
+		prefix = strings.Join(prompts, "\n\n") + "\n\n"
+		if expected.Text == "" {
+			prefix = strings.TrimSuffix(prefix, "\n\n")
+		}
 	}
 	restored := TUITextSnapshot{Text: prefix + expected.Text, Cursor: utf8.RuneCountInString(prefix) + expected.Cursor}
 	if !validTUITextSnapshot(restored) {
@@ -124,6 +177,23 @@ func (s *Store) RestoreQueuedTUITextDraft(ctx context.Context, sessionID string,
 			return TUITextDraft{}, nil, err
 		}
 		if _, err := tx.ExecContext(ctx, `insert into turn_events(turn_id,session_id,seq,event_type,payload_json,created_at) values(?,?,coalesce((select max(seq)+1 from turn_events where turn_id=?),1),'turn.cancelled',?,`+defaultNow+`)`, id, sessionID, id, payload); err != nil {
+			return TUITextDraft{}, nil, err
+		}
+	}
+	if activeTurnID != "" {
+		res, err := tx.ExecContext(ctx, `update turns set status='cancelling', phase='cancelling', updated_at=`+defaultNow+`
+			where id=? and session_id=? and status='running' and exists(select 1 from session_active_turns where session_id=? and turn_id=? and claim_token=?)`, activeTurnID, sessionID, sessionID, activeTurnID, activeTurnID)
+		if err != nil {
+			return TUITextDraft{}, nil, err
+		}
+		if changed, err := res.RowsAffected(); err != nil || changed != 1 {
+			return TUITextDraft{}, nil, ErrQueueConflict
+		}
+		payload, err := marshalJSON(map[string]any{"phase": "cancel", "checkpoint": true, "reason": "escape_restore", "status": "cancelling", "turn_phase": "cancelling", "failure_kind": ""})
+		if err != nil {
+			return TUITextDraft{}, nil, err
+		}
+		if _, err := tx.ExecContext(ctx, `insert into turn_events(turn_id,session_id,seq,event_type,payload_json,created_at) values(?,?,coalesce((select max(seq)+1 from turn_events where turn_id=?),1),'turn.cancelling',?,`+defaultNow+`)`, activeTurnID, sessionID, activeTurnID, payload); err != nil {
 			return TUITextDraft{}, nil, err
 		}
 	}

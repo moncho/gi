@@ -50,7 +50,7 @@ Tests:
 
 A narrow independent review attempt timed out; no independent approval is recorded.
 
-The PTY fixture verifies admission and eventual completion. A separate Go test queues a durable Steer during the first of two registered tool calls, checks both results and events before the persisted steering message, and rejects a synthetic skipped tool result. Focused turn/store race×3, native queue Steer browser 18/18, inventory 222/8017 and `make check` (144 passed, 11 skipped) passed. The Pi and Go fixtures do not establish a real-provider turn, parallel tools, physical keyboard dispatch or whole queue parity.
+The PTY fixture verifies admission and eventual completion. A separate Go test queues a durable Steer during the first of two registered tool calls, checks both results and events before the persisted steering message, and rejects a synthetic skipped tool result. A native Go turn with a deterministic provider-stream stub also sends two tool calls, admits steering while the first tool is held, and captures the second provider request. Its request and stored message order are first tool result, second tool result, then steering; it records no skipped-tool event. The stub runs through the production turn engine, tool registry and SQLite store; `bootstrap` would select the separate local-shell path and is not used. Focused turn/store race×3, native queue Steer browser 18/18, inventory 222/8017 and `make check` (144 passed, 11 skipped) passed. The added native-turn regression passed race×3 and the browser and standard gates passed again without product changes. The Pi and Go fixtures do not establish a live provider, parallel tools, physical keyboard dispatch or whole queue parity.
 
 ## Remaining acceptance work
 

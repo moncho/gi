@@ -1,15 +1,14 @@
 # Classic timeline rendering/actions 023–028: scoped native tests
 
-The frozen clauses are in `tests/ux/features/classic/timeline/rendering.feature`.
+The active clauses are in `features/ux/classic/timeline/rendering.feature`.
 Piclaw 3.2.4's pinned source manifest marks `runtime/web/src/components/post.ts`
-changed in Gi; the shipped Piclaw UI interactions were not replayed here.
-Gi's post component, table styles, recovery metadata and speech owner are
-traced against focused native browser assertions instead of awarding byte-level
-source parity.
+changed in Gi. A mounted installed-Classic probe now checks one existing Gi
+Markdown-table path. Other rows remain Gi-native checks against source-backed
+contracts, without byte-level or whole-feature parity credit.
 
 | ID | Gi assertion/code path | Bounded result |
 |---|---|---|
-| `023` | `rendering.spec.mjs` checks computed table display, auto layout, full post width and Unicode rows. Markdown/table styling is in `post.ts` and `content.css`; a second Gi test checks wide-table overflow separately. | Tagged 6/6 across six viewport/browser projects. Source CSS alone has a `display:block` base rule; the computed test, not a CSS grep, supplies rendered evidence. |
+| `023` | Gi `rendering.spec.mjs` checks computed table display, auto layout, full post width and Unicode rows on a stored assistant message. Mounted Piclaw 3.2.4 independently renders the same Markdown text from a disposable assistant post: computed `display:table`, `table-layout:auto`, table width within 1 px of its parent, two rows and Chinese text. | Each path passed **6/6** across Chromium/WebKit phone/tablet/desktop. Source CSS alone is insufficient; both browser measurements establish this geometry subset. Piclaw fixture does not test persisted backend content or pixel equivalence. |
 | `024` | Same spec checks a top-right code-copy button and observes a trusted native `copy` event containing exact code text, not markup. `post.ts` renders the action. | Tagged 6/6; clipboard behavior is browser-emulated, not physical permission acceptance. |
 | `025` | `remote-links.spec.mjs` checks resource/preview new tabs, `noopener noreferrer`, null opener/referrer, retained draft and stored messages. `post.ts` includes isolated link attributes. | Tagged 6/6 with `GI_UX_LINKS=1` fixture, not a live remote target trust audit. |
 | `026` | `outcomes.spec.mjs` checks a recovered chip after timestamp on the same metadata row, persistence through reload/search, and absence on an ordinary turn. | Tagged 6/6 with `GI_UX_OUTCOMES=1` stale-claim fixture. |
@@ -18,5 +17,9 @@ source parity.
 
 Focused commands passed **12/12** (`023`–`024`), **6/6** (`025`), **6/6**
 (`026`), and **12/12** (`027`–`028`). Those independent runs do not amount to
-a whole product gate, direct current-oracle interaction, deployed Gi check,
-or physical/pixel parity. No frozen text or production code changed.
+a whole product gate, deployed Gi check, or physical/pixel parity.
+`make test-piclaw-markdown-table` passed **6/6** installed mounted Classic
+cases, while focused Gi `@ux-timeline-023` passed **6/6** on native stored
+messages. The installed probe uses disposable timeline data, not a live
+provider. It confirms fidelity of Gi's existing table layout contract without
+porting the other timeline features. No frozen text or production code changed.

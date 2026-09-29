@@ -298,7 +298,7 @@ test-message-reference-labels:
 test-piclaw-settings-title:
 	$(BUN) tests/ux/oracle/piclaw-settings-title-probe.mjs
 
-.PHONY: test-piclaw-settings-shell test-piclaw-settings-shortcut test-piclaw-settings-reopen test-piclaw-settings-stepper test-piclaw-settings-pane-load test-piclaw-settings-layering test-piclaw-non-ipad-lightbox test-piclaw-direct-delete
+.PHONY: test-piclaw-settings-shell test-piclaw-settings-shortcut test-piclaw-settings-reopen test-piclaw-settings-stepper test-piclaw-settings-pane-load test-piclaw-settings-layering test-piclaw-non-ipad-lightbox test-piclaw-direct-delete test-piclaw-markdown-table
 test-piclaw-settings-shell:
 	$(BUN) tests/ux/oracle/piclaw-settings-shell-probe.mjs
 
@@ -322,6 +322,9 @@ test-piclaw-non-ipad-lightbox:
 
 test-piclaw-direct-delete:
 	$(BUN) tests/ux/oracle/piclaw-direct-delete-probe.mjs
+
+test-piclaw-markdown-table:
+	$(BUN) tests/ux/oracle/piclaw-markdown-table-probe.mjs
 
 .PHONY: test-piclaw-editor-tabs
 test-piclaw-editor-tabs:

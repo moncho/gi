@@ -218,6 +218,20 @@ func TestProviderRetryExhaustionEmitsOneDurableFailure(t *testing.T) {
 	if err := s.DB().QueryRow(`select count(*) from turn_events where turn_id=? and event_type='inference.retry_scheduled'`, result.TurnID).Scan(&retries); err != nil || retries != 3 {
 		t.Fatal(retries, err)
 	}
+	// FinalizeRunningTurn commits failed status before the terminal system
+	// message. Wait for that record rather than treating status as a barrier.
+	waitForCondition(t, 3*time.Second, func() bool {
+		msgs, err := s.ListMessages(context.Background(), "exhaust")
+		if err != nil {
+			return false
+		}
+		for _, m := range msgs {
+			if m.Role == "system" && strings.Contains(m.Content, "Inference error") {
+				return true
+			}
+		}
+		return false
+	}, "provider retry terminal system message")
 	msgs, err := s.ListMessages(context.Background(), "exhaust")
 	if err != nil {
 		t.Fatal(err)

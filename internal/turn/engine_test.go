@@ -4385,6 +4385,20 @@ func TestShellFailureBroadcastsSystemMessageToTurnResponseTopic(t *testing.T) {
 			t.Fatal("expected shell failure to publish turn.response system message")
 		}
 	}
+	// Worker status is fenced before it publishes the terminal system post;
+	// observing that post does not imply its turn.finished audit is written.
+	waitForCondition(t, 3*time.Second, func() bool {
+		events, err := s.ListTurnEvents(ctx, result.TurnID)
+		if err != nil {
+			return false
+		}
+		for _, event := range events {
+			if event.Type == "turn.finished" {
+				return true
+			}
+		}
+		return false
+	}, "shell failure finish audit")
 	events, err := s.ListTurnEvents(ctx, result.TurnID)
 	if err != nil {
 		t.Fatalf("list turn events: %v", err)

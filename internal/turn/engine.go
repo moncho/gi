@@ -322,6 +322,9 @@ func (e *Engine) normalizeRunningSessionState(ctx context.Context, sessionID, ac
 		return nil
 	}
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
+	if opCtx == nil {
+		return context.Canceled
+	}
 	sessionState := map[string]any{"status": "running", "active_turn_id": activeTurnID}
 	if turnRec, err := e.store.GetTurn(opCtx, activeTurnID); err == nil {
 		if model := strings.TrimSpace(internalx.StringValue(turnRec.Metadata["model"], "")); model != "" {
@@ -347,6 +350,9 @@ func (e *Engine) normalizeInactiveSessionState(ctx context.Context, sessionID, s
 		return nil
 	}
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
+	if opCtx == nil {
+		return context.Canceled
+	}
 	sessionState := map[string]any{"status": status, "active_turn_id": nil}
 	if model = strings.TrimSpace(model); model != "" {
 		sessionState["model"] = model

@@ -1878,10 +1878,42 @@ function indexedDraftStorage(factory = indexedDB) {
   };
 }
 var pendingSendKey = (sessionId, token) => JSON.stringify([sessionId, token]);
-function createDraftRepository(storage, onError = () => {}, recover) {
+function sessionDraftTextJournal() {
+  const key = (id) => `gi:draft-text:${id}`;
+  return {
+    ids() {
+      try {
+        return Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index)).filter((value) => Boolean(value?.startsWith("gi:draft-text:"))).map((value) => value.slice("gi:draft-text:".length));
+      } catch {
+        return [];
+      }
+    },
+    read(id) {
+      try {
+        const value = sessionStorage.getItem(key(id));
+        const entry = value && JSON.parse(value);
+        return entry && typeof entry.text === "string" && typeof entry.previousText === "string" && Number.isSafeInteger(entry.revision) && entry.revision >= 0 && typeof entry.nonce === "string" ? entry : null;
+      } catch {
+        return null;
+      }
+    },
+    write(id, entry) {
+      try {
+        sessionStorage.setItem(key(id), JSON.stringify(entry));
+      } catch {}
+    },
+    clear(id) {
+      try {
+        sessionStorage.removeItem(key(id));
+      } catch {}
+    }
+  };
+}
+function createDraftRepository(storage, onError = () => {}, recover, journal) {
   const records = new Map;
   const revisions = new Map;
   const conflicts = new Map;
+  const journalNonces = new Set;
   let loadFailure;
   let tail = Promise.resolve();
   const record = (id) => {
@@ -1897,7 +1929,15 @@ function createDraftRepository(storage, onError = () => {}, recover) {
         throw loadFailure;
       if (conflicts.has(id))
         throw conflicts.get(id);
-      revisions.set(id, await storage.put(snapshot, revisions.get(id) ?? 0));
+      const revision = await storage.put(snapshot, revisions.get(id) ?? 0);
+      revisions.set(id, revision);
+      const entry = journal?.read(id);
+      if (entry && journalNonces.has(entry.nonce)) {
+        if (entry.text === snapshot.draft.text)
+          journal.clear(id);
+        else
+          journal.write(id, { ...entry, revision, previousText: snapshot.draft.text });
+      }
     });
     tail = write;
     write.catch((error) => {
@@ -1916,6 +1956,17 @@ function createDraftRepository(storage, onError = () => {}, recover) {
       if (conflicts.size)
         throw conflicts.values().next().value;
       try {
+        const entries = new Map;
+        if (journal)
+          for (const id of journal.ids()) {
+            const entry = journal.read(id);
+            if (entry) {
+              const rotated = { ...entry, nonce: randomClientId() };
+              journal.write(id, rotated);
+              journalNonces.add(rotated.nonce);
+              entries.set(id, rotated);
+            }
+          }
         const rows = await storage.load();
         let confirmed = new Set;
         if (recover) {
@@ -1934,6 +1985,24 @@ function createDraftRepository(storage, onError = () => {}, recover) {
               row.error = "Recovered an unacknowledged send. Delivery is unknown; check the timeline before resending.";
             row.revision = await storage.put(row, expected);
           }
+        }
+        for (const [id, entry] of entries) {
+          let row = rows.find((value) => value.sessionId === id);
+          if (!row) {
+            row = { sessionId: id, draft: emptyDraft(), pending: [] };
+            rows.push(row);
+          }
+          if (row.draft.text === entry.text) {
+            journal.clear(id);
+            continue;
+          }
+          if (row.pending.length || row.draft.text !== entry.previousText) {
+            row.error = "A different draft or pending send exists. Same-tab text recovery was not applied; check the other tab before editing.";
+            continue;
+          }
+          row.draft.text = entry.text;
+          row.revision = await storage.put(row, revision(row));
+          journal.clear(id);
         }
         for (const row of rows) {
           records.set(row.sessionId, row);
@@ -1956,12 +2025,19 @@ function createDraftRepository(storage, onError = () => {}, recover) {
       const draft = record(id).draft;
       if (Object.entries(patch).every(([field, value]) => draft[field] === value))
         return;
+      const previousText = journal?.read(id)?.previousText ?? draft.text;
       Object.assign(draft, patch);
+      if (typeof patch.text === "string" && journal) {
+        const nonce = randomClientId();
+        journalNonces.add(nonce);
+        journal.write(id, { text: patch.text, previousText, revision: revisions.get(id) ?? 0, nonce });
+      }
       persist(id).catch(() => {});
     },
     begin(id, draft) {
       const token = randomClientId();
       const row = record(id);
+      journal?.clear(id);
       row.pending.push({ id: token, draft: copy(draft) });
       row.draft = emptyDraft();
       row.error = "";
@@ -10268,6 +10344,7 @@ function ComposeBox({
     if (searchMode) {
       setSearchText(value);
     } else {
+      onContentChange?.(value);
       setContent(value);
       updateSlashAutocomplete(value);
       updateMentionAutocomplete(value);
@@ -22741,11 +22818,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-6mnntz5h.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-21daehxz.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-kwwpcyxm.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-0t4yjya9.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-1dapcgeg.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-wptay95y.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-pg7zj57b.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-4kpfqg5g.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-hvdbwwet.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-w5vzmxbk.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -24170,7 +24247,7 @@ function GiApp() {
   const [composePrefill, setComposePrefill] = F_(null);
   const draftsRef = Q_(null);
   if (!draftsRef.current)
-    draftsRef.current = createDraftRepository(indexedDraftStorage(), (error) => setDraftStorageError(`Draft not saved: ${error.message}`), recoverPendingDraftSends);
+    draftsRef.current = createDraftRepository(indexedDraftStorage(), (error) => setDraftStorageError(`Draft not saved: ${error.message}`), recoverPendingDraftSends, sessionDraftTextJournal());
   const drafts = draftsRef.current;
   const getDraft = (sid) => drafts.get(sid);
   const [runtimeConfig, setRuntimeConfig] = F_({});
@@ -25517,5 +25594,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=20C2C6D99A847B3A64756E2164756E21
-//# sourceMappingURL=app-fvz38aaq.js.map
+//# debugId=F51312A71051E08F64756E2164756E21
+//# sourceMappingURL=app-dhe7zx8a.js.map

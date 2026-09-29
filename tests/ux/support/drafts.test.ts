@@ -1,7 +1,11 @@
 import { expect, test } from 'bun:test';
-import { createDraftRepository, emptyDraft, mergeDrafts, DraftConflictError } from '../../../web/src/gi-drafts';
+import { createDraftRepository, emptyDraft, mergeDrafts, DraftConflictError, type DraftTextJournal } from '../../../web/src/gi-drafts';
 
 const draft = (text: string) => ({ ...emptyDraft(), text });
+function textJournal(): DraftTextJournal & { entries: Map<string, any> } {
+ const entries=new Map<string,any>();
+ return {entries,ids:()=>[...entries.keys()],read:id=>structuredClone(entries.get(id)??null),write:(id,entry)=>{entries.set(id,structuredClone(entry));},clear:id=>{entries.delete(id);}};
+}
 function storage() {
   const rows = new Map();
   return { rows, load: async () => structuredClone([...rows.values()]), put: async (row: any, expected: number) => {
@@ -9,6 +13,45 @@ function storage() {
     const revision = expected + 1; rows.set(row.sessionId, structuredClone({ ...row, revision })); return revision;
   } };
 }
+
+test('same-tab journal recovers latest text before IndexedDB commit without duplicating it',async()=>{
+ const disk=storage(),journal=textJournal(),repo=createDraftRepository(disk,()=>{},undefined,journal);
+ const loaded=repo.load();await loaded;
+ repo.update('A',{text:'first'});await repo.flushStable();
+ repo.update('A',{text:'first!'});
+ expect(journal.read('A')?.text).toBe('first!');
+ const reopened=createDraftRepository(disk,()=>{},undefined,journal);await reopened.load();
+ expect(reopened.get('A').text).toBe('first!');expect(journal.read('A')).toBeNull();
+ const twice=createDraftRepository(disk,()=>{},undefined,journal);await twice.load();expect(twice.get('A').text).toBe('first!');
+});
+
+test('late old-page write cannot clear the reopened journal or erase a recovered final edit',async()=>{
+ const db=storage(),journal=textJournal();let release!:()=>void,entered!:()=>void;
+ const gate=new Promise<void>(r=>release=r),started=new Promise<void>(r=>entered=r);
+ const old=createDraftRepository({load:db.load,put:async(row,revision)=>{
+  if(row.draft.text==='final'){entered();await gate;}
+  return db.put(row,revision);
+ }},()=>{},undefined,journal);
+ await old.load();old.update('A',{text:'base'});await old.flushStable();old.update('A',{text:'final'});await started;
+ const fresh=createDraftRepository(db,()=>{},undefined,journal);await fresh.load();
+ expect(fresh.get('A').text).toBe('final');release();await expect(old.flushStable()).rejects.toThrow('another tab');
+ expect(db.rows.get('A').draft.text).toBe('final');expect(journal.read('A')).toBeNull();
+});
+
+test('same-tab journal does not replace another tab draft or a pending send',async()=>{
+ const db=storage(),journal=textJournal();let tab=createDraftRepository(db,()=>{},undefined,journal);await tab.load();tab.update('A',{text:'base'});await tab.flushStable();
+ const other=createDraftRepository(db);await other.load();
+ // Simulate a last keystroke journalled before its IndexedDB write commits.
+ const base=db.rows.get('A');journal.write('A',{text:'new unsaved',previousText:base.draft.text,revision:base.revision,nonce:'old-page'});
+ other.update('A',{text:'foreign'});await other.flushStable();
+ const reopened=createDraftRepository(db,()=>{},undefined,journal);await reopened.load();
+ expect(reopened.get('A').text).toBe('foreign');expect(reopened.error('A')).toContain('different draft');expect(journal.read('A')?.text).toBe('new unsaved');
+ const pendingDb=storage(),pendingJournal=textJournal();let pending=createDraftRepository(pendingDb,()=>{},undefined,pendingJournal);await pending.load();pending.update('A',{text:'draft'});await pending.flushStable();
+ const current=pendingDb.rows.get('A');pendingJournal.write('A',{text:'unsaved',previousText:current.draft.text,revision:current.revision,nonce:'old-page'});
+ const sender=createDraftRepository(pendingDb);await sender.load();const send=sender.begin('A',draft('sent'));await send.ready;
+ pending=createDraftRepository(pendingDb,()=>{},async()=>new Set(),pendingJournal);await pending.load();
+ expect(pending.get('A').text).toBe('sent');expect(pending.error('A')).toContain('different draft');expect(pendingJournal.read('A')?.text).toBe('unsaved');
+});
 
 test('failed capture merges newer origin text, files and references once', async () => {
   const disk = storage(), repo = createDraftRepository(disk);

@@ -18,6 +18,16 @@ async function setup(page,info,startTurn=true){
  return{origin,input,id,turn,read,release:()=>fixture.release(token),drop(){blockSSE=true;for(const r of streams)r.destroy()},resume(){blockSSE=false},async close(){fixture.release(token);server.closeAllConnections();await new Promise(r=>server.close(r));await fixture.close()}};
 }
 
+test('HTTP final unsent character survives immediate reload',async({page},info)=>{
+ const h=await setup(page,info,false);
+ try{
+  const text=`unsent reload ${info.project.name} ${Date.now()} 中文`;
+  await h.input.fill(text);await h.input.press('!');await page.reload();
+  await expect(h.input).toHaveValue(text+'!');
+  expect((await h.read(`/api/sessions/${h.id}/turns`)).turns||[]).toHaveLength(0);
+ }finally{await h.close()}
+});
+
 test('HTTP immediate reload after Return keeps one accepted turn or a recoverable draft',async({page},info)=>{
  const h=await setup(page,info,false);const errors=[];let reloaded=false;page.on('pageerror',e=>{if(reloaded)errors.push(e.message)});let posts=0;
  try{

@@ -86,7 +86,7 @@ import { createMessageDeletionState } from './gi-message-deletion.js';
 import { createSelectionScope } from './gi-session-state.js';
 import { attachChatSwipeNavigation } from './ui/chat-swipe-navigation.js';
 import { isLikelySafariBrowser } from './ui/app-pane-runtime-orchestration.js';
-import { createDraftRepository, indexedDraftStorage, emptyDraft } from './gi-drafts.js';
+import { createDraftRepository, indexedDraftStorage, sessionDraftTextJournal, emptyDraft } from './gi-drafts.js';
 import { recoverQueueDraft } from './gi-queue-return.js';
 
 // ── Gi session bridge ──────────────────────────────────────────────────────
@@ -281,7 +281,7 @@ function GiApp() {
     const [draftRestore, setDraftRestore] = useState<any>(null);
     const [composePrefill,setComposePrefill]=useState<any>(null);
     const draftsRef = useRef<any>(null);
-    if (!draftsRef.current) draftsRef.current = createDraftRepository(indexedDraftStorage(), error => setDraftStorageError(`Draft not saved: ${error.message}`), recoverPendingDraftSends);
+    if (!draftsRef.current) draftsRef.current = createDraftRepository(indexedDraftStorage(), error => setDraftStorageError(`Draft not saved: ${error.message}`), recoverPendingDraftSends, sessionDraftTextJournal());
     const drafts = draftsRef.current;
     const getDraft = (sid: string) => drafts.get(sid);
     const [runtimeConfig, setRuntimeConfig] = useState<any>({});

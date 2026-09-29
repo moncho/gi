@@ -1205,6 +1205,9 @@ export function ComposeBox({
         if (searchMode) {
             setSearchText(value);
         } else {
+            // Journal text during the input event; a reload can occur before
+            // the layout effect or the IndexedDB write for this keystroke.
+            onContentChange?.(value);
             setContent(value);
             updateSlashAutocomplete(value);
             updateMentionAutocomplete(value);

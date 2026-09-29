@@ -92,10 +92,27 @@ export type PendingSend = { sessionId: string; token: string };
 export type PendingSendRecovery = (pending: PendingSend[]) => Promise<Set<string>>;
 export const pendingSendKey = (sessionId: string, token: string) => JSON.stringify([sessionId, token]);
 
-export function createDraftRepository(storage: DraftStorage, onError: (error: Error) => void = () => {}, recover?: PendingSendRecovery) {
+// Same-tab text journal bridges the gap before an IndexedDB write commits.
+// Revision fencing prevents it from replacing another tab's committed edit.
+type TextJournalEntry = { text: string; revision: number; previousText: string; nonce: string };
+export type DraftTextJournal = { ids(): string[]; read(id: string): TextJournalEntry | null; write(id: string, entry: TextJournalEntry): void; clear(id: string): void };
+export function sessionDraftTextJournal(): DraftTextJournal {
+    const key = (id: string) => `gi:draft-text:${id}`;
+    return {
+        ids() { try { return Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index)).filter((value): value is string => Boolean(value?.startsWith('gi:draft-text:'))).map(value => value.slice('gi:draft-text:'.length)); } catch { return []; } },
+        read(id) { try { const value = sessionStorage.getItem(key(id)); const entry = value && JSON.parse(value);
+            return entry && typeof entry.text === 'string' && typeof entry.previousText === 'string' && Number.isSafeInteger(entry.revision) && entry.revision >= 0 && typeof entry.nonce === 'string' ? entry : null;
+        } catch { return null; } },
+        write(id, entry) { try { sessionStorage.setItem(key(id), JSON.stringify(entry)); } catch { /* IndexedDB remains the primary store. */ } },
+        clear(id) { try { sessionStorage.removeItem(key(id)); } catch { /* Best effort. */ } },
+    };
+}
+
+export function createDraftRepository(storage: DraftStorage, onError: (error: Error) => void = () => {}, recover?: PendingSendRecovery, journal?: DraftTextJournal) {
     const records = new Map<string, Record>();
     const revisions = new Map<string, number>();
     const conflicts = new Map<string, Error>();
+    const journalNonces = new Set<string>();
     let loadFailure: Error | undefined;
     let tail: Promise<void> = Promise.resolve();
     const record = (id: string) => {
@@ -110,7 +127,13 @@ export function createDraftRepository(storage: DraftStorage, onError: (error: Er
             if (conflicts.has(id)) throw conflicts.get(id);
             // Resolve our last committed revision at execution time, so queued
             // writes from this tab do not conflict with their own predecessors.
-            revisions.set(id, await storage.put(snapshot, revisions.get(id) ?? 0));
+            const revision = await storage.put(snapshot, revisions.get(id) ?? 0);
+            revisions.set(id, revision);
+            const entry = journal?.read(id);
+            if (entry && journalNonces.has(entry.nonce)) {
+                if (entry.text === snapshot.draft.text) journal!.clear(id);
+                else journal!.write(id, { ...entry, revision, previousText: snapshot.draft.text });
+            }
         });
         tail = write;
         void write.catch(error => {
@@ -126,6 +149,13 @@ export function createDraftRepository(storage: DraftStorage, onError: (error: Er
           if (loadFailure) throw loadFailure;
           if (conflicts.size) throw conflicts.values().next().value;
           try {
+            // Rotate loaded nonces so an old page's late write cannot clear
+            // this page's journal after navigation.
+            const entries = new Map<string, TextJournalEntry>();
+            if (journal) for (const id of journal.ids()) {
+                const entry = journal.read(id);
+                if (entry) { const rotated = { ...entry, nonce: randomClientId() }; journal.write(id, rotated); journalNonces.add(rotated.nonce); entries.set(id, rotated); }
+            }
             const rows = await storage.load();
             // No mutation/send on recovery. Old captures may not carry their
             // token into native admission; failure or no proof remains unknown.
@@ -147,6 +177,21 @@ export function createDraftRepository(storage: DraftStorage, onError: (error: Er
                     row.revision = await storage.put(row, expected);
                 }
             }
+            for (const [id, entry] of entries) {
+                let row = rows.find(value => value.sessionId === id);
+                if (!row) { row = { sessionId: id, draft: emptyDraft(), pending: [] }; rows.push(row); }
+                if (row.draft.text === entry.text) { journal!.clear(id); continue; }
+                // Another tab's revision is safe only when it contains the
+                // previous text this same tab last observed. Never overwrite
+                // a different committed draft or an unconfirmed send.
+                if (row.pending.length || row.draft.text !== entry.previousText) {
+                    row.error = 'A different draft or pending send exists. Same-tab text recovery was not applied; check the other tab before editing.';
+                    continue;
+                }
+                row.draft.text = entry.text;
+                row.revision = await storage.put(row, revision(row));
+                journal!.clear(id);
+            }
             for (const row of rows) { records.set(row.sessionId, row); revisions.set(row.sessionId, revision(row)); }
           } catch (error) { loadFailure = error; records.clear(); revisions.clear(); throw error; }
         },
@@ -155,12 +200,18 @@ export function createDraftRepository(storage: DraftStorage, onError: (error: Er
         update(id: string, patch: Partial<Draft>) {
             const draft = record(id).draft;
             if (Object.entries(patch).every(([field, value]) => draft[field as keyof Draft] === value)) return;
+            const previousText = journal?.read(id)?.previousText ?? draft.text;
             Object.assign(draft, patch);
+            if (typeof patch.text === 'string' && journal) {
+                const nonce = randomClientId(); journalNonces.add(nonce);
+                journal.write(id, { text: patch.text, previousText, revision: revisions.get(id) ?? 0, nonce });
+            }
             void persist(id).catch(() => {});
         },
         begin(id: string, draft: Draft) {
             const token = randomClientId();
             const row = record(id);
+            journal?.clear(id);
             row.pending.push({ id: token, draft: copy(draft) });
             row.draft = emptyDraft();
             row.error = '';

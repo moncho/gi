@@ -36,12 +36,19 @@ for(const [browserName,type] of Object.entries({chromium,webkit}))for(const [vie
   assert.equal(await page.locator('.image-annotator').count(),0);
   assert.equal(new URL(await modal.locator('img').getAttribute('src'),host.origin).pathname,'/media/731');
   await page.waitForFunction(()=>{const img=document.querySelector('.image-modal img');return img?.complete&&img.naturalWidth>0;});
+  for(const key of ['Space','Enter','x','ArrowDown','ArrowLeft']){
+   await page.keyboard.press(key);assert.equal(await modal.isVisible(),true,`${key} must not dismiss installed lightbox`);
+  }
   await page.keyboard.press('Escape');await modal.waitFor({state:'hidden'});
   await thumbnail.tap();await modal.waitFor({state:'visible'});assert.equal(await page.locator('.image-annotator').count(),0);
+  await modal.click({position:{x:5,y:5}});await modal.waitFor({state:'hidden'});
+  await thumbnail.click();await modal.waitFor({state:'visible'});await modal.locator('img').click();await modal.waitFor({state:'hidden'});
+  await thumbnail.tap();await modal.waitFor({state:'visible'});await modal.tap({position:{x:5,y:5}});await modal.waitFor({state:'hidden'});
+  await thumbnail.tap();await modal.waitFor({state:'visible'});await modal.locator('img').tap();await modal.waitFor({state:'hidden'});
   assert.equal(await draft.inputValue(),'keep unsent lightbox draft');
   assert.deepEqual(writes.filter(x=>!['POST /agent/push/presence','POST /workspace/visibility'].includes(x)),[]);
   assert(mediaReads.includes('/media/731/thumbnail')&&mediaReads.includes('/media/731'));
-  host.assert();cases.push({browser:browserName,viewport:viewportName,nonIPad:true,clickAndTapOpenLightbox:true,annotatorAbsent:true,escapeCloses:true,draftRetained:true,mediaPaths:[...new Set(mediaReads)]});
+  host.assert();cases.push({browser:browserName,viewport:viewportName,nonIPad:true,clickAndTapOpenLightbox:true,annotatorAbsent:true,escapeCloses:true,nonEscapeKeepsOpen:true,backdropAndImageClickClose:true,backdropAndImageTapClose:true,draftRetained:true,mediaPaths:[...new Set(mediaReads)]});
  }finally{await host.dispose();await browser.close();}
 }
 console.log(JSON.stringify({scope:'Mounted installed Piclaw 3.2.4 Classic, disposable post and PNG responses, emulated non-iPad user agent and browser tap. No Gi iPad-positive path, real media store, physical touch, annotation upload or full @ux-timeline-006 acceptance.',cases},null,2));

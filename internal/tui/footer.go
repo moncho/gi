@@ -220,7 +220,7 @@ func (c *chatTUI) footerRows(width int) []footerRow {
 		model = "no-model"
 	}
 	right := model
-	switch thinking := strings.TrimSpace(data.thinking); thinking {
+	switch thinking := c.effectiveThinking(data.provider, data.model, data.thinking); thinking {
 	case "":
 	case "off":
 		right += " • thinking off"

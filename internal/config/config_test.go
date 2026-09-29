@@ -52,7 +52,7 @@ func TestPersistModelSelectionUpdatesPiSettings(t *testing.T) {
 func TestLoadFallsBackToGiDefaultsWhenNoPiSettingsExist(t *testing.T) {
 	root := t.TempDir()
 	cfg := Load(root)
-	if cfg.DefaultProvider != "opencode-zen" || cfg.DefaultModel != "opencode-zen/minimax-m2.5-free" || cfg.DefaultThinkingLevel != "low" {
+	if cfg.DefaultProvider != "opencode-zen" || cfg.DefaultModel != "opencode-zen/minimax-m2.5-free" || cfg.DefaultThinkingLevel != "medium" {
 		t.Fatalf("unexpected defaults: %#v", cfg)
 	}
 	if len(cfg.EnabledModels) != 1 || cfg.EnabledModels[0] != "opencode-zen/minimax-m2.5-free" {
@@ -222,5 +222,24 @@ func TestLoadClipboardModePreservesUnsetAndExplicitPolicy(t *testing.T) {
 	}
 	if got := Load(t.TempDir()).TUIClipboardMode; got != "" {
 		t.Fatalf("fresh workspace mode = %q", got)
+	}
+}
+
+func TestLoadMergesGlobalPiSettingsUnderProject(t *testing.T) {
+	agent := t.TempDir()
+	t.Setenv("PI_CODING_AGENT_DIR", agent)
+	if err := os.WriteFile(filepath.Join(agent, "settings.json"), []byte(`{"defaultProvider":"github-copilot","defaultModel":"gpt-5.4","defaultThinkingLevel":"high"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := Load(t.TempDir())
+	if cfg.DefaultProvider != "github-copilot" || cfg.DefaultModel != "gpt-5.4" || cfg.DefaultThinkingLevel != "high" {
+		t.Fatalf("global settings not applied: %q %q %q", cfg.DefaultProvider, cfg.DefaultModel, cfg.DefaultThinkingLevel)
+	}
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, ".pi"), 0o755)
+	os.WriteFile(filepath.Join(root, ".pi", "settings.json"), []byte(`{"defaultProvider":"test","defaultModel":"test-model"}`), 0o644)
+	cfg = Load(root)
+	if cfg.DefaultProvider != "test" || cfg.DefaultModel != "test-model" || cfg.DefaultThinkingLevel != "high" {
+		t.Fatalf("project must override global: %q %q %q", cfg.DefaultProvider, cfg.DefaultModel, cfg.DefaultThinkingLevel)
 	}
 }

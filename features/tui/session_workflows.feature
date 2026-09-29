@@ -12,7 +12,7 @@ Feature: TUI session and agent workflows
     Then the screen should contain "@agent · test-model · low · m0/t0"
     When I type "/fork @agent1" and press Enter
     Then the screen should contain "switched to @agent1"
-    And the screen should contain "test-model • low"
+    And the screen should contain "test-model • medium"
     When I type "/agents" and press Enter
     Then the screen should contain "@agent1"
     When I type "/tree" and press Enter

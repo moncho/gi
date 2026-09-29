@@ -32,6 +32,9 @@ type multilineInput struct {
 	onTranscriptTop  func()
 	onTranscriptEnd  func()
 	onComplete       func(string, int) (string, int, bool)
+	// interceptKey lets an open autocomplete list take Tab/Enter/Escape
+	// before the editor's own bindings (Pi's Editor autocomplete mode).
+	interceptKey func(gotui.Key) bool
 	onChange         func(string)
 	text             string
 	cursorPos        int
@@ -125,8 +128,18 @@ func (m *multilineInput) KeyMap() gotui.KeyMap {
 		gotui.OnFocused(gotui.KeyDelete.Alt(), func(ke gotui.KeyEvent) { m.deleteWordForward() }),
 		gotui.OnFocused(gotui.KeyCtrlZ, func(ke gotui.KeyEvent) { m.undo() }),
 		gotui.OnFocused(gotui.KeyCtrlY, func(ke gotui.KeyEvent) { m.yank() }),
-		gotui.OnFocused(gotui.KeyTab, func(ke gotui.KeyEvent) { m.complete() }),
-		gotui.OnFocused(gotui.KeyEnter, m.enter),
+		gotui.OnFocused(gotui.KeyTab, func(ke gotui.KeyEvent) {
+			if m.interceptKey != nil && m.interceptKey(gotui.KeyTab) {
+				return
+			}
+			m.complete()
+		}),
+		gotui.OnFocused(gotui.KeyEnter, func(ke gotui.KeyEvent) {
+			if m.interceptKey != nil && m.interceptKey(gotui.KeyEnter) {
+				return
+			}
+			m.enter(ke)
+		}),
 		gotui.OnFocused(gotui.KeyEnter.Shift(), m.enter),
 		gotui.OnFocused(gotui.KeyCtrlJ, func(ke gotui.KeyEvent) {
 			if m.onNewline != nil {
@@ -142,6 +155,9 @@ func (m *multilineInput) KeyMap() gotui.KeyMap {
 			}
 		}),
 		gotui.OnFocused(gotui.KeyEscape, func(_ gotui.KeyEvent) {
+			if m.interceptKey != nil && m.interceptKey(gotui.KeyEscape) {
+				return
+			}
 			if m.onEscape != nil {
 				m.onEscape()
 			}
@@ -177,7 +193,8 @@ func (m *multilineInput) Render(app *gotui.App) *gotui.Element {
 	root.SetOnBlur(func(e *gotui.Element) { m.Blur() })
 	for _, line := range lines {
 		style := m.textStyle
-		if line.placeholder {
+		// The empty editor is just Pi's reverse-video cursor cell, not dim text.
+		if line.placeholder && line.cursor < 0 {
 			style = m.placeholderStyle
 		}
 		root.AddChild(renderEditorLine(line, style))

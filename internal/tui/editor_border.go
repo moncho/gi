@@ -6,6 +6,7 @@ import (
 	"time"
 
 	gotui "github.com/grindlemire/go-tui"
+	"github.com/rcarmo/gi/internal/inference"
 )
 
 // Pi's CustomEditor draws horizontal borders above and below the draft, in the
@@ -22,7 +23,28 @@ func (c *chatTUI) editorBorderColor() gotui.Color {
 	if c.input != nil && strings.HasPrefix(strings.TrimLeft(c.input.Text(), " \t\r\n"), "!") {
 		return piBashMode
 	}
-	return piThinkingBorderColor(c.cfg.DefaultThinkingLevel)
+	return piThinkingBorderColor(c.effectiveThinking(c.cfg.DefaultProvider, c.cfg.DefaultModel, c.cfg.DefaultThinkingLevel))
+}
+
+// effectiveThinking mirrors Pi's session thinking level: the selected level,
+// else the configured default, else Pi's "medium"; "off" for models the
+// registry knows do not reason. "" means the model does not reason at all.
+func (c *chatTUI) effectiveThinking(provider, model, level string) string {
+	level = strings.ToLower(strings.TrimSpace(level))
+	if level == "" {
+		level = strings.ToLower(strings.TrimSpace(c.cfg.DefaultThinkingLevel))
+	}
+	if level == "" {
+		level = "medium"
+	}
+	id := strings.TrimSpace(model)
+	if provider = strings.TrimSpace(provider); provider != "" && !strings.HasPrefix(id, provider+"/") && !strings.Contains(id, "/") {
+		id = provider + "/" + id
+	}
+	if known, reasoning := inference.ModelReasoning(id); known && !reasoning {
+		return ""
+	}
+	return level
 }
 
 // editorStatus returns Pi's active status indicator (spinner frame, message and

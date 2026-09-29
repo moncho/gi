@@ -71,3 +71,16 @@ func SelectThinking(ctx context.Context, s *store.Store, id, expected, model, le
 	}
 	return s.GetSession(ctx, id)
 }
+
+// ModelReasoning reports whether the model registry knows modelID and, if so,
+// whether it supports reasoning. Pi omits the footer thinking level and uses
+// the "off" editor border for non-reasoning models.
+func ModelReasoning(modelID string) (known, reasoning bool) {
+	Init()
+	provider, name := splitModelID(modelID)
+	model := goai.GetModel(goai.Provider(provider), name)
+	if model == nil {
+		return false, false
+	}
+	return true, model.Reasoning
+}

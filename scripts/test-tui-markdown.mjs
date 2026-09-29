@@ -120,7 +120,7 @@ for(const scenario of scenarios){
   shot('initial');
   tm('send-keys','-t',pane,'-l','unsent draft');await wait(()=>cap().includes('unsent draft'),'draft');
   tm('resize-window','-t','proof','-x',String(width+8),'-y',String(height+3));await wait(()=>cap().includes('%/'),'resized Markdown');
-  tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent draft')&&cap().includes('test-model • low'),'resize round trip');
+  tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent draft')&&cap().includes('test-model •'),'resize round trip');
   // Like Pi, regular mode re-renders its retained transcript once resizing settles.
   await sleep(400);
   check('resized');shot('resized');

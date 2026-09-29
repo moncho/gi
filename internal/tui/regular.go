@@ -164,11 +164,12 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	c.input.suspended = c.modelMenuOpen
 	footer := c.footerLines(w)
 	queue := c.pendingQueueLines(w, h)
-	widgets := c.extensionWidgetLines()
+	// Pi's Spacer(1) above the editor (widget container).
+	widgets := append([]string{""}, c.extensionWidgetLines()...)
 	if c.editorAskActive {
 		widgets = append(widgets, "? "+c.editorAskPrompt+" (Enter submit · Esc cancel)")
 	}
-	menuHeight := c.modelMenuHeight()
+	menuHeight := c.modelMenuHeight() + c.slashMenuHeight()
 	// Active output is temporary and bounded; the idle dock has only editor,
 	// separators and existing footer. Leave at least one terminal-owned history row.
 	previewHeight := 0
@@ -216,6 +217,9 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	root.AddChild(c.renderEditorTopBorder(c.input, w))
 	root.AddChild(input)
 	root.AddChild(c.renderEditorBottomBorder(c.input, w))
+	if c.slash.active {
+		root.AddChild(c.renderSlashMenu(w))
+	}
 	root.AddChild(c.renderFooter(w))
 	c.inputRegion = input
 	return root

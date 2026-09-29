@@ -153,6 +153,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.Routing = ps.Routing
 		cfg.WorkspaceIndex = ps.WorkspaceIndex
 	}
+	applyGlobalPiSettings(&cfg)
 	if discovery, err := skills.Discover(workspaceRoot); err == nil {
 		cfg.Discovery = discovery
 	}
@@ -172,7 +173,8 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.DefaultModel = cfg.EnabledModels[0]
 	}
 	if strings.TrimSpace(cfg.DefaultThinkingLevel) == "" {
-		cfg.DefaultThinkingLevel = "low"
+		// Pi's DEFAULT_THINKING_LEVEL.
+		cfg.DefaultThinkingLevel = "medium"
 	}
 	if len(cfg.Session.Dimensions) == 0 {
 		cfg.Session.Dimensions = []string{"chat"}
@@ -285,4 +287,41 @@ func readJSON(path string, target any) error {
 		return errors.New("empty file")
 	}
 	return json.Unmarshal(data, target)
+}
+
+// piAgentDir is Pi's global config directory (PI_CODING_AGENT_DIR or
+// ~/.pi/agent).
+func piAgentDir() string {
+	if dir := strings.TrimSpace(os.Getenv("PI_CODING_AGENT_DIR")); dir != "" {
+		return dir
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || strings.TrimSpace(home) == "" {
+		return ""
+	}
+	return filepath.Join(home, ".pi", "agent")
+}
+
+// applyGlobalPiSettings merges Pi's global settings.json under the project
+// settings, as Pi does: project values win, global values fill the model,
+// provider, thinking level and scoped models when the project leaves them unset.
+func applyGlobalPiSettings(cfg *RuntimeConfig) {
+	dir := piAgentDir()
+	if dir == "" {
+		return
+	}
+	var global piSettings
+	if err := readJSON(filepath.Join(dir, "settings.json"), &global); err != nil {
+		return
+	}
+	if strings.TrimSpace(cfg.DefaultProvider) == "" && strings.TrimSpace(cfg.DefaultModel) == "" {
+		cfg.DefaultProvider = global.DefaultProvider
+		cfg.DefaultModel = global.DefaultModel
+	}
+	if strings.TrimSpace(cfg.DefaultThinkingLevel) == "" {
+		cfg.DefaultThinkingLevel = global.DefaultThinkingLevel
+	}
+	if len(cfg.EnabledModels) == 0 && len(global.EnabledModels) > 0 {
+		cfg.EnabledModels = append([]string(nil), global.EnabledModels...)
+	}
 }

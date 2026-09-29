@@ -220,6 +220,8 @@ type chatTUI struct {
 	regularSessionPending       bool
 	regularWidth, regularHeight int
 	regularReflowGen            int
+	slash                       slashMenu
+	slashLastText               string
 	footerUsage                 *footerUsageCache
 	footerAuth                  *footerAuthCache
 	transcriptScroll            int
@@ -288,11 +290,15 @@ func (c *chatTUI) ensureInput() {
 	c.input.onRestoreQueued = c.restoreQueuedDraft
 	c.input.onFollowUp = c.onFollowUp
 	c.input.onComplete = c.completeInputPath
+	c.input.interceptKey = c.handleSlashKey
 	c.input.onEscape = c.handleTranscriptEscape
 	c.bindTranscriptNavigation()
 }
 
-func (c *chatTUI) onInputChanged(string) {
+func (c *chatTUI) onInputChanged(text string) {
+	previous := c.slashLastText
+	c.slashLastText = text
+	c.updateSlashMenu(previous)
 	if !c.historyApplying && !c.draftApplying {
 		c.histIdx = -1
 		c.historyDraft = ""
@@ -1738,6 +1744,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 			c.recallHistory(1)
 		}),
 	}
+	if slash := c.slashMenuKeys(); slash != nil {
+		bindings = append(slash, bindings...)
+	}
 	if c.regularMode {
 		return regularKeyMap(bindings)
 	}
@@ -1987,19 +1996,16 @@ func (c *chatTUI) modelMenuVisibleRows() int {
 	if width == 0 {
 		width = 80
 	}
-	padding := 2
-	if width < 80 || height < 20 {
-		padding = 0
-	}
+	padding := 0 // Pi draws transcript, editor and footer edge to edge.
 	inputRows := 1
 	if c.input != nil {
 		input := *c.input
 		input.width = max(1, width-padding)
-		input.maxLines = editorViewportRows(height, height-padding-len(c.footerLines(width))-len(c.pendingQueueLines(width-padding, height))-len(c.extensionWidgetLines())-2-4-3)
+		input.maxLines = editorViewportRows(height, height-padding-len(c.footerLines(width))-len(c.pendingQueueLines(width-padding, height))-len(c.extensionWidgetLines())-1-2-4-3)
 		inputRows = max(1, len(input.renderLines()))
 	}
 	// Leave transcript, editor/separators and the existing footer intact.
-	available := height - padding - len(c.footerLines(width)) - len(c.pendingQueueLines(width-padding, height)) - len(c.extensionWidgetLines()) - inputRows - 2 - 4 - 2
+	available := height - padding - len(c.footerLines(width)) - len(c.pendingQueueLines(width-padding, height)) - len(c.extensionWidgetLines()) - 1 - inputRows - 2 - 4 - 2
 	return min(6, max(1, available))
 }
 
@@ -2912,49 +2918,53 @@ func (c *chatTUI) extensionCommandLines(text string, fields []string) ([]string,
 	}
 }
 
+// tuiCommands is gi's slash command catalogue, used by /commands and by the
+// Pi-style slash autocomplete below the editor.
+var tuiCommands = []struct{ name, hint string }{
+	{"/help", "show grouped help"},
+	{"/commands [query]", "filter command palette textually"},
+	{"/hotkeys", "show keyboard shortcuts"},
+	{"/session", "show current session details"},
+	{"/new", "create and switch to a new main session"},
+	{"/name <name>", "rename current session"},
+	{"/resume [index|session_id]", "list or switch recent sessions"},
+	{"/sessions", "searchable session resume selector"},
+	{"/clone [@agentN]", "clone active branch/session"},
+	{"/copy [--osc52|--native|--auto|--fallback]", "copy last assistant message with opt-in target"},
+	{"/attach <path> [prompt]", "stage up to six session media refs for next prompt"},
+	{"/draft [reload|check|release|restore|discard]", "inspect/recover durable drafts; never auto resend"},
+	{"/retry [page|check|run|release]", "inspect held failures; full ID/token guarded actions"},
+	{"/queue [page|remove|steer|move]", "inspect durable queue; mutate by full turn IDs"},
+	{"/attachments", "list durable refs / held admissions"},
+	{"/detach <media:id|all|unresolved>", "remove pending refs; keep stored files"},
+	{"/paste-image [prompt]", "paste a clipboard image and optionally submit a prompt"},
+	{"/login [provider]", "show OAuth/credential auth status"},
+	{"/logout <provider>", "remove stored provider credentials"},
+	{"/reload", "refresh config and discovery safely"},
+	{"/tools [query|active|activate|reset]", "inspect or change active tools"},
+	{"/skills [query]", "list discovered skills"},
+	{"/skill:name [args]", "load a discovered SKILL.md"},
+	{"/model [name|index]", "list or select model"},
+	{"/scoped-models [list|add|remove|set]", "manage enabled models"},
+	{"/thinking [level]", "show or set thinking level"},
+	{"/compact", "request context compaction"},
+	{"/scrollback [n]", "show or set transcript scrollback limit"},
+	{"/history-limit [n]", "show or set per-session prompt history limit"},
+	{"/settings", "show grouped runtime settings"},
+	{"/cancel", "cancel latest active/queued turn"},
+	{"/agents", "list configured agents"},
+	{"/tree", "show session tree"},
+	{"/plugins", "show loaded extensions"},
+	{"/fork [@agentN]", "create peer/fork session"},
+	{"/switch @agent|session_id", "switch active session"},
+	{"/send @agent message", "send peer message"},
+	{"/where", "show context summary"},
+	{"!cmd", "ask model to run/summarize shell command"},
+	{"!!cmd", "run local shell command"},
+}
+
 func (c *chatTUI) commandPaletteLines(query string) []string {
-	commands := []struct{ name, hint string }{
-		{"/help", "show grouped help"},
-		{"/commands [query]", "filter command palette textually"},
-		{"/hotkeys", "show keyboard shortcuts"},
-		{"/session", "show current session details"},
-		{"/new", "create and switch to a new main session"},
-		{"/name <name>", "rename current session"},
-		{"/resume [index|session_id]", "list or switch recent sessions"},
-		{"/sessions", "searchable session resume selector"},
-		{"/clone [@agentN]", "clone active branch/session"},
-		{"/copy [--osc52|--native|--auto|--fallback]", "copy last assistant message with opt-in target"},
-		{"/attach <path> [prompt]", "stage up to six session media refs for next prompt"},
-		{"/draft [reload|check|release|restore|discard]", "inspect/recover durable drafts; never auto resend"},
-		{"/retry [page|check|run|release]", "inspect held failures; full ID/token guarded actions"},
-		{"/queue [page|remove|steer|move]", "inspect durable queue; mutate by full turn IDs"},
-		{"/attachments", "list durable refs / held admissions"},
-		{"/detach <media:id|all|unresolved>", "remove pending refs; keep stored files"},
-		{"/paste-image [prompt]", "paste a clipboard image and optionally submit a prompt"},
-		{"/login [provider]", "show OAuth/credential auth status"},
-		{"/logout <provider>", "remove stored provider credentials"},
-		{"/reload", "refresh config and discovery safely"},
-		{"/tools [query|active|activate|reset]", "inspect or change active tools"},
-		{"/skills [query]", "list discovered skills"},
-		{"/skill:name [args]", "load a discovered SKILL.md"},
-		{"/model [name|index]", "list or select model"},
-		{"/scoped-models [list|add|remove|set]", "manage enabled models"},
-		{"/thinking [level]", "show or set thinking level"},
-		{"/compact", "request context compaction"},
-		{"/scrollback [n]", "show or set transcript scrollback limit"},
-		{"/history-limit [n]", "show or set per-session prompt history limit"},
-		{"/settings", "show grouped runtime settings"},
-		{"/cancel", "cancel latest active/queued turn"},
-		{"/agents", "list configured agents"},
-		{"/tree", "show session tree"},
-		{"/plugins", "show loaded extensions"},
-		{"/fork [@agentN]", "create peer/fork session"},
-		{"/switch @agent|session_id", "switch active session"},
-		{"/send @agent message", "send peer message"},
-		{"/where", "show context summary"},
-		{"!cmd", "ask model to run/summarize shell command"},
-		{"!!cmd", "run local shell command"},
-	}
+	commands := tuiCommands
 	q := strings.ToLower(strings.TrimSpace(query))
 	lines := []string{"commands: palette"}
 	for _, cmd := range commands {
@@ -4096,10 +4106,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 		return c.renderRegular(app)
 	}
 	w, h := app.Size()
-	padding := 1
-	if w < 80 || h < 20 {
-		padding = 0
-	}
+	padding := 0 // Pi draws transcript, editor and footer edge to edge.
 	contentWidth := w - (padding * 2)
 	if contentWidth < 20 {
 		contentWidth = 20
@@ -4118,11 +4125,13 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	c.input.suspended = c.workspaceIndex.active || c.modelMenuOpen
 	footerLines := c.footerLines(contentWidth)
 	pendingLines := c.pendingQueueLines(contentWidth, h)
-	widgetLines := c.extensionWidgetLines()
+	// Pi's widget container above the editor always starts with Spacer(1),
+	// leaving one blank row between the transcript and the input.
+	widgetLines := append([]string{""}, c.extensionWidgetLines()...)
 	if c.editorAskActive {
 		widgetLines = append(widgetLines, "? "+c.editorAskPrompt+"  (Enter submit · Esc cancel)")
 	}
-	menuHeight := c.modelMenuHeight() + c.workspaceIndexHeight()
+	menuHeight := c.modelMenuHeight() + c.workspaceIndexHeight() + c.slashMenuHeight()
 	c.boundEditor(h, padding, len(footerLines), len(widgetLines)+len(pendingLines), menuHeight, false)
 	activeInput := c.input
 	inputSlot := 0
@@ -4214,6 +4223,9 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	}
 	root.AddChild(inputEl)
 	root.AddChild(c.renderEditorBottomBorder(activeInput, contentWidth))
+	if c.slash.active && !c.search.active {
+		root.AddChild(c.renderSlashMenu(contentWidth))
+	}
 
 	root.AddChild(c.renderFooter(contentWidth))
 
@@ -4487,35 +4499,58 @@ func formatContextUsage(tokens, window int) string {
 	return fmt.Sprintf("ctx %s", formatTokenCount(tokens))
 }
 
+// gitBranchName finds the repository containing workspace, as Pi's footer
+// does from its cwd: walk up to the nearest .git (directory, or a worktree/
+// submodule file pointing at the real git dir) and read HEAD.
 func (c *chatTUI) gitBranchName(workspace string) string {
 	if workspace == "" {
 		return ""
 	}
-	headPath := filepath.Join(workspace, ".git", "HEAD")
-	raw, err := os.ReadFile(headPath)
+	dir, err := filepath.Abs(workspace)
 	if err != nil {
 		return ""
 	}
-	head := strings.TrimSpace(string(raw))
-	const prefix = "ref: refs/heads/"
-	if strings.HasPrefix(head, prefix) {
-		return strings.TrimPrefix(head, prefix)
+	for {
+		gitPath := filepath.Join(dir, ".git")
+		if info, err := os.Stat(gitPath); err == nil {
+			gitDir := gitPath
+			if !info.IsDir() {
+				raw, err := os.ReadFile(gitPath)
+				if err != nil {
+					return ""
+				}
+				ref := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(raw)), "gitdir:"))
+				if ref == "" {
+					return ""
+				}
+				if !filepath.IsAbs(ref) {
+					ref = filepath.Join(dir, ref)
+				}
+				gitDir = ref
+			}
+			raw, err := os.ReadFile(filepath.Join(gitDir, "HEAD"))
+			if err != nil {
+				return ""
+			}
+			head := strings.TrimSpace(string(raw))
+			const prefix = "ref: refs/heads/"
+			if strings.HasPrefix(head, prefix) {
+				return strings.TrimPrefix(head, prefix)
+			}
+			// Pi reports "detached" for a detached HEAD.
+			return "detached"
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
 	}
-	if len(head) >= 7 {
-		return head[:7]
-	}
-	return head
 }
 
-func (c *chatTUI) currentPadding() int {
-	if c.app != nil {
-		w, h := c.app.Size()
-		if w < 80 || h < 20 {
-			return 0
-		}
-	}
-	return 1
-}
+// Pi has no outer frame padding: rows run edge to edge and components pad
+// themselves (messages and tool bands by one column).
+func (c *chatTUI) currentPadding() int { return 0 }
 
 func (c *chatTUI) compactOutput() bool { return c.currentContentWidth() < 72 }
 
@@ -4549,11 +4584,8 @@ func (c *chatTUI) currentContentWidth() int {
 	if c.app == nil {
 		return 78
 	}
-	w, h := c.app.Size()
-	padding := 1
-	if w < 80 || h < 20 {
-		padding = 0
-	}
+	w, _ := c.app.Size()
+	padding := 0 // Pi draws transcript, editor and footer edge to edge.
 	contentWidth := w - (padding * 2)
 	if contentWidth < 20 {
 		contentWidth = 20

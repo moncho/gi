@@ -4131,6 +4131,19 @@ func (r *sessionRunner) runAgentLoop(ctx context.Context, s *store.Store, turnID
 
 		needsToolExecution := goai.NeedsToolExecution(assistantMsg) || len(toolCalls) > 0
 		if !needsToolExecution {
+			// A direct reply is a completed assistant message even when steering
+			// keeps this run active for another model request. Persist it before
+			// rebuilding the next context from SQLite; otherwise it vanishes from
+			// both history and the visible timeline.
+			msgID := store.NowID("msg")
+			messagePayload := map[string]any{"kind": "chat", "source": "inference", "model": model, "turn_id": turnID, "agent_id": agentID, "iterations": iter}
+			r.addRecoveryMarker(ctx, sessionID, turnID, messagePayload)
+			if err := s.AddMessage(ctx, msgID, sessionID, "assistant", textContent, messagePayload); err != nil {
+				r.finishTurn(s, turnID, sessionID, agentID, model, "failed", "Persist assistant response: "+err.Error(), "persistence_error")
+				return
+			}
+			r.broadcastPost(sessionID, turnID, msgID, textContent, agentID, messagePayload["content_blocks"])
+			_, _ = r.engine.emitHook(ctx, HookRequest{Name: HookMessageEnd, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"chars": len(textContent)}})
 			if steerMsgs, err := r.dequeueSteeringMessages(ctx, sessionID, turnID); err != nil {
 				log.Printf("steering dequeue error after direct response: %v", err)
 			} else if len(steerMsgs) > 0 {
@@ -4140,14 +4153,6 @@ func (r *sessionRunner) runAgentLoop(ctx context.Context, s *store.Store, turnID
 			log.Printf("inference [%s]: final response (%d chars, %d iterations)", iterLabel, len(textContent), iter)
 			agentEndReason = "completed"
 			r.persistUsage(s, turnID, sessionID, &totalUsage, iter)
-
-			msgID := store.NowID("msg")
-			messagePayload := map[string]any{"kind": "chat", "source": "inference", "model": model, "turn_id": turnID, "agent_id": agentID, "iterations": iter}
-			r.addRecoveryMarker(ctx, sessionID, turnID, messagePayload)
-			logutil.WarnIfErr("add assistant inference message", s.AddMessage(ctx, msgID, sessionID, "assistant", textContent, messagePayload))
-
-			r.broadcastPost(sessionID, turnID, msgID, textContent, agentID, messagePayload["content_blocks"])
-			_, _ = r.engine.emitHook(ctx, HookRequest{Name: HookMessageEnd, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"chars": len(textContent)}})
 			_, _ = r.engine.emitHook(ctx, HookRequest{Name: HookTurnEnd, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"status": "completed"}})
 			r.finishTurnOK(s, turnID, sessionID, agentID, model, iter)
 			return

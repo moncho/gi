@@ -28,7 +28,7 @@ func TestInlineCodeKeepsSentenceAndSpacesAcrossStyling(t *testing.T) {
 		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(50), gotui.WithHeight(5))
 		root.AddChild(el)
 		buf := gotui.NewBuffer(50, 5)
-		root.Render(buf, 50, 5)
+		root.RenderTo(buf, 50, 5)
 		// The terminal displays non-breaking spaces like ordinary spaces. They
 		// prevent go-tui's word wrapper from eating code's boundary spaces.
 		screen := strings.ReplaceAll(buf.StringTrimmed(), "\u00a0", " ")

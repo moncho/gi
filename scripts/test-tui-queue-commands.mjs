@@ -12,7 +12,7 @@ for(const mode of ['fullscreen','regular'])for(const[width,height]of[[60,18],[10
  const command=async text=>{type(text);await wait(()=>cap().replaceAll('▌','').includes(text),'command input '+text);keys('Enter');await sleep(140)},shot=name=>{writeFileSync(join(out,`${mode}-${width}-${name}.txt`),all());writeFileSync(join(out,`${mode}-${width}-${name}.ansi`),tm('capture-pane','-p','-e','-t',pane))};
  const launch=()=>tm('new-session','-d','-s','proof','-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' '${bin}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model; echo EXIT; sleep 60`);
  try{
-  launch();await wait(()=>cap().includes('m0/t0'),'ready');const id=sql('SELECT id FROM sessions LIMIT 1');
+  launch();await wait(()=>cap().includes('%/'),'ready');const id=sql('SELECT id FROM sessions LIMIT 1');
   for(let i=0;i<8;i++)sql(`INSERT INTO turns(id,session_id,status,phase,prompt,metadata_json,queue_position,created_at,updated_at) VALUES('q${i}','${id}','queued','queued','native fixture ${i}','{"custom":"retained"}',${i+1},datetime('now'),datetime('now'))`);
   await command('/queue');await wait(()=>all().includes('8 queued'),'durable list');shot('list');
   await command('/queue 2');await wait(()=>all().includes('page 2/2'),'second page');shot('page2');

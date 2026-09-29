@@ -15,7 +15,7 @@ for(const mode of ['fullscreen','regular'])for(const [width,height] of [[60,18],
  const open=async id=>{await wait(()=>!cap().includes('Select session')&&!cap().includes('Session actions'),'picker closed');keys('M-s');await wait(()=>cap().includes('Select session'),'picker');type(id);await wait(()=>cap().includes('(1 match)'),'filtered picker');await sleep(100);keys('Right');await wait(()=>cap().includes('Session actions'),'actions');};
  mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model']}));
  try{
-  tm('new-session','-d','-s','proof','-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);tm('set-option','-t','proof','status','off');await wait(()=>cap().includes('m0/t0'),'startup');
+  tm('new-session','-d','-s','proof','-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);tm('set-option','-t','proof','status','off');await wait(()=>cap().includes('%/'),'startup');
   const main=sql('select id from sessions limit 1;');type('retained native history');keys('Enter');await wait(()=>sql("select count(*) from turns where status='completed';")==='1','history');
   type('/fork actions-child');keys('Enter');await wait(()=>sql('select count(*) from sessions;')==='2'&&cap().includes('@actions-child'),'fork');
   const child=sql(`select id from sessions where parent_session_id='${main}';`);assert(child,'fork not child');

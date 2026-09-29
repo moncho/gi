@@ -20,7 +20,7 @@ for(const mode of ['fullscreen','regular'])for(const [width,height]of [[60,18],[
  const line=()=>hist().split('\n').filter(l=>l.includes('shell')&&/\d+(?:\.\d+)?(?:ms|s)/.test(l)).at(-1)?.trim();
  try{
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);tmux('set-option','-t',session,'status','off');
-  await wait(()=>cap().includes('m0/t0'),'startup');const rows=barRows();assert(rows.length===2,'initial editor bands');const idleFootprint=footprint();writeFileSync(join(artifacts,`${mode}-${width}-baseline.txt`),cap());
+  await wait(()=>cap().includes('%/'),'startup');const rows=barRows();assert(rows.length===2,'initial editor bands');const idleFootprint=footprint();writeFileSync(join(artifacts,`${mode}-${width}-baseline.txt`),cap());
   type('UX queue gate:timed');keys('Enter');await wait(()=>!idle()&&sql("select count(*) from turn_events where event_type='tool.started';")==='1','tool start');
   type('draft β middle');keys('Left','Left','Left');await sleep(1200);
   if(mode==='fullscreen'){await wait(()=>Boolean(line()),'live tool elapsed');const first=line();await wait(()=>line()!==first,'elapsed tick');}else{assert(!hist().includes('tool running'),'regular mode printed mutable tool block');}

@@ -12,25 +12,25 @@ import (
 // The user message alone gets a background; transcript output stays on the
 // terminal background.
 var (
-	piText            = gotui.RGBColor(222, 224, 225)
-	piMuted           = gotui.RGBColor(157, 165, 169)
-	piDim             = gotui.RGBColor(126, 136, 142)
-	piAccent          = gotui.RGBColor(167, 152, 215)
-	piError           = gotui.RGBColor(234, 127, 129)
-	piWarning         = gotui.RGBColor(205, 154, 34)
-	piSuccess         = gotui.RGBColor(104, 183, 141)
-	piThinkingText    = gotui.RGBColor(150, 160, 164)
-	piUserBg          = gotui.RGBColor(33, 59, 73)
+	piText            = piRGB(222, 224, 225)
+	piMuted           = piRGB(157, 165, 169)
+	piDim             = piRGB(126, 136, 142)
+	piAccent          = piRGB(167, 152, 215)
+	piError           = piRGB(234, 127, 129)
+	piWarning         = piRGB(205, 154, 34)
+	piSuccess         = piRGB(104, 183, 141)
+	piThinkingText    = piRGB(150, 160, 164)
+	piUserBg          = piRGB(33, 59, 73)
 	piMdCode          = piAccent
-	piBashMode        = gotui.RGBColor(94, 178, 134)
-	piBorderMuted     = gotui.RGBColor(118, 129, 134)
-	piThinkingOff     = gotui.RGBColor(108, 118, 123)
-	piThinkingMinimal = gotui.RGBColor(104, 128, 141)
-	piThinkingLow     = gotui.RGBColor(84, 137, 164)
-	piThinkingMedium  = gotui.RGBColor(97, 133, 204)
-	piThinkingHigh    = gotui.RGBColor(151, 118, 229)
-	piThinkingXhigh   = gotui.RGBColor(222, 84, 193)
-	piThinkingMax     = gotui.RGBColor(254, 84, 98)
+	piBashMode        = piRGB(94, 178, 134)
+	piBorderMuted     = piRGB(118, 129, 134)
+	piThinkingOff     = piRGB(108, 118, 123)
+	piThinkingMinimal = piRGB(104, 128, 141)
+	piThinkingLow     = piRGB(84, 137, 164)
+	piThinkingMedium  = piRGB(97, 133, 204)
+	piThinkingHigh    = piRGB(151, 118, 229)
+	piThinkingXhigh   = piRGB(222, 84, 193)
+	piThinkingMax     = piRGB(254, 84, 98)
 )
 
 func piFg(c gotui.Color) gotui.Style { return gotui.NewStyle().Foreground(c) }
@@ -56,8 +56,11 @@ func piThinkingBorderColor(level string) gotui.Color {
 }
 
 func transcriptBand(kind, status string) (gotui.Color, bool) {
-	if kind == "user" {
+	switch kind {
+	case "user":
 		return piUserBg, true
+	case "tool":
+		return toolBandColor(status), true
 	}
 	return gotui.Color{}, false
 }
@@ -105,15 +108,21 @@ func (c *chatTUI) setTranscriptPosition(row int) {
 	}
 }
 
-// Only user messages have a padded background. All other transcript content
-// has a separating blank row, but no boxed padding or background.
+// User messages and tool calls have padded backgrounds, as in Pi. Other
+// transcript content has a separating blank row, but no boxed padding.
 func transcriptSpacing(kind string) (separator, vertical, horizontal int) {
 	switch kind {
 	case "user":
 		return 0, 1, 1
 	case "assistant":
 		return 1, 0, 1
-	case "tool", "bash", "local", "error", "thought", "thinking", "hook", "route", "dispatcher", "subturn", "compact":
+	case "tool":
+		// Pi's ToolExecutionComponent: Spacer(1) + Box(paddingX 1, paddingY 1).
+		return 1, 1, 1
+	case "bash":
+		// BashExecutionComponent: Spacer(1) + full-width borders.
+		return 1, 0, 0
+	case "local", "error", "thought", "thinking", "hook", "route", "dispatcher", "subturn", "compact":
 		return 1, 0, 1
 	default:
 		return 0, 0, 0

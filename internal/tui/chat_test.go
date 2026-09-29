@@ -59,7 +59,7 @@ func TestFocusInputActivatesInput(t *testing.T) {
 func TestHandleMouseOnInputRegionFocusesInput(t *testing.T) {
 	el := gotui.New(gotui.WithWidth(20), gotui.WithHeight(1))
 	buf := gotui.NewBuffer(80, 25)
-	el.Render(buf, 80, 25)
+	el.RenderTo(buf, 80, 25)
 	c := &chatTUI{inputRegion: el}
 	c.inputActive = false
 	consumed := c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MousePress, X: 2, Y: 0})
@@ -95,7 +95,7 @@ func TestHandleMouseWheelUsesTranscriptRegionScrollEvent(t *testing.T) {
 		transcript.AddChild(gotui.New(gotui.WithWidth(20), gotui.WithHeight(1), gotui.WithText(line)))
 	}
 	buf := gotui.NewBuffer(20, 10)
-	transcript.Render(buf, 20, 10)
+	transcript.RenderTo(buf, 20, 10)
 
 	c := &chatTUI{
 		transcript:       []string{"1", "2", "3", "4", "5", "6"},
@@ -1961,12 +1961,13 @@ func TestRenderMessageLineFoldsToolAndCompaction(t *testing.T) {
 func TestBuildTranscriptRenderableBlocksCollapsesToolBlocks(t *testing.T) {
 	startedAt := time.Now().Add(-1500 * time.Millisecond).UTC().Format(time.RFC3339Nano)
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}, transcriptExpanded: map[string]bool{}}
-	lines := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "tool:test", Kind: "tool", Title: "shell", Status: "ok", StartedAt: startedAt, EndedAt: startedAt}), "│ first", "│ second", "│ third", "│ fourth"}
+	lines := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "tool:test", Kind: "tool", Title: "shell", Status: "ok", StartedAt: startedAt, EndedAt: startedAt}), "│ first", "│ second", "│ third", "│ fourth", "│ fifth", "│ sixth"}
 	blocks := c.buildTranscriptRenderableBlocks(lines)
 	if len(blocks) != 1 {
 		t.Fatalf("expected one block, got %#v", blocks)
 	}
-	if !blocks[0].Expandable || blocks[0].Expanded || blocks[0].Kind != "tool" || blocks[0].Subheader != "" || !strings.Contains(blocks[0].Header, "shell ·") {
+	// Pi: shell tools preview their last 5 lines; timing renders as "Took".
+	if !blocks[0].Expandable || blocks[0].Expanded || blocks[0].Kind != "tool" || blocks[0].Subheader != "" || blocks[0].Header != "shell" || blocks[0].PreviewLimit != 5 || !blocks[0].PreviewTail {
 		t.Fatalf("unexpected collapsed block state: %#v", blocks[0])
 	}
 }
@@ -2389,8 +2390,8 @@ func TestExtensionToolRenderSlotControlsToolBody(t *testing.T) {
 		"│ match 2",
 		"│ match 3",
 	}
-	// default: full body, expandable
-	if blocks := c.buildTranscriptRenderableBlocks(lines); len(blocks) != 1 || len(blocks[0].Body) != 3 || !blocks[0].Expandable {
+	// default: full body; within Pi's 10-line preview, so not expandable
+	if blocks := c.buildTranscriptRenderableBlocks(lines); len(blocks) != 1 || len(blocks[0].Body) != 3 || blocks[0].Expandable {
 		t.Fatalf("default tool body unexpected: %#v", blocks)
 	}
 	// compact: first body line only
@@ -2442,19 +2443,19 @@ func TestExtensionStatusSlotAddsFooterRowsOnly(t *testing.T) {
 	c.setExtensionStatus("lint", "lint: 0 errors")
 	c.setExtensionStatus("build", "build ok")
 	lines := c.footerLines(100)
-	if len(lines) != base+2 {
-		t.Fatalf("expected %d footer lines, got %d: %#v", base+2, len(lines), lines)
+	if len(lines) != base+1 {
+		t.Fatalf("expected %d footer lines, got %d: %#v", base+1, len(lines), lines)
 	}
 	joined := strings.Join(lines, "\n")
 	if !strings.Contains(joined, "build ok") || !strings.Contains(joined, "lint: 0 errors") {
 		t.Fatalf("extension status missing from footer: %#v", lines)
 	}
-	// sorted by key: build before lint
-	if lines[base] != "build ok" {
+	// Pi joins statuses on one line, sorted by key: build before lint.
+	if lines[base] != "build ok lint: 0 errors" {
 		t.Fatalf("expected sorted extension statuses, got %#v", lines[base:])
 	}
 	c.handleTopicEvent(topics.Envelope{Topic: "extension.status", Payload: map[string]any{"key": "lint", "text": ""}})
-	if lines := c.footerLines(100); len(lines) != base+1 {
+	if lines := c.footerLines(100); len(lines) != base+1 || lines[base] != "build ok" {
 		t.Fatalf("clearing one status should leave %d lines, got %#v", base+1, lines)
 	}
 	// Slot output is footer-only: setting status must not add any transcript row.
@@ -2463,92 +2464,43 @@ func TestExtensionStatusSlotAddsFooterRowsOnly(t *testing.T) {
 	}
 }
 
-func TestFooterLinesExpandWithUsageAndNotice(t *testing.T) {
-	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo", DefaultModel: "provider/model", DefaultThinkingLevel: "low", WorkspaceRoot: t.TempDir()}, lastInputTokens: 1200, lastOutputTokens: 340, lastContextTokens: 5000, lastCacheRead: 2000, lastCacheWrite: 800, lastCostTotal: 0.0123}
+func TestFooterMatchesPiStatsLine(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo", DefaultModel: "model", DefaultProvider: "provider", DefaultThinkingLevel: "low", WorkspaceRoot: t.TempDir(), Compaction: config.CompactionSettings{Enabled: true, ContextWindow: 20000}}, lastInputTokens: 1200, lastOutputTokens: 340, lastContextTokens: 5000, lastCacheRead: 2000, lastCacheWrite: 800, lastCostTotal: 0.0123}
 	lines := c.footerLines(120)
-	if len(lines) < 2 {
-		t.Fatalf("expected at least path + stats lines, got %#v", lines)
+	if len(lines) != 2 {
+		t.Fatalf("expected Pi's pwd + stats lines, got %#v", lines)
 	}
 	stats := lines[1]
-	for _, want := range []string{"m0/t0", "↑1K", "↓340", "R2K", "W800", "$0.012", "ctx 5K", "provider/model", "low"} {
-		if !strings.Contains(stats, want) {
-			t.Fatalf("stats footer missing %q: %s", want, stats)
-		}
+	if !strings.HasPrefix(stats, "↑1.2k ↓340 R2.0k W800 $0.012 25.0%/20k (auto)") || !strings.HasSuffix(stats, "model • low") || utf8.RuneCountInString(stats) != 120 {
+		t.Fatalf("stats line differs from Pi: %q", stats)
 	}
 	c.status = "Running: read"
-	lines = c.footerLines(120)
-	if len(lines) != 3 || !strings.Contains(lines[2], "Running: read") {
-		t.Fatalf("expected transient notice line, got %#v", lines)
+	if got := c.footerLines(120); len(got) != 2 {
+		t.Fatalf("status must not add footer rows: %#v", got)
+	}
+	c.cfg.DefaultThinkingLevel = "off"
+	if got := c.footerLines(120)[1]; !strings.HasSuffix(got, "model • thinking off") {
+		t.Fatalf("thinking off label: %q", got)
+	}
+	c.lastContextTokens = 19000
+	if rows := c.footerRows(120); rows[1].accent != piError || rows[1].text[rows[1].accentStart:rows[1].accentEnd] != "95.0%/20k (auto)" {
+		t.Fatalf("context above 90%% should be error colored: %+v", rows[1])
 	}
 }
 
-func TestFooterNotificationTextClassifiesCommonStates(t *testing.T) {
-	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo", DefaultModel: "bootstrap", DefaultThinkingLevel: "low"}, status: "Neo · bootstrap"}
-	data := c.contextSummaryData()
-	if got := c.footerNotificationText(data); got != "m0/t0" {
-		t.Fatalf("idle footer notification = %q", got)
-	}
-	for _, status := range []string{"Running: read", "Queued follow-up", "Tool failed: shell", "Hook denied read", "Compacted context"} {
-		c.status = status
-		want := "m0/t0 · " + status
-		if got := c.footerNotificationText(data); got != want {
-			t.Fatalf("footerNotificationText(%q) = %q, want %q", status, got, want)
+func TestPiFormatTokens(t *testing.T) {
+	for n, want := range map[int]string{0: "0", 999: "999", 1200: "1.2k", 9999: "10.0k", 12345: "12k", 1500000: "1.5M", 12000000: "12M"} {
+		if got := piFormatTokens(n); got != want {
+			t.Fatalf("piFormatTokens(%d)=%q want %q", n, got, want)
 		}
 	}
 }
 
-func TestFooterContextFollowsThinkingLevel(t *testing.T) {
-	c := &chatTUI{cfg: config.RuntimeConfig{DefaultModel: "provider/model", DefaultThinkingLevel: "medium", Compaction: config.CompactionSettings{ContextWindow: 20000}}, lastContextTokens: 5000}
-	line := c.footerStatusLineForWidth(120)
-	want := "provider/model • medium • ctx 5K/20K 25%"
-	if !strings.Contains(line, want) {
-		t.Fatalf("footer context should follow thinking level: got %q, want substring %q", line, want)
-	}
-	if strings.Contains(c.footerCountsText(c.contextSummaryData()), "ctx") {
-		t.Fatalf("footer counts should not include context usage: %q", c.footerCountsText(c.contextSummaryData()))
-	}
-}
-
-func TestFooterContextWindowUsesSelectedModelMetadata(t *testing.T) {
-	c := &chatTUI{cfg: config.RuntimeConfig{DefaultProvider: "opencode-zen", DefaultModel: "minimax-m2.5-free", DefaultThinkingLevel: "low", Compaction: config.CompactionSettings{ContextWindow: 20000}}, lastContextTokens: 64000}
-	line := c.footerStatusLineForWidth(140)
-	want := "minimax-m2.5-free • low • ctx 64K/128K 50%"
-	if !strings.Contains(line, want) {
-		t.Fatalf("footer context should use selected model context window: got %q, want substring %q", line, want)
-	}
-}
-
-func TestFooterStatusLineRefreshesCountsFromStore(t *testing.T) {
-	s, err := store.Open("file::memory:?cache=shared")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer s.Close()
-	ctx := context.Background()
-	if _, err := s.CreateSession(ctx, "session_footer_counts", "@agent", map[string]any{"status": "idle", "model": "bootstrap"}); err != nil {
-		t.Fatalf("create session: %v", err)
-	}
-	c := &chatTUI{store: s, sessionID: "session_footer_counts", cfg: config.RuntimeConfig{DefaultModel: "bootstrap", DefaultThinkingLevel: "low"}}
-	if got := c.footerStatusLineForWidth(80); !strings.Contains(got, "m0/t0") {
-		t.Fatalf("initial footer missing m0/t0: %q", got)
-	}
-	if err := s.AddMessage(ctx, "msg_footer_counts", "session_footer_counts", "user", "hello", nil); err != nil {
-		t.Fatalf("add message: %v", err)
-	}
-	if _, err := s.CreateTurnWithStatus(ctx, "turn_footer_counts", "session_footer_counts", "completed", "hello", nil); err != nil {
-		t.Fatalf("create turn: %v", err)
-	}
-	if got := c.footerStatusLineForWidth(80); !strings.Contains(got, "m1/t1") {
-		t.Fatalf("updated footer missing m1/t1: %q", got)
-	}
-	c.status = "Running: shell"
-	if got := c.footerStatusLineForWidth(80); !strings.Contains(got, "m1/t1") || !strings.Contains(got, "Running: shell") {
-		t.Fatalf("status footer should include dynamic counts and activity: %q", got)
-	}
-}
-
-func TestFooterTextContainsStableHints(t *testing.T) {
-	root := t.TempDir()
+func TestFooterPathLineShowsHomeRelativeCwdAndBranch(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	root := filepath.Join(home, "proj")
 	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -2556,26 +2508,11 @@ func TestFooterTextContainsStableHints(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := &chatTUI{cfg: config.RuntimeConfig{WorkspaceRoot: root, DefaultModel: "provider/model", DefaultThinkingLevel: "low"}}
-	pathLine := c.footerPathLineForWidth(80)
-	if !strings.Contains(pathLine, filepath.Base(root)) || !strings.Contains(pathLine, "(main)") {
-		t.Fatalf("path footer missing workspace/branch: %s", pathLine)
+	if got := c.footerLines(80)[0]; got != "~/proj (main)" {
+		t.Fatalf("pwd line %q", got)
 	}
-	statusLine := c.footerStatusLineForWidth(80)
-	for _, want := range []string{"m0/t0", "provider/model", "low"} {
-		if !strings.Contains(statusLine, want) {
-			t.Fatalf("status footer missing %q: %s", want, statusLine)
-		}
-	}
-	if strings.Contains(statusLine, "enter send") || strings.Contains(statusLine, "/ commands") {
-		t.Fatalf("footer should be status-only: %s", statusLine)
-	}
-	c.status = "Running: read file with a very long path that must not wrap onto another physical footer row"
-	statusLine = c.footerStatusLineForWidth(48)
-	if strings.Contains(statusLine, "\n") || utf8.RuneCountInString(statusLine) > 48 {
-		t.Fatalf("status footer should stay one truncated line: len=%d %q", utf8.RuneCountInString(statusLine), statusLine)
-	}
-	if !strings.Contains(statusLine, "provider/model") && !strings.Contains(statusLine, "…") {
-		t.Fatalf("status footer should retain right-side model/truncation cue: %s", statusLine)
+	if got := c.footerLines(8)[0]; got != "~/pro..." {
+		t.Fatalf("pwd truncation %q", got)
 	}
 }
 

@@ -56,12 +56,12 @@ for(const scenario of scenarios){
  const shot=label=>{writeFileSync(join(artifacts,`${mode}-${width}x${height}-${fixture.name}-${label}.txt`),cap());writeFileSync(join(artifacts,`${mode}-${width}x${height}-${fixture.name}-${label}.ansi`),ansi());};
  try{
   mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model']}));
-  launch();await wait(()=>cap().includes('m0/t0'),'initial TUI');
+  launch();await wait(()=>cap().includes('%/'),'initial TUI');
   const id=sql('select id from sessions limit 1;');assert(id,'missing session');
   tm('send-keys','-t',pane,'C-d');await wait(()=>cap().includes('MARKDOWN_EXITED'),'close before seeding');tm('kill-session','-t','proof');
   // Seed the real store; reopening exercises transcript loading, layout and terminal ANSI output.
   sql(`insert into messages(id,session_id,role,content,payload_json,created_at) values('user',${quote(id)},'user','Markdown check','{}','2026-01-01'),('assistant',${quote(id)},'assistant',${quote(fixture.source)},'{}','2026-01-02')${fixture.name==='plain-output'?`,('tool-output',${quote(id)},'tool_result','  if ready { return 42 }\nsecond line\nlast hidden line','{"tool_name":"shell"}','2026-01-03')`:''};`);
-  launch();await wait(()=>cap().includes(fixture.name==='plain-output'?'m3/t0':'m2/t0'),'stored Markdown rendered');
+  launch();await wait(()=>cap().includes('%/'),'stored Markdown rendered');
   const check=label=>{
    const screen=cap(),rows=screen.split('\n');
    const problems=[];
@@ -79,7 +79,7 @@ for(const scenario of scenarios){
    if(fixture.name==='plain-output'){
     const transcript=screen.split(/^[ ─]{10,}$/m)[0];
     if(/[╭╮╰╯│]/.test(transcript))problems.push('old box border visible');
-    if(mode==='fullscreen'&&!transcript.includes('more line(s)'))problems.push('tool not collapsed');
+    if(mode==='fullscreen'&&!transcript.includes('last hidden line'))problems.push('short tool output hidden (Pi previews 5 shell lines)');
     if(mode==='regular'&&!transcript.includes('last hidden line'))problems.push('terminal scrollback lost full tool output');
    }
    if(fixture.name==='code-quote'){
@@ -117,7 +117,7 @@ for(const scenario of scenarios){
   }
   shot('initial');
   tm('send-keys','-t',pane,'-l','unsent draft');await wait(()=>cap().includes('unsent draft'),'draft');
-  tm('resize-window','-t','proof','-x',String(width+8),'-y',String(height+3));await wait(()=>cap().includes(fixture.name==='plain-output'?'m3/t0':'m2/t0'),'resized Markdown');
+  tm('resize-window','-t','proof','-x',String(width+8),'-y',String(height+3));await wait(()=>cap().includes('%/'),'resized Markdown');
   tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent draft'),'resize round trip');
   check('resized');shot('resized');
   assert(sql('select count(*) from messages;')===(fixture.name==='plain-output'?'3':'2'),'rendering or draft submitted a message');

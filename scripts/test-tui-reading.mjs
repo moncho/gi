@@ -25,7 +25,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const completed=n=>sql("select count(*) from turns where status='completed';")===String(n)&&idle();
  const launch=()=>tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${root}/bin/gi' -tui -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);
  try{
-  launch();tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('m0/t0'),'startup');
+  launch();tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   for(let i=1;i<=22;i++){type(`History record ${String(i).padStart(2,'0')}`);keys('Enter');await wait(()=>completed(i),`history ${i}`);}
   await sleep(250);const baseline=shot('baseline'),idleBars=bars(baseline);assert(idleBars.length===2,'idle separators');
   type('UX queue gate:reading');keys('Enter');await wait(()=>!idle()&&capture().includes('UX queue gate:reading'),'native provider blocked');

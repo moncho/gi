@@ -26,7 +26,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const idle=()=>sql('select count(*) from session_active_turns;')==='0';
  try{
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);
-  tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('m0/t0'),'startup');
+  tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   const wrapNeedle='WrapProbe'+ 'z'.repeat(width+12)+'EndProbe';
   for(let i=1;i<=24;i++){type(`Prompt ${String(i).padStart(2,'0')} nebula nebula${i===12?' '+wrapNeedle:''}`);keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='completed';")===String(i),'history turn');}
   type('unsent editor draft');keys('Left','Left','Left');keys('PageUp','PageUp');await sleep(180);

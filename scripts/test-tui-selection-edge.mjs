@@ -17,7 +17,7 @@ for(const [width,height]of [[60,18],[100,22],[140,36]])for(const overflow of [fa
  const launch=()=>{tm('new-session','-d','-s','proof','-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -workspace '${dir}' -db '${db}' -model test-model 2>'${dir}/runtime.log'`);tm('set-option','-t','proof','status','off');tm('set-option','-g','set-clipboard','on');};
  mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model'],tuiClipboardMode:'osc52'}));
  try{
-  launch();await wait(()=>cap().includes('m0/t0'),'bootstrap');tm('kill-session','-t','proof');await sleep(200);
+  launch();await wait(()=>cap().includes('%/'),'bootstrap');tm('kill-session','-t','proof');await sleep(200);
   const session=sql('select id from sessions limit 1;'),pad=width<80||height<20?0:1,contentWidth=width-2*pad-(overflow?1:0),suffix=overflow?'界':'e\u0301';
   const suffixWidth=overflow?2:1,body='EDGE'+ 'x'.repeat(contentWidth-5-4-suffixWidth)+suffix,expected='sys: '+body;
   // Isolated persisted history is seeded only after Gi has created its schema

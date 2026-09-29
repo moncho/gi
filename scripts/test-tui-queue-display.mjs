@@ -10,7 +10,7 @@ for(const mode of ['fullscreen','regular']){
  const dir=mkdtempSync(join(tmpdir(),'gi-queue-display-')),db=join(dir,'gi.db'),gates=join(dir,'gates'),socket=`gi-queue-display-${process.pid}-${mode}`,pane='proof:0.0';mkdirSync(gates);mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model']}));
  const tm=(...args)=>run('tmux',['-L',socket,...args]);const cap=()=>tm('capture-pane','-p','-t',pane).replaceAll('\u00a0',' ');const sql=query=>run('sqlite3',['-cmd','.timeout 5000',db,query]).trim();const send=(text,key='Enter')=>{tm('send-keys','-t',pane,'-l',text);tm('send-keys','-t',pane,key)};const altEnter=()=>tm('send-keys','-t',pane,'-H','1b','5b','31','33','3b','33','75');
  try{
-  tm('new-session','-d','-s','proof','-x','100','-y','32',`cd '${dir}' && HOME='${dir}' PATH='${shell}':"$PATH" GI_UX_QUEUE_GATES='${gates}' '${binary}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'; sleep 20`);tm('set-option','-t','proof','status','off');await wait(()=>cap().includes('m0/t0'),'startup');
+  tm('new-session','-d','-s','proof','-x','100','-y','32',`cd '${dir}' && HOME='${dir}' PATH='${shell}':"$PATH" GI_UX_QUEUE_GATES='${gates}' '${binary}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'; sleep 20`);tm('set-option','-t','proof','status','off');await wait(()=>cap().includes('%/'),'startup');
   // A different process writes committed queue state while this TUI is idle.
   // This checks the render poll, not the external engine's admission semantics.
   const sid=sql('select id from sessions limit 1');

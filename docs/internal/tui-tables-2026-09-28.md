@@ -35,3 +35,23 @@ The broader `test-tui-search` PTY fails at `two cross-soft-wrap occurrences`. A 
 This fixes the reproduced table layout/streaming path, not all Pi terminal styling or full terminal parity. Quote/list nesting and extreme one-column Unicode tables remain outside the PTY fixture. The exact executable behind the user's observed TUI is not identified. No running executable was replaced and no production TUI was interrupted.
 
 Logs: `/workspace/tmp/gi-tables-*.log`. Installed oracle: `test-results/tui-tables/pi-oracle.json`. Latest native captures and `results.json` are under `test-results/tui-tables/run-*/`. The clean old-build search control is under `/workspace/tmp/gi-table-head-baseline/`.
+
+## Open scroll-redraw regression
+
+`make test-tui-table-scroll` adds an isolated tmux screen-capture test with no
+provider, SQLite CLI, or Bun dependency. It renders two Unicode tables separated
+by prose, scrolls through every offset in both directions, and compares real
+terminal captures with the intended go-tui buffer. It explicitly requires an
+overflowing viewport; a static first-frame comparison is not scrolling evidence.
+Widths are 38, 60, 100 and 140 columns at 24 rows. The fixture includes variation
+selectors, CJK, Arabic, combining accents, ZWJ emoji and regional-indicator flags.
+
+On tmux 3.5a with go-tui v0.18.2, the compound-emoji fixture fails at all four
+widths: scrolling leaves stale characters after a flag or at the right border,
+although the intended buffer has no extra character. This establishes a real
+ANSI redraw defect, not a confirmed explanation for every glyph in the reported
+table. No runtime fix is included yet. An initial static-only probe passed but
+was insufficient; the overflow guard and initial render ensure this test really
+scrolls. The test is opt-in, skipped by ordinary `make test`, and does not modify
+an existing terminal/session. Diagnosis must distinguish cluster cursor handling
+from table allocation before changing production rendering.

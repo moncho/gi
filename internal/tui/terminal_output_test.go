@@ -31,9 +31,11 @@ func TestPlainTerminalOutput(t *testing.T) {
 }
 
 func TestToolANSIOutputCollapsedExpandedAndStored(t *testing.T) {
-	raw := "  \x1b[31mred\x1b[0m source\n\x1b]0;poison\x07second\nthird\nlast"
+	// Pi previews the first 10 lines of non-shell tools; "last" is line 12.
+	fill := "\nf1\nf2\nf3\nf4\nf5\nf6\nf7\nf8"
+	raw := "  \x1b[31mred\x1b[0m source\n\x1b]0;poison\x07second\nthird" + fill + "\nlast"
 	c := &chatTUI{}
-	c.renderToolEvent(map[string]any{"type": "tool_finished", "tool": "shell", "tool_call_id": "call", "output": raw}, time.Now())
+	c.renderToolEvent(map[string]any{"type": "tool_finished", "tool": "read", "tool_call_id": "call", "output": raw}, time.Now())
 	check := func(lines []string) {
 		t.Helper()
 		blocks := c.buildTranscriptRenderableBlocks(lines)
@@ -41,7 +43,7 @@ func TestToolANSIOutputCollapsedExpandedAndStored(t *testing.T) {
 			t.Fatalf("blocks: %+v", blocks)
 		}
 		block := blocks[0]
-		if !block.Expandable || !strings.Contains(strings.Join(block.Body, "\n"), "  red source\nsecond\nthird\nlast") {
+		if !block.Expandable || !strings.Contains(strings.Join(block.Body, "\n"), "  red source\nsecond\nthird"+strings.ReplaceAll(fill, "\x1b", "")+"\nlast") {
 			t.Fatalf("body: %#v", block.Body)
 		}
 		for _, expanded := range []bool{false, true} {
@@ -50,7 +52,7 @@ func TestToolANSIOutputCollapsedExpandedAndStored(t *testing.T) {
 			buf := gotui.NewBuffer(80, 20)
 			root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(80), gotui.WithHeight(20))
 			root.AddChild(el)
-			root.Render(buf, 80, 20)
+			root.RenderTo(buf, 80, 20)
 			text := strings.ReplaceAll(buf.StringTrimmed(), "\u00a0", " ")
 			if !strings.Contains(text, "red source") || strings.Contains(text, "poison") || strings.ContainsRune(text, '\x1b') {
 				t.Fatalf("expanded=%v screen: %q", expanded, text)
@@ -62,9 +64,13 @@ func TestToolANSIOutputCollapsedExpandedAndStored(t *testing.T) {
 	}
 	check(c.transcript)
 	// Historical transcripts can contain raw escape codes: sanitize at render too.
-	stored := c.renderToolResultLines(store.Message{ID: "stored", Role: "tool_result", Content: raw, Payload: map[string]any{"tool_name": "shell"}})
+	stored := c.renderToolResultLines(store.Message{ID: "stored", Role: "tool_result", Content: raw, Payload: map[string]any{"tool_name": "read"}})
 	check(stored)
-	legacy := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "legacy", Kind: "tool", Title: "shell"}), "│ " + strings.Split(raw, "\n")[0], "│ second", "│ third", "│ last"}
+	legacy := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "legacy", Kind: "tool", Title: "read"}), "│ " + strings.Split(raw, "\n")[0], "│ second", "│ third"}
+	for _, f := range strings.Split(strings.TrimPrefix(fill, "\n"), "\n") {
+		legacy = append(legacy, "│ "+f)
+	}
+	legacy = append(legacy, "│ last")
 	check(legacy)
 	if got := c.renderMessageLine(store.Message{Role: "tool_result", Content: "\x1b[31mred\x1b[0m", Payload: map[string]any{"tool_name": "shell"}}); strings.ContainsRune(got, '\x1b') {
 		t.Fatalf("summary: %q", got)

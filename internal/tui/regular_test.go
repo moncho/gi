@@ -93,7 +93,7 @@ func TestMultilineEditorRendersSeparateRowsAndBindsNewline(t *testing.T) {
 	m.SetText("first line\nsecond line")
 	root := m.Render(nil)
 	buf := gotui.NewBuffer(60, 4)
-	root.Render(buf, 60, 2)
+	root.RenderTo(buf, 60, 2)
 	text := buf.StringTrimmed()
 	if !strings.Contains(text, "first line\nsecond line") {
 		t.Fatal("editor lines concatenated", text)

@@ -22,7 +22,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const bars=text=>text.split('\n').map((line,i)=>/^\s*─{10,}\s*$/.test(line)?i:-1).filter(i=>i>=0);
  const launch=()=>tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && GI_TUI_COMPACTION_FIXTURE='${dir}' TERM=xterm-256color COLORTERM=truecolor '${root}/bin/gi-tui-compaction-test' -test.run '^TestTerminalCompactionPTYFixture$' 2>'${dir}/runtime.log'`);
  try{
-  launch();await wait(()=>capture().includes('m0/t0'),'startup');
+  launch();await wait(()=>capture().includes('%/'),'startup');
   type('untouched draft');keys('Left','Left');keys('M-c');await wait(()=>capture().includes('Compact unavailable'),'empty rejection');assert(sql('select count(*) from turns;')==='0','empty compaction created a turn');assert(capture().includes('untouched dra'),'rejected shortcut lost draft');keys('C-u','C-k');
   type('first native prompt');keys('Enter');await wait(()=>sql("select count(*) from turns where status='completed';")==='1','first turn');
   type('second native prompt');keys('Enter');await wait(()=>sql("select count(*) from turns where status='completed';")==='2','second turn');

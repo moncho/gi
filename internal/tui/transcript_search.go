@@ -69,7 +69,7 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(height))
 		root.AddChild(el)
 		buf := gotui.NewBuffer(width, height)
-		root.Render(buf, width, height)
+		root.RenderTo(buf, width, height)
 		baseRow := len(rows)
 		for y := 0; y < height; y++ {
 			var text strings.Builder

@@ -29,7 +29,7 @@ func selectionFixture(t *testing.T, width, height int) *chatTUI {
 	for _, b := range c.buildTranscriptRenderableBlocks(c.visibleTranscript()) {
 		root.AddChild(c.renderTranscriptBlock(b))
 	}
-	root.Render(gotui.NewBuffer(width, height), width, height)
+	root.RenderTo(gotui.NewBuffer(width, height), width, height)
 	c.input.SetText("newer draft")
 	c.input.cursorPos = 3
 	return c
@@ -74,7 +74,7 @@ func TestTranscriptSelectionWideCellsReverseDragAndCopyPolicy(t *testing.T) {
 			el := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(size[0]), gotui.WithHeight(size[1]))
 			c.renderTranscriptSelectionRows(el)
 			buf := gotui.NewBuffer(size[0], size[1])
-			el.Render(buf, size[0], size[1])
+			el.RenderTo(buf, size[0], size[1])
 			if buf.Cell(1, 1).Style.Bg != piText {
 				t.Fatal("selection highlight missing")
 			}
@@ -123,7 +123,7 @@ func TestTranscriptSelectionClickStillTogglesTool(t *testing.T) {
 	for _, b := range c.buildTranscriptRenderableBlocks(c.transcript) {
 		root.AddChild(c.renderTranscriptBlock(b))
 	}
-	root.Render(gotui.NewBuffer(60, 13), 60, 13)
+	root.RenderTo(gotui.NewBuffer(60, 13), 60, 13)
 	c.transcriptRegion = root
 	c.transcriptRef.Set(root)
 	c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MousePress, X: 3, Y: 1})

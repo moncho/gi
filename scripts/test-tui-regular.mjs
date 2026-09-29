@@ -29,7 +29,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const intact=label=>{const text=history().replace(/\s+/g,' ');assert(JSON.stringify([...text.matchAll(/Gi received: Native regular (\d+)\b/g)].map(m=>Number(m[1])))===JSON.stringify(Array.from({length:12},(_,i)=>i+1)),`${label}: lost, duplicated or reordered native history`);assert(text.includes('Gi received: UX queue gate:regular'),`${label}: lost gate response`);};
  const launch=()=>{socket=`${session}-${++generation}`;return tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && printf 'PREEXISTING SHELL OUTPUT\\n' && PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode regular -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'; printf '\\nREGULAR EXITED\\n'; sleep 60`);};
  try{
-  launch();tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('m0/t0'),'startup');
+  launch();tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   assert(flags()==='0 0 0','regular enabled alternate screen or mouse capture');assert(history().includes('PREEXISTING SHELL OUTPUT'),'startup erased shell history');
   const baseline=shot('idle'),idleBars=bars(baseline);assert(idleBars.length===2,'idle separators');assert(idleBars[1]-idleBars[0]===2,'idle editor height');
   for(let i=1;i<=12;i++) {type(`Native regular ${i}`);keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='completed';")===String(i),'native turn');await wait(()=>history().includes(`Gi received: Native regular ${i}`),'printed turn');}
@@ -57,8 +57,8 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   shot('multiline-resized');keys('C-a','C-k');type('newer draft');await sleep(100);
   assert(history().includes('PREEXISTING SHELL OUTPUT'),'resize lost native history');assert(capture().replaceAll('▌','').includes('newer draft'),'resize lost draft');
   intact('before selector');keys('M-m');await wait(()=>capture().includes('Select model'),'temporary selector');keys('Escape');await wait(()=>!capture().includes('Select model')&&capture().replaceAll('▌','').includes('newer draft'),'selector restores editor');
-  intact('after selector');keys('C-a','C-k');type('!!printf "regular failed outcome\\n"; exit 7');keys('Enter');await wait(()=>history().includes('exit status 7'),'local error printed');
-  assert(ansi().includes('48;2;60;40;40'),'error band absent from native history');assert(ansi().includes('48;2;40;50;40'),'success band absent');
+  intact('after selector');keys('C-a','C-k');type('!!printf "regular failed outcome\\n"; exit 7');keys('Enter');await wait(()=>history().includes('(exit 7)'),'local error printed');
+  assert(ansi().includes('38;2;94;178;134'),'bashMode command color absent from native history');
   type("!!for i in $(seq 1 40); do printf 'NATIVE-LONG-%02d\\n' $i; done");keys('Enter');await wait(()=>history().includes('NATIVE-LONG-40'),'full tool output');
   assert(history().includes('NATIVE-LONG-01'),'printed collapsed/truncated preview instead of full retained tool output');
   await sleep(1250);intact('completed redraw');const end=shot('completed');assert(JSON.stringify(bars(end))===JSON.stringify(idleBars),'idle dock gained rows');

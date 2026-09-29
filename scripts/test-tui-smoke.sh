@@ -44,12 +44,12 @@ tmux new-session -d -x 100 -y 20 -s "$SESSION" "cd '$ROOT' && ./bin/gi -tui -db 
 for _ in 1 2 3 4 5; do
   sleep 1
   tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/01-start.txt"
-  if grep -q "m0/t0" "$ARTIFACT_DIR/01-start.txt"; then
+  if grep -q "%/" "$ARTIFACT_DIR/01-start.txt"; then
     break
   fi
 done
 
-if ! grep -q "m0/t0" "$ARTIFACT_DIR/01-start.txt"; then
+if ! grep -q "%/" "$ARTIFACT_DIR/01-start.txt"; then
   echo "TUI did not render bottom-band session counters" >&2
   exit 1
 fi

@@ -26,7 +26,7 @@ for(const mode of (process.env.GI_INDEX_TEST_MODE?[process.env.GI_INDEX_TEST_MOD
  const terminalHistory=()=>tmux('capture-pane','-p','-S','-','-t',pane);
  try{
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);
-  tmux('pipe-pane','-t',pane,'-o',`cat > '${join(artifacts,`${mode}-${width}x${height}-raw.ansi`)}'`);tmux('set-option','-s','exit-empty','off');tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('m0/t0'),'startup');
+  tmux('pipe-pane','-t',pane,'-o',`cat > '${join(artifacts,`${mode}-${width}x${height}-raw.ansi`)}'`);tmux('set-option','-s','exit-empty','off');tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   assert(sql('select count(*) from workspace_index_workspaces')==='0','startup scanned');
   for(let i=1;i<=12;i++){type(`Index-history-${String(i).padStart(2,'0')}`);keys('Enter');await wait(()=>sql("select count(*) from turns where status='completed'")===String(i)&&sql('select count(*) from session_active_turns')==='0','history');}
   type('unsent index draft');keys('Left','Left','Left');if(mode==='fullscreen')keys('PageUp','PageUp');await sleep(170);

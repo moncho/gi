@@ -5,13 +5,13 @@ Feature: TUI assistant basics
     Given a fresh gi TUI workspace
     When I start gi without arguments in tmux
     Then the screen should contain "(no messages yet)"
-    And the screen should contain "m0/t0"
+    And the screen should contain "%/"
 
   Scenario: Boot, discover help and tools, and submit a prompt
     Given a fresh gi TUI workspace
     When I start the gi TUI in tmux
     Then the screen should contain "(no messages yet)"
-    And the screen should contain "m0/t0"
+    And the screen should contain "%/"
     When I type "/help" and press Enter
     Then the screen should contain "help"
     And the screen should contain "/commands all commands"

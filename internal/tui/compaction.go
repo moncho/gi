@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 )
@@ -120,20 +119,6 @@ func (c *chatTUI) syncCompactionActivity() {
 		c.compaction.notice = label
 		c.compaction.noticeUntil = at.Add(4 * time.Second)
 	}
-}
-func (c *chatTUI) compactionInline() string {
-	if !c.compaction.active {
-		return ""
-	}
-	seconds := 0
-	if !c.compaction.started.IsZero() {
-		seconds = max(0, int(time.Since(c.compaction.started).Seconds()))
-	}
-	label := "Compacting"
-	if c.compaction.cancelling {
-		label = "Cancelling compact"
-	}
-	return fmt.Sprintf("%s %d:%02d", label, seconds/60, seconds%60)
 }
 func (c *chatTUI) handleCompactionEscape() bool {
 	if !c.compaction.active {

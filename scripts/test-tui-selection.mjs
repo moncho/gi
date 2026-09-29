@@ -28,7 +28,7 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const drag=async(x1,y1,x2,y2)=>{mouse(0,x1,y1);await sleep(100);mouse(32,x2,y2);await sleep(100);mouse(0,x2,y2,true);};
  try{
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);
-  tmux('set-option','-s','set-clipboard','on');tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('m0/t0'),'startup');
+  tmux('set-option','-s','set-clipboard','on');tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   for(let i=1;i<=22;i++){type(`SELECT-${String(i).padStart(2,'0')} unicode 中文🙂`);keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='completed';")===String(i),'native history');}
   type('newer selection draft');keys('Left','Left','Left');keys('Home');await wait(()=>capture().includes('you: SELECT-01'),'top');
   const baseline=shot('before'),idleBars=bars(baseline),lines=baseline.split('\n'),row=lines.findIndex(l=>l.includes('you: SELECT-01')),col=lines[row].indexOf('you:'),secondRow=lines.findIndex(l=>l.includes('you: SELECT-02'));

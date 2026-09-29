@@ -44,10 +44,10 @@ for(const scenario of scenarios){
   if(rows.filter(s=>s==='shell').length!==2||screen.indexOf('shell')!==end)throw Error('Unexpected tool before/around assistant prose');
  };
  try{
-  mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model']}));launch();await wait(()=>cap().includes('m0/t0'),'ready');
+  mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model']}));launch();await wait(()=>cap().includes('%/'),'ready');
   const id=sql('select id from sessions limit 1;');tm('send-keys','-t',pane,'C-d');await wait(()=>cap().includes('PROSE_EXITED'),'close');tm('kill-session','-t','proof');
   sql(`insert into messages(id,session_id,role,content,payload_json,created_at) values('u',${quote(id)},'user','Please store these tests','{}','2026-01-01'),('a',${quote(id)},'assistant',${quote(source)},'{}','2026-01-02'),('t1',${quote(id)},'tool_result','features/example.feature','{"tool_name":"shell"}','2026-01-03'),('t2',${quote(id)},'tool_result','second tool output','{"tool_name":"shell"}','2026-01-04');`);
-  launch();await wait(()=>cap().includes('m4/t0'),'loaded');shot('initial');check();
+  launch();await wait(()=>cap().includes('%/'),'loaded');shot('initial');check();
   tm('send-keys','-t',pane,'-l','unsent prose draft');await wait(()=>cap().includes('unsent prose draft'),'draft');
   tm('resize-window','-t','proof','-x',String(width+7),'-y',String(height+2));await sleep(150);tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent prose draft'),'resize');check();shot('resized');
   if(sql('select count(*) from messages;')!=='4')throw Error('Rendering submitted a prompt');

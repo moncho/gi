@@ -128,7 +128,7 @@ func layoutSearchChat(t *testing.T, c *chatTUI, width, height int) {
 			root.AddChild(c.renderTranscriptBlock(block))
 		}
 	}
-	root.Render(gotui.NewBuffer(width, height), width, height)
+	root.RenderTo(gotui.NewBuffer(width, height), width, height)
 }
 
 func TestTranscriptLinksSurviveMarkdownSoftWrapping(t *testing.T) {
@@ -171,7 +171,7 @@ func TestTranscriptLinksSurviveMarkdownSoftWrapping(t *testing.T) {
 			root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(len(c.search.rows)))
 			c.renderTranscriptSearchRows(root)
 			buf := gotui.NewBuffer(width, len(c.search.rows))
-			root.Render(buf, width, len(c.search.rows))
+			root.RenderTo(buf, width, len(c.search.rows))
 			linked := false
 			for y := 0; y < len(c.search.rows); y++ {
 				for x := 0; x < width; x++ {

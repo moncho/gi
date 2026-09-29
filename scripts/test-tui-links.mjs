@@ -18,7 +18,7 @@ for(const mode of ['fullscreen','regular'])for(const [width,height]of [[60,18],[
  mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model'],tuiClipboardMode:'osc52'}));
  try{
   tm('new-session','-d','-s','proof','-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode ${mode} -workspace '${dir}' -db '${db}' -model test-model 2>'${dir}/runtime.log'`);
-  tm('set-option','-t','proof','status','off');tm('set-option','-g','set-clipboard','on');tm('pipe-pane','-t',pane,`cat >> '${rawPath}'`);await wait(()=>cap().includes('m0/t0'),'startup');
+  tm('set-option','-t','proof','status','off');tm('set-option','-g','set-clipboard','on');tm('pipe-pane','-t',pane,`cat >> '${rawPath}'`);await wait(()=>cap().includes('%/'),'startup');
   const baseline=footprint();type(`Visit [DOC](${url})`);keys('Enter');await wait(()=>sql("select count(*) from turns where status='completed';")==='1'&&sql('select count(*) from session_active_turns;')==='0','native response');await wait(()=>raw().includes(sequence),'OSC8 target emitted');
   type('kept draft β');keys('Left','Left');await sleep(160);assert(footprint()===baseline,'idle footprint changed');
   if(mode==='fullscreen'){

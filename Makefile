@@ -1038,3 +1038,9 @@ test-browser-auth-race:
 .PHONY: test-auth-state
 test-auth-state:
 	$(GO) test -race ./internal/auth -count=10
+
+# Compare actual tmux cells against ANSI frame diffs while tables enter/leave
+# the viewport. No provider, sqlite3 CLI, Bun, or running Gi instance required.
+.PHONY: test-tui-table-scroll
+test-tui-table-scroll:
+	GI_TABLE_SCROLL_PTY=1 $(GO) test -count=1 ./internal/tui -run '^TestMarkdownTableScrollTerminal$$' -v

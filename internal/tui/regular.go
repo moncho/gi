@@ -168,7 +168,7 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	root.AddChild(c.renderEditorTopBorder(c.input, w))
 	root.AddChild(input)
 	root.AddChild(c.renderEditorBottomBorder(c.input, w))
-	root.AddChild(c.renderLineBlock(footer, piFg(piDim)))
+	root.AddChild(c.renderFooter(w))
 	c.inputRegion = input
 	return root
 }

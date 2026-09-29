@@ -99,6 +99,7 @@ func runWithEngineMode(s *store.Store, engine *turn.Engine, cfg config.RuntimeCo
 	} else {
 		options = append(options, gotui.WithMouse())
 	}
+	enableGoTUIColorOutput()
 	app, err := gotui.NewApp(options...)
 	if err != nil {
 		return fmt.Errorf("create app: %w", err)
@@ -154,11 +155,20 @@ type transcriptRenderableBlock struct {
 	BodyStyle      gotui.Style
 	HintStyle      gotui.Style
 	SelectedHint   string
+	// Tool call rendering (Pi's renderCall): argument text and timing.
+	ToolArg            string
+	StartedAt, EndedAt string
 }
 
-// bashPreviewLines mirrors PiSwift's bash output preview window: when collapsed,
-// only the trailing N lines of bash output are shown with a skipped-line hint.
-const bashPreviewLines = 10
+// bashPreviewLines mirrors Pi's BashExecutionComponent preview window: when
+// collapsed, only the trailing N lines of `!` output are shown.
+const bashPreviewLines = 20
+
+// Pi's tool previews: shell tools show the last 5 lines, others the first 10.
+const (
+	toolShellPreviewLines = 5
+	toolPreviewLines      = 10
+)
 
 type chatTUI struct {
 	app                         *gotui.App
@@ -209,6 +219,8 @@ type chatTUI struct {
 	regularPrinted              int
 	regularSessionPending       bool
 	regularWidth, regularHeight int
+	footerUsage                 *footerUsageCache
+	footerAuth                  *footerAuthCache
 	transcriptScroll            int
 	stickToBottom               bool
 	draftLineIndex              int
@@ -1486,8 +1498,13 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 			return
 		}
 	}
-	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName}
-	body := c.toolInvocationBody(toolName, payload)
+	// Pi renders the call (e.g. "$ ls -la", "read path") as the tool header;
+	// the body holds only the result output.
+	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName, Detail: previous.Detail}
+	if invocation := c.toolInvocationBody(toolName, payload); len(invocation) > 0 {
+		meta.Detail = invocation[0]
+	}
+	var body []string
 	switch typ {
 	case "tool_started":
 		c.promoteDraftToThinking(startedAt)
@@ -4197,7 +4214,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	root.AddChild(inputEl)
 	root.AddChild(c.renderEditorBottomBorder(activeInput, contentWidth))
 
-	root.AddChild(c.renderLineBlock(footerLines, piFg(piDim)))
+	root.AddChild(c.renderFooter(contentWidth))
 
 	return root
 }
@@ -4238,69 +4255,6 @@ func (c *chatTUI) footerPathLineForWidth(width int) string {
 		return compactMaybe(workspace, true, width)
 	}
 	return workspace
-}
-
-func (c *chatTUI) footerModelText(data tuiContextSummary) string {
-	model := strings.TrimSpace(data.model)
-	if model == "" {
-		model = strings.TrimSpace(c.cfg.DefaultModel)
-	}
-	if model == "" {
-		model = "model unset"
-	}
-	if thinking := strings.TrimSpace(data.thinking); thinking != "" {
-		model += " • " + thinking
-	}
-	return model
-}
-
-// footerLines builds a PiSwift-style multi-line footer: a path/branch line, a
-// stats line (counts + token usage on the left, model/thinking/context on the
-// right), and an optional transient notification line. The bottom band may grow
-// to several lines but never adds top chrome.
-func (c *chatTUI) footerLines(width int) []string {
-	data := c.contextSummaryData()
-	lines := []string{c.footerPathLineForWidth(width)}
-
-	statsParts := []string{c.footerCountsText(data)}
-	if compact := c.compactionInline(); compact != "" {
-		statsParts = append(statsParts, compact)
-	}
-	if data.inputTokens > 0 {
-		statsParts = append(statsParts, "↑"+formatTokenCount(data.inputTokens))
-	}
-	if data.outputTokens > 0 {
-		statsParts = append(statsParts, "↓"+formatTokenCount(data.outputTokens))
-	}
-	if data.cacheRead > 0 {
-		statsParts = append(statsParts, "R"+formatTokenCount(data.cacheRead))
-	}
-	if data.cacheWrite > 0 {
-		statsParts = append(statsParts, "W"+formatTokenCount(data.cacheWrite))
-	}
-	if data.costTotal > 0 {
-		statsParts = append(statsParts, fmt.Sprintf("$%.3f", data.costTotal))
-	}
-	if data.contextTokens > 0 {
-		statsParts = append(statsParts, formatContextUsage(data.contextTokens, data.contextWindow))
-	}
-	statsLeft := strings.Join(statsParts, " · ")
-	model := c.footerModelText(data)
-	lines = append(lines, joinFooterRow(statsLeft, model, width))
-
-	if note := c.footerTransientNotice(data); note != "" {
-		if width > 0 {
-			note = compactMaybe(note, true, width)
-		}
-		lines = append(lines, note)
-	}
-	for _, status := range c.extensionStatusLines() {
-		if width > 0 {
-			status = compactMaybe(status, true, width)
-		}
-		lines = append(lines, status)
-	}
-	return lines
 }
 
 // setExtensionStatus is a backend-safe TUI extension slot: extensions can set a
@@ -4419,7 +4373,7 @@ func (c *chatTUI) applyToolRenderMode(tool string, body []string) ([]string, boo
 		}
 		return body, false
 	}
-	return body, len(body) > 2
+	return body, true
 }
 
 // setEditorAsk is the editor-replacement extension slot (PiSwift setEditorComponent
@@ -4508,64 +4462,6 @@ func widgetPayloadLines(payload map[string]any) []string {
 	return nil
 }
 
-func (c *chatTUI) footerTransientNotice(data tuiContextSummary) string {
-	if time.Now().Before(c.compaction.noticeUntil) {
-		return "» " + sanitizeStatusText(c.compaction.notice)
-	}
-	if c.compaction.active {
-		return ""
-	}
-	status := strings.TrimSpace(c.status)
-	if status == "" {
-		return ""
-	}
-	if strings.Contains(status, c.cfg.DefaultModel) || strings.Contains(status, data.model) {
-		return ""
-	}
-	return "» " + status
-}
-
-func joinFooterRow(left, right string, width int) string {
-	if width <= 0 {
-		return compactMaybe(left, true, 24) + "  " + compactMaybe(right, true, 36)
-	}
-	if len(left)+len(right)+2 >= width {
-		rightWidth := 36
-		if rightWidth > width/2 {
-			rightWidth = width / 2
-		}
-		if rightWidth < 12 {
-			rightWidth = 12
-		}
-		leftWidth := width - rightWidth - 2
-		if leftWidth < 8 {
-			leftWidth = 8
-		}
-		return compactMaybe(left, true, leftWidth) + "  " + compactMaybe(right, true, rightWidth)
-	}
-	return left + strings.Repeat(" ", width-len(left)-len(right)) + right
-}
-
-func (c *chatTUI) footerStatusLineForWidth(width int) string {
-	data := c.contextSummaryData()
-	left := c.footerNotificationText(data)
-	model := strings.TrimSpace(data.model)
-	if model == "" {
-		model = strings.TrimSpace(c.cfg.DefaultModel)
-	}
-	if model == "" {
-		model = "model unset"
-	}
-	thinking := strings.TrimSpace(data.thinking)
-	if thinking != "" {
-		model += " • " + thinking
-	}
-	if data.contextTokens > 0 {
-		model += " • " + formatContextUsage(data.contextTokens, data.contextWindow)
-	}
-	return joinFooterRow(left, model, width)
-}
-
 func formatTokenCount(n int) string {
 	if n >= 1000000 {
 		return fmt.Sprintf("%.1fM", float64(n)/1000000)
@@ -4588,31 +4484,6 @@ func formatContextUsage(tokens, window int) string {
 		return fmt.Sprintf("ctx %s/%s %d%%", formatTokenCount(tokens), formatTokenCount(window), pct)
 	}
 	return fmt.Sprintf("ctx %s", formatTokenCount(tokens))
-}
-
-func (c *chatTUI) footerCountsText(data tuiContextSummary) string {
-	left := fmt.Sprintf("m%d/t%d", data.messageCount, data.turnCount)
-	if data.queuedTurns > 0 || data.steeringDepth > 0 {
-		left += fmt.Sprintf(" q%d/s%d", data.queuedTurns, data.steeringDepth)
-	}
-	return left
-}
-
-func (c *chatTUI) footerNotificationText(data tuiContextSummary) string {
-	counts := c.footerCountsText(data)
-	status := strings.TrimSpace(c.status)
-	if status != "" && !strings.Contains(status, c.cfg.DefaultModel) && !strings.Contains(status, data.model) {
-		return counts + " · " + status
-	}
-	return counts
-}
-
-func (c *chatTUI) footerTextForWidth(width int) string {
-	return c.footerStatusLineForWidth(width)
-}
-
-func (c *chatTUI) footerText() string {
-	return c.footerTextForWidth(c.currentContentWidth())
 }
 
 func (c *chatTUI) gitBranchName(workspace string) string {
@@ -4851,12 +4722,7 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 			header := plainTerminalOutput(meta.Title)
 			subheader := ""
 			if meta.Kind == "tool" {
-				if elapsed := formatBlockElapsed(meta.StartedAt, meta.EndedAt); elapsed != "" {
-					header += " · " + elapsed
-				}
-				if detail := strings.TrimSpace(meta.Detail); detail != "" {
-					header += " · " + detail
-				}
+				// Header is Pi's call line; timing/args are rendered by the tool shell.
 			} else if meta.Kind == "thinking" || meta.Kind == "thinking_indicator" {
 				subheader = ""
 			} else {
@@ -4884,13 +4750,18 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 			}
 			if meta.Kind == "tool" {
 				body, expandable = c.applyToolRenderMode(meta.Title, body)
+				previewLimit = toolPreviewLines
+				if isShellTool(meta.Title) {
+					previewLimit, previewTail = toolShellPreviewLines, true
+				}
+				expandable = expandable && len(body) > previewLimit
 			}
 			if meta.Kind == "bash" {
 				previewLimit = bashPreviewLines
 				previewTail = true
 				expandable = len(body) > bashPreviewLines
 			}
-			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint})
+			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
 			i = j - 1
 			continue
 		}
@@ -5089,6 +4960,12 @@ func (c *chatTUI) renderTranscriptBlock(block transcriptRenderableBlock) *gotui.
 }
 
 func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) *gotui.Element {
+	switch block.Kind {
+	case "tool":
+		return c.renderPiToolBlock(block)
+	case "bash":
+		return c.renderPiBashBlock(block)
+	}
 	if block.Kind == "user" || block.Kind == "assistant" {
 		if block.MarkdownSource != "" {
 			message := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))

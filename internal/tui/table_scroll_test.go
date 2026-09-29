@@ -26,9 +26,9 @@ func TestMarkdownTableScrollTerminal(t *testing.T) {
 
 func testMarkdownTableScrollTerminal(t *testing.T, width int) {
 	if _, err := exec.LookPath("tmux"); err != nil {
-		t.Skip("tmux not installed")
+		t.Fatal("tmux is required by test-tui-table-scroll")
 	}
-	socket := fmt.Sprintf("gi-table-scroll-%d", os.Getpid())
+	socket := fmt.Sprintf("gi-table-scroll-%d-%d", os.Getpid(), width)
 	tm := func(args ...string) string {
 		t.Helper()
 		out, err := exec.Command("tmux", append([]string{"-L", socket, "-f", "/dev/null"}, args...)...).CombinedOutput()
@@ -56,7 +56,7 @@ func testMarkdownTableScrollTerminal(t *testing.T, width int) {
 		root.AddChild(c.renderTranscriptBlock(block))
 	}
 	root.Calculate(width, 24)
-	root.RenderTo(gotui.NewBuffer(width, 24), width, 24)
+	gotui.RenderTree(gotui.NewBuffer(width, 24), root)
 	_, maxY := root.MaxScroll()
 	if maxY < 24 {
 		t.Fatalf("fixture must scroll through tables: maxY=%d", maxY)
@@ -71,7 +71,8 @@ func testMarkdownTableScrollTerminal(t *testing.T, width int) {
 		}
 		root.ScrollTo(0, offset)
 		buffer.Clear()
-		root.RenderTo(buffer, width, 24)
+		root.Calculate(width, 24)
+		gotui.RenderTree(buffer, root)
 		term.Flush(buffer.Diff())
 		buffer.Swap()
 		want := normalize(buffer.StringTrimmed())
@@ -86,6 +87,28 @@ func testMarkdownTableScrollTerminal(t *testing.T, width int) {
 		}
 		if got != want {
 			t.Fatalf("scroll %d step %d:\ngot:\n%s\nwant:\n%s", offset, step, got, want)
+		}
+	}
+}
+
+// Runs in the ordinary Go suite too: table padding must survive the rich-text
+// renderer without synthetic NBSPs or an extra line-wrap pass.
+func TestMarkdownTablePreservesASCIIPadding(t *testing.T) {
+	c := &chatTUI{}
+	for _, line := range []string{
+		"│ Flags 🇵🇹  │ 日本語 🧪  │",
+		"│ " + markdownInlineCodeStart + "Flags 🇵🇹  " + markdownInlineCodeEnd + " │ ⚠️  │",
+		"    " + markdownInlineCodeStart + "Flags 🇵🇹  " + markdownInlineCodeEnd + " done",
+	} {
+		plain := stripMarkdownInlineStyleMarkers(line)
+		width := gotui.StringWidth(plain)
+		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(2))
+		root.AddChild(c.renderInlineStyledLine(line, gotui.NewStyle()))
+		buffer := gotui.NewBuffer(width, 2)
+		root.Calculate(width, 2)
+		gotui.RenderTree(buffer, root)
+		if got := strings.TrimRight(buffer.StringTrimmed(), "\n"); got != plain {
+			t.Fatalf("preformatted row changed: got %q, want %q", got, plain)
 		}
 	}
 }

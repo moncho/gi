@@ -35,15 +35,15 @@ type multilineInput struct {
 	// interceptKey lets an open autocomplete list take Tab/Enter/Escape
 	// before the editor's own bindings (Pi's Editor autocomplete mode).
 	interceptKey func(gotui.Key) bool
-	onChange         func(string)
-	text             string
-	cursorPos        int
-	undoText         string
-	undoCursor       int
-	hasUndo          bool
-	yankText         string
-	focused          bool
-	blink            bool
+	onChange     func(string)
+	text         string
+	cursorPos    int
+	undoText     string
+	undoCursor   int
+	hasUndo      bool
+	yankText     string
+	focused      bool
+	blink        bool
 }
 
 func newMultilineInput(width int, placeholder string, onSubmit func(string), onChange func(string)) *multilineInput {

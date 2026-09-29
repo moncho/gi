@@ -13,14 +13,16 @@ phone, tablet and desktop.
 
 `make test-piclaw-speech-ui` runs the installed 3.2.4 Classic UI in a
 disposable timeline at the same six browser/viewport combinations: **6/6**.
-Two assistant posts expose Read aloud; switching posts cancels the first,
-and late `onend`/`onerror` callbacks do not clear the second post's active
-button. The first utterance omits fenced code, code copy supplies plain
+Two speakable assistant posts expose Read aloud; user and empty assistant
+posts do not, and an unsupported browser exposes no speech buttons. Switching
+posts cancels the first, and late `onend`/`onerror` callbacks do not clear
+the second post's active button. The first utterance omits fenced code, code copy supplies plain
 source text without HTML, and the unsent draft remains. Piclaw calls
 `cancel` before the first `speak`, as well as during transfer; Gi's existing
 browser test expects `speak`, `cancel`, `speak` and tests the same observable
-ownership transfer. Both probes stub the browser speech and clipboard
-boundaries. Audible output and physical/assistive-device behaviour remain
+ownership transfer. Installed Classic switches its button label and active
+class but does not emit `aria-pressed`; Gi does. Both probes stub the browser
+speech and clipboard boundaries. Audible output and physical/assistive-device behaviour remain
 untested.
 
 `timeline-rendering-review.md` contains the narrower `@ux-timeline-024`,

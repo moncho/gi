@@ -6,7 +6,8 @@ test('Gi read-aloud capability is absent without speech APIs and present for nat
  await expect(page.getByRole('button',{name:'Read aloud',exact:true})).toHaveCount(0);
  await page.evaluate(()=>sessionStorage.setItem('speech-fixture-enabled','true'));
  // Remount with a supported boundary on a fresh page, not a fake Post.
- await page.reload();await expect(page.getByRole('button',{name:'Read aloud',exact:true})).toHaveCount(2);
+ await page.reload();
+ for(const m of f.agents)await expect(f.post(m.id).getByRole('button',{name:'Read aloud',exact:true})).toHaveCount(1);
  for(const m of f.messages.filter(m=>m.role==='user'))await expect(f.post(m.id).locator('.post-speak-btn')).toHaveCount(0);
  await expect(f.input).toHaveValue('unsent speech draft β');await expect(page.locator('.compose-box')).toContainText('speech-ref.txt');
 });

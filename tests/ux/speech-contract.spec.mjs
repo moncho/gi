@@ -17,7 +17,8 @@ async function capability(page,request,context,info){
  await emptyGate(context,request);await speechRuntime(page,false);const f=await fixture(page,request,info);
  for(const m of f.agents)await expect(f.post(m.id)).toBeVisible();await expect(page.locator('.post-speak-btn')).toHaveCount(0);
  await page.evaluate(()=>sessionStorage.setItem('speech-fixture-enabled','true'));await page.reload();
- await expect(page.getByRole('button',{name:'Read aloud',exact:true})).toHaveCount(2);
+ // Scope to the two fixture assistant posts. A speakable queued-prompt system
+ // notice can also be projected as an agent response during native admission.
  for(const m of f.agents)await expect(f.post(m.id).getByRole('button',{name:'Read aloud',exact:true})).toHaveCount(1);
  for(const m of f.messages.filter(m=>m.role==='user'))await expect(f.post(m.id).locator('.post-speak-btn')).toHaveCount(0);
  await expect(f.input).toHaveValue('unsent speech draft β');await expect(page.locator('.compose-box')).toContainText('speech-ref.txt');

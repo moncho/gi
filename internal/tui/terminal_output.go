@@ -1,6 +1,9 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 // plainTerminalOutput removes terminal controls from untrusted subprocess output
 // before it enters a transcript. The TUI owns styling; forwarding an embedded
@@ -11,6 +14,16 @@ func plainTerminalOutput(text string) string {
 	b.Grow(len(text))
 	for i := 0; i < len(text); {
 		ch := text[i]
+		// A valid multibyte rune owns all its continuation bytes. Interpret
+		// C1 controls only as bare bytes or standalone U+0090–U+009F runes.
+		if ch >= utf8.RuneSelf {
+			r, size := utf8.DecodeRuneInString(text[i:])
+			if size > 1 && (r < 0x90 || r > 0x9f) {
+				b.WriteString(text[i : i+size])
+				i += size
+				continue
+			}
+		}
 		if ch == 0x1b || ch == 0x9b || ch == 0x9d || ch == 0x90 || ch == 0x9f || ch == 0x9e || (ch == 0xc2 && i+1 < len(text) && text[i+1] >= 0x90 && text[i+1] <= 0x9f) {
 			control := ch
 			if ch == 0xc2 {

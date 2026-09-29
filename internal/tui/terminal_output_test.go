@@ -16,6 +16,9 @@ func TestPlainTerminalOutput(t *testing.T) {
 		{"OSC title and hyperlink", "\x1b]0;bad title\x07\x1b]8;;https://example.com\x1b\\link\x1b]8;;\x1b\\ after", "link after"},
 		{"DCS and OSC with ST", "a\x1bPdata\x1b\\b\x1b]0;title\x1b\\c", "abc"},
 		{"C1 sequences", "a\xc2\x9b31mred\xc2\x9b0m\xc2\x9d0;title\x07 ok", "ared ok"},
+		{"bare C1 controls", "a\x9b31mred\x9b0m", "ared"},
+		{"Unicode with control bytes in continuation", "中文🙂 €\x1b[31m red\x1b[0m", "中文🙂 € red"},
+		{"Unicode tool lines", "TOOL-LINE-01 中文🙂\nTOOL-LINE-02 中文🙂", "TOOL-LINE-01 中文🙂\nTOOL-LINE-02 中文🙂"},
 		{"bare controls", "a\x1b7b\x00\x07\x7fc\t indented\rnext", "abc\t indented\rnext"},
 		{"broken OSC retains next line", "before\x1b]0;bad\nafter", "before\nafter"},
 	} {

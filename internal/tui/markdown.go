@@ -291,15 +291,11 @@ func wrapParagraph(text string, width int) []string {
 				continue
 			}
 			lines = append(lines, current)
-			if wordWidth > width && !strings.Contains(word, markdownInlineCodeStart) && !intactTranscriptLinkToken(word) {
-				parts := wrapLongRunes(word, width)
-				lines = append(lines, parts[:len(parts)-1]...)
-				current = parts[len(parts)-1]
-				currentWidth = markdownRenderedWidth(current)
-			} else {
-				current = word
-				currentWidth = wordWidth
-			}
+			// Keep a long source token intact so go-tui owns its soft wraps.
+			// Pre-splitting it here makes cross-row transcript search lose
+			// the source paragraph boundary.
+			current = word
+			currentWidth = wordWidth
 		}
 		lines = append(lines, current)
 	}

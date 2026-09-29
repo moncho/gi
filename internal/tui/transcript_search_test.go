@@ -271,6 +271,27 @@ func TestTranscriptSearchOccurrencesIgnorePaddingAndCrossRows(t *testing.T) {
 	}
 }
 
+func TestTranscriptSearchLongPromptAndReplyAcrossSourceWrap(t *testing.T) {
+	const width = 60
+	c := sessionTestChat(t)
+	c.outputWidth, c.outputHeight = width, 18
+	needle := "WrapProbe" + strings.Repeat("z", width+12) + "EndProbe"
+	c.appendUserPrompt("Prompt 12 nebula nebula "+needle, false)
+	c.appendTranscript("assistant: Gi received: Prompt 12 nebula nebula " + needle)
+	c.toggleTranscriptSearch()
+	c.refreshTranscriptSearch(width)
+	c.updateTranscriptSearchQuery(needle)
+	if len(c.search.matches) != 2 {
+		var lines []string
+		for i, row := range c.search.rows {
+			if row.text != "" {
+				lines = append(lines, fmt.Sprintf("%d:%q runs=%d", i, row.text, len(row.wrapped)))
+			}
+		}
+		t.Fatalf("source-wrapped prompt and soft-wrapped reply: matches=%d rows=%v", len(c.search.matches), lines)
+	}
+}
+
 func TestTranscriptSearchAcrossSoftWrapsOnly(t *testing.T) {
 	for _, width := range []int{18, 60, 100, 140} {
 		t.Run(fmt.Sprint(width), func(t *testing.T) {

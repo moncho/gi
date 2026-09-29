@@ -104,6 +104,22 @@ write_report() {
   } > "$ARTIFACT_DIR/report.md"
 }
 
+screen_should_show_user_message() {
+  local text="$1"
+  for _ in 1 2 3 4 5; do
+    sleep 0.5
+    capture
+    # The renderer strips its internal speaker prefix and pads the user band.
+    # Match the content row alone, not a tool/assistant sentence containing it.
+    if awk -v expected="$text" '{ line=$0; sub(/^[[:space:]]+/, "", line); sub(/[[:space:]│█]+$/, "", line); if (line == expected) found=1 } END { exit !found }' "$ARTIFACT_DIR/$(printf '%02d' "$STEP")-screen.txt"; then
+      return 0
+    fi
+  done
+  echo "screen did not show user message row: $text" >&2
+  tail -80 "$ARTIFACT_DIR/$(printf '%02d' "$STEP")-screen.txt" >&2 || true
+  exit 1
+}
+
 screen_should_contain() {
   local text="$1"
   for _ in 1 2 3 4 5; do
@@ -284,6 +300,8 @@ run_step() {
     "Then the editor should contain "*|"And the editor should contain "*)
       local text=${line#*should contain \"}; text=${text%\"}; editor_should_contain "$text" ;;
     "When I start gi without arguments in tmux") start_tui_default ;;
+    "Then the screen should show a user message "*|"And the screen should show a user message "*)
+      local text=${line#*user message \"}; text=${text%\"}; screen_should_show_user_message "$text" ;;
     "Then the screen should contain "*|"And the screen should contain "*)
       local text=${line#*should contain \"}; text=${text%\"}; screen_should_contain "$text" ;;
     "When I type "*" and press Enter"|"And I type "*" and press Enter")
@@ -315,6 +333,16 @@ shopt -s nullglob
 features=("$FEATURE_DIR"/*.feature)
 if [[ -n "${FEATURE_FILE:-}" ]]; then
   features=("$FEATURE_FILE")
+else
+  # The scrollbar outline is executed by its dedicated tmux/PTY runner,
+  # which expands all three sizes. This line-by-line runner cannot drive
+  # mouse gestures or expand outline examples; make test-tui-gherkin runs
+  # test-tui-scrollbar as a prerequisite.
+  covered=()
+  for feature in "${features[@]}"; do
+    [[ "$(basename "$feature")" == scrollbar.feature ]] || covered+=("$feature")
+  done
+  features=("${covered[@]}")
 fi
 if [[ ${#features[@]} -eq 0 ]]; then
   echo "no feature files in $FEATURE_DIR" >&2

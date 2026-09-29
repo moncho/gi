@@ -29,7 +29,7 @@ Feature: TUI assistant basics
     And the screen should contain "rtk"
     When I type "hello from gherkin" and press Enter
     Then the database should contain an assistant message "Gi received: hello from gherkin"
-    And the screen should contain "you: hello from gherkin"
+    And the screen should show a user message "hello from gherkin"
 
   Scenario: Reject an unconfigured model without submitting work
     Given a fresh gi TUI workspace

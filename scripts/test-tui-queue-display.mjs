@@ -18,13 +18,16 @@ for(const mode of ['fullscreen','regular']){
   let text=cap(),steering=text.indexOf('Steering: steer at boundary'),followUp=text.indexOf('Follow-up: follow after completion');
   if(steering<0||followUp<=steering)throw Error('pending ordering reversed');
   writeFileSync(join(out,mode+'-pending.txt'),text);
+  send('/queue');await wait(()=>{const screen=cap();return screen.includes('1 queued · 1 steering')&&screen.includes('Steering: steer at boundary')&&screen.includes('follow after completion')},'read-only /queue inspection');
+  if(sql("select count(*) from turns where prompt='follow after completion' and status='queued';")!=='1'||sql("select count(*) from steering_queue where content='steer at boundary' and status='queued';")!=='1')throw Error('/queue inspection changed delivery');
+  writeFileSync(join(out,mode+'-inspection.txt'),cap());
   tm('send-keys','-t',pane,'-l','unsubmitted draft');await wait(()=>sql("select count(*) from kv_store where namespace='tui_text_draft_v1' and value like '%unsubmitted draft%';")==='1','durable draft');
   if(!cap().includes('Follow-up: follow after completion'))throw Error('typing draft hid queue');
   tm('resize-window','-t','proof','-x','64','-y','12');await wait(()=>cap().includes('queue: 2 pending; /queue to inspect'),'compact pending summary');
   writeFileSync(join(out,mode+'-compact.txt'),cap());
   tm('resize-window','-t','proof','-x','100','-y','32');await wait(()=>{const screen=cap();return screen.includes('Steering: steer at boundary')&&screen.includes('Follow-up: follow after completion')},'pending after resize');
   writeFileSync(join(gates,'held'),'go');await wait(()=>sql("select count(*) from turns where status in ('queued','running','steering');")==='0','queue drain');
-  await wait(()=>!cap().includes('Steering: steer at boundary')&&!cap().includes('Follow-up: follow after completion'),'panel clear');
+  await wait(()=>{const screen=cap();return !screen.includes('↳ /queue to inspect · Alt+Up restores text-only queue')&&!screen.includes('queue: 2 pending; /queue to inspect')},'pending panel clear');
   if(sql("select count(*) from messages where role='user' and content in ('steer at boundary','follow after completion');")!=='2')throw Error('pending display disrupted delivery');
   if(sql("select count(*) from kv_store where namespace='tui_text_draft_v1' and value like '%unsubmitted draft%';")!=='1')throw Error('pending display changed draft');
   results.push({mode,result:'pass',steeringBeforeFollowUp:true,draftPreserved:true,clearedAfterDelivery:true});

@@ -14,7 +14,7 @@ import (
 )
 
 const queuePageSize = 6
-const queueUsage = "queue: /queue [page] | remove <id> | steer <id> <active-id> | move <id> before|after <target-id>"
+const queueUsage = "queue: /queue [page] · Steering read-only | remove <follow-up-id> | steer <follow-up-id> <active-id> | move <follow-up-id> before|after <target-id>"
 
 func (c *chatTUI) showQueueCommand(lines []string) {
 	for i, line := range lines {
@@ -99,6 +99,16 @@ func (c *chatTUI) queueCommand(fields []string) []string {
 	if err != nil {
 		return []string{"queue: read failed: " + err.Error()}
 	}
+	pending, err := c.store.ListPendingTUIMessages(ctx, id)
+	if err != nil {
+		return []string{"queue: read failed: " + err.Error()}
+	}
+	steering := make([]string, 0)
+	for _, item := range pending {
+		if item.Kind == "Steering" {
+			steering = append(steering, item.Text)
+		}
+	}
 	active := "none"
 	running, _, err := c.store.GetSessionActiveTurn(ctx, id)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -113,7 +123,7 @@ func (c *chatTUI) queueCommand(fields []string) []string {
 			active = running
 		}
 	}
-	pages := max(1, (len(items)+queuePageSize-1)/queuePageSize)
+	pages := max(1, (len(steering)+len(items)+queuePageSize-1)/queuePageSize)
 	if page > pages {
 		return []string{fmt.Sprintf("queue: page out of range; %d page(s). /queue to refresh", pages)}
 	}
@@ -123,16 +133,19 @@ func (c *chatTUI) queueCommand(fields []string) []string {
 		c.queueSnapshot[i] = item.ID
 	}
 	lines := []string{fmt.Sprintf("queue: %d queued · page %d/%d · active %s", len(items), page, pages, active)}
+	if len(steering) > 0 {
+		lines[0] = fmt.Sprintf("queue: %d queued · %d steering · page %d/%d · active %s", len(items), len(steering), page, pages, active)
+	}
 	start := (page - 1) * queuePageSize
-	for _, item := range items[start:min(len(items), start+queuePageSize)] {
+	end := min(len(steering)+len(items), start+queuePageSize)
+	for index := start; index < end; index++ {
+		if index < len(steering) {
+			lines = append(lines, "  Steering: "+selectorText(steering[index], 40))
+			continue
+		}
+		item := items[index-len(steering)]
 		// IDs are complete; only the advisory prompt preview is shortened/sanitised.
-		preview := strings.Map(func(r rune) rune {
-			if unicode.IsControl(r) {
-				return ' '
-			}
-			return r
-		}, item.Prompt)
-		lines = append(lines, fmt.Sprintf("  %s  %s", item.ID, selectorText(preview, 40)))
+		lines = append(lines, fmt.Sprintf("  %s  %s", item.ID, selectorText(item.Prompt, 40)))
 	}
 	lines = append(lines, queueUsage)
 	return lines

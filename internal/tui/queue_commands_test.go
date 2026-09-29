@@ -71,6 +71,40 @@ func TestTUIQueueCommandsDurablePagesAndGuardedRemoval(t *testing.T) {
 	}
 }
 
+func TestTUIQueueCommandShowsSteeringAndPagedFollowUps(t *testing.T) {
+	c := sessionTestChat(t)
+	ctx := context.Background()
+	c.input.SetText("untouched draft🙂")
+	for i := 0; i < 5; i++ {
+		if _, err := c.store.EnqueueSteering(ctx, c.sessionID, "", "user", fmt.Sprintf("steering-%d", i), nil, nil, "one-at-a-time"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 3; i++ {
+		if _, err := c.store.CreateTurnWithStatus(ctx, fmt.Sprintf("pending-%d", i), c.sessionID, "queued", fmt.Sprintf("follow-%d", i), nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first := c.queueCommand([]string{"/queue"})
+	if len(first) != 8 || !strings.Contains(first[0], "3 queued · 5 steering · page 1/2") || !strings.Contains(strings.Join(first, "\n"), "Steering: steering-0") || !strings.Contains(first[6], "pending-0") {
+		t.Fatalf("first page=%q", first)
+	}
+	second := c.queueCommand([]string{"/queue", "2"})
+	if len(second) != 4 || !strings.Contains(second[1], "pending-1") || !strings.Contains(second[2], "pending-2") {
+		t.Fatalf("second page=%q", second)
+	}
+	if !reflect.DeepEqual(c.queueSnapshot, []string{"pending-0", "pending-1", "pending-2"}) {
+		t.Fatalf("steering became movable queue IDs: %q", c.queueSnapshot)
+	}
+	other := &chatTUI{store: c.store, engine: c.engine, sessionID: "B"}
+	if got := other.queueCommand([]string{"/queue"}); strings.Contains(strings.Join(got, "\n"), "steering-") {
+		t.Fatalf("cross-session steering leak: %q", got)
+	}
+	if c.input.Text() != "untouched draft🙂" {
+		t.Fatalf("inspection mutated draft: %q", c.input.Text())
+	}
+}
+
 func TestTUIQueueCommandsRunBoundSteerRetainsMetadataAndNoFallback(t *testing.T) {
 	c := sessionTestChat(t)
 	ctx := context.Background()

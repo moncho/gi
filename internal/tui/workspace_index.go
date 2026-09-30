@@ -126,13 +126,7 @@ func (c *chatTUI) closeWorkspaceIndex() {
 	p.epoch++
 	if c.regularMode && c.app != nil {
 		c.app.Terminal().ExitAltScreen()
-		w, h := c.app.Size()
-		c.app.Dispatch(gotui.ResizeEvent{Width: w, Height: h})
-		// A resize while the selector owned the screen invalidates the main
-		// screen's rows; re-render the retained transcript as Pi does.
-		if p.resized {
-			c.scheduleRegularReflow()
-		}
+		c.resetInlineHistoryModel()
 	}
 	c.transcriptScroll, c.stickToBottom = p.savedScroll, p.savedFollow
 	c.inputActive = p.savedInputActive

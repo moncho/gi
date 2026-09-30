@@ -155,6 +155,9 @@ type transcriptRenderableBlock struct {
 	BodyStyle      gotui.Style
 	HintStyle      gotui.Style
 	SelectedHint   string
+	// Static blocks are printed to terminal-owned scrollback in full; they
+	// cannot be toggled, so no expand/collapse hints are shown.
+	Static bool
 	// Tool call rendering (Pi's renderCall): argument text and timing.
 	ToolArg            string
 	StartedAt, EndedAt string
@@ -220,6 +223,10 @@ type chatTUI struct {
 	regularSessionPending       bool
 	regularWidth, regularHeight int
 	regularReflowGen            int
+	regularResizeBase           int // height before the current resize burst
+	regularResizeBaseWidth      int
+	regularResizeWidthChanged   bool
+	regularResizePeak           int // tallest height during the burst
 	modelMenuScope              string // Pi selector scope: "scoped" or "all"
 	modelMenuDefault            string // saved default model (Pi's "default" badge)
 	slash                       slashMenu

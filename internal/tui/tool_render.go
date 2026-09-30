@@ -227,7 +227,7 @@ func (c *chatTUI) renderPiBashBlock(block transcriptRenderableBlock) *gotui.Elem
 		}
 	}
 	var status []*gotui.Element
-	if len(output) > limit {
+	if len(output) > limit && !block.Static {
 		if block.Expanded {
 			status = append(status, textRow(gotui.TextSpan{Text: "(", Style: piFg(piMuted)}, gotui.TextSpan{Text: piExpandKey, Style: piFg(piDim)}, gotui.TextSpan{Text: " to collapse)", Style: piFg(piMuted)}))
 		} else {

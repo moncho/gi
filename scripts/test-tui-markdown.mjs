@@ -122,7 +122,7 @@ for(const scenario of scenarios){
   tm('resize-window','-t','proof','-x',String(width+8),'-y',String(height+3));await wait(()=>cap().includes('%/'),'resized Markdown');
   tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent draft')&&cap().includes('test-model •'),'resize round trip');
   // Like Pi, regular mode re-renders its retained transcript once resizing settles.
-  await sleep(400);
+  await sleep(600);
   check('resized');shot('resized');
   assert(sql('select count(*) from messages;')===(fixture.name==='plain-output'?'3':'2'),'rendering or draft submitted a message');
   results.push(`${scenario.name}: stored projection, ANSI, viewport, resize, draft`);

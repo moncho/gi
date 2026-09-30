@@ -24,9 +24,15 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const flags=()=>tmux('display-message','-p','-t',pane,'#{alternate_on} #{mouse_any_flag} #{mouse_button_flag}').trim();
  const keys=(...args)=>tmux('send-keys','-t',pane,...args),type=text=>keys('-l',text);
  const shot=name=>{const text=capture();writeFileSync(join(artifacts,`${width}x${height}-${name}.txt`),text+'\n');writeFileSync(join(artifacts,`${width}x${height}-${name}.history`),history());return text;};
- const bars=text=>text.split('\n').map((line,i)=>/^\s*─{10,}\s*$/.test(line)?i:-1).filter(i=>i>=0);
+ // Editor borders are the last two full rules; Pi-style `!!` blocks draw their own.
+ const bars=text=>text.split('\n').map((line,i)=>/^\s*─{10,}\s*$/.test(line)?i:-1).filter(i=>i>=0).slice(-2);
  const idle=()=>sql('select count(*) from session_active_turns;')==='0';
- const intact=label=>{const text=history().replace(/\s+/g,' ');assert(JSON.stringify([...text.matchAll(/Gi received: Native regular (\d+)\b/g)].map(m=>Number(m[1])))===JSON.stringify(Array.from({length:12},(_,i)=>i+1)),`${label}: lost, duplicated or reordered native history`);assert(text.includes('Gi received: UX queue gate:regular'),`${label}: lost gate response`);};
+ // A width change makes the terminal rewrap rows it owns; the repaint of the
+ // visible rows above the dock at the settled width can repeat the one row at
+ // that boundary in scrollback (Pi avoids this only by erasing scrollback,
+ // which would lose the user's shell history). Adjacent repeats are tolerated;
+ // loss and reordering are not.
+ const intact=label=>{const text=history().replace(/\s+/g,' ');const seen=[...text.matchAll(/Gi received: Native regular (\d+)\b/g)].map(m=>Number(m[1])).filter((n,i,a)=>i===0||a[i-1]!==n);assert(JSON.stringify(seen)===JSON.stringify(Array.from({length:12},(_,i)=>i+1)),`${label}: lost or reordered native history`);assert(text.includes('Gi received: UX queue gate:regular'),`${label}: lost gate response`);};
  const launch=()=>{socket=`${session}-${++generation}`;return tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && printf 'PREEXISTING SHELL OUTPUT\\n' && PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode regular -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'; printf '\\nREGULAR EXITED\\n'; sleep 60`);};
  try{
   launch();tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
@@ -51,7 +57,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   keys('Home');type('X');await sleep(120);assert(capture().replaceAll('▌','').includes('Xnewer draft'),'Home should edit in regular mode');keys('BSpace');keys('End');
   intact('before multiline');keys('-H','1b','5b','31','33','3b','32','75');type('second line');await sleep(150);assert(capture().includes('second line'),'multiline editor hidden');
   assert(bars(capture())[1]-bars(capture())[0]===3,'multiline editor did not grow by one row');
-  tmux('resize-window','-t',session,'-x','80','-y','24');await sleep(180);tmux('resize-window','-t',session,'-x',String(width),'-y',String(height));await sleep(200);
+  tmux('resize-window','-t',session,'-x','80','-y','24');await sleep(180);tmux('resize-window','-t',session,'-x',String(width),'-y',String(height));await sleep(600); // repaint after the resize burst settles
   intact('after resize');assert(capture().includes('second line'),'resize lost multiline tail');
   const lines=capture().replaceAll('▌','').split('\n');assert(lines.some((line,i)=>line.trim()==='newer draft'&&lines[i+1]?.trim()==='second line'),'multiline rows merged after resize');
   shot('multiline-resized');keys('C-a','C-k');type('newer draft');await sleep(100);
@@ -65,9 +71,10 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   assert(flags()==='0 0 0','regular state changed terminal mode');
   assert(sql("select count(*) from messages where role='user';")==='13','editor operations submitted extra work');
   // Session changes label append-only history; editor snapshots stay local.
+  const originId=sql('select id from sessions limit 1;');
   type('/fork regular-child');keys('Enter');await wait(()=>sql('select count(*) from sessions;')==='2','child created');
   type('child draft');keys('M-s');await wait(()=>capture().includes('Select session'),'session selector');type('@agent');await sleep(150);keys('Enter');
-  await wait(()=>capture().replaceAll('▌','').includes('m26/t13'),'origin selected');
+  await wait(()=>{const m=[...history().matchAll(/sys: session (\S+)/g)];return m.length>1&&m[m.length-1][1]===originId;},'origin selected');
   assert(!capture().includes('child draft'),'child editor leaked into origin');assert(history().includes('sys: session '),'session boundary missing');
   keys('C-d');await wait(()=>capture().includes('REGULAR EXITED'),'normal exit');assert(history().includes('NATIVE-LONG-01'),'exit erased scrollback');shot('exit');
   tmux('kill-session','-t',session);launch();tmux('set-option','-t',session,'status','off');

@@ -1,17 +1,23 @@
-SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
-# Tests run one at a time, niced and pinned to a few CPUs so the machine
-# stays usable: no parallel make jobs, one Go test package at a time, and
-# every test recipe (plus the builds it pulls in) under nice + taskset.
-# Override with TEST_NICE / TEST_CPUS (e.g. TEST_CPUS=0-7).
+# ── CPU throttling ──────────────────────────────────────────────────────
+# Every recipe (builds, tests, the dev server) runs niced and pinned to a
+# CPU subset so the machine stays usable and runs are reproducible. Tune per
+# invocation, e.g. `make test CPU_SET=0-3 CPU_PROCS=4` or `CPU_NICE=0`.
+#   CPU_NICE   nice level for every recipe
+#   CPU_SET    taskset CPU list every recipe is pinned to
+#   CPU_PROCS  GOMAXPROCS and Go build parallelism (-p)
+# Make itself is .NOTPARALLEL, and test* targets run one Go package at a
+# time (-p=1), so test suites always execute sequentially.
+CPU_NICE ?= 10
+CPU_SET ?= 0-1
+CPU_PROCS ?= 2
 .NOTPARALLEL:
-TEST_NICE ?= 10
-TEST_CPUS ?= 0-1
-test%: SHELL := /usr/bin/nice
-test%: .SHELLFLAGS := -n $(TEST_NICE) /usr/bin/taskset -c $(TEST_CPUS) /usr/bin/env bash -c
-test%: export GOFLAGS += -p=1
-test%: export GOMAXPROCS := 2
+SHELL := /usr/bin/nice
+.SHELLFLAGS := -n $(CPU_NICE) /usr/bin/taskset -c $(CPU_SET) /usr/bin/env bash -c
+export GOMAXPROCS := $(CPU_PROCS)
+export GOFLAGS += -p=$(CPU_PROCS)
+test%: export GOFLAGS := $(filter-out -p=%,$(GOFLAGS)) -p=1
 
 # The race detector needs a ThreadSanitizer-compatible address layout; some
 # kernels (e.g. 39/42-bit arm64 VMs) lack it. Probe once and drop -race there.

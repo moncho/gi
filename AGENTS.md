@@ -89,7 +89,7 @@ Makefile             canonical build/test/run interface
 
 ### 3. Test
 
-Run tests **one at a time** through the Makefile: `test*` targets run niced (`TEST_NICE`, default 10), make is `.NOTPARALLEL`, and Go tests use `-p=1`. Never launch several test suites in one command or in the background.
+Run tests **one at a time, through the Makefile only** (see *CPU throttling* below). Never launch several test suites in one command, and never run `go test`, `bun`, or test scripts directly — that bypasses the throttle.
 
 **Every user-visible feature must have corresponding functional tests.**
 
@@ -155,6 +155,17 @@ make bun-checks     # Hook TDZ checker
 | Target | Description |
 |---|---|
 | `make clean` | Remove `.gi-run/`, `bin/`, `.gi-test/`, `.gi-tui-test/`, `test-results/` |
+
+### CPU throttling
+
+All CPU limiting lives in the Makefile, so every build, test and dev-server run is throttled the same way and throttling is reproducible:
+
+- every recipe runs under `nice -n $(CPU_NICE)` and `taskset -c $(CPU_SET)` (defaults: `10`, `0-1`)
+- `GOMAXPROCS` and Go build parallelism (`-p`) follow `CPU_PROCS` (default `2`)
+- make is `.NOTPARALLEL`; `test*` targets run one Go package at a time (`-p=1`)
+- `-race` is used only where the kernel supports ThreadSanitizer (probed once, cached in `/tmp/gi-race-probe.ok`)
+
+Tune per invocation instead of bypassing make, e.g. `make test CPU_SET=0-3 CPU_PROCS=4` or `make build CPU_NICE=0`.
 
 ### Overrides
 ```sh

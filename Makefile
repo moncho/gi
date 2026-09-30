@@ -872,9 +872,14 @@ test-tui-smoke: build
 	chmod +x scripts/test-tui-smoke.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
 
-test-tui-gherkin: build test-tui-markdown test-tui-inline-prose
+test-tui-gherkin: build test-tui-markdown test-tui-inline-prose test-tui-gherkin-features
+
+# Feature files only (no markdown/prose prerequisites). FEATURE_DIR narrows
+# the run, e.g. `make test-tui-gherkin-features FEATURE_DIR=/tmp/one-feature`.
+.PHONY: test-tui-gherkin-features
+test-tui-gherkin-features: build
 	chmod +x scripts/test-tui-gherkin.sh
-	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin scripts/test-tui-gherkin.sh
+	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin $(if $(FEATURE_DIR),FEATURE_DIR=$(abspath $(FEATURE_DIR))) scripts/test-tui-gherkin.sh
 
 # ── Cleanup ─────────────────────────────────────────────────────────────
 

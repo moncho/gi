@@ -98,6 +98,7 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 - [passkey-criteria.md](passkey-criteria.md) — validated per-step/example ledger and browser-only terminal adaptation
 - `tools/` — built-in tool contracts
 - `scripting/` — scripting runtimes and bridge docs
+- [Joker WASI feasibility](scripting/joker-wasi.md) — dependency pins, whole-interpreter guest probe, ARM64 bootstrap fix and unimplemented sandbox boundaries
 - `hooks/` — hook and lifecycle docs
 - `vfs/` — managed VFS and `vfs://` URL docs (including `vfs://chat` projection)
 - `skills/` — skill/package structure docs

@@ -524,6 +524,13 @@ func unmarshalJSONStringArray(raw string) ([]string, error) {
 }
 
 func (s *Store) CloneSession(ctx context.Context, sourceSessionID, newID, newTitle, newAgentID string) (*Session, error) {
+	return s.CloneSessionBefore(ctx, sourceSessionID, newID, newTitle, newAgentID, "")
+}
+
+// CloneSessionBefore copies the session's history up to, but excluding,
+// beforeMessageID (Pi's /fork from an earlier user message). An empty
+// beforeMessageID copies everything; an unknown one is an error.
+func (s *Store) CloneSessionBefore(ctx context.Context, sourceSessionID, newID, newTitle, newAgentID, beforeMessageID string) (*Session, error) {
 	source, err := s.GetSession(ctx, sourceSessionID)
 	if err != nil {
 		return nil, err
@@ -533,6 +540,9 @@ func (s *Store) CloneSession(ctx context.Context, sourceSessionID, newID, newTit
 		state[k] = v
 	}
 	state["forked_from"] = sourceSessionID
+	if beforeMessageID != "" {
+		state["forked_before_message_id"] = beforeMessageID
+	}
 	state["status"] = "idle"
 	state["active_turn_id"] = nil
 	state["queue_count"] = 0
@@ -540,11 +550,24 @@ func (s *Store) CloneSession(ctx context.Context, sourceSessionID, newID, newTit
 	delete(state, "pinned")
 	logicalChatID := newID
 	alloc := session.AllocateDefaultSession(newAgentID, "gi", "default", logicalChatID)
-	cloned, err := s.CreateSessionWithMetadata(ctx, newID, sourceSessionID, newTitle, state, &alloc.Scope, alloc.SessionAliases)
+	messages, err := s.ListMessages(ctx, sourceSessionID)
 	if err != nil {
 		return nil, err
 	}
-	messages, err := s.ListMessages(ctx, sourceSessionID)
+	if beforeMessageID != "" {
+		cut := -1
+		for i, msg := range messages {
+			if msg.ID == beforeMessageID {
+				cut = i
+				break
+			}
+		}
+		if cut < 0 {
+			return nil, fmt.Errorf("message %s not found in session %s", beforeMessageID, sourceSessionID)
+		}
+		messages = messages[:cut]
+	}
+	cloned, err := s.CreateSessionWithMetadata(ctx, newID, sourceSessionID, newTitle, state, &alloc.Scope, alloc.SessionAliases)
 	if err != nil {
 		return nil, err
 	}

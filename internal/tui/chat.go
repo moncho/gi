@@ -1669,6 +1669,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "session-rename" {
 		return c.sessionRenameKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "fork" {
+		return c.forkSelectorKeys()
+	}
 	if c.modelMenuOpen {
 		if c.modelMenuKind == "thinking" {
 			return gotui.KeyMap{
@@ -2114,6 +2117,10 @@ func (c *chatTUI) ensureModelMenuSelectionVisible() {
 }
 
 func (c *chatTUI) acceptModelMenuSelection() {
+	if c.modelMenuKind == "fork" {
+		c.acceptForkSelection()
+		return
+	}
 	if c.modelMenuKind == "session-actions" {
 		c.applySessionAction()
 		return
@@ -2199,7 +2206,7 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
-	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" {
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" {
 		width := c.currentContentWidth()
 		if c.app != nil {
 			width, _ = c.app.Size()
@@ -2910,7 +2917,12 @@ func (c *chatTUI) handleCommand(text string) {
 		c.transcript = append(c.transcript, c.pluginLines()...)
 	case "/tree":
 		c.transcript = append(c.transcript, c.treeLines()...)
-	case "/fork":
+	case "/fork", "/spawn":
+		if fields[0] == "/fork" && len(fields) == 1 {
+			c.openForkSelector() // Pi: fork from an earlier user message
+			return
+		}
+		// /spawn [@agentN] (and the legacy /fork @agentN) opens a peer session.
 		target := ""
 		if len(fields) > 1 {
 			target = strings.TrimPrefix(fields[1], "@")
@@ -3041,7 +3053,7 @@ var piCommands = []struct{ name, hint string }{
 	{"/name <name>", "Set session display name"},
 	{"/session", "Show session info and stats"},
 	{"/hotkeys", "Show all keyboard shortcuts"},
-	{"/fork [@agentN]", "Create a peer fork session"},
+	{"/fork", "Create a new fork from a previous user message"},
 	{"/clone [@agentN]", "Duplicate the current session at the current position"},
 	{"/login <provider>", "Show provider authentication status"},
 	{"/logout <provider>", "Remove provider authentication"},
@@ -3067,6 +3079,7 @@ var giCommands = []struct{ name, hint string }{
 	{"/skills [query]", "List discovered skills"},
 	{"/skill:name [args]", "Load a discovered SKILL.md"},
 	{"/agents", "List configured agents"},
+	{"/spawn [@agentN]", "Open a peer agent session"},
 	{"/switch @agent|session_id", "Switch the active session"},
 	{"/send @agent message", "Send a peer message"},
 	{"/where", "Show a context summary"},

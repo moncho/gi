@@ -16,12 +16,17 @@ behaviour: `/resume` with no argument opens the session selector (`/sessions`
 remains as an alias), `/name` with no argument shows the current name,
 `/logout` with no argument lists stored providers, and `/quit` exits.
 
-Pi built-ins not in gi yet (omitted, not approximated): `/export`, `/import`,
-`/share`, `/bug`, `/changelog`, `/trust`. Pi built-ins whose gi behaviour still
-differs: `/fork` (Pi forks from an earlier user message; gi creates a peer
-fork session), `/tree`, `/settings`, `/scoped-models` and `/login` (Pi opens
-interactive UIs; gi prints or uses subcommands), `/compact [instructions]`
-(gi takes no custom instructions).
+`/export [path]` writes HTML or Pi session JSONL (loadable by Pi),
+`/compact [instructions]` passes the focus to the before-compact hook and the
+summary, and `/fork` opens Pi's "Fork from Message" selector (history before
+the chosen message goes to a new session; the message returns to the editor).
+gi's former `/fork @agentN` peer session is now `/spawn [@agentN]` (the old
+form still works).
+
+Pi built-ins not in gi yet (omitted, not approximated): `/import`, `/share`,
+`/bug`, `/changelog`, `/trust`. Pi built-ins whose gi behaviour still differs:
+`/tree`, `/settings`, `/scoped-models` and `/login` (Pi opens interactive UIs;
+gi prints or uses subcommands).
 
 Implemented commands:
 
@@ -50,7 +55,8 @@ Implemented commands:
 - `/agents`
 - `/plugins` / `/extensions`
 - `/tree`
-- `/fork [@agentN]`
+- `/fork` (Pi selector) · `/spawn [@agentN]` (peer session)
+- `/export [path]`
 - `/switch @agent|session_id`
 - `/send @agent message`
 - `/where`

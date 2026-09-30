@@ -2290,7 +2290,15 @@ func (c *chatTUI) cycleModel(delta int) {
 }
 
 func (c *chatTUI) cycleThinking(delta int) {
-	levels := []string{"low", "medium", "high"}
+	// Pi cycles every level the model supports.
+	levels := inference.ThinkingLevels(c.sessionModelLabel())
+	if len(levels) == 0 {
+		if known, reasoning := inference.ModelReasoning(c.sessionModelLabel()); known && !reasoning {
+			c.appendTranscript("sys: current model does not support thinking")
+			return
+		}
+		levels = []string{"low", "medium", "high"}
+	}
 	current := strings.ToLower(strings.TrimSpace(c.cfg.DefaultThinkingLevel))
 	idx := 0
 	for i, level := range levels {
@@ -3850,13 +3858,32 @@ func (c *chatTUI) thinkingCommand(fields []string) []string {
 	if len(fields) == 1 {
 		return []string{fmt.Sprintf("sys: thinking: %s", c.cfg.DefaultThinkingLevel)}
 	}
-	level := strings.TrimSpace(fields[1])
+	level := strings.ToLower(strings.TrimSpace(fields[1]))
 	if level == "" {
-		return []string{"sys: usage /thinking <low|medium|high>"}
+		return []string{"sys: usage /thinking <off|minimal|low|medium|high|xhigh|max>"}
+	}
+	// Like Pi, clamp to what the model supports and bind the level to the
+	// session's model so inference applies it (not just the footer).
+	model := c.sessionModelLabel()
+	if effective, known := inference.EffectiveThinking(model, level); known {
+		if effective == "" {
+			return []string{fmt.Sprintf("sys: %s does not support thinking", model)}
+		}
+		level = effective
 	}
 	c.cfg.DefaultThinkingLevel = level
 	lines := []string{fmt.Sprintf("sys: thinking set to %s", level)}
-	if err := c.store.TouchSessionState(context.Background(), c.sessionID, map[string]any{"thinking_level": level}); err != nil {
+	if c.store == nil || c.sessionID == "" {
+		return lines
+	}
+	ctx := context.Background()
+	if session, err := c.store.GetSession(ctx, c.sessionID); err == nil && inference.ValidateThinking(model, level) == nil {
+		if err := c.store.SelectSessionThinking(ctx, c.sessionID, store.SessionThinkingToken(c.sessionID, session.State), model, level); err != nil {
+			lines = append(lines, fmt.Sprintf("warn: failed to select session thinking level: %v", err))
+		}
+		return lines
+	}
+	if err := c.store.TouchSessionState(ctx, c.sessionID, map[string]any{"thinking_level": level}); err != nil {
 		lines = append(lines, fmt.Sprintf("warn: failed to persist thinking level in session state: %v", err))
 	}
 	return lines

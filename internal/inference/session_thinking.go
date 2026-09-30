@@ -84,3 +84,23 @@ func ModelReasoning(modelID string) (known, reasoning bool) {
 	}
 	return true, model.Reasoning
 }
+
+// EffectiveThinking is Pi's session thinking level for modelID: the given
+// level (or Pi's default "medium"), clamped to the levels the model supports.
+// It returns "" when the model does not reason, or when gi cannot send a
+// level on its transport; known reports whether the registry knows modelID.
+func EffectiveThinking(modelID, level string) (effective string, known bool) {
+	Init()
+	provider, name := splitModelID(modelID)
+	model := goai.GetModel(goai.Provider(provider), name)
+	if model == nil {
+		return "", false
+	}
+	if !model.Reasoning || provider == "opencode-zen" {
+		return "", true
+	}
+	if level == "" {
+		level = "medium"
+	}
+	return string(goai.ClampThinkingLevel(model, goai.ModelThinkingLevel(level))), true
+}

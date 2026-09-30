@@ -41,8 +41,8 @@ func (c *chatTUI) effectiveThinking(provider, model, level string) string {
 	if provider = strings.TrimSpace(provider); provider != "" && !strings.HasPrefix(id, provider+"/") && !strings.Contains(id, "/") {
 		id = provider + "/" + id
 	}
-	if known, reasoning := inference.ModelReasoning(id); known && !reasoning {
-		return ""
+	if effective, known := inference.EffectiveThinking(id, level); known {
+		return effective // clamped like Pi; "" for non-reasoning models
 	}
 	return level
 }

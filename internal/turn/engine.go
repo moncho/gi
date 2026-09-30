@@ -529,7 +529,7 @@ func (e *Engine) submitPrompt(ctx context.Context, in RunInput, retry *store.Hel
 	if err != nil {
 		return nil, err
 	}
-	if level := inference.CapturedSessionThinking(selectedSession, in.Model); level != "" {
+	if level := e.admissionThinking(selectedSession, in.Model); level != "" {
 		metadata["selected_thinking_level"] = level
 		metadata["selected_thinking_model"] = in.Model
 	}
@@ -2407,7 +2407,7 @@ func (e *Engine) submitSteeringPrompt(ctx context.Context, sessionID, activeTurn
 	if err != nil {
 		return nil, err
 	}
-	if level := inference.CapturedSessionThinking(selectedSession, in.Model); level != "" {
+	if level := e.admissionThinking(selectedSession, in.Model); level != "" {
 		payload["selected_thinking_level"] = level
 		payload["selected_thinking_model"] = in.Model
 	}
@@ -5468,4 +5468,16 @@ func (r *sessionRunner) runShellTurn(ctx context.Context, s *store.Store, run *p
 	sessionCompletionPayload := map[string]any{"reason": "turn_completed", "active_turn_id": nil, "turn_id": run.turnID, "turn_status": "completed", "turn_phase": "completed", "failure_kind": "", "model": run.model, "completion_kind": "response"}
 	r.engine.PublishRuntimeSessionEvent("session_idle", run.sessionID, run.agentID, "idle", sessionCompletionPayload)
 	r.emitSessionStateHookOnly(bgCtx, run.sessionID, run.agentID, run.model, "idle", map[string]any{"reason": "turn_completed", "active_turn_id": nil, "turn_id": run.turnID, "turn_status": "completed", "turn_phase": "completed", "failure_kind": "", "completion_kind": "response"})
+}
+
+// admissionThinking is the thinking level captured for a turn: the session's
+// validated selection, else Pi's default (the configured default thinking
+// level, else "medium") clamped to what the model supports. Non-reasoning and
+// unknown models get none.
+func (e *Engine) admissionThinking(session *store.Session, model string) string {
+	if level := inference.CapturedSessionThinking(session, model); level != "" {
+		return level
+	}
+	level, _ := inference.EffectiveThinking(model, strings.TrimSpace(e.runtimeCfg.DefaultThinkingLevel))
+	return level
 }

@@ -1,5 +1,10 @@
 # gi implementation checklist
 
+- [x] Upgrade Joker and go-ai to pinned upstream commits; add a whole-interpreter WASI evaluation/cancellation smoke target. [Scope and WASI bootstrap fix](../internal/scripting/joker-wasi.md). No production codemode or MCP support claimed.
+- [x] Split large generated Joker WASI bootstrap initializers via a reproducible build overlay; preserve initialization dependencies and verify evaluation/cancellation on interpreter and ARM64 native compiler backends.
+- [ ] Replace go-ai Pi 0.99.2 parity commit pin with a proper upstream release tag when available.
+- [ ] Complete Joker WASI capability isolation, bounded host/output handling, authorized MCP broker and performance evaluation before production codemode integration.
+
 - [x] Default fullscreen mouse-selection copy to OSC 52 when clipboard mode is unset; preserve explicit off/native/auto and transcript-only `/copy`, report terminal dispatch truthfully, and add fresh-workspace/opt-out regression coverage. Go tests/vet/build/hook checks pass. [Policy and validation limits](../internal/tui-clipboard-media.md#selection-default-regression-coverage).
 - [ ] Rerun selection-default PTY/browser/race acceptance on a provisioned host: current attempts blocked by missing sqlite3, missing Playwright browser binaries and unsupported ARM64 ThreadSanitizer VMA range.
 

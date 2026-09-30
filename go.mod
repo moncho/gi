@@ -9,8 +9,9 @@ require (
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/grindlemire/go-tui v0.22.1
 	github.com/klauspost/compress v1.20.0
-	github.com/rcarmo/go-ai v0.99.1
-	github.com/rcarmo/go-joker v1.8.1-0.20260529215339-bc07acfdb01c
+	github.com/rcarmo/go-ai v0.99.2-0.20260930214227-3edf860c4e8b
+	github.com/rcarmo/go-joker v1.8.1-0.20260921221227-cd9de78c1f44
+	github.com/tetratelabs/wazero v1.12.0
 	github.com/yuin/goldmark v1.8.6
 	golang.org/x/crypto v0.57.0
 	golang.org/x/net v0.59.0
@@ -81,7 +82,6 @@ require (
 	github.com/tailscale/peercred v0.0.0-20250107143737-35a0c7bd7edc // indirect
 	github.com/tailscale/web-client-prebuilt v0.0.0-20260917222731-e0ed2d0d0fea // indirect
 	github.com/tailscale/wireguard-go v0.0.0-20260715223240-2e01ba5b00f0 // indirect
-	github.com/tetratelabs/wazero v1.12.0 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect

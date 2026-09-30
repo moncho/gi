@@ -1107,3 +1107,22 @@ test-tui-table-scroll:
 .PHONY: probe-tui-ghostty
 probe-tui-ghostty:
 	$(GO) run ./tests/tui-ghostty-probe
+
+# Whole-interpreter WASI feasibility: not the production codemode sandbox.
+.PHONY: test-joker-wasi
+test-joker-wasi:
+	@mkdir -p $(BIN_DIR)
+	@rm -f $(BIN_DIR)/joker-wasi-bootstrap.go
+	@if [ -d $(BIN_DIR)/joker-wasi-module ]; then chmod -R u+w $(BIN_DIR)/joker-wasi-module; fi
+	@rm -rf $(BIN_DIR)/joker-wasi-module
+	@cp -a "$$($(GO) list -m -f '{{.Dir}}' github.com/rcarmo/go-joker)" $(BIN_DIR)/joker-wasi-module
+	@chmod -R u+w $(BIN_DIR)/joker-wasi-module
+	@cp go.mod $(BIN_DIR)/joker-wasi.mod; cp go.sum $(BIN_DIR)/joker-wasi.sum
+	$(GO) mod edit -modfile=$(BIN_DIR)/joker-wasi.mod -replace=github.com/rcarmo/go-joker=$(abspath $(BIN_DIR)/joker-wasi-module)
+	$(GO) run ./scripts/joker-wasi-overlay -source $(BIN_DIR)/joker-wasi-module/core/a_generated_bootstrap_payloads.go -output $(BIN_DIR)/joker-wasi-bootstrap.go.txt -overlay $(BIN_DIR)/joker-wasi-overlay.json
+	GOOS=wasip1 GOARCH=wasm $(GO) build -modfile=$(BIN_DIR)/joker-wasi.mod -overlay=$(abspath $(BIN_DIR)/joker-wasi-overlay.json) -o $(BIN_DIR)/joker-wasi-probe.wasm ./tests/joker-wasi/guest
+	GI_JOKER_WASI_GUEST=$(abspath $(BIN_DIR)/joker-wasi-probe.wasm) $(GO) test -count=1 -v ./tests/joker-wasi
+
+.PHONY: fmt-joker-wasi
+fmt-joker-wasi:
+	$(GO) fmt ./scripts/joker-wasi-overlay ./tests/joker-wasi/...

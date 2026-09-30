@@ -31,6 +31,10 @@ type authEntry struct {
 	Expires int64  `json:"expires"`
 	Token   string `json:"token"`
 	APIKey  string `json:"apiKey"`
+	// Pi records the account's Copilot model list and enterprise domain;
+	// listings are filtered to it like Pi's provider filterModels.
+	AvailableModelIDs []string `json:"availableModelIds"`
+	EnterpriseURL     string   `json:"enterpriseUrl"`
 }
 
 type ProviderOption struct {
@@ -54,6 +58,7 @@ func Init() {
 	once.Do(func() {
 		goai.RegisterBuiltinModels()
 		registerCustomModels()
+		registerPiModelsStore(PiModelsStorePath())
 	})
 }
 
@@ -173,11 +178,21 @@ func RemoveAuthEntry(provider string) (bool, error) {
 }
 
 func authEntryToOAuthCredentials(entry authEntry) *oauth.Credentials {
-	return &oauth.Credentials{
+	creds := &oauth.Credentials{
 		Refresh: entry.Refresh,
 		Access:  entry.Access,
 		Expires: entry.Expires,
 	}
+	if entry.AvailableModelIDs != nil || entry.EnterpriseURL != "" {
+		creds.Extra = map[string]interface{}{}
+		if entry.AvailableModelIDs != nil {
+			creds.Extra["availableModelIds"] = entry.AvailableModelIDs
+		}
+		if entry.EnterpriseURL != "" {
+			creds.Extra["enterpriseUrl"] = entry.EnterpriseURL
+		}
+	}
+	return creds
 }
 
 func providerName(id string) string {

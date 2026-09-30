@@ -4309,9 +4309,16 @@ func (r *sessionRunner) runAgentLoop(ctx context.Context, s *store.Store, turnID
 			}
 			toolCallSummary += fmt.Sprintf("[tool_call: %s]", tc.Name)
 		}
+		// Full calls (id, name, arguments) make the history exportable to Pi's
+		// session format; the summary content stays for display and context.
+		recordedCalls := make([]map[string]any, 0, len(toolCalls))
+		for _, tc := range toolCalls {
+			recordedCalls = append(recordedCalls, map[string]any{"id": tc.ID, "name": tc.Name, "arguments": tc.Arguments})
+		}
 		logutil.WarnIfErr("add assistant tool_calls summary", s.AddMessage(ctx, store.NowID("msg"), sessionID, "assistant", toolCallSummary, map[string]any{
 			"kind": "tool_calls", "source": "inference", "model": model,
 			"turn_id": turnID, "agent_id": agentID, "display_text": strings.TrimSpace(textContent),
+			"tool_calls": recordedCalls,
 		}))
 
 		outcome := r.executeToolCallsPhase(ctx, s, turnID, sessionID, model, agentID, iter, convCtx, toolCalls, pendingSteering, lastToolFailureSig, repeatedToolFailureCount, &totalUsage)

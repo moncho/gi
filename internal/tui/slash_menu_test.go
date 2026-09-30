@@ -81,7 +81,7 @@ func TestSlashEnterCompletesAndSubmits(t *testing.T) {
 
 // The catalogue lists Pi's built-in commands first, in Pi's order.
 func TestSlashCatalogueFollowsPiBuiltinOrder(t *testing.T) {
-	pi := []string{"settings", "model", "tree", "thinking", "scoped-models", "copy", "name", "session", "hotkeys", "fork", "clone", "login", "logout", "new", "compact", "resume", "reload", "quit"}
+	pi := []string{"settings", "model", "tree", "thinking", "scoped-models", "export", "copy", "name", "session", "hotkeys", "fork", "clone", "login", "logout", "new", "compact", "resume", "reload", "quit"}
 	items := (&chatTUI{}).slashCommandItems()
 	if len(items) < len(pi) {
 		t.Fatalf("catalogue too short: %d", len(items))

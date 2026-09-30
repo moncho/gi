@@ -2893,6 +2893,8 @@ func (c *chatTUI) handleCommand(text string) {
 		c.appendTranscript("approvals: no approval gates are configured in gi yet")
 	case "/cancel":
 		c.appendTranscript(c.cancelCommand())
+	case "/export":
+		c.appendTranscript(c.exportCommand(text))
 	case "/quit", "/exit":
 		if c.app != nil {
 			c.app.Stop()
@@ -3026,7 +3028,7 @@ func (c *chatTUI) extensionCommandLines(text string, fields []string) ([]string,
 // Pi-style slash autocomplete below the editor.
 // piCommands mirrors Pi's BUILTIN_SLASH_COMMANDS: same order, names and
 // argument hints, with Pi's descriptions where gi behaves the same. Pi
-// built-ins gi does not implement yet (/export, /import, /share, /bug,
+// built-ins gi does not implement yet (/import, /share, /bug,
 // /changelog, /trust) are omitted rather than approximated.
 var piCommands = []struct{ name, hint string }{
 	{"/settings", "Show settings"},
@@ -3034,6 +3036,7 @@ var piCommands = []struct{ name, hint string }{
 	{"/tree", "Show session tree"},
 	{"/thinking <level>", "Set thinking level"},
 	{"/scoped-models [list|add|remove|set]", "Enable/disable models for model cycling"},
+	{"/export [path]", "Export session (HTML default, or specify path: .html/.jsonl)"},
 	{"/copy [--osc52|--native|--auto|--fallback]", "Copy last agent message to clipboard"},
 	{"/name <name>", "Set session display name"},
 	{"/session", "Show session info and stats"},

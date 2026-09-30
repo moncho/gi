@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"context"
 	"database/sql"
 	"encoding/base64"
@@ -2889,6 +2890,10 @@ func (c *chatTUI) handleCommand(text string) {
 		c.appendTranscript("approvals: no approval gates are configured in gi yet")
 	case "/cancel":
 		c.appendTranscript(c.cancelCommand())
+	case "/abort":
+		if line := c.abortCommand(); line != "" {
+			c.appendTranscript(line)
+		}
 	case "/agents":
 		c.transcript = append(c.transcript, c.listAgentLines()...)
 	case "/plugins", "/extensions":
@@ -3042,6 +3047,7 @@ var tuiCommands = []struct{ name, hint string }{
 	{"/scrollback [n]", "show or set transcript scrollback limit"},
 	{"/history-limit [n]", "show or set per-session prompt history limit"},
 	{"/settings", "show grouped runtime settings"},
+	{"/abort", "abort the running turn (also clears one left by a crash)"},
 	{"/cancel", "cancel latest active/queued turn"},
 	{"/agents", "list configured agents"},
 	{"/tree", "show session tree"},
@@ -4053,6 +4059,47 @@ func (c *chatTUI) historyLimitCommand(fields []string) []string {
 		lines = append(lines, fmt.Sprintf("warn: failed to persist history limit: %v", err))
 	}
 	return lines
+}
+
+// abortCommand stops the session's active work. A live run is aborted like
+// Escape (queued text returns to the editor). An active turn no worker is
+// running — left 'running' by a crash or killed process, which makes the
+// session look busy (e.g. /compact unavailable) while the TUI is idle — is
+// finalized as aborted instead of being replayed on the next start.
+func (c *chatTUI) abortCommand() string {
+	if c.compaction.active {
+		c.stopCompaction()
+		return "sys: compaction cancellation requested"
+	}
+	if c.engine == nil || c.store == nil || c.sessionID == "" {
+		return "sys: nothing to abort"
+	}
+	ctx, cancel := c.draftContext()
+	activeID, _, err := c.store.GetSessionActiveTurn(ctx, c.sessionID)
+	cancel()
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && activeID == "") {
+		return "sys: nothing to abort"
+	}
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+	if c.engine.LiveActiveTurn(c.sessionID) == activeID {
+		c.restoreQueuedDraftForActive(activeID)
+		return ""
+	}
+	ctx, cancel = c.draftContext()
+	aborted, err := c.engine.AbortStaleActiveTurn(ctx, c.sessionID)
+	cancel()
+	switch {
+	case errors.Is(err, turn.ErrTurnOwnedElsewhere):
+		return fmt.Sprintf("sys: %s is running in another gi process; abort it there", activeID)
+	case err != nil:
+		return fmt.Sprintf("error: abort %s: %v", activeID, err)
+	case aborted == "":
+		return "sys: nothing to abort"
+	}
+	c.running = false
+	return fmt.Sprintf("sys: aborted interrupted turn %s (no worker was running it)", aborted)
 }
 
 func (c *chatTUI) cancelCommand() string {

@@ -51,6 +51,8 @@ type Engine struct {
 	peering                           *peering.Manager
 	bgCtx                             context.Context
 	bgCancel                          context.CancelFunc
+	closing                           atomic.Bool    // set by Close: no new launches
+	runs                              sync.WaitGroup // in-flight runTurn goroutines
 	extensions                        []ExtensionInfo
 	extensionsMu                      sync.RWMutex
 	extensionCommands                 *ExtensionCommandRegistry
@@ -298,9 +300,20 @@ func (e *Engine) toolDefsForMetadata(metadata map[string]any) []goai.Tool {
 	return tools.ToolDefsForMetadata(metadata, e.tools.AllEntries(), e.toolDefs())
 }
 
+// shutdownGrace bounds how long Close waits for aborted turns to finalize.
+const shutdownGrace = 5 * time.Second
+
+// Close aborts in-flight turns and waits (bounded) for them to finalize
+// before cancelling background work. A clean quit is therefore a deliberate
+// abort, not a crash: without this the store closed under the runner, the
+// turn stayed 'running', and stale-claim recovery replayed it on the next
+// start. Crashes still leave running claims for recovery to requeue.
 func (e *Engine) Close() error {
 	if e == nil {
 		return nil
+	}
+	if e.closing.CompareAndSwap(false, true) {
+		e.abortActiveTurns(shutdownGrace)
 	}
 	if e.bgCancel != nil {
 		e.bgCancel()
@@ -309,6 +322,91 @@ func (e *Engine) Close() error {
 		return e.peering.Close()
 	}
 	return nil
+}
+
+// AbortActiveTurns cancels every running turn this engine owns and waits up
+// to grace for them to finalize. It returns the aborted turn IDs.
+func (e *Engine) abortActiveTurns(grace time.Duration) []string {
+	var ids []string
+	ctx, cancel := context.WithTimeout(context.Background(), grace)
+	defer cancel()
+	e.sessions.Range(func(key, value any) bool {
+		sessionID, runner := key.(string), value.(*sessionRunner)
+		runner.mu.Lock()
+		current := runner.current
+		runner.mu.Unlock()
+		if current == nil {
+			return true
+		}
+		if err := e.CancelActiveTurn(ctx, sessionID, current.turnID); err != nil {
+			log.Printf("shutdown: abort %s: %v", current.turnID, err)
+			current.cancel() // still stop the worker; recovery handles the claim
+		}
+		ids = append(ids, current.turnID)
+		return true
+	})
+	done := make(chan struct{})
+	go func() { e.runs.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-ctx.Done():
+		log.Printf("shutdown: turns still finalizing after %s", grace)
+	}
+	return ids
+}
+
+// ErrTurnOwnedElsewhere reports a fresh active-turn claim held by another
+// live gi process sharing this database.
+var ErrTurnOwnedElsewhere = errors.New("active turn is owned by another running gi process")
+
+// LiveActiveTurn returns the turn this engine is currently running for the
+// session, or "" when no worker in this process owns one.
+func (e *Engine) LiveActiveTurn(sessionID string) string {
+	v, ok := e.sessions.Load(sessionID)
+	if !ok {
+		return ""
+	}
+	runner := v.(*sessionRunner)
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	if runner.current == nil {
+		return ""
+	}
+	return runner.current.turnID
+}
+
+// AbortStaleActiveTurn finalizes a session's active turn that no worker in
+// this process is running (left behind by a crash or killed process) as
+// aborted, releases its claim and returns the session to idle, instead of
+// letting stale-claim recovery replay it. Claims with a fresh heartbeat
+// belong to another live process and are refused.
+func (e *Engine) AbortStaleActiveTurn(ctx context.Context, sessionID string) (string, error) {
+	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
+	activeID, _, err := e.store.GetSessionActiveTurn(opCtx, sessionID)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && activeID == "") {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	if live := e.LiveActiveTurn(sessionID); live == activeID {
+		return "", store.ErrQueueConflict // live: callers use the normal abort path
+	}
+	claims, err := e.store.ListStaleActiveTurnClaims(opCtx, time.Now().Add(-interruptedTurnStaleAfter), sessionID)
+	if err != nil {
+		return "", err
+	}
+	for _, claim := range claims {
+		if claim.TurnID != activeID {
+			continue
+		}
+		claim.Phase = "cancelling" // recovery finalizes cancelling claims as aborted
+		if err := e.recoverInterruptedTurn(opCtx, claim); err != nil {
+			return "", err
+		}
+		return activeID, nil
+	}
+	return "", ErrTurnOwnedElsewhere
 }
 
 func (e *Engine) backgroundContext() context.Context {
@@ -882,6 +980,9 @@ func (e *Engine) launchTurnLocked(ctx context.Context, runner *sessionRunner, se
 }
 
 func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRunner, sessionID, turnID string, selectedSteer bool, endedID string) (bool, error) {
+	if e.closing.Load() {
+		return false, nil // shutting down: leave queued work for the next start
+	}
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
 	if hook := e.beforeLaunchClaimHook; hook != nil {
 		hook(opCtx, sessionID, turnID)
@@ -1001,7 +1102,9 @@ func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRun
 		}
 	}
 	logutil.WarnIfErr("sync queue count after launch", e.store.SyncSessionQueueCount(opCtx, sessionID))
+	e.runs.Add(1)
 	go func() {
+		defer e.runs.Done()
 		// Submission and queued launch callers hold runner.mu until their
 		// durable admission events are written. Do not emit turn.started (or
 		// run tools) before turn.submitted has a sequence number.
@@ -5377,7 +5480,14 @@ func (r *sessionRunner) runPreparedTurn(ctx context.Context, s *store.Store, run
 	r.runShellTurn(ctx, s, run)
 }
 
+// shellTurnStartHook is a test seam: tests that assert on a still-active
+// bootstrap turn hold it here instead of racing the shell's exit.
+var shellTurnStartHook atomic.Pointer[func(context.Context)]
+
 func (r *sessionRunner) runShellTurn(ctx context.Context, s *store.Store, run *preparedTurnRun) {
+	if hook := shellTurnStartHook.Load(); hook != nil {
+		(*hook)(ctx)
+	}
 	toolOccurrenceID := store.NowID("tool")
 	if len(run.initialSteering) > 0 {
 		r.persistSteeringMessages(ctx, run.sessionID, run.turnID, run.initialSteering)

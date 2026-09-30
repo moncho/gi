@@ -29,6 +29,7 @@ Implemented commands in `internal/tui/chat.go`:
 - `/scrollback [n]`
 - `/settings` / `/config`
 - `/approvals`
+- `/abort` — abort the running turn like Escape; also finalizes a turn left `running` by a crash or killed process (session looks busy, `/compact` unavailable) instead of replaying it on the next start
 - `/cancel`
 - `/agents`
 - `/plugins` / `/extensions`

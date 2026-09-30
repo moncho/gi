@@ -247,8 +247,11 @@ test-web-basic-send: test-instance-start
 	@GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/18-basic-http-send.spec.ts tests/functional/19-http-delivery.spec.ts --reporter=line --output=$(TEST_RESULTS)/basic-http-send; \
 	status=$$?; $(MAKE) test-instance-stop; exit $$status
 
+# Narrow with TEST_PKGS / TEST_RUN, e.g. make test TEST_PKGS=./internal/turn TEST_RUN=Abort
+TEST_PKGS ?= ./...
+TEST_RUN ?=
 test:
-	$(GO) test ./...
+	$(GO) test $(if $(TEST_RUN),-run '$(TEST_RUN)') $(TEST_PKGS)
 
 .PHONY: test-shell-runtime check-cross-build test-active-steering
 

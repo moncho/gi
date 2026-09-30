@@ -86,7 +86,13 @@ func (e *Engine) SubmitManualCompaction(ctx context.Context, sessionID, expected
 	runCtx, cancel := context.WithCancel(e.backgroundContext())
 	active := &runningTurn{turnID: id, claimToken: claimToken, cancel: cancel}
 	r.current = active
-	go func() { r.mu.Lock(); r.mu.Unlock(); r.runTurn(e.store, sessionID, id, runCtx, cancel, active) }()
+	e.runs.Add(1)
+	go func() {
+		defer e.runs.Done()
+		r.mu.Lock()
+		r.mu.Unlock()
+		r.runTurn(e.store, sessionID, id, runCtx, cancel, active)
+	}()
 	e.PublishRuntimeTurnEvent("turn_submitted", sessionID, id, "", "running", "setup", map[string]any{"operation": "manual_compaction"})
 	return &SubmitResult{TurnID: id, SessionID: sessionID, Status: "running"}, nil
 }

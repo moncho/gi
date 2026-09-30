@@ -27,6 +27,6 @@ Feature: TUI Pi-like workflow affordances
     When I resize the terminal to 60x18
     Then the tmux session should be alive
     When I type "/settings" and press Enter
-    Then the screen should contain "settings: session"
+    Then the screen should contain "session_id: session_"
     And the screen should contain "settings: discovery"
     And the screen should contain "settings: compaction"

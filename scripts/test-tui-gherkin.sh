@@ -125,7 +125,7 @@ screen_should_contain() {
   for _ in 1 2 3 4 5; do
     sleep 0.5
     capture
-    if grep -Fq "$text" "$ARTIFACT_DIR/$(printf '%02d' "$STEP")-screen.txt"; then
+    if grep -Fq -- "$text" "$ARTIFACT_DIR/$(printf '%02d' "$STEP")-screen.txt"; then
       return 0
     fi
   done
@@ -139,7 +139,7 @@ db_should_contain() {
   for _ in 1 2 3 4 5 6 7 8; do
     sleep 0.5
     sqlite3 -separator '|' "$DB" 'select role, content from messages order by created_at asc, id asc;' > "$ARTIFACT_DIR/messages.txt" 2>/dev/null || true
-    if grep -Fq "$role|$text" "$ARTIFACT_DIR/messages.txt"; then
+    if grep -Fq -- "$role|$text" "$ARTIFACT_DIR/messages.txt"; then
       return 0
     fi
   done

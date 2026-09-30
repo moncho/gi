@@ -92,8 +92,9 @@ type InboundWorkSettings struct {
 	LeaseTTLMS int    `json:"lease_ttl_ms"`
 }
 
-// WorkspaceIndexSettings is startup-only. All roots are required unless listed
-// explicitly as optional; validation is performed when resolving an index scope.
+// WorkspaceIndexSettings is startup-only. Extra roots are required unless
+// listed explicitly as optional; the built-in notes and .pi/skills roots are
+// always optional. Validation is performed when resolving an index scope.
 type WorkspaceIndexSettings struct {
 	ExtraRoots      []string `json:"extraRoots"`
 	ExtraExtensions []string `json:"extraExtensions"`

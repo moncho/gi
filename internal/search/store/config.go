@@ -3,7 +3,9 @@ package store
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -91,8 +93,11 @@ func NewScopeConfig(workspace, scope string, roots, extensions []string, chunker
 
 // DefaultScopeConfig follows Piclaw's notes/skills/all ownership. Extra roots
 // augment all, never widen notes/skills. Scanning/exclusion policy is separate.
+// builtinIndexRoots are the Piclaw default roots every scope starts from.
+var builtinIndexRoots = []string{"notes", ".pi/skills"}
+
 func DefaultScopeConfig(workspace, scope string, extraRoots, extraExtensions []string, chunker string) (ScopeConfig, error) {
-	roots := []string{"notes", ".pi/skills"}
+	roots := slices.Clone(builtinIndexRoots)
 	switch scope {
 	case "notes":
 		roots = []string{"notes"}
@@ -130,6 +135,19 @@ func ConfiguredScopeConfig(workspace, scope string, extraRoots, extraExtensions,
 	for _, root := range optionalRoots {
 		if slices.Contains(c.roots, root) {
 			c.optionalRoots = append(c.optionalRoots, root)
+		}
+	}
+	// The built-in Piclaw roots are defaults, not user requirements: a plain
+	// code workspace has neither, and requiring them made every scan fail
+	// ("statat .pi: no such file or directory"). A built-in root that is
+	// absent is treated as optional; when both exist the configuration (and
+	// fingerprint) is unchanged, so existing indexes stay valid. Configured
+	// extra roots stay required unless listed in optionalRoots.
+	for _, root := range builtinIndexRoots {
+		if slices.Contains(c.roots, root) && !slices.Contains(c.optionalRoots, root) {
+			if _, statErr := os.Stat(filepath.Join(workspace, filepath.FromSlash(root))); errors.Is(statErr, fs.ErrNotExist) {
+				c.optionalRoots = append(c.optionalRoots, root)
+			}
 		}
 	}
 	slices.Sort(c.optionalRoots)

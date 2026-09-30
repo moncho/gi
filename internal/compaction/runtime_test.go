@@ -160,3 +160,25 @@ func TestCompactionPersistsBeforeContextAndSuccessBroadcast(t *testing.T) {
 		t.Fatal(err, len(conv.Messages), events)
 	}
 }
+
+// Pi's /compact [instructions]: the hook receives custom_instructions and the
+// default summary carries "Additional focus" into the compacted context.
+func TestMaybeCompactContextCarriesCustomInstructions(t *testing.T) {
+	conv, req := runtimeFixture()
+	req.Force = true
+	req.Instructions = "keep the database migration plan"
+	var hookSaw any
+	err := MaybeCompactContext(context.Background(), req, conv, RuntimeOps{BeforeCompact: func(_ context.Context, payload map[string]any, _ []goai.Message) (HookDecision, error) {
+		hookSaw = payload["custom_instructions"]
+		return HookDecision{}, nil
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hookSaw != req.Instructions {
+		t.Fatalf("hook custom_instructions = %v", hookSaw)
+	}
+	if got := goai.GetTextContent(&conv.Messages[0]); !strings.Contains(got, "Additional focus: keep the database migration plan") {
+		t.Fatalf("summary lacks the focus: %q", got)
+	}
+}

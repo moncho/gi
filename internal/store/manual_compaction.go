@@ -4,6 +4,12 @@ import "context"
 
 // AdmitManualCompaction never queues behind other work or redirects to steering.
 func (s *Store) AdmitManualCompaction(ctx context.Context, sessionID, turnID, claimToken, expected, model string) error {
+	return s.AdmitManualCompactionWithInstructions(ctx, sessionID, turnID, claimToken, expected, model, "")
+}
+
+// AdmitManualCompactionWithInstructions records Pi-style /compact custom
+// instructions on the compaction turn.
+func (s *Store) AdmitManualCompactionWithInstructions(ctx context.Context, sessionID, turnID, claimToken, expected, model, instructions string) error {
 	if claimToken == "" {
 		return ErrQueueConflict
 	}
@@ -26,7 +32,11 @@ func (s *Store) AdmitManualCompaction(ctx context.Context, sessionID, turnID, cl
 	if expected == "" || ContextToken(snapshot) != expected {
 		return ErrContextChanged
 	}
-	metadata, err := marshalJSON(map[string]any{"operation": "manual_compaction", "context_token": expected, "model": model, "intent": "compact"})
+	meta := map[string]any{"operation": "manual_compaction", "context_token": expected, "model": model, "intent": "compact"}
+	if instructions != "" {
+		meta["custom_instructions"] = instructions
+	}
+	metadata, err := marshalJSON(meta)
 	if err != nil {
 		return err
 	}

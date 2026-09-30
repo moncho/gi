@@ -2878,11 +2878,10 @@ func (c *chatTUI) handleCommand(text string) {
 	case "/compact":
 		if len(fields) == 2 && fields[1] == "info" {
 			c.appendTranscript(c.compactLines()...)
-		} else if len(fields) == 1 {
-			c.startCompaction()
-			return
 		} else {
-			c.compactionFeedback("Usage: /compact [info]")
+			// Pi: /compact [instructions] focuses the summary.
+			c.startCompactionWithInstructions(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(text), fields[0])))
+			return
 		}
 	case "/scrollback":
 		c.appendTranscript(c.scrollbackCommand(fields)...)
@@ -3044,7 +3043,7 @@ var piCommands = []struct{ name, hint string }{
 	{"/login <provider>", "Show provider authentication status"},
 	{"/logout <provider>", "Remove provider authentication"},
 	{"/new", "Start a new session"},
-	{"/compact [info]", "Manually compact the session context"},
+	{"/compact [instructions]", "Manually compact the session context"},
 	{"/resume [index|session_id]", "Resume a different session"},
 	{"/reload", "Reload config, skills and context files"},
 	{"/quit", "Quit gi"},

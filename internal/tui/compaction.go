@@ -18,7 +18,10 @@ type terminalCompaction struct {
 
 // startCompaction does not touch editor, cursor, undo, history or queued drafts.
 // Only admission is synchronous; the shared engine owns asynchronous execution.
-func (c *chatTUI) startCompaction() {
+func (c *chatTUI) startCompaction() { c.startCompactionWithInstructions("") }
+
+// startCompactionWithInstructions is Pi's /compact [instructions].
+func (c *chatTUI) startCompactionWithInstructions(instructions string) {
 	if c.engine == nil || c.store == nil || c.sessionID == "" {
 		c.compactionFeedback("Compact unavailable")
 		return
@@ -36,7 +39,7 @@ func (c *chatTUI) startCompaction() {
 		return
 	}
 	token, _ := state["token"].(string)
-	_, err = c.engine.SubmitManualCompaction(ctx, c.sessionID, token)
+	_, err = c.engine.SubmitManualCompactionWithInstructions(ctx, c.sessionID, token, instructions)
 	if err != nil {
 		c.compactionFeedback("Compact failed: " + err.Error())
 		return

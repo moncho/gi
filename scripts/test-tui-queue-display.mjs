@@ -54,7 +54,7 @@ for(const mode of ['fullscreen','regular']){
   send('/queue');await wait(()=>{const screen=cap();return screen.includes('1 queued · 1 steering')&&screen.includes('Steering: steer at boundary')&&screen.includes('follow after completion')},'read-only /queue inspection');
   if(sql("select count(*) from turns where prompt='follow after completion' and status='queued';")!=='1'||sql("select count(*) from steering_queue where content='steer at boundary' and status='queued';")!=='1')throw Error('/queue inspection changed delivery');
   writeFileSync(join(out,mode+'-inspection.txt'),cap());
-  tm('send-keys','-t',pane,'-l','unsubmitted draft');await wait(()=>sql("select count(*) from kv_store where namespace='tui_text_draft_v1' and value like '%unsubmitted draft%';")==='1','durable draft');
+  tm('send-keys','-t',pane,'-l','unsubmitted draft');await wait(()=>sql("select count(*) from kv_store where namespace='tui_text_draft_v1' and cast(value as text) like '%unsubmitted draft%';")==='1','durable draft');
   if(!cap().includes('Follow-up: follow after completion'))throw Error('typing draft hid queue');
   tm('resize-window','-t','proof','-x','64','-y','12');await wait(()=>cap().includes('queue: 2 pending; /queue to inspect'),'compact pending summary');
   writeFileSync(join(out,mode+'-compact.txt'),cap());
@@ -62,7 +62,7 @@ for(const mode of ['fullscreen','regular']){
   writeFileSync(join(gates,'held'),'go');await wait(()=>sql("select count(*) from turns where status in ('queued','running','steering');")==='0','queue drain');
   await wait(()=>{const screen=cap();return !screen.includes('↳ alt+up to edit all queued messages')&&!screen.includes('queue: 2 pending; /queue to inspect')},'pending panel clear');
   if(sql("select count(*) from messages where role='user' and content in ('steer at boundary','follow after completion');")!=='2')throw Error('pending display disrupted delivery');
-  if(sql("select count(*) from kv_store where namespace='tui_text_draft_v1' and value like '%unsubmitted draft%';")!=='1')throw Error('pending display changed draft');
+  if(sql("select count(*) from kv_store where namespace='tui_text_draft_v1' and cast(value as text) like '%unsubmitted draft%';")!=='1')throw Error('pending display changed draft');
   results.push({mode,result:'pass',mediaOnlyVisible:true,sessionSwitchIsolated:true,externalUpdateWithoutInput:true,steeringBeforeFollowUp:true,draftPreserved:true,clearedAfterDelivery:true});
  }catch(e){results.push({mode,result:'fail',error:String(e)});try{writeFileSync(join(out,mode+'-failure.txt'),cap());writeFileSync(join(out,mode+'-runtime.log'),readFileSync(join(dir,'runtime.log')))}catch{}}
  finally{writeFileSync(join(gates,'held'),'go');try{tm('kill-server')}catch{}rmSync(dir,{recursive:true,force:true})}

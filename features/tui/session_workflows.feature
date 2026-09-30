@@ -9,7 +9,7 @@ Feature: TUI session and agent workflows
     Then the screen should contain "sys: agents:"
     And the screen should contain "@agent"
     When I type "/where" and press Enter
-    Then the screen should contain "@agent · test-model · low · m0/t0"
+    Then the screen should contain "@agent · test-model · low"
     When I type "/fork @agent1" and press Enter
     Then the screen should contain "switched to @agent1"
     And the screen should contain "test-model • medium"

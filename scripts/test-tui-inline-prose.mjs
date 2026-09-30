@@ -28,7 +28,7 @@ for(const scenario of scenarios){
  const launch=()=>{tm('new-session','-d','-s','proof','-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' TERM=xterm-256color COLORTERM=truecolor '${binary}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'; echo PROSE_EXITED; sleep 30`);tm('set-option','-t','proof','status','off');};
  const shot=label=>{writeFileSync(join(out,`${mode}-${size}-${label}.txt`),cap());writeFileSync(join(out,`${mode}-${size}-${label}.ansi`),cap(true));};
  const check=()=>{
-  const screen=cap(),start=screen.indexOf('I added'),end=screen.indexOf('shell',start);
+  const screen=cap(),start=screen.indexOf('I added'),end=screen.indexOf(' $ ',start);
   if(start<0||end<=start)throw Error('Assistant/tool boundaries missing');
   const part=screen.slice(start,end);
   const joined=part.trim().split('\n').map(s=>s.trim()).join(' ').replace(/\s+/g,' ').trim();
@@ -40,8 +40,8 @@ for(const scenario of scenarios){
   if(/[╭╮╰╯│]/.test(screen))throw Error('Decorative output box visible');
   const rows=screen.split('\n').map(s=>s.trim()).filter(Boolean),first=rows.findIndex(s=>s.includes('I added'));
   const tail=rows.slice(first+assistantRows.length,first+assistantRows.length+4);
-  if(JSON.stringify(tail)!==JSON.stringify(['shell','features/example.feature','shell','second tool output']))throw Error('Tool blocks out of order: '+JSON.stringify(tail));
-  if(rows.filter(s=>s==='shell').length!==2||screen.indexOf('shell')!==end)throw Error('Unexpected tool before/around assistant prose');
+  if(JSON.stringify(tail)!==JSON.stringify(['$ ...','features/example.feature','$ ...','second tool output']))throw Error('Tool blocks out of order: '+JSON.stringify(tail));
+  if(rows.filter(s=>s==='$ ...').length!==2||screen.indexOf(' $ ')!==end)throw Error('Unexpected tool before/around assistant prose');
  };
  try{
   mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model']}));launch();await wait(()=>cap().includes('%/'),'ready');
@@ -49,7 +49,7 @@ for(const scenario of scenarios){
   sql(`insert into messages(id,session_id,role,content,payload_json,created_at) values('u',${quote(id)},'user','Please store these tests','{}','2026-01-01'),('a',${quote(id)},'assistant',${quote(source)},'{}','2026-01-02'),('t1',${quote(id)},'tool_result','features/example.feature','{"tool_name":"shell"}','2026-01-03'),('t2',${quote(id)},'tool_result','second tool output','{"tool_name":"shell"}','2026-01-04');`);
   launch();await wait(()=>cap().includes('%/'),'loaded');shot('initial');check();
   tm('send-keys','-t',pane,'-l','unsent prose draft');await wait(()=>cap().includes('unsent prose draft'),'draft');
-  tm('resize-window','-t','proof','-x',String(width+7),'-y',String(height+2));await sleep(150);tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent prose draft'),'resize');check();shot('resized');
+  tm('resize-window','-t','proof','-x',String(width+7),'-y',String(height+2));await sleep(150);tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent prose draft'),'resize');await sleep(600);/* regular mode repaints once the resize burst settles */check();shot('resized');
   if(sql('select count(*) from messages;')!=='4')throw Error('Rendering submitted a prompt');
   results.push({scenario:scenario.name,result:'pass'});
  }catch(error){results.push({scenario:scenario.name,result:'fail',error:String(error)});try{shot('failure')}catch{}}

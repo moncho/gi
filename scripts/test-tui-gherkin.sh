@@ -196,7 +196,7 @@ MD
 wait_for_tui_ready() {
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     sleep 0.4
-    if capture_pane | grep -Eq "m[0-9]+/t[0-9]+"; then
+    if capture_pane | grep -Eq "[0-9.?]+%/"; then
       return 0
     fi
   done

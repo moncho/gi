@@ -1851,13 +1851,13 @@ func TestRenderMessageLinesFormatsMarkdown(t *testing.T) {
 	}
 }
 
-func TestRenderMessageLinesFormatsCodeBlocksWithLineCount(t *testing.T) {
+func TestRenderMessageLinesFormatsCodeBlocksLikePi(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: "```go\nfmt.Println(1)\nfmt.Println(2)\n```", Payload: map[string]any{"kind": "chat"}}, 80)
 	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
-	for _, want := range []string{"Neo: [code:go] 2 lines", "fmt.Println(1)", "fmt.Println(2)"} {
+	for _, want := range []string{"Neo: ```go", "  fmt.Println(1)\n", "  fmt.Println(2)\n", "```"} {
 		if !strings.Contains(joined, want) {
-			t.Fatalf("code block render missing %q:\n%s", want, joined)
+			t.Fatalf("code block render missing %q:\n%q", want, joined)
 		}
 	}
 }

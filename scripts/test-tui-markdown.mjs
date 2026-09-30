@@ -20,7 +20,7 @@ const fixtures=[
  {name:'heading-list',source:'# Rendered heading\n\nA **bold** and *italic* phrase.\n\n- alpha item\n- beta item',
   lines:['RENDERED HEADING','================','A bold and italic phrase.','• alpha item','• beta item'],absent:['**bold**','*italic*','# Rendered heading']},
  {name:'code-quote',source:'> Quoted words\n\nUse `inline()` now.\n\n```js\nconst answer = 42;\n  return answer;\n```',
-  lines:['> Quoted words','Use inline() now.','[code:js] 2 lines','    const answer = 42;','      return answer;'],absent:['```js','`inline()`']},
+  lines:['> Quoted words','Use inline() now.','```js','  const answer = 42;','    return answer;','```'],absent:['`inline()`','[code:js]']},
  {name:'table-link',source:'| Name | Value |\n| --- | --- |\n| First | 世界 |\n\nVisit [docs](https://example.invalid/docs).',
   lines:['│ Name │ Value │','│ First │ 世界 │','docs (https://example.invalid/docs)'],absent:['[docs]','| --- |']},
 ];
@@ -83,11 +83,17 @@ for(const scenario of scenarios){
     if(mode==='regular'&&!transcript.includes('last hidden line'))problems.push('terminal scrollback lost full tool output');
    }
    if(fixture.name==='code-quote'){
-    const label=rows.find(row=>row.includes('[code:js]'));
+    // Pi: ```lang border, code indented two spaces, closing ``` border.
+    const label=rows.find(row=>row.includes('```js'));
     const code=rows.find(row=>row.includes('const answer = 42;'));
-    if(label&&code&&code.search(/\S/)<label.search(/\S/)+4)problems.push('fenced code lost four-space indentation');
+    if(!label||!code||code.search(/\S/)!==label.search(/\S/)+2)problems.push('fenced code lost Pi two-space indentation');
     const indented=rows.find(row=>row.includes('return answer;'));
-    if(label&&indented&&indented.search(/\S/)<label.search(/\S/)+6)problems.push('source indentation inside fenced code lost');
+    if(label&&indented&&indented.search(/\S/)<label.search(/\S/)+4)problems.push('source indentation inside fenced code lost');
+    // Known languages are highlighted with Pi's syntax colours (keyword blue, number green).
+    const ansiRows=ansi().split("\n");
+    const codeAnsi=ansiRows.find(row=>row.includes('answer')&&row.includes('42'))||'';
+    if(!codeAnsi.includes('38;2;105;173;208'))problems.push('js keyword not syntax highlighted');
+    if(!codeAnsi.includes('38;2;104;183;141'))problems.push('js number not syntax highlighted');
    }
    // These fixtures are deliberately short enough to be visible in a 60x18 viewport.
    const content=rows.slice(0,rows.findIndex(row=>/^\s*─{10,}\s*$/.test(row)));

@@ -3,6 +3,7 @@ module github.com/rcarmo/gi
 go 1.26.8
 
 require (
+	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/clipperhouse/uax29/v2 v2.7.0
 	github.com/dop251/goja v0.0.0-20260917113740-793a2a65c13b
 	github.com/go-webauthn/webauthn v0.18.2

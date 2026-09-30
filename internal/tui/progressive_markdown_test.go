@@ -34,7 +34,7 @@ func TestStreamingMarkdownRerendersEachDeltaWithoutSpeakerLabels(t *testing.T) {
 			t.Fatalf("missing %q in streamed screen: %q", want, before)
 		}
 	}
-	if strings.Contains(before, "```go") || strings.Contains(before, "**bold**") || strings.Contains(before, "`code`") {
+	if !strings.Contains(before, "```go") || strings.Contains(before, "**bold**") || strings.Contains(before, "`code`") {
 		t.Fatalf("raw Markdown in streaming output: %q", before)
 	}
 	c.handleEvent(map[string]any{"type": "new_post", "data": map[string]any{"content": c.draft}})

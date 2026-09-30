@@ -120,36 +120,9 @@ func (m *markdownProjector) renderBlocks(node gast.Node, depth int) []string {
 			}
 		case *gast.FencedCodeBlock:
 			lang := strings.TrimSpace(string(n.Language(m.source)))
-			label := "[code]"
-			if lang != "" {
-				label = "[code:" + lang + "]"
-			}
-			if n.Lines().Len() > 0 {
-				label += " " + strconv.Itoa(n.Lines().Len()) + " lines"
-			}
-			lines = append(lines, mdStyled("codeborder", label))
-			for i := 0; i < n.Lines().Len(); i++ {
-				segment := n.Lines().At(i)
-				codeLine := strings.TrimRight(string(segment.Value(m.source)), "\r\n")
-				if codeLine == "" {
-					lines = append(lines, "    ")
-					continue
-				}
-				lines = append(lines, styleCodeLines(wrapPreformattedWithPrefix(codeLine, m.width, "    "))...)
-			}
-			lines = append(lines, "")
+			lines = append(lines, m.renderCodeBlock(n.Lines(), lang)...)
 		case *gast.CodeBlock:
-			label := "[code]"
-			if n.Lines().Len() > 0 {
-				label += " " + strconv.Itoa(n.Lines().Len()) + " lines"
-			}
-			lines = append(lines, mdStyled("codeborder", label))
-			for i := 0; i < n.Lines().Len(); i++ {
-				segment := n.Lines().At(i)
-				codeLine := strings.TrimRight(string(segment.Value(m.source)), "\r\n")
-				lines = append(lines, styleCodeLines(wrapPreformattedWithPrefix(codeLine, m.width, "    "))...)
-			}
-			lines = append(lines, "")
+			lines = append(lines, m.renderCodeBlock(n.Lines(), "")...)
 		case *gast.Blockquote:
 			quoted := m.renderBlocks(n, depth+1)
 			for _, line := range quoted {
@@ -486,4 +459,37 @@ func markdownToPlain(text string) string {
 		return text
 	}
 	return buf.String()
+}
+
+// piCodeBlockIndent is pi-tui Markdown's default codeBlockIndent.
+const piCodeBlockIndent = "  "
+
+// renderCodeBlock follows pi-tui Markdown: a ```lang border, the code
+// indented and syntax highlighted when the language is known (plain
+// mdCodeBlock otherwise), a closing ``` border, then a blank line.
+func (m *markdownProjector) renderCodeBlock(segments *text.Segments, lang string) []string {
+	var src strings.Builder
+	for i := 0; i < segments.Len(); i++ {
+		segment := segments.At(i)
+		src.WriteString(strings.TrimRight(string(segment.Value(m.source)), "\r\n"))
+		if i < segments.Len()-1 {
+			src.WriteByte('\n')
+		}
+	}
+	code := src.String()
+	lines := []string{mdStyled("codeborder", "```"+lang)}
+	if highlighted, ok := highlightCodeLines(code, lang); ok {
+		for _, segs := range highlighted {
+			lines = append(lines, wrapHighlightedLine(segs, m.width, piCodeBlockIndent)...)
+		}
+	} else {
+		for _, codeLine := range strings.Split(code, "\n") {
+			if codeLine == "" {
+				lines = append(lines, piCodeBlockIndent)
+				continue
+			}
+			lines = append(lines, styleCodeLines(wrapPreformattedWithPrefix(codeLine, m.width, piCodeBlockIndent))...)
+		}
+	}
+	return append(lines, mdStyled("codeborder", "```"), "")
 }

@@ -50,6 +50,9 @@ func piMarkdownStyle(base gotui.Style, name string) gotui.Style {
 	case "strike":
 		return base.Strikethrough()
 	}
+	if style, ok := piSyntaxStyle(base, name); ok {
+		return style
+	}
 	return base
 }
 

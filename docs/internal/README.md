@@ -96,6 +96,7 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 - [passkey-login-cancellation.md](passkey-login-cancellation.md) — login start/prompt/finish ownership and bounded cancellation tests
 - [passkey-scenario-review.md](passkey-scenario-review.md) — compact 26-scenario evidence/gap review
 - [passkey-criteria.md](passkey-criteria.md) — validated per-step/example ledger and browser-only terminal adaptation
+- [Thinking transcript wrapping](tui-thinking-wrap.md) — padded width, retained source, resize and regression evidence
 - `tools/` — built-in tool contracts
 - `scripting/` — scripting runtimes and bridge docs
 - [Joker WASI feasibility](scripting/joker-wasi.md) — dependency pins, whole-interpreter guest probe, ARM64 bootstrap fix and unimplemented sandbox boundaries

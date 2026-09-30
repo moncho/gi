@@ -171,3 +171,9 @@ func (c *chatTUI) renderTranscriptBlockAfter(block transcriptRenderableBlock, pr
 	wrapper.AddChild(content)
 	return wrapper
 }
+
+// Projection and layout must agree on the width inside the message band.
+func (c *chatTUI) transcriptBlockContentWidth(kind string) int {
+	_, _, horizontal := transcriptSpacing(kind)
+	return max(1, c.currentContentWidth()-2*horizontal)
+}

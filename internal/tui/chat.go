@@ -1,15 +1,15 @@
 package tui
 
 import (
-	"log"
-	"errors"
 	"context"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1069,8 +1069,8 @@ func (c *chatTUI) updateThinkingTranscript(delta string, ts time.Time) {
 	if strings.TrimSpace(c.thinkingStartedAt) == "" {
 		c.thinkingStartedAt = normalizeBlockTimestamp(ts).Format(time.RFC3339Nano)
 	}
-	body := renderMarkdownTranscript("", c.thinkingText, c.transcriptRenderWidth())
-	meta := transcriptBlockMeta{Key: c.thinkingBlockKey, Kind: "thought", Title: "", Status: "running", StartedAt: c.thinkingStartedAt}
+	body := renderMarkdownTranscript("", c.thinkingText, c.transcriptBlockContentWidth("thought"))
+	meta := transcriptBlockMeta{Key: c.thinkingBlockKey, Kind: "thought", Title: "", Status: "running", StartedAt: c.thinkingStartedAt, MarkdownSource: c.thinkingText}
 	c.replaceTranscriptBlock(meta, body)
 }
 
@@ -5028,7 +5028,7 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 				previewTail = true
 				expandable = len(body) > bashPreviewLines
 			}
-			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
+			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
 			i = j - 1
 			continue
 		}
@@ -5237,8 +5237,7 @@ func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) 
 		if block.MarkdownSource != "" {
 			message := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
 			// Account for message-band padding.
-			_, _, horizontal := transcriptSpacing(block.Kind)
-			for _, line := range renderMarkdownTranscript("", block.MarkdownSource, max(1, c.currentContentWidth()-2*horizontal)) {
+			for _, line := range renderMarkdownTranscript("", block.MarkdownSource, c.transcriptBlockContentWidth(block.Kind)) {
 				message.AddChild(c.renderInlineStyledLine(line, block.BodyStyle))
 			}
 			return message
@@ -5272,11 +5271,17 @@ func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) 
 		ref := gotui.NewRef()
 		ref.Set(container)
 		c.transcriptBlockRefs = append(c.transcriptBlockRefs, transcriptBlockHitTarget{Key: block.Key, Ref: ref})
-		if len(block.Body) == 0 {
+		body := block.Body
+		if block.MarkdownSource != "" {
+			// Reproject source at the padded inner width. Wrapping at the outer
+			// width first leaves orphan words when rich text wraps a second time.
+			body = renderMarkdownTranscript("", block.MarkdownSource, c.transcriptBlockContentWidth(block.Kind))
+		}
+		if len(body) == 0 {
 			container.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(fmt.Sprintf("%s Thinking...", brailleSpinnerFrame(time.Now()))), gotui.WithTextStyle(block.BodyStyle)))
 			return container
 		}
-		for _, line := range block.Body {
+		for _, line := range body {
 			container.AddChild(c.renderInlineStyledLine(line, block.BodyStyle))
 		}
 		return container

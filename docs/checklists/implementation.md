@@ -4,6 +4,7 @@
 - [x] Split large generated Joker WASI bootstrap initializers via a reproducible build overlay; preserve initialization dependencies and verify evaluation/cancellation on interpreter and ARM64 native compiler backends.
 - [ ] Replace go-ai Pi 0.99.2 parity commit pin with a proper upstream release tag when available.
 - [ ] Complete Joker WASI capability isolation, bounded host/output handling, authorized MCP broker and performance evaluation before production codemode integration.
+- [x] Retain thinking Markdown source and reproject to the padded inner width on render/resize; cover orphan-word double wrapping, table margins, streaming and completed blocks. [Contract and evidence](../internal/tui-thinking-wrap.md). Full TUI suite has an unrelated rejected-route history failure.
 
 - [x] Default fullscreen mouse-selection copy to OSC 52 when clipboard mode is unset; preserve explicit off/native/auto and transcript-only `/copy`, report terminal dispatch truthfully, and add fresh-workspace/opt-out regression coverage. Go tests/vet/build/hook checks pass. [Policy and validation limits](../internal/tui-clipboard-media.md#selection-default-regression-coverage).
 - [ ] Rerun selection-default PTY/browser/race acceptance on a provisioned host: current attempts blocked by missing sqlite3, missing Playwright browser binaries and unsupported ARM64 ThreadSanitizer VMA range.

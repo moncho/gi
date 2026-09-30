@@ -166,6 +166,12 @@ func (c *chatTUI) reflowRegular() {
 	if changes := c.regularReflowChanges(w, h-c.app.InlineHeight()); len(changes) > 0 {
 		c.app.Terminal().Flush(changes)
 	}
+	// go-tui invalidates its inline history geometry on width changes; while
+	// invalid, a taller dock is drawn over the rows above it instead of
+	// scrolling them into scrollback. An empty print re-establishes the
+	// geometry conservatively as "history rows are full", which is what the
+	// repaint just made true.
+	c.app.PrintAbove("")
 	// Same-size resize: full dock redraw without moving the widget.
 	c.app.Dispatch(gotui.ResizeEvent{Width: w, Height: h})
 	c.app.MarkDirty()

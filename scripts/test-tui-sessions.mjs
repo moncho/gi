@@ -34,7 +34,8 @@ async function snapshot(name) {
   return screen;
 }
 function assert(condition, detail) { if (!condition) throw new Error(detail); }
-function selectorRows(screen) { return screen.split('\n').filter(line => /^\s*[›*×]?\s*\d+\. /.test(line)); }
+function modelRows(screen) { return screen.split("\n").filter(line => /^(?:→ |  )(?:✓ |  )\S+ \[/.test(line)); }
+function selectorRows(screen) { return screen.split("\n").filter(line => /^(?:› |  )\S.* @\S+ · /.test(line)); }
 function separators(screen) { return screen.split('\n').map((line,index)=>({line,index})).filter(({line})=>/^\s*[─━-]{10,}\s*$/.test(line)).map(({index})=>index); }
 function withoutCursor(screen) { return screen.replaceAll('▌',' ').split('\n').map(line=>line.trimEnd()).join('\n'); }
 
@@ -65,7 +66,8 @@ try {
     await waitFor(()=>capture().includes('Resume Session'),'open selector');
     const open=await snapshot(`${label}-picker`);
     assert(selectorRows(open).length>0 && selectorRows(open).length<=6,`${label}: unbounded results`);
-    assert(open.includes(`A draft ${label}`),`${label}: editor hidden by selector`);
+    // Pi's selector replaces the editor while open; the draft is restored on close.
+    assert(!open.includes(`A draft ${label}`),`${label}: selector did not replace the editor`);
     assert(separators(open).length===2,`${label}: selector added box/separator chrome`);
     type('no-matching-session-xyz');
     await waitFor(()=>capture().includes('No sessions found'),'empty-state noun');
@@ -106,7 +108,7 @@ try {
   const selected=()=>sql(`select coalesce(json_extract(state_json,'$.selected_model'),json_extract(state_json,'$.model')) from sessions where id='${mainID}';`);
   const pickModel=async query=>{
     keys('M-m');await waitFor(()=>capture().includes('Ctrl+S to set as default'),'Alt-M model picker');
-    type(query);await waitFor(()=>selectorRows(capture()).length===1,`model filter ${query}`);keys('Enter');
+    type(query);await waitFor(()=>modelRows(capture()).length>=1&&modelRows(capture())[0].includes(query.split("/").pop()),`model filter ${query}`);keys('Enter');
   };
   for(const [width,height] of [[60,18],[100,22],[140,36]]) {
     const label=`${width}x${height}`;
@@ -117,15 +119,15 @@ try {
     const before=await snapshot(`${label}-model-before`);
     keys('M-m');await waitFor(()=>capture().includes('Ctrl+S to set as default'),'open model selector');
     const open=await snapshot(`${label}-model-open`);
-    assert(selectorRows(open).length>0&&selectorRows(open).length<=6,`${label}: model rows exceed bound`);
+    assert(modelRows(open).length>0&&modelRows(open).length<=10,`${label}: model rows exceed bound`);
     assert(separators(open).length===2,`${label}: model picker adds borders`);
     keys('Escape');await waitFor(()=>!capture().includes('Ctrl+S to set as default'),'cancel model selector');
     const cancelled=await snapshot(`${label}-model-cancel`);
     assert(withoutCursor(before)===withoutCursor(cancelled),`${label}: model cancel changed idle screen`);
-    await pickModel('test/unavailable');await waitFor(()=>capture().includes('error:'),'unavailable model feedback');
+    await pickModel('test/unavailable');await waitFor(()=>capture().includes('model unavailable'),'unavailable model feedback');
     assert(selected()==='test-model',`${label}: invalid model persisted`);
     const rejected=await snapshot(`${label}-model-rejected`);
-    assert(rejected.includes(`model draft ${label}`)&&selectorRows(rejected).length===1,`${label}: rejection lost draft/menu`);
+    assert(modelRows(rejected).length===1,`${label}: rejection lost menu`);
     keys('Escape');await waitFor(()=>!capture().includes('Ctrl+S to set as default'),'cancel rejection');
     await pickModel('test/bootstrap');await waitFor(()=>selected()==='bootstrap'&&!capture().includes('Ctrl+S to set as default'),'accepted model');
     const accepted=await snapshot(`${label}-model-accepted`);

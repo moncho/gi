@@ -5,7 +5,7 @@ You are a coding agent working on the gi project — a Go-based coding agent wit
 ## Repository layout
 
 ```
-cmd/gi/              main binary entrypoint (web server or TUI via `-tui`)
+cmd/gi/              main binary entrypoint (TUI by default, web server via `-web`)
 cmd/gi-tui/          compatibility wrapper for TUI mode
 internal/
   tui/               terminal UI implementation (go-tui)
@@ -59,7 +59,7 @@ Makefile             canonical build/test/run interface
 - Bun is allowed **only at build time** for web asset bundling
 - Web assets are **embedded in the Go binary** via `embed.FS`
 - Use `go-ai` for model/provider abstraction, `go-tui` for the terminal UI
-- TUI mode should be reachable from the main `gi` binary rather than requiring a distinct primary binary
+- The main `gi` binary starts the TUI by default; `-web` runs the web UI server
 
 ### Configuration compatibility
 - Read existing Pi/Piclaw files without modification:

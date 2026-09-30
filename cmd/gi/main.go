@@ -44,6 +44,18 @@ func configureTUILogging(logFile string) {
 	log.SetOutput(f)
 }
 
+// webOnlyFlagsSet lists explicitly set flags that only affect the web server.
+func webOnlyFlagsSet() []string {
+	webOnly := map[string]bool{"listen": true, "bind": true, "port": true, "tls-cert": true, "tls-key": true, "acme-domains": true, "acme-email": true, "acme-cache": true, "acme-accept-tos": true, "acme-http-listen": true, "pid-file": true}
+	var set []string
+	flag.Visit(func(f *flag.Flag) {
+		if webOnly[f.Name] {
+			set = append(set, "-"+f.Name)
+		}
+	})
+	return set
+}
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
@@ -51,19 +63,6 @@ func main() {
 }
 
 func run() error {
-	if len(os.Args) == 1 {
-		workspaceRoot := config.DefaultWorkspaceRoot()
-		dbPath := config.DefaultTUIDBPath()
-		configureTUILogging("")
-		if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
-			log.Fatalf("create tui db dir: %v", err)
-		}
-		if err := gitui.Run(dbPath, workspaceRoot, ""); err != nil {
-			log.Fatalf("tui: %v", err)
-		}
-		return nil
-	}
-
 	listen := flag.String("listen", "", "HTTP listen address (overrides -bind/-port)")
 	bind := flag.String("bind", "127.0.0.1", "Bind address / interface host")
 	port := flag.Int("port", 8081, "HTTP port")
@@ -79,12 +78,21 @@ func run() error {
 	model := flag.String("model", "", "Override default model (e.g. gemma4:latest)")
 	logFile := flag.String("log-file", "", "Optional log file path")
 	pidFile := flag.String("pid-file", "", "Optional pid file path")
-	tuiMode := flag.Bool("tui", false, "Run the terminal UI instead of the web server")
+	webMode := flag.Bool("web", false, "Run the web UI server instead of the terminal UI")
+	_ = flag.Bool("tui", true, "Run the terminal UI (default; kept for compatibility)")
 	tuiLayout := flag.String("tui-mode", "fullscreen", "Terminal rendering: fullscreen or regular (native scrollback)")
 	flag.Parse()
 
-	if *tuiMode {
+	if !*webMode {
+		// Server-only flags without -web are almost certainly a mistake;
+		// fail loudly rather than silently opening a terminal UI.
+		if flags := webOnlyFlagsSet(); len(flags) > 0 {
+			return fmt.Errorf("web UI flags %s need -web (gi runs the terminal UI by default)", strings.Join(flags, ", "))
+		}
 		configureTUILogging(*logFile)
+		if err := os.MkdirAll(filepath.Dir(*dbPath), 0o755); err != nil {
+			return fmt.Errorf("create tui db dir: %w", err)
+		}
 		if err := gitui.RunMode(*dbPath, *workspace, *model, *tuiLayout); err != nil {
 			log.Fatalf("tui: %v", err)
 		}

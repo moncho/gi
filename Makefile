@@ -59,11 +59,11 @@ TUI_TEST_DIR ?= .gi-tui-test
 
 # ── Derived arguments and data ──────────────────────────────────────────
 
-SERVER_LISTEN_ARGS = $(if $(LISTEN),-listen $(LISTEN),-bind $(BIND) -port $(PORT))
+SERVER_LISTEN_ARGS = -web $(if $(LISTEN),-listen $(LISTEN),-bind $(BIND) -port $(PORT))
 SERVER_RUN_ARGS = $(SERVER_LISTEN_ARGS) -model $(MODEL) -db $(DB) -workspace $(WORKSPACE)
 SERVER_DAEMON_ARGS = $(SERVER_LISTEN_ARGS) -model $(MODEL) -db $(abspath $(DB)) -workspace $(WORKSPACE) -log-file $(abspath $(LOG)) -pid-file $(abspath $(PID))
 SERVER_STATUS_ADDR = $(if $(LISTEN),$(LISTEN),$(BIND):$(PORT))
-TEST_SERVER_ARGS = -bind 127.0.0.1 -port $(TEST_PORT) -model test-model -db $(abspath $(TEST_DB)) -workspace $(abspath $(TEST_WORKSPACE)) -log-file $(abspath $(TEST_LOG)) -pid-file $(abspath $(TEST_PID))
+TEST_SERVER_ARGS = -web -bind 127.0.0.1 -port $(TEST_PORT) -model test-model -db $(abspath $(TEST_DB)) -workspace $(abspath $(TEST_WORKSPACE)) -log-file $(abspath $(TEST_LOG)) -pid-file $(abspath $(TEST_PID))
 TEST_PICLAW_CONFIG_JSON = {"assistant":{"assistantName":"Gi Test"},"user":{"userName":"Test User"}}
 TEST_ENABLED_MODELS ?= ["test-model"]
 TEST_PI_SETTINGS_JSON = {"defaultProvider":"test","defaultModel":"test-model","defaultThinkingLevel":"low","enabledModels":$(TEST_ENABLED_MODELS),"agents":{"list":[{"id":"web","name":"Gi Test","default":true,"model":"test-model"}]}}

@@ -130,7 +130,8 @@ make start PORT=3000 BIND=0.0.0.0 MODEL=github-copilot/gpt-5-mini WORKSPACE=/wor
 | `-acme-cache` | `sqlite` | ACME cache backend: sqlite, vfs, or directory |
 | `-acme-accept-tos` | `false` | Accept ACME CA terms |
 | `-acme-http-listen` | `:http` | ACME HTTP-01/redirect listener; empty disables |
-| `-tui` | `false` | Run the terminal UI instead of the web server |
+| `-web` | `false` | Run the web UI server instead of the terminal UI (required for the web-only flags above and `-pid-file`) |
+| `-tui` | `true` | Terminal UI (the default; accepted for compatibility) |
 | `-tui-mode` | `fullscreen` | Terminal-owned scrollback (`regular`) or in-app transcript (`fullscreen`) |
 | `-db` | `./gi.db` | SQLite database path |
 | `-workspace` | `/workspace` | Workspace root |
@@ -139,11 +140,14 @@ make start PORT=3000 BIND=0.0.0.0 MODEL=github-copilot/gpt-5-mini WORKSPACE=/wor
 
 ### TUI mode
 
-Run the terminal UI from the same binary:
+`gi` starts the terminal UI by default; pass `-web` for the web UI server:
 
 ```sh
-gi -tui -db .gi-run/gi.db -workspace /workspace
+gi -db .gi-run/gi.db -workspace /workspace            # terminal UI
+gi -web -bind 0.0.0.0 -port 8090 -workspace /workspace # web UI
 ```
+
+Web-only flags (`-listen`, `-bind`, `-port`, TLS/ACME, `-pid-file`) without `-web` are rejected rather than silently opening the TUI.
 
 The current TUI uses `go-tui`, supports terminal resize handling through the runtime event loop, and enables mouse clicks so the input can regain focus.
 

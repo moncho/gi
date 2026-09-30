@@ -240,8 +240,8 @@ github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNw
 github.com/prometheus/client_model v0.6.2/go.mod h1:y3m2F6Gdpfy6Ut/GBsUqTWZqCUvMVzSfMLjcu6wAwpE=
 github.com/prometheus/common v0.69.0 h1:OA85nJQS/T/MaYh/Q2CcgDKSGWqNIgrBDvDH85CuiNk=
 github.com/prometheus/common v0.69.0/go.mod h1:ZzL3f6u94qUxh9p+tJTrF+FvBS1XXbbRAZCQkytAL0Y=
-github.com/rcarmo/go-ai v0.80.11-0.20260929222234-5a41b41aada5 h1:BqxccI991TrfAiiPHil3ej6dcqiSVdDF1KhC3kITcuo=
-github.com/rcarmo/go-ai v0.80.11-0.20260929222234-5a41b41aada5/go.mod h1:vU8kjo3y3EUZp7S1zyq3pfPcasjUcRCEueUZbOpNF6c=
+github.com/rcarmo/go-ai v0.99.1 h1:0vulfN/PBlGvARih4Vefc+P2LOX2YOOZ5N3SG5xWXvI=
+github.com/rcarmo/go-ai v0.99.1/go.mod h1:vU8kjo3y3EUZp7S1zyq3pfPcasjUcRCEueUZbOpNF6c=
 github.com/rcarmo/go-joker v1.8.1-0.20260529215339-bc07acfdb01c h1:LWX7Y0MTK7zIUYUjj8LrCzUx1y2uZvbK/EHVLYADemg=
 github.com/rcarmo/go-joker v1.8.1-0.20260529215339-bc07acfdb01c/go.mod h1:glngKQOnJR/4UgGmzovPkNjGJOofz+xhTAsI8fqwom4=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=

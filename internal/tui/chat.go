@@ -225,6 +225,8 @@ type chatTUI struct {
 	slash                       slashMenu
 	slashLastText               string
 	footerUsage                 *footerUsageCache
+	footerCached                *footerCache
+	wheel                       wheelAccelerator
 	footerAuth                  *footerAuthCache
 	transcriptScroll            int
 	stickToBottom               bool
@@ -627,6 +629,7 @@ func (c *chatTUI) hasRunningTranscriptBlock() bool {
 }
 
 func (c *chatTUI) handleTopicEvent(env topics.Envelope) {
+	c.invalidateFooter()
 	if env.SessionID != "" && env.SessionID != c.sessionID {
 		return
 	}
@@ -2466,32 +2469,22 @@ func (c *chatTUI) handleTranscriptScrollEvent(me gotui.MouseEvent) bool {
 	default:
 		return false
 	}
-	if c.transcriptRegion != nil && c.transcriptRegion.ContainsPoint(me.X, me.Y) {
-		if c.transcriptRegion.HandleEvent(me) {
-			_, y := c.transcriptRegion.ScrollOffset()
-			c.transcriptScroll = y
-			maxScroll := c.transcriptMaxScroll()
-			c.stickToBottom = c.transcriptScroll >= maxScroll
-			if c.app != nil {
-				c.app.MarkDirty()
-			}
-			return true
-		}
+	// Pi fullscreen scrolls the transcript for wheel input over it and over
+	// the editor/footer (selectors keep their own input), with Pi's
+	// velocity-based line count (fullscreenWheelScrollLines "auto") rather
+	// than go-tui's fixed single line per event.
+	over := c.transcriptRegion != nil && c.transcriptRegion.ContainsPoint(me.X, me.Y)
+	below := c.transcriptRegion == nil || (!c.modelMenuOpen && me.Y >= c.transcriptRegion.Rect().Y+c.transcriptRegion.Rect().Height)
+	if !over && !below {
 		return false
 	}
-	// Pi fullscreen forwards wheel input over the editor/footer to the main
-	// transcript. Selectors retain their own input ownership.
-	if c.transcriptRegion == nil || (!c.modelMenuOpen && me.Y >= c.transcriptRegion.Rect().Y+c.transcriptRegion.Rect().Height) {
-		switch me.Button {
-		case gotui.MouseWheelUp:
-			c.scrollTranscript(-3)
-			return true
-		case gotui.MouseWheelDown:
-			c.scrollTranscript(3)
-			return true
-		}
+	direction := 1
+	if me.Button == gotui.MouseWheelUp {
+		direction = -1
 	}
-	return false
+	c.wheel.lines = c.cfg.TUIWheelScrollLines
+	c.scrollTranscript(direction * c.wheel.next(direction, time.Now()))
+	return true
 }
 
 func (c *chatTUI) focusInput() {

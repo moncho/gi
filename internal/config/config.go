@@ -30,16 +30,18 @@ type RuntimeConfig struct {
 	TUIClipboardMode     string             `json:"tui_clipboard_mode"`
 	// EnabledModelsConfigured is false when EnabledModels is gi's built-in
 	// fallback; Pi then has no "scoped" model list.
-	EnabledModelsConfigured bool                   `json:"-"`
-	Compaction              CompactionSettings     `json:"compaction"`
-	Retry                   ProviderRetrySettings  `json:"retry"`
-	Hooks                   HookSettings           `json:"hooks"`
-	Peering                 PeeringSettings        `json:"peering"`
-	Passkeys                PasskeySettings        `json:"passkeys"`
-	InboundWork             InboundWorkSettings    `json:"inbound_work"`
-	WorkspaceIndex          WorkspaceIndexSettings `json:"workspace_index"`
-	SystemPrompt            string                 `json:"-"`
-	Discovery               skills.Discovery       `json:"-"`
+	EnabledModelsConfigured bool `json:"-"`
+	// TUIWheelScrollLines is Pi's fullscreenWheelScrollLines; 0 means "auto".
+	TUIWheelScrollLines int                    `json:"tui_wheel_scroll_lines"`
+	Compaction          CompactionSettings     `json:"compaction"`
+	Retry               ProviderRetrySettings  `json:"retry"`
+	Hooks               HookSettings           `json:"hooks"`
+	Peering             PeeringSettings        `json:"peering"`
+	Passkeys            PasskeySettings        `json:"passkeys"`
+	InboundWork         InboundWorkSettings    `json:"inbound_work"`
+	WorkspaceIndex      WorkspaceIndexSettings `json:"workspace_index"`
+	SystemPrompt        string                 `json:"-"`
+	Discovery           skills.Discovery       `json:"-"`
 }
 
 type piclawConfig struct {
@@ -99,24 +101,26 @@ type WorkspaceIndexSettings struct {
 }
 
 type piSettings struct {
-	DefaultProvider      string                 `json:"defaultProvider"`
-	DefaultModel         string                 `json:"defaultModel"`
-	DefaultThinkingLevel string                 `json:"defaultThinkingLevel"`
-	EnabledModels        []string               `json:"enabledModels"`
-	MaxIterations        int                    `json:"maxIterations"`
-	TUIScrollbackLimit   int                    `json:"tuiScrollbackLimit"`
-	TUIHistoryLimit      int                    `json:"tuiHistoryLimit"`
-	TUIClipboardMode     string                 `json:"tuiClipboardMode"`
-	Compaction           CompactionSettings     `json:"compaction"`
-	Retry                ProviderRetrySettings  `json:"retry"`
-	Hooks                HookSettings           `json:"hooks"`
-	Peering              PeeringSettings        `json:"peering"`
-	Passkeys             PasskeySettings        `json:"passkeys"`
-	InboundWork          *InboundWorkSettings   `json:"inboundWork"`
-	WorkspaceIndex       WorkspaceIndexSettings `json:"workspaceIndex"`
-	Agents               AgentsConfig           `json:"agents"`
-	Session              SessionConfig          `json:"session"`
-	Routing              ModelRoutingConfig     `json:"routing"`
+	DefaultProvider      string   `json:"defaultProvider"`
+	DefaultModel         string   `json:"defaultModel"`
+	DefaultThinkingLevel string   `json:"defaultThinkingLevel"`
+	EnabledModels        []string `json:"enabledModels"`
+	MaxIterations        int      `json:"maxIterations"`
+	TUIScrollbackLimit   int      `json:"tuiScrollbackLimit"`
+	TUIHistoryLimit      int      `json:"tuiHistoryLimit"`
+	TUIClipboardMode     string   `json:"tuiClipboardMode"`
+	// Pi's fullscreenWheelScrollLines: a number of lines, or "auto".
+	FullscreenWheelScrollLines any                    `json:"fullscreenWheelScrollLines"`
+	Compaction                 CompactionSettings     `json:"compaction"`
+	Retry                      ProviderRetrySettings  `json:"retry"`
+	Hooks                      HookSettings           `json:"hooks"`
+	Peering                    PeeringSettings        `json:"peering"`
+	Passkeys                   PasskeySettings        `json:"passkeys"`
+	InboundWork                *InboundWorkSettings   `json:"inboundWork"`
+	WorkspaceIndex             WorkspaceIndexSettings `json:"workspaceIndex"`
+	Agents                     AgentsConfig           `json:"agents"`
+	Session                    SessionConfig          `json:"session"`
+	Routing                    ModelRoutingConfig     `json:"routing"`
 }
 
 func Load(workspaceRoot string) RuntimeConfig {
@@ -143,6 +147,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.ScrollbackLimit = ps.TUIScrollbackLimit
 		cfg.TUIHistoryLimit = ps.TUIHistoryLimit
 		cfg.TUIClipboardMode = normalizeClipboardMode(ps.TUIClipboardMode)
+		cfg.TUIWheelScrollLines = wheelScrollLines(ps.FullscreenWheelScrollLines)
 		cfg.Compaction = ps.Compaction
 		cfg.Retry = ps.Retry
 		cfg.Hooks = ps.Hooks
@@ -325,7 +330,20 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	if strings.TrimSpace(cfg.DefaultThinkingLevel) == "" {
 		cfg.DefaultThinkingLevel = global.DefaultThinkingLevel
 	}
+	if cfg.TUIWheelScrollLines == 0 {
+		cfg.TUIWheelScrollLines = wheelScrollLines(global.FullscreenWheelScrollLines)
+	}
 	if len(cfg.EnabledModels) == 0 && len(global.EnabledModels) > 0 {
 		cfg.EnabledModels = append([]string(nil), global.EnabledModels...)
 	}
+}
+
+// wheelScrollLines normalises Pi's fullscreenWheelScrollLines: a finite
+// number is clamped to 1..100; anything else ("auto", unset) is 0 (auto).
+func wheelScrollLines(v any) int {
+	n, ok := v.(float64)
+	if !ok || n != n {
+		return 0
+	}
+	return max(1, min(100, int(n)))
 }

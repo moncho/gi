@@ -116,7 +116,8 @@ func TestPiFullscreenWheelOverEditorScrollsTranscript(t *testing.T) {
 	c.transcriptRef.Set(el)
 	c.transcriptRegion = el
 	c.stickToBottom = true
-	if !c.handleTranscriptScrollEvent(gotui.MouseEvent{Button: gotui.MouseWheelUp, X: 5, Y: 15}) || c.transcriptScroll != 17 || c.stickToBottom {
+	// Pi "auto" wheel: an isolated notch moves one line.
+	if !c.handleTranscriptScrollEvent(gotui.MouseEvent{Button: gotui.MouseWheelUp, X: 5, Y: 15}) || c.transcriptScroll != 19 || c.stickToBottom {
 		t.Fatal("editor wheel failed to scroll history", c.transcriptScroll)
 	}
 	if c.input.Text() != "draft" || c.input.cursorPos != 2 {

@@ -91,7 +91,7 @@ func (c *chatTUI) sessionUsage(turns []store.Turn) sessionUsageTotals {
 		usage, ok := c.footerUsage.turns[turn.ID]
 		if !ok {
 			usage = c.turnUsage(turn.ID)
-			if strings.TrimSpace(turn.FinishedAt) != "" {
+			if strings.TrimSpace(turn.FinishedAt) != "" || turn.Status == "completed" || turn.Status == "failed" || turn.Status == "cancelled" {
 				c.footerUsage.turns[turn.ID] = usage
 			}
 		}
@@ -119,15 +119,57 @@ func (c *chatTUI) turnUsage(turnID string) sessionUsageTotals {
 	return sessionUsageTotals{}
 }
 
+// footerCacheTTL bounds how stale the footer may be between explicit
+// invalidations. Rendering happens on every keystroke and wheel event; the
+// footer's store reads must not run on each of those frames.
+const footerCacheTTL = time.Second
+
+type footerCache struct {
+	key  string
+	at   time.Time
+	rows []footerRow
+}
+
+func (c *chatTUI) invalidateFooter() { c.footerCached = nil }
+
 func (c *chatTUI) footerRows(width int) []footerRow {
-	data := c.contextSummaryData()
+	key := fmt.Sprintf("%s|%d|%s|%s|%s|%v|%v|%d|%s|%v|%v", c.sessionID, width, c.cfg.DefaultProvider, c.cfg.DefaultModel, c.cfg.DefaultThinkingLevel, c.running, c.compaction.active, c.lastContextTokens, strings.Join(c.extensionStatusLines(), "\x00"), c.compaction.noticeUntil.After(time.Now()), c.lastCostTotal)
+	if fc := c.footerCached; fc != nil && fc.key == key && time.Since(fc.at) < footerCacheTTL {
+		return fc.rows
+	}
+	rows := c.computeFooterRows(width)
+	c.footerCached = &footerCache{key: key, at: time.Now(), rows: rows}
+	return rows
+}
+
+// footerData reads only what Pi's footer shows: the session's model choice
+// and title, cumulative usage, and the latest context measurement.
+func (c *chatTUI) footerData() tuiContextSummary {
+	data := tuiContextSummary{sessionTitle: c.sessionID, model: c.cfg.DefaultModel, provider: c.cfg.DefaultProvider, thinking: c.cfg.DefaultThinkingLevel, contextWindow: c.cfg.Compaction.ContextWindow, contextTokens: c.lastContextTokens, inputTokens: c.lastInputTokens, outputTokens: c.lastOutputTokens, cacheRead: c.lastCacheRead, cacheWrite: c.lastCacheWrite, costTotal: c.lastCostTotal}
+	c.applyModelContextWindow(&data)
+	if c.store == nil || c.sessionID == "" {
+		return data
+	}
+	if session, err := c.store.GetSession(context.Background(), c.sessionID); err == nil {
+		data.sessionTitle = session.Title
+		choice := inference.SessionModel(session.State, inference.SessionModelChoice{Model: data.model, Provider: data.provider, Thinking: data.thinking})
+		data.model, data.provider, data.thinking = choice.Model, choice.Provider, choice.Thinking
+		c.applyModelContextWindow(&data)
+	}
+	return data
+}
+
+func (c *chatTUI) computeFooterRows(width int) []footerRow {
+	data := c.footerData()
 	usage := sessionUsageTotals{input: data.inputTokens, output: data.outputTokens, cacheRead: data.cacheRead, cacheWrite: data.cacheWrite, cost: data.costTotal}
 	var hitRate *float64
 	sessionName := ""
 	if c.store != nil && c.sessionID != "" {
 		turns, _ := c.store.ListTurns(context.Background(), c.sessionID)
 		usage = c.sessionUsage(turns)
+		data.contextTokens = 0
 		if m, err := c.store.LatestContextMeasurement(context.Background(), c.sessionID); err == nil && m != nil {
+			data.contextTokens = m.Tokens
 			if prompt := m.Input + m.CacheRead + m.CacheWrite; prompt > 0 {
 				rate := float64(m.CacheRead) * 100 / float64(prompt)
 				hitRate = &rate

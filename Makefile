@@ -1,14 +1,23 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
-# Tests run one at a time at low CPU priority: no parallel make jobs, one
-# Go test package at a time, and every test recipe (plus the builds it
-# pulls in) under nice. Override with TEST_NICE=0.
+# Tests run one at a time, niced and pinned to a few CPUs so the machine
+# stays usable: no parallel make jobs, one Go test package at a time, and
+# every test recipe (plus the builds it pulls in) under nice + taskset.
+# Override with TEST_NICE / TEST_CPUS (e.g. TEST_CPUS=0-7).
 .NOTPARALLEL:
 TEST_NICE ?= 10
+TEST_CPUS ?= 0-1
 test%: SHELL := /usr/bin/nice
-test%: .SHELLFLAGS := -n $(TEST_NICE) /usr/bin/env bash -c
+test%: .SHELLFLAGS := -n $(TEST_NICE) /usr/bin/taskset -c $(TEST_CPUS) /usr/bin/env bash -c
 test%: export GOFLAGS += -p=1
+test%: export GOMAXPROCS := 2
+
+# The race detector needs a ThreadSanitizer-compatible address layout; some
+# kernels (e.g. 39/42-bit arm64 VMs) lack it. Probe once and drop -race there.
+ifndef RACE
+RACE := $(shell f=/tmp/gi-race-probe; [ -f $$f.ok ] && cat $$f.ok || { printf 'package main\nfunc main(){}\n' > $$f.go; if timeout 60 $(GO) run -race $$f.go >/dev/null 2>&1; then echo -race; fi | tee $$f.ok; })
+endif
 
 # ── Tool commands ───────────────────────────────────────────────────────
 
@@ -194,7 +203,7 @@ test-shared-capability-evidence: test-ux-thinking
 
 .PHONY: test-message-retrieval
 test-message-retrieval:
-	$(GO) test -race ./internal/store ./internal/tools ./internal/turn -run 'TestMessageRows|TestMessageRetrieval' -count=3
+	$(GO) test $(RACE) ./internal/store ./internal/tools ./internal/turn -run 'TestMessageRows|TestMessageRetrieval' -count=3
 
 .PHONY: test-ux-message-retrieval
 test-ux-message-retrieval: build-web test-message-retrieval
@@ -207,7 +216,7 @@ test-shared-message-evidence: test-ux-message-retrieval
 	$(BUN) scripts/ux-parity-report.mjs test-results/ux-parity/message-retrieval-results.json
 
 test-session-thinking:
-	$(GO) test -race -count=3 ./internal/store ./internal/inference ./internal/turn ./internal/web -run SessionThinking
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/inference ./internal/turn ./internal/web -run SessionThinking
 
 test-ux-thinking: build-web test-session-thinking
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
@@ -215,11 +224,11 @@ test-ux-thinking: build-web test-session-thinking
 
 .PHONY: test-web-queue-hold
 test-web-queue-hold:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn ./internal/web -run WebQueueHold
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn ./internal/web -run WebQueueHold
 
 .PHONY: test-web-send-receipts
 test-web-send-receipts:
-	$(GO) test -race -count=3 ./internal/store ./internal/web -run WebSendReceipt
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/web -run WebSendReceipt
 
 .PHONY: test-web-http-helpers test-web-basic-send test-web-basic-controls
 
@@ -238,11 +247,11 @@ test:
 .PHONY: test-shell-runtime check-cross-build test-active-steering
 
 test-active-steering:
-	$(GO) test -race -count=50 ./internal/turn -run '^TestSubmitPromptSteersSecondPromptToActiveTurn$$'
+	$(GO) test $(RACE) -count=50 ./internal/turn -run '^TestSubmitPromptSteersSecondPromptToActiveTurn$$'
 
 test-shell-runtime:
-	$(GO) test -race -count=3 ./internal/tools -run 'RunShellPrompt|KillShellProcess'
-	$(GO) test -race -count=3 ./internal/turn -run 'CancelTurn|Cancelled|CancelQueuedTurn'
+	$(GO) test $(RACE) -count=3 ./internal/tools -run 'RunShellPrompt|KillShellProcess'
+	$(GO) test $(RACE) -count=3 ./internal/turn -run 'CancelTurn|Cancelled|CancelQueuedTurn'
 
 # Keep portable compilation reproducible outside GitHub Actions too.
 check-cross-build:
@@ -264,12 +273,12 @@ test-pi-table-oracle:
 
 .PHONY: test-tui-tables-unit
 test-tui-tables-unit: test-pi-table-oracle
-	PI_TABLE_ORACLE=$(abspath test-results/tui-tables/pi-oracle.json) $(GO) test -race -count=3 ./internal/tui -run 'TestMarkdownTable'
+	PI_TABLE_ORACLE=$(abspath test-results/tui-tables/pi-oracle.json) $(GO) test $(RACE) -count=3 ./internal/tui -run 'TestMarkdownTable'
 
 .PHONY: test-tool-input-contract
 test-tool-input-contract:
 	$(BUN) tests/ux/oracle/pi-tool-input-probe.mjs
-	$(GO) test -race -count=3 ./internal/inference -run 'ToolInput'
+	$(GO) test $(RACE) -count=3 ./internal/inference -run 'ToolInput'
 
 .PHONY: test-piclaw-stop-queue
 test-piclaw-stop-queue:
@@ -291,7 +300,7 @@ test-ux-ended-steer: build-web
 
 .PHONY: test-idle-queue-steer
 test-idle-queue-steer:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn ./internal/web -run 'IdleQueue|QueueSteer|WebQueueHold'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn ./internal/web -run 'IdleQueue|QueueSteer|WebQueueHold'
 
 .PHONY: test-ux-message-reference-labels
 test-ux-message-reference-labels: test-message-reference-labels
@@ -300,7 +309,7 @@ test-ux-message-reference-labels: test-message-reference-labels
 .PHONY: test-message-reference-labels
 test-message-reference-labels:
 	$(BUN) tests/ux/oracle/piclaw-reference-label-probe.mjs
-	$(GO) test -race -count=3 ./internal/store -run TestMessageDisplayRows
+	$(GO) test $(RACE) -count=3 ./internal/store -run TestMessageDisplayRows
 	$(BUN) test tests/ux/support/message-reference-label.test.ts
 
 .PHONY: test-piclaw-settings-title test-ux-settings-title
@@ -435,12 +444,12 @@ test-piclaw-tool-output-window:
 	$(BUN) tests/ux/oracle/piclaw-tool-output-window-probe.mjs
 
 test-piclaw-tool-output:
-	$(GO) test -race -count=3 ./internal/store ./internal/tools ./internal/turn -run 'TestToolOutput|TestShellToolOutput'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/tools ./internal/turn -run 'TestToolOutput|TestShellToolOutput'
 	$(BUN) test tests/ux/support/conversation.test.ts tests/ux/support/piclaw-status-adapter.test.ts
 
 .PHONY: test-conversation-projection
 test-conversation-projection:
-	$(GO) test -race -count=3 ./internal/store ./internal/web -run 'TestConversation|TestMessagePage'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/web -run 'TestConversation|TestMessagePage'
 	$(BUN) test tests/ux/support/conversation.test.ts
 
 .PHONY: test-provider-retry-oracle test-provider-retry
@@ -448,12 +457,12 @@ test-provider-retry-oracle:
 	$(BUN) tests/ux/oracle/provider-retry-probe.mjs
 
 test-provider-retry:
-	$(GO) test -race -count=3 ./internal/config ./internal/turn ./internal/tui -run 'TestProviderRetry|TestProviderHeaderTimeout|TestTransientProviderFailure'
+	$(GO) test $(RACE) -count=3 ./internal/config ./internal/turn ./internal/tui -run 'TestProviderRetry|TestProviderHeaderTimeout|TestTransientProviderFailure'
 
 .PHONY: test-codex-tui-regression
 test-codex-tui-regression:
-	$(GO) test -race -count=3 ./internal/inference -run 'TestCodex'
-	$(GO) test -race -count=3 ./internal/tui -run 'TestStreamedErrorAndDurableSystemPost|TestSystemPostDoesNotBecomeAssistant'
+	$(GO) test $(RACE) -count=3 ./internal/inference -run 'TestCodex'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'TestStreamedErrorAndDurableSystemPost|TestSystemPostDoesNotBecomeAssistant'
 
 vet:
 	$(GO) vet ./...
@@ -571,7 +580,7 @@ build-pane-host-fixture:
 .PHONY: test-web-skills test-ux-skills
 .PHONY: test-tool-activity
 test-tool-activity:
-	$(GO) test -race -count=3 ./internal/store ./internal/web ./internal/turn -run 'ToolActivity|ToolPreview|SessionActivity|ToolTerminal'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/web ./internal/turn -run 'ToolActivity|ToolPreview|SessionActivity|ToolTerminal'
 	$(BUN) test tests/ux/support/tool-activity.test.ts
 
 .PHONY: test-ux-tool-terminal
@@ -586,10 +595,10 @@ test-tui-session-actions: build
 
 .PHONY: test-session-actions
 test-session-actions:
-	$(GO) test -race -count=3 ./internal/tui ./internal/store -run 'SessionActions|SessionRename|SessionDisplayCapabilities|SessionPicker'
+	$(GO) test $(RACE) -count=3 ./internal/tui ./internal/store -run 'SessionActions|SessionRename|SessionDisplayCapabilities|SessionPicker'
 
 test-terminal-links:
-	$(GO) test -race -count=3 ./internal/tui -run 'TranscriptLink|TranscriptSelection|TranscriptSearch'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'TranscriptLink|TranscriptSelection|TranscriptSearch'
 
 .PHONY: test-tui-links
 test-tui-links: build
@@ -600,20 +609,20 @@ test-tui-selection-edge: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-selection-edge.mjs
 
 test-terminal-tool-identity:
-	$(GO) test -race -count=3 ./internal/tui -run 'ToolRuntime|ToolEndWithout|RenderToolEvent|BuildTranscriptRenderable'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'ToolRuntime|ToolEndWithout|RenderToolEvent|BuildTranscriptRenderable'
 
 test-tui-tool-timing: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-tool-timing.mjs
 
 test-web-skills:
-	$(GO) test -race -count=3 ./internal/web -run 'LoadedWebSkill|WebSkillOpen|QuickActions'
+	$(GO) test $(RACE) -count=3 ./internal/web -run 'LoadedWebSkill|WebSkillOpen|QuickActions'
 
 test-ux-skills:
 	GI_UX_SKILLS=1 $(MAKE) test-ux-parity TEST_FIXTURES_DIR=tests/ux/fixtures/skills UX_PARITY_ARGS='tests/ux/skills.spec.mjs'
 
 .PHONY: test-recovery-marker test-ux-outcomes
 test-recovery-marker:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn -run 'RecoveryMarker|StartupRecoveryRequeuesCompactingTurn'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn -run 'RecoveryMarker|StartupRecoveryRequeuesCompactingTurn'
 .PHONY: test-ux-card-rejection
 test-ux-card-rejection:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_REJECTION=1 GI_UX_RECOVERY_PLACEHOLDERS=1' UX_LOCAL_SPEC='tests/ux/card-rejection.spec.mjs tests/ux/recovery-placeholders.spec.mjs tests/ux/speech.spec.mjs' UX_LOCAL_FUNCTIONAL='tests/functional/16-card-rejection.spec.ts tests/functional/15-recovery-placeholders.spec.ts'
@@ -749,8 +758,8 @@ test-tui-queue-display: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-display.mjs
 
 test-tui-queue-input-core:
-	$(GO) test -race -count=3 ./internal/tui -run 'TestPiEnter|TestPiFollowUp'
-	$(GO) test -race -count=3 ./internal/turn -run 'TestTUIComposerFollowUp|TestTUIComposerRejectsUnknownDelivery|TestTUIComposerSubmit'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'TestPiEnter|TestPiFollowUp'
+	$(GO) test $(RACE) -count=3 ./internal/turn -run 'TestTUIComposerFollowUp|TestTUIComposerRejectsUnknownDelivery|TestTUIComposerSubmit'
 
 .PHONY: test-tui-inline-prose test-tui-inline-prose-binary
 test-tui-inline-prose: build
@@ -811,26 +820,26 @@ test-tui-durable-draft-pty: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-durable-draft.mjs
 
 test-tui-durable-draft:
-	$(GO) test -race -count=3 ./internal/tui -run DurableDraft
+	$(GO) test $(RACE) -count=3 ./internal/tui -run DurableDraft
 
 .PHONY: test-tui-text-journal test-concurrent-session-submit
 test-concurrent-session-submit:
-	$(GO) test -race -count=10 ./internal/turn -run '^TestConcurrentSubmitDifferentSessionsRunsConcurrently$$'
+	$(GO) test $(RACE) -count=10 ./internal/turn -run '^TestConcurrentSubmitDifferentSessionsRunsConcurrently$$'
 
 test-tui-text-journal:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn -run 'TUITextDraft|TUIComposerDraft|TUIComposerSubmit'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn -run 'TUITextDraft|TUIComposerDraft|TUIComposerSubmit'
 
 .PHONY: test-tui-media-journal
 test-tui-media-journal:
-	$(GO) test -race -count=3 ./internal/store ./internal/tui -run 'TUIMediaDraft|PendingMedia|AttachCommand|PasteImage'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/tui -run 'TUIMediaDraft|PendingMedia|AttachCommand|PasteImage'
 
 .PHONY: test-held-retry
 test-held-retry:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn ./internal/tui -run 'TUIRetry|RetryHeld|HeldRetry|HoldAndResolve|HoldResolution|SkipHeld'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn ./internal/tui -run 'TUIRetry|RetryHeld|HeldRetry|HoldAndResolve|HoldResolution|SkipHeld'
 
 .PHONY: test-tui-unselected-model test-tui-submit-guards
 test-tui-submit-guards:
-	$(GO) test -race -count=3 ./internal/tui -run 'TUIUnselectedModel|PendingMediaCommandsLimitsAndNoModelDraft'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'TUIUnselectedModel|PendingMediaCommandsLimitsAndNoModelDraft'
 
 test-tui-unselected-model: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-unselected-model.mjs
@@ -841,7 +850,7 @@ test-tui-retry-commands: build
 
 .PHONY: test-tui-queue-commands test-terminal-queue
 test-terminal-queue:
-	$(GO) test -race -count=3 ./internal/tui ./internal/store ./internal/turn -run 'TUIQueue|QueueSteer|QueuedTurn|QueueOrder'
+	$(GO) test $(RACE) -count=3 ./internal/tui ./internal/store ./internal/turn -run 'TUIQueue|QueueSteer|QueuedTurn|QueueOrder'
 
 test-tui-queue-commands: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-commands.mjs
@@ -1042,11 +1051,11 @@ test-ux-auth: build-web
 
 .PHONY: test-browser-auth-race
 test-browser-auth-race:
-	$(GO) test -race ./internal/web ./internal/auth -count=3
+	$(GO) test $(RACE) ./internal/web ./internal/auth -count=3
 
 .PHONY: test-auth-state
 test-auth-state:
-	$(GO) test -race ./internal/auth -count=10
+	$(GO) test $(RACE) ./internal/auth -count=10
 
 # Compare actual tmux cells against ANSI frame diffs while tables enter/leave
 # the viewport. No provider, sqlite3 CLI, Bun, or running Gi instance required.

@@ -105,7 +105,7 @@ try {
   const mainID=sql("select id from sessions where parent_session_id is null limit 1;");
   const selected=()=>sql(`select coalesce(json_extract(state_json,'$.selected_model'),json_extract(state_json,'$.model')) from sessions where id='${mainID}';`);
   const pickModel=async query=>{
-    keys('M-m');await waitFor(()=>capture().includes('Select model'),'Alt-M model picker');
+    keys('M-m');await waitFor(()=>capture().includes('Ctrl+S to set as default'),'Alt-M model picker');
     type(query);await waitFor(()=>selectorRows(capture()).length===1,`model filter ${query}`);keys('Enter');
   };
   for(const [width,height] of [[60,18],[100,22],[140,36]]) {
@@ -115,19 +115,19 @@ try {
     await waitFor(()=>selected()==='test-model','reset selected model');
     type(`model draft ${label}`);
     const before=await snapshot(`${label}-model-before`);
-    keys('M-m');await waitFor(()=>capture().includes('Select model'),'open model selector');
+    keys('M-m');await waitFor(()=>capture().includes('Ctrl+S to set as default'),'open model selector');
     const open=await snapshot(`${label}-model-open`);
     assert(selectorRows(open).length>0&&selectorRows(open).length<=6,`${label}: model rows exceed bound`);
     assert(separators(open).length===2,`${label}: model picker adds borders`);
-    keys('Escape');await waitFor(()=>!capture().includes('Select model'),'cancel model selector');
+    keys('Escape');await waitFor(()=>!capture().includes('Ctrl+S to set as default'),'cancel model selector');
     const cancelled=await snapshot(`${label}-model-cancel`);
     assert(withoutCursor(before)===withoutCursor(cancelled),`${label}: model cancel changed idle screen`);
     await pickModel('test/unavailable');await waitFor(()=>capture().includes('error:'),'unavailable model feedback');
     assert(selected()==='test-model',`${label}: invalid model persisted`);
     const rejected=await snapshot(`${label}-model-rejected`);
     assert(rejected.includes(`model draft ${label}`)&&selectorRows(rejected).length===1,`${label}: rejection lost draft/menu`);
-    keys('Escape');await waitFor(()=>!capture().includes('Select model'),'cancel rejection');
-    await pickModel('test/bootstrap');await waitFor(()=>selected()==='bootstrap'&&!capture().includes('Select model'),'accepted model');
+    keys('Escape');await waitFor(()=>!capture().includes('Ctrl+S to set as default'),'cancel rejection');
+    await pickModel('test/bootstrap');await waitFor(()=>selected()==='bootstrap'&&!capture().includes('Ctrl+S to set as default'),'accepted model');
     const accepted=await snapshot(`${label}-model-accepted`);
     assert(accepted.includes(`model draft ${label}`),`${label}: model selection consumed draft`);
     assert(JSON.stringify(separators(before))===JSON.stringify(separators(accepted)),`${label}: idle rows moved`);

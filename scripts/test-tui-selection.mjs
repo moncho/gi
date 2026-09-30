@@ -30,8 +30,8 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);
   tmux('set-option','-s','set-clipboard','on');tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   for(let i=1;i<=22;i++){type(`SELECT-${String(i).padStart(2,'0')} unicode 中文🙂`);keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='completed';")===String(i),'native history');}
-  type('newer selection draft');keys('Left','Left','Left');keys('Home');await wait(()=>capture().includes('you: SELECT-01'),'top');
-  const baseline=shot('before'),idleBars=bars(baseline),lines=baseline.split('\n'),row=lines.findIndex(l=>l.includes('you: SELECT-01')),col=lines[row].indexOf('you:'),secondRow=lines.findIndex(l=>l.includes('you: SELECT-02'));
+  type('newer selection draft');keys('Left','Left','Left');keys('Home');await wait(()=>capture().includes('SELECT-01'),'top');
+  const baseline=shot('before'),idleBars=bars(baseline),lines=baseline.split('\n'),row=lines.findIndex(l=>l.includes('SELECT-01')),col=lines[row].indexOf('you:'),secondRow=lines.findIndex(l=>l.includes('you: SELECT-02'));
   assert(secondRow>row,'second prompt must be visible for padded drag');
   // Native rapid SGR click sequence: no synthetic click-count field.
   const wordCol=lines[row].indexOf('SELECT-01')+2;
@@ -52,12 +52,12 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   // Hold below the viewport. The timer scrolls without more mouse motion.
   mouse(0,col,row+1);await sleep(100);mouse(32,col+24,idleBars[0]-1);await sleep(2400);mouse(0,col+24,idleBars[0]-1,true);
   await wait(()=>capture().includes('Selection sent to terminal (OSC 52)'),'edge copy');assert(clip().includes('SELECT-03'),'edge scroll failed to select offscreen output');shot('edge-scroll');
-  keys('Escape');await sleep(120);keys('Home');await wait(()=>capture().includes('you: SELECT-01'),'top before resize');
+  keys('Escape');await sleep(120);keys('Home');await wait(()=>capture().includes('SELECT-01'),'top before resize');
   await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Selection sent to terminal (OSC 52)'),'resize selection');const beforeResize=clip();
   tmux('resize-window','-t',session,'-x','80','-y','24');await sleep(180);tmux('resize-window','-t',session,'-x',String(width),'-y',String(height));await sleep(180);
   assert(!capture().includes('Selection'),'resize retained invalid selection');assert(clip()===beforeResize,'resize copied unexpected data');
   // Current output invalidates a held selection before a delayed release.
-  keys('End','C-a','C-k');type('UX queue gate:select');keys('Enter');await wait(()=>!idle(),'gate');type('newer active draft');keys('Home');await wait(()=>capture().includes('you: SELECT-01'),'history during run');
+  keys('End','C-a','C-k');type('UX queue gate:select');keys('Enter');await wait(()=>!idle(),'gate');type('newer active draft');keys('Home');await wait(()=>capture().includes('SELECT-01'),'history during run');
   mouse(0,col,row);await sleep(90);mouse(32,col+18,row+2);await sleep(90);tmux('set-buffer','no stale copy');writeFileSync(join(dir,'select'),'go');
   await wait(()=>idle(),'native completion');await sleep(250);mouse(0,col+18,row+2,true);await sleep(150);
   assert(clip()==='no stale copy','changed transcript copied stale selection');assert(!capture().includes('Selection'),'arrival retained stale selection');
@@ -69,7 +69,7 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   mouse(0,col+3,toolRow);await sleep(150);mouse(0,col+3,toolRow,true);await wait(()=>capture().includes('F8 collapse'),'plain click expands');assert(clip()==='click unchanged','click copied text');
   // Clipboard opt-out is respected by drag release too.
   type('/copy --off --persist');keys('Enter');await wait(()=>capture().includes('clipboard unavailable'),'clipboard off');
-  keys('Home');await wait(()=>capture().includes('you: SELECT-01'),'top off');await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Clipboard off'),'opt-out feedback');assert(clip()==='click unchanged','opt-out emitted OSC52');
+  keys('Home');await wait(()=>capture().includes('SELECT-01'),'top off');await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Clipboard off'),'opt-out feedback');assert(clip()==='click unchanged','opt-out emitted OSC52');
   keys('Escape');await sleep(120);type('final unsent draft');
   // View/session transitions discard selections; returning preserves the draft.
   await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Clipboard off'),'selection before picker');

@@ -79,9 +79,10 @@ func tableColumnWidths(headers []string, rows [][]string, width int) []int {
 }
 
 type tableGlyph struct {
-	text  string
-	width int
-	code  bool
+	text   string
+	width  int
+	code   bool
+	styles string // Markdown element styles, comma separated
 }
 
 func wrapTableCell(text string, width int) []string {
@@ -95,7 +96,7 @@ func wrapTableCell(text string, width int) []string {
 			if size == 0 {
 				break
 			}
-			glyphs = append(glyphs, tableGlyph{g, width, segment.Code})
+			glyphs = append(glyphs, tableGlyph{g, width, segment.Code, strings.Join(segment.Styles, ",")})
 			rest = rest[size:]
 		}
 	}
@@ -124,21 +125,36 @@ func wrapTableCell(text string, width int) []string {
 			cut, next = lastSpace, lastSpace+1
 		}
 		var b strings.Builder
-		inCode := false
-		for _, g := range glyphs[:cut] {
-			if g.code != inCode {
+		var run *tableGlyph
+		closeRun := func() {
+			if run == nil {
+				return
+			}
+			if run.code {
+				b.WriteString(markdownInlineCodeEnd)
+			}
+			if run.styles != "" {
+				for range strings.Split(run.styles, ",") {
+					b.WriteString(markdownStyleEnd)
+				}
+			}
+		}
+		for i, g := range glyphs[:cut] {
+			if run == nil || g.code != run.code || g.styles != run.styles {
+				closeRun()
+				if g.styles != "" {
+					for _, name := range strings.Split(g.styles, ",") {
+						b.WriteString(markdownStyleStart(name))
+					}
+				}
 				if g.code {
 					b.WriteString(markdownInlineCodeStart)
-				} else {
-					b.WriteString(markdownInlineCodeEnd)
 				}
-				inCode = g.code
+				run = &glyphs[i]
 			}
 			b.WriteString(g.text)
 		}
-		if inCode {
-			b.WriteString(markdownInlineCodeEnd)
-		}
+		closeRun()
 		lines = append(lines, b.String())
 		glyphs = glyphs[next:]
 	}

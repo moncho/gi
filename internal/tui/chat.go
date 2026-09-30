@@ -4695,35 +4695,50 @@ func (c *chatTUI) renderLineBlock(lines []string, style gotui.Style) *gotui.Elem
 }
 
 type tuiInlineSegment struct {
-	Text string
-	Code bool
+	Text   string
+	Code   bool
+	Styles []string // Markdown element styles, outermost first
 }
 
+// parseTUIInlineSegments splits a projected line at its (possibly nested)
+// inline-code and Markdown style markers.
 func parseTUIInlineSegments(line string) []tuiInlineSegment {
-	if !strings.Contains(line, markdownInlineCodeStart) {
-		return []tuiInlineSegment{{Text: stripMarkdownInlineStyleMarkers(line)}}
+	if !strings.Contains(line, "\x00gi-") {
+		return []tuiInlineSegment{{Text: line}}
 	}
-	segments := []tuiInlineSegment{}
-	for len(line) > 0 {
-		start := strings.Index(line, markdownInlineCodeStart)
-		if start < 0 {
-			if line != "" {
-				segments = append(segments, tuiInlineSegment{Text: stripMarkdownInlineStyleMarkers(line)})
+	var segments []tuiInlineSegment
+	var stack []string
+	var text strings.Builder
+	flush := func() {
+		if text.Len() == 0 {
+			return
+		}
+		seg := tuiInlineSegment{Text: text.String()}
+		for _, name := range stack {
+			if name == "code" {
+				seg.Code = true
+			} else {
+				seg.Styles = append(seg.Styles, name)
 			}
-			break
 		}
-		if start > 0 {
-			segments = append(segments, tuiInlineSegment{Text: stripMarkdownInlineStyleMarkers(line[:start])})
-		}
-		line = line[start+len(markdownInlineCodeStart):]
-		end := strings.Index(line, markdownInlineCodeEnd)
-		if end < 0 {
-			segments = append(segments, tuiInlineSegment{Text: stripMarkdownInlineStyleMarkers(line)})
-			break
-		}
-		segments = append(segments, tuiInlineSegment{Text: line[:end], Code: true})
-		line = line[end+len(markdownInlineCodeEnd):]
+		segments = append(segments, seg)
+		text.Reset()
 	}
+	for i := 0; i < len(line); {
+		if marker, open, name, ok := markerToken(line[i:]); ok {
+			flush()
+			if open {
+				stack = append(stack, name)
+			} else if len(stack) > 0 {
+				stack = stack[:len(stack)-1]
+			}
+			i += len(marker)
+			continue
+		}
+		text.WriteByte(line[i])
+		i++
+	}
+	flush()
 	if len(segments) == 0 {
 		return []tuiInlineSegment{{Text: ""}}
 	}
@@ -4748,7 +4763,7 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 	if leading > 0 {
 		options = append(options, gotui.WithPaddingTRBL(0, 0, 0, leading))
 	}
-	if len(segments) == 1 && !segments[0].Code {
+	if len(segments) == 1 && !segments[0].Code && len(segments[0].Styles) == 0 {
 		spans := transcriptLinkSpans(segments[0].Text, style)
 		return gotui.New(append(options, gotui.WithRichText(spans...))...)
 	}
@@ -4761,6 +4776,9 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 			continue
 		}
 		segStyle := style
+		for _, name := range seg.Styles {
+			segStyle = piMarkdownStyle(segStyle, name)
+		}
 		if seg.Code {
 			segStyle = style.Foreground(piMdCode)
 			// go-tui's rich-text word wrapper collapses ASCII spaces in

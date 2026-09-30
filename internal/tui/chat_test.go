@@ -1842,7 +1842,7 @@ func TestSettingsLinesExposeRuntimeState(t *testing.T) {
 func TestRenderMessageLinesFormatsMarkdown(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: "# Title\n\n- first\n- second", Payload: map[string]any{"kind": "chat"}}, 80)
-	joined := strings.Join(lines, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
 	for _, want := range []string{"Neo: TITLE", "=====", "• first", "• second"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("markdown render missing %q:\n%s", want, joined)
@@ -1853,7 +1853,7 @@ func TestRenderMessageLinesFormatsMarkdown(t *testing.T) {
 func TestRenderMessageLinesFormatsCodeBlocksWithLineCount(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: "```go\nfmt.Println(1)\nfmt.Println(2)\n```", Payload: map[string]any{"kind": "chat"}}, 80)
-	joined := strings.Join(lines, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
 	for _, want := range []string{"Neo: [code:go] 2 lines", "fmt.Println(1)", "fmt.Println(2)"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("code block render missing %q:\n%s", want, joined)
@@ -1865,7 +1865,7 @@ func TestRenderMessageLinesProjectsInlineMarkdownWithoutMarkers(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	content := "This is **bold**, *emph*, `code`, ~~gone~~, and [a link](https://example.com).\n- [x] done\n- [ ] todo"
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: content, Payload: map[string]any{"kind": "chat"}}, 80)
-	joined := strings.Join(lines, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
 	for _, bad := range []string{"**bold**", "*emph*", "`code`", "~~gone~~"} {
 		if strings.Contains(joined, bad) {
 			t.Fatalf("markdown marker %q leaked into render:\n%s", bad, joined)
@@ -1904,7 +1904,7 @@ func TestRenderMessageLinesPreservesInlineCodeLeadingSpaces(t *testing.T) {
 func TestRenderMessageLinesPreservesCodeBlockSpacing(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: "```\nif  x  {\n    y :=  1\n}\n```", Payload: map[string]any{"kind": "chat"}}, 80)
-	joined := strings.Join(lines, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
 	for _, want := range []string{"if  x  {", "    y :=  1"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("code block spacing not preserved for %q:\n%s", want, joined)
@@ -2571,7 +2571,7 @@ func TestExtensionCommandLinesDispatchesRegisteredCommand(t *testing.T) {
 func TestStreamingDraftRendersMarkdownDynamically(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo", DefaultModel: "bootstrap"}, stickToBottom: true, draftLineIndex: -1}
 	c.handleTopicEvent(topics.Envelope{Topic: "turn.draft", Payload: map[string]any{"delta": "# Plan\n\n- one"}})
-	joined := strings.Join(c.transcript, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(c.transcript, "\n"))
 	if !strings.Contains(joined, "Neo: PLAN") || !strings.Contains(joined, "• one") {
 		t.Fatalf("streaming markdown was not rendered dynamically:\n%s", joined)
 	}
@@ -2579,12 +2579,12 @@ func TestStreamingDraftRendersMarkdownDynamically(t *testing.T) {
 		t.Fatalf("expected multi-line streaming draft span, got %d lines: %#v", c.draftLineCount, c.transcript)
 	}
 	c.handleTopicEvent(topics.Envelope{Topic: "turn.draft", Payload: map[string]any{"delta": "\n- two"}})
-	joined = strings.Join(c.transcript, "\n")
+	joined = stripMarkdownInlineStyleMarkers(strings.Join(c.transcript, "\n"))
 	if strings.Count(joined, "Neo: PLAN") != 1 || !strings.Contains(joined, "• two") {
 		t.Fatalf("streaming markdown replacement should update in place:\n%s", joined)
 	}
 	c.handleTopicEvent(topics.Envelope{Topic: "turn.response", Payload: map[string]any{"data": map[string]any{"content": "# Done\n\n- final"}}})
-	joined = strings.Join(c.transcript, "\n")
+	joined = stripMarkdownInlineStyleMarkers(strings.Join(c.transcript, "\n"))
 	if strings.Contains(joined, "• one") || !strings.Contains(joined, "Neo: DONE") || !strings.Contains(joined, "• final") {
 		t.Fatalf("final markdown should replace entire streaming span:\n%s", joined)
 	}

@@ -91,7 +91,7 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 			if y >= separator+gap && (len(block.Body) > 0 || block.Subheader != "") && block.Kind != "user" && block.Kind != "assistant" {
 				key = block.Key
 			}
-			rows = append(rows, transcriptSearchRow{text: strings.TrimRight(text.String(), " "), spans: spans, prompt: block.Kind == "user" && y == 1+gap, blockKey: key})
+			rows = append(rows, transcriptSearchRow{text: strings.TrimRight(text.String(), " "), spans: spans, prompt: block.Kind == "user" && y == gap, blockKey: key}) // prompt = top of the padded user band
 		}
 		for _, run := range transcriptWrapRuns(el, rows[baseRow:]) {
 			for i := range run.cells {
@@ -293,13 +293,15 @@ func (c *chatTUI) renderTranscriptSearchRows(transcript *gotui.Element) {
 			end := col + gotui.StringWidth(spans[j].Text)
 			for _, match := range matches[i] {
 				if col < match.end && end > match.start {
-					spans[j].Style = spans[j].Style.Background(piUserBg).Underline()
+					// Pi: searchMatchBg + searchMatchText, underlined.
+					spans[j].Style = spans[j].Style.Background(piSearchMatchBg).Foreground(piMuted).Underline()
 					break
 				}
 			}
 			for _, part := range selectedParts {
 				if part.row == i && col < part.end && end > part.start {
-					spans[j].Style = spans[j].Style.Background(piText).Foreground(piUserBg).Bold()
+					// Pi: the current match is the match style, inverse and bold.
+					spans[j].Style = spans[j].Style.Background(piSearchMatchBg).Foreground(piMuted).Reverse().Bold()
 					break
 				}
 			}

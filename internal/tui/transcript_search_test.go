@@ -55,7 +55,7 @@ func TestTranscriptSearchIndexesVisibleRenderingAndRestoresEditor(t *testing.T) 
 			buf := gotui.NewBuffer(width, 30)
 			el.RenderTo(buf, width, 30)
 			match := c.search.matches[0]
-			if buf.Cell(match.start, match.row).Style.Bg != piText {
+			if st := buf.Cell(match.start, match.row).Style; st.Bg != piSearchMatchBg || !st.HasAttr(gotui.AttrReverse) {
 				t.Fatal("current match highlight absent")
 			}
 			c.closeTranscriptSearch()
@@ -199,10 +199,10 @@ func TestTranscriptSearchOccurrencesDisplayCellsAndNavigation(t *testing.T) {
 			c.renderTranscriptSearchRows(el)
 			buf := gotui.NewBuffer(width, 4)
 			el.RenderTo(buf, width, 4)
-			if buf.Cell(second.start, 0).Style.Bg != piText || buf.Cell(second.start+1, 0).Style.Bg != piText {
+			if a, b := buf.Cell(second.start, 0).Style, buf.Cell(second.start+1, 0).Style; !a.HasAttr(gotui.AttrReverse) || !b.HasAttr(gotui.AttrReverse) {
 				t.Fatal("wide active match incomplete")
 			}
-			if buf.Cell(first.start, 0).Style.Bg != piUserBg {
+			if st := buf.Cell(first.start, 0).Style; st.Bg != piSearchMatchBg || st.HasAttr(gotui.AttrReverse) {
 				t.Fatal("inactive occurrence not distinguished")
 			}
 			if buf.Cell(0, 0).Style != c.search.rows[0].spans[0].Style {
@@ -216,7 +216,7 @@ func TestTranscriptSearchOccurrencesDisplayCellsAndNavigation(t *testing.T) {
 			c.renderTranscriptSearchRows(linked)
 			linked.RenderTo(buf, width, 4)
 			match := c.search.matches[0]
-			if buf.Cell(match.start, 0).Link != "https://example.invalid/aaa" || buf.Cell(match.start, 0).Style.Bg != piText {
+			if buf.Cell(match.start, 0).Link != "https://example.invalid/aaa" || !buf.Cell(match.start, 0).Style.HasAttr(gotui.AttrReverse) {
 				t.Fatal("highlighted URL lost link metadata")
 			}
 			c.updateTranscriptSearchQuery("界")
@@ -321,7 +321,7 @@ func TestTranscriptSearchAcrossSoftWrapsOnly(t *testing.T) {
 			match := c.search.matches[0]
 			parts := append([]transcriptSearchCell{{match.row, match.start, match.end}}, match.continuation...)
 			for _, p := range parts {
-				if buf.Cell(p.start, p.row).Style.Bg != piText {
+				if !buf.Cell(p.start, p.row).Style.HasAttr(gotui.AttrReverse) {
 					t.Fatalf("unhighlighted segment %#v", p)
 				}
 			}

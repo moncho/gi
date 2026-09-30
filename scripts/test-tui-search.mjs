@@ -36,7 +36,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   type(wrapNeedle);await wait(()=>capture().includes('Search 1/2'),'two cross-soft-wrap occurrences');shot('cross-wrap');keys('Enter');await wait(()=>capture().includes('Search 2/2'),'next cross-wrap occurrence');keys('C-u');
   type('NEBULA');await wait(()=>capture().includes('Search 1/96'),'all rendered occurrences');
   const active=shot('matches');assert(active.split('\n').length<=height,'search grew terminal footprint');
-  assert(ansi().includes('48;2;212;212;212'),'current match not highlighted');
+  assert(ansi().includes('48;2;78;47;27')&&/\x1b\[(?:[0-9;]*;)?7(?:;[0-9;]*)?m/.test(ansi()),'current match not highlighted (Pi searchMatchBg, inverse)');
   const textOnly=s=>s.replace(/\x1b\[[0-9;]*m/g,'');
   const matchedRow=()=>ansi().split('\n').find(row=>textOnly(row).includes('Prompt 01'));
   const firstOccurrence=matchedRow();assert(firstOccurrence,'first prompt absent');

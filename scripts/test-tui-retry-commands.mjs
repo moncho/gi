@@ -9,7 +9,7 @@ const results=[];
 for(const mode of ['fullscreen','regular'])for(const[width,height]of[[60,18],[100,22],[140,36]]){
  const dir=mkdtempSync(join(tmpdir(),'gi-retry-cli-')),db=join(dir,'state.db'),socket=`gi-retry-${process.pid}-${mode}-${width}`,pane='proof:0.0';mkdirSync(join(dir,'.pi'));const settings=JSON.stringify({defaultProvider:'test',defaultModel:'test-model',enabledModels:['test-model']});writeFileSync(join(dir,'.pi/settings.json'),settings);
  const tm=(...a)=>run('tmux',['-L',socket,...a]),keys=(...a)=>tm('send-keys','-t',pane,...a),type=s=>keys('-l',s),cap=()=>tm('capture-pane','-p','-t',pane),all=()=>tm('capture-pane','-p','-S','-','-t',pane),sql=q=>run('sqlite3',['-cmd','.timeout 5000',db,q]).trim();
- const command=async text=>{type(text);await wait(()=>cap().replaceAll('▌','').replaceAll('\n','').includes(text),'command input '+text);keys('Enter');await sleep(140)},shot=name=>{writeFileSync(join(out,`${mode}-${width}-${name}.txt`),all());writeFileSync(join(out,`${mode}-${width}-${name}.ansi`),tm('capture-pane','-p','-e','-t',pane))};
+ const command=async text=>{type(text);await wait(()=>cap().replace(/\s+/g,'').includes(text.replace(/\s+/g,'')),'command input '+text);keys('Enter');await sleep(140)},shot=name=>{writeFileSync(join(out,`${mode}-${width}-${name}.txt`),all());writeFileSync(join(out,`${mode}-${width}-${name}.ansi`),tm('capture-pane','-p','-e','-t',pane))};
  const launch=()=>tm('new-session','-d','-s','proof','-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' '${bin}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model; echo EXIT; sleep 60`);
  try{
   launch();await wait(()=>cap().includes('%/'),'ready');const id=sql('SELECT id FROM sessions LIMIT 1');

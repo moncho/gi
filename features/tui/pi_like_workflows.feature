@@ -11,7 +11,7 @@ Feature: TUI Pi-like workflow affordances
     And the screen should contain "!!cmd run locally"
     When I type "/commands model" and press Enter
     Then the screen should contain "commands: palette"
-    And the screen should contain "/model [name|index]"
+    And the screen should contain "/model <provider/model>"
     When I type "/model" and press Enter
     Then the screen should contain "Ctrl+S to set as default"
     And the screen should contain "test-model [test]"

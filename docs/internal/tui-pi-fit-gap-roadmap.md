@@ -8,21 +8,37 @@ It intentionally does **not** require pixel-perfect cloning. Parity means the sa
 
 ## Current `gi -tui` command surface
 
-Implemented commands in `internal/tui/chat.go`:
+The slash catalogue (`piCommands` + `giCommands` in `internal/tui/chat.go`)
+lists Pi's built-ins first, in Pi's `BUILTIN_SLASH_COMMANDS` order with Pi's
+argument hints and descriptions where gi behaves the same, then gi's own
+commands (the way Pi lists extension commands after its built-ins). Aligned
+behaviour: `/resume` with no argument opens the session selector (`/sessions`
+remains as an alias), `/name` with no argument shows the current name,
+`/logout` with no argument lists stored providers, and `/quit` exits.
+
+Pi built-ins not in gi yet (omitted, not approximated): `/export`, `/import`,
+`/share`, `/bug`, `/changelog`, `/trust`. Pi built-ins whose gi behaviour still
+differs: `/fork` (Pi forks from an earlier user message; gi creates a peer
+fork session), `/tree`, `/settings`, `/scoped-models` and `/login` (Pi opens
+interactive UIs; gi prints or uses subcommands), `/compact [instructions]`
+(gi takes no custom instructions).
+
+Implemented commands:
 
 - `/help`
 - `/commands [query]` / `/palette [query]`
 - `/session`
 - `/new`
-- `/name <name>`
-- `/resume [index|session_id]`
+- `/name [name]`
+- `/resume [index|session_id]` (no argument: selector)
+- `/quit` / `/exit`
 - `/clone [@agentN]`
 - `/copy [--osc52|--native|--auto|--fallback]`
 - `/reload`
 - `/tools [query|active|activate|reset]`
 - `/skills [query]`
 - `/skill:name [args]`
-- `/model [name|index]`
+- `/model [provider/model]`
 - `/scoped-models [list|add|remove|set]`
 - `/thinking [level]`
 - `/compact`

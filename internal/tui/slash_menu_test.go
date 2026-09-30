@@ -31,7 +31,7 @@ func TestSlashMenuOpensFiltersCompletesAndCloses(t *testing.T) {
 		t.Fatalf("slash did not open with all commands: %+v", c.slash)
 	}
 	type_("mo")
-	if c.slash.items[0].name != "model" || !strings.HasPrefix(c.slash.items[0].description, "[name|index] — ") {
+	if c.slash.items[0].name != "model" || !strings.HasPrefix(c.slash.items[0].description, "<provider/model> — ") {
 		t.Fatalf("filter: %+v", c.slash.items)
 	}
 	rows := c.slashMenuRows(80)
@@ -76,5 +76,19 @@ func TestSlashEnterCompletesAndSubmits(t *testing.T) {
 	}
 	if !c.handleSlashKey(gotui.KeyEnter) || strings.TrimSpace(submitted) != "/hotkeys" {
 		t.Fatalf("enter submitted %q", submitted)
+	}
+}
+
+// The catalogue lists Pi's built-in commands first, in Pi's order.
+func TestSlashCatalogueFollowsPiBuiltinOrder(t *testing.T) {
+	pi := []string{"settings", "model", "tree", "thinking", "scoped-models", "copy", "name", "session", "hotkeys", "fork", "clone", "login", "logout", "new", "compact", "resume", "reload", "quit"}
+	items := (&chatTUI{}).slashCommandItems()
+	if len(items) < len(pi) {
+		t.Fatalf("catalogue too short: %d", len(items))
+	}
+	for i, name := range pi {
+		if items[i].name != name {
+			t.Fatalf("item %d = %q, want Pi's %q", i, items[i].name, name)
+		}
 	}
 }

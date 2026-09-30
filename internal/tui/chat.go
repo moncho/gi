@@ -2824,6 +2824,10 @@ func (c *chatTUI) handleCommand(text string) {
 	case "/name":
 		c.appendTranscript(c.nameSessionLines(text, fields)...)
 	case "/resume":
+		if len(fields) == 1 { // Pi: /resume opens the session selector
+			c.openSessionMenu()
+			return
+		}
 		c.appendTranscript(c.resumeLines(fields)...)
 	case "/sessions":
 		c.openSessionMenu()
@@ -2890,6 +2894,11 @@ func (c *chatTUI) handleCommand(text string) {
 		c.appendTranscript("approvals: no approval gates are configured in gi yet")
 	case "/cancel":
 		c.appendTranscript(c.cancelCommand())
+	case "/quit", "/exit":
+		if c.app != nil {
+			c.app.Stop()
+		}
+		return
 	case "/abort":
 		if line := c.abortCommand(); line != "" {
 			c.appendTranscript(line)
@@ -3016,49 +3025,61 @@ func (c *chatTUI) extensionCommandLines(text string, fields []string) ([]string,
 
 // tuiCommands is gi's slash command catalogue, used by /commands and by the
 // Pi-style slash autocomplete below the editor.
-var tuiCommands = []struct{ name, hint string }{
-	{"/help", "show grouped help"},
-	{"/commands [query]", "filter command palette textually"},
-	{"/hotkeys", "show keyboard shortcuts"},
-	{"/session", "show current session details"},
-	{"/new", "create and switch to a new main session"},
-	{"/name <name>", "rename current session"},
-	{"/resume [index|session_id]", "list or switch recent sessions"},
-	{"/sessions", "searchable session resume selector"},
-	{"/clone [@agentN]", "clone active branch/session"},
-	{"/copy [--osc52|--native|--auto|--fallback]", "copy last assistant message with opt-in target"},
-	{"/attach <path> [prompt]", "stage up to six session media refs for next prompt"},
-	{"/draft [reload|check|release|restore|discard]", "inspect/recover durable drafts; never auto resend"},
-	{"/retry [page|check|run|release]", "inspect held failures; full ID/token guarded actions"},
-	{"/queue [page|remove|steer|move]", "inspect durable queue; mutate by full turn IDs"},
-	{"/attachments", "list durable refs / held admissions"},
-	{"/detach <media:id|all|unresolved>", "remove pending refs; keep stored files"},
-	{"/paste-image [prompt]", "paste a clipboard image and optionally submit a prompt"},
-	{"/login [provider]", "show OAuth/credential auth status"},
-	{"/logout <provider>", "remove stored provider credentials"},
-	{"/reload", "refresh config and discovery safely"},
-	{"/tools [query|active|activate|reset]", "inspect or change active tools"},
-	{"/skills [query]", "list discovered skills"},
-	{"/skill:name [args]", "load a discovered SKILL.md"},
-	{"/model [name|index]", "list or select model"},
-	{"/scoped-models [list|add|remove|set]", "manage enabled models"},
-	{"/thinking [level]", "show or set thinking level"},
-	{"/compact", "request context compaction"},
-	{"/scrollback [n]", "show or set transcript scrollback limit"},
-	{"/history-limit [n]", "show or set per-session prompt history limit"},
-	{"/settings", "show grouped runtime settings"},
-	{"/abort", "abort the running turn (also clears one left by a crash)"},
-	{"/cancel", "cancel latest active/queued turn"},
-	{"/agents", "list configured agents"},
-	{"/tree", "show session tree"},
-	{"/plugins", "show loaded extensions"},
-	{"/fork [@agentN]", "create peer/fork session"},
-	{"/switch @agent|session_id", "switch active session"},
-	{"/send @agent message", "send peer message"},
-	{"/where", "show context summary"},
-	{"!cmd", "ask model to run/summarize shell command"},
-	{"!!cmd", "run local shell command"},
+// piCommands mirrors Pi's BUILTIN_SLASH_COMMANDS: same order, names and
+// argument hints, with Pi's descriptions where gi behaves the same. Pi
+// built-ins gi does not implement yet (/export, /import, /share, /bug,
+// /changelog, /trust) are omitted rather than approximated.
+var piCommands = []struct{ name, hint string }{
+	{"/settings", "Show settings"},
+	{"/model <provider/model>", "Select model (opens selector UI)"},
+	{"/tree", "Show session tree"},
+	{"/thinking <level>", "Set thinking level"},
+	{"/scoped-models [list|add|remove|set]", "Enable/disable models for model cycling"},
+	{"/copy [--osc52|--native|--auto|--fallback]", "Copy last agent message to clipboard"},
+	{"/name <name>", "Set session display name"},
+	{"/session", "Show session info and stats"},
+	{"/hotkeys", "Show all keyboard shortcuts"},
+	{"/fork [@agentN]", "Create a peer fork session"},
+	{"/clone [@agentN]", "Duplicate the current session at the current position"},
+	{"/login <provider>", "Show provider authentication status"},
+	{"/logout <provider>", "Remove provider authentication"},
+	{"/new", "Start a new session"},
+	{"/compact [info]", "Manually compact the session context"},
+	{"/resume [index|session_id]", "Resume a different session"},
+	{"/reload", "Reload config, skills and context files"},
+	{"/quit", "Quit gi"},
 }
+
+// giCommands are gi's own commands, listed after Pi's built-ins the way Pi
+// lists extension commands after its own.
+var giCommands = []struct{ name, hint string }{
+	{"/abort", "Abort the running turn (also clears one left by a crash)"},
+	{"/queue [page|remove|steer|move]", "Inspect the durable queue; mutate by full turn IDs"},
+	{"/retry [page|check|run|release]", "Inspect held failures; guarded retry actions"},
+	{"/draft [reload|check|release|restore|discard]", "Inspect or recover durable drafts"},
+	{"/attach <path> [prompt]", "Stage up to six media refs for the next prompt"},
+	{"/attachments", "List pending media refs and held admissions"},
+	{"/detach <media:id|all|unresolved>", "Remove pending media refs"},
+	{"/paste-image [prompt]", "Paste a clipboard image, optionally with a prompt"},
+	{"/tools [query|active|activate|reset]", "Inspect or change active tools"},
+	{"/skills [query]", "List discovered skills"},
+	{"/skill:name [args]", "Load a discovered SKILL.md"},
+	{"/agents", "List configured agents"},
+	{"/switch @agent|session_id", "Switch the active session"},
+	{"/send @agent message", "Send a peer message"},
+	{"/where", "Show a context summary"},
+	{"/plugins", "Show loaded extensions"},
+	{"/scrollback [n]", "Show or set the transcript scrollback limit"},
+	{"/history-limit [n]", "Show or set the per-session prompt history limit"},
+	{"/cancel", "Cancel the latest active or queued turn"},
+	{"/help", "Show grouped help"},
+	{"/commands [query]", "Filter the command palette"},
+	{"!cmd", "Ask the model to run a shell command"},
+	{"!!cmd", "Run a local shell command"},
+}
+
+// tuiCommands is the palette/autocomplete catalogue: Pi's built-ins first.
+var tuiCommands = append(append([]struct{ name, hint string }{}, piCommands...), giCommands...)
 
 func (c *chatTUI) commandPaletteLines(query string) []string {
 	commands := tuiCommands
@@ -3155,7 +3176,16 @@ func (c *chatTUI) loginLines(fields []string) []string {
 
 func (c *chatTUI) logoutLines(fields []string) []string {
 	if len(fields) < 2 {
-		return []string{"sys: usage /logout <provider>"}
+		var stored []string
+		for _, status := range inference.ListAuthStatus() {
+			if status.Authenticated {
+				stored = append(stored, status.ID)
+			}
+		}
+		if len(stored) == 0 {
+			return []string{"logout: no stored provider credentials"}
+		}
+		return []string{"logout: /logout <provider> · stored: " + strings.Join(stored, ", ")}
 	}
 	provider := strings.TrimSpace(fields[1])
 	removed, err := inference.RemoveAuthEntry(provider)
@@ -3566,12 +3596,12 @@ func (c *chatTUI) newSessionLines() []string {
 }
 
 func (c *chatTUI) nameSessionLines(text string, fields []string) []string {
-	if len(fields) < 2 {
-		return []string{"sys: usage /name <name>"}
-	}
 	name := strings.TrimSpace(strings.TrimPrefix(text, fields[0]))
-	if name == "" {
-		return []string{"sys: usage /name <name>"}
+	if name == "" { // Pi: /name without an argument shows the current name
+		if sess, err := c.store.GetSession(context.Background(), c.sessionID); err == nil && strings.TrimSpace(sess.Title) != "" {
+			return []string{fmt.Sprintf("sys: session name: %s", sess.Title)}
+		}
+		return []string{"sys: session has no name; /name <name> sets one"}
 	}
 	if err := c.store.UpdateSessionTitle(context.Background(), c.sessionID, name); err != nil {
 		return []string{fmt.Sprintf("error: rename session: %v", err)}

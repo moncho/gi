@@ -1240,7 +1240,7 @@ func TestCommandPaletteLinesFilterCommands(t *testing.T) {
 		}
 	}
 	filtered := strings.Join(c.commandPaletteLines("model"), "\n")
-	if !strings.Contains(filtered, "/model [name|index]") || strings.Contains(filtered, "/session") {
+	if !strings.Contains(filtered, "/model <provider/model>") || strings.Contains(filtered, "/session") {
 		t.Fatalf("filtered palette mismatch:\n%s", filtered)
 	}
 }
@@ -1606,9 +1606,10 @@ func TestNameSessionCommandRenamesCurrentSession(t *testing.T) {
 	if reloaded.Title != "Project Alpha" {
 		t.Fatalf("unexpected title: %q", reloaded.Title)
 	}
-	usage := c.nameSessionLines("/name", []string{"/name"})
-	if len(usage) != 1 || usage[0] != "sys: usage /name <name>" {
-		t.Fatalf("unexpected usage output: %#v", usage)
+	// Pi: /name without an argument shows the current name.
+	shown := c.nameSessionLines("/name", []string{"/name"})
+	if len(shown) != 1 || shown[0] != "sys: session name: Project Alpha" {
+		t.Fatalf("unexpected /name output: %#v", shown)
 	}
 }
 

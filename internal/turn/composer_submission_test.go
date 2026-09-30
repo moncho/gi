@@ -389,3 +389,45 @@ func TestTUIComposerRejectsUnknownDeliveryBeforeClaimMutation(t *testing.T) {
 		t.Fatal("invalid delivery modified durable claim")
 	}
 }
+
+// Undirected prompts typed in a peer, forked or cloned session belong to that
+// session. The default-agent dispatch rule used to reject them ("cross-session
+// routing not supported"); explicit @mentions of another agent still are.
+func TestTUIComposerSubmitInNonDefaultAgentSessions(t *testing.T) {
+	e, s, _, _ := composerSubmitFixture(t, "unused", false)
+	ctx := context.Background()
+	peer, err := e.ResolveOrCreatePeerSessionID(ctx, "A", "agent1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	forked, err := s.CloneSessionBefore(ctx, "A", "forked", "@agent2", "agent2", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	submit := func(sessionID, text string) (*SubmitResult, error) {
+		t.Helper()
+		current, err := s.LoadTUITextDraft(ctx, sessionID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		saved, err := s.SaveTUITextDraft(ctx, sessionID, current.Revision, store.TUITextSnapshot{Text: text})
+		if err != nil {
+			t.Fatal(err)
+		}
+		claim, err := s.ClaimTUIComposerDraft(ctx, sessionID, saved.Revision)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res, _, err := e.SubmitTUIComposerIntent(ctx, sessionID, claim.Text.Claim.Token, claim.Text.Revision, "bootstrap", "prompt")
+		return res, err
+	}
+	for _, sid := range []string{peer, forked.ID} {
+		res, err := submit(sid, "plain prompt in "+sid)
+		if err != nil || res == nil || res.SessionID != sid {
+			t.Fatalf("%s: result=%+v err=%v, want admission in the same session", sid, res, err)
+		}
+	}
+	if _, err := submit(peer, "@agent hello there"); err == nil || !strings.Contains(err.Error(), "/send @agent") {
+		t.Fatalf("directed prompt to another agent: err=%v", err)
+	}
+}

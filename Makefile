@@ -26,6 +26,10 @@ test%: export GOFLAGS := $(filter-out -p=%,$(GOFLAGS)) -p=1
 # whenever it grows past GO_CACHE_MAX_MB; checked once per make invocation.
 GO_CACHE_MAX_MB ?= 1500
 export GOCACHE := $(or $(GI_GOCACHE),$(HOME)/.cache/go-build)
+# Go's per-build work directories (compile/link temporaries, often 0.5-1 GB
+# each) default to $TMPDIR, which is RAM here; keep them on disk too.
+export GOTMPDIR := $(or $(GI_GOTMPDIR),$(HOME)/.cache/go-tmp)
+$(shell mkdir -p "$(GOTMPDIR)")
 ifneq ($(filter-out help status logs stop,$(or $(MAKECMDGOALS),help)),)
 _GO_CACHE_MB := $(shell du -sm "$(GOCACHE)" 2>/dev/null | cut -f1)
 ifneq ($(_GO_CACHE_MB),)
@@ -146,10 +150,15 @@ help:
 		"Common overrides" \
 		"  PORT=$(PORT) BIND=$(BIND) MODEL=$(MODEL) WORKSPACE=$(WORKSPACE) LISTEN=$(LISTEN)"
 
-bootstrap: deps
-	$(PLAYWRIGHT) install chromium
+bootstrap: deps playwright-browsers
 	$(MAKE) --no-print-directory build
 	@echo "Bootstrap complete. Run 'make start' or 'make run'."
+
+# Playwright browsers (idempotent; a no-op when already installed). Browsers
+# live in ~/.cache/ms-playwright, which cache cleanups may remove.
+.PHONY: playwright-browsers
+playwright-browsers:
+	$(PLAYWRIGHT) install chromium webkit
 
 deps:
 	$(call require-command,$(GO),Go is required but not installed or not on PATH)
@@ -526,9 +535,9 @@ test-instance-stop:
 	fi
 	@rm -rf $(TEST_DIR)
 
-test-ux: test-instance-start
+test-ux: playwright-browsers test-instance-start
 	mkdir -p $(TEST_RESULTS)
-	GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/ --reporter=line --output=$(TEST_RESULTS)/playwright; \
+	GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/ --reporter=line --output=$(TEST_RESULTS)/playwright $(PLAYWRIGHT_ARGS); \
 	rc=$$?; \
 	$(MAKE) --no-print-directory test-instance-stop; \
 	exit $$rc

@@ -124,6 +124,3 @@ function GiSettingsProviders() {
 export {
   GiSettingsProviders
 };
-
-//# debugId=45C15057B85C7F6C64756E2164756E21
-//# sourceMappingURL=gi-settings-providers-b4estnen.js.map

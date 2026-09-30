@@ -163,7 +163,7 @@ All CPU limiting lives in the Makefile, so every build, test and dev-server run 
 - every recipe runs under `nice -n $(CPU_NICE)` and `taskset -c $(CPU_SET)` (defaults: `10`, `0-1`)
 - `GOMAXPROCS` and Go build parallelism (`-p`) follow `CPU_PROCS` (default `2`)
 - make is `.NOTPARALLEL`; `test*` targets run one Go package at a time (`-p=1`)
-- the Go build cache stays on disk (`~/.cache/go-build`, override with `GI_GOCACHE`) and is trimmed when it exceeds `GO_CACHE_MAX_MB` (default 1500); never put caches or large artifacts on `/tmp` — it is RAM (tmpfs) and there is no swap
+- the Go build cache and Go's per-build temporary work directories stay on disk (`~/.cache/go-build`, `~/.cache/go-tmp`; override with `GI_GOCACHE` / `GI_GOTMPDIR`) and is trimmed when it exceeds `GO_CACHE_MAX_MB` (default 1500); never put caches or large artifacts on `/tmp` — it is RAM (tmpfs) and there is no swap
 - `-race` is used only where the kernel supports ThreadSanitizer (probed once, cached in `/tmp/gi-race-probe.ok`)
 
 Tune per invocation instead of bypassing make, e.g. `make test CPU_SET=0-3 CPU_PROCS=4` or `make build CPU_NICE=0`.

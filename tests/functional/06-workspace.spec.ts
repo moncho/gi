@@ -92,11 +92,16 @@ test('explicit native workspace reindex supplies scoped lexical results without 
  const saved=await (await request.get(`${BASE_URL}/api/workspace/index`)).json();expect(saved.generation).toBe(ready.generation);await expect(page.locator('.workspace-index-status-row')).toHaveCount(0);
 });
 
-test('workspace index runtime defaults are strict with no implicit extra roots',async({request})=>{
+test('workspace index runtime defaults add no implicit extra roots; absent built-in roots are optional',async({request})=>{
  const runtime=await (await request.get(`${BASE_URL}/api/runtime/config`)).json();
  expect(runtime.workspace_index).toEqual({extraRoots:null,extraExtensions:null,optionalRoots:null});
  const state=await (await request.get(`${BASE_URL}/api/workspace/index`)).json();
- expect(state.required_roots).toBe(true);expect(state.optional_roots).toBeNull();expect(state.roots).toEqual(['.pi/skills','notes']);
+ expect(state.roots).toEqual(['.pi/skills','notes']);
+ // Built-in roots missing from the workspace are optional instead of failing
+ // every scan (465d581d); present ones stay required.
+ const optional=state.optional_roots??[];
+ for(const root of optional)expect(['.pi/skills','notes']).toContain(root);
+ expect(state.required_roots).toBe(optional.length===0);
 });
 
 test('workspace index reads keep edited bytes stale until the next explicit application refresh',async({request})=>{

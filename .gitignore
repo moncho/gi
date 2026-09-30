@@ -45,3 +45,6 @@ web/src/**/*.js.map
 .pi/
 .tmp/
 artifacts/
+
+# Source maps are opt-in (GI_SOURCEMAPS=1) and never committed
+internal/web/static/**/*.map

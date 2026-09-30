@@ -183,6 +183,3 @@ function Models({ chatJid, filter = "", onMutationStart, onMutationEnd, onApplie
 export {
   Models
 };
-
-//# debugId=30EE3FC2B02152C064756E2164756E21
-//# sourceMappingURL=gi-settings-models-0ewkwbjd.js.map

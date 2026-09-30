@@ -251,6 +251,3 @@ function GiSettingsCompaction({ chatJid }) {
 export {
   GiSettingsCompaction
 };
-
-//# debugId=9EE789BB5CB57A2664756E2164756E21
-//# sourceMappingURL=gi-settings-compaction-yf1jrbnp.js.map

@@ -436,6 +436,3 @@ function GiSettingsAuthentication() {
 export {
   GiSettingsAuthentication
 };
-
-//# debugId=DCCCDA564AA2829E64756E2164756E21
-//# sourceMappingURL=gi-settings-authentication-wj9c1far.js.map

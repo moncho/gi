@@ -18,7 +18,7 @@ for(const [width,height]of [[60,18],[100,22],[140,36]])for(const overflow of [fa
  mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model'],tuiClipboardMode:'osc52'}));
  try{
   launch();await wait(()=>cap().includes('%/'),'bootstrap');tm('kill-session','-t','proof');await sleep(200);
-  const session=sql('select id from sessions limit 1;'),pad=width<80||height<20?0:1,contentWidth=width-2*pad-(overflow?1:0),suffix=overflow?'界':'e\u0301';
+  const session=sql('select id from sessions limit 1;'),pad=0,contentWidth=width /* edge to edge, no scrollbar column */,suffix=overflow?'界':'e\u0301';
   const suffixWidth=overflow?2:1,body='EDGE'+ 'x'.repeat(contentWidth-5-4-suffixWidth)+suffix,expected='sys: '+body;
   // Isolated persisted history is seeded only after Gi has created its schema
   // and session. No live database, input handler or copy API is replaced.
@@ -26,9 +26,6 @@ for(const [width,height]of [[60,18],[100,22],[140,36]])for(const overflow of [fa
   launch();await wait(()=>cap().includes('sys: EDGE'),'seeded native history');type('draft β middle');keys('Left','Left','Left');await sleep(120);const baseline=JSON.stringify(bands());
   let lines=cap().split('\n'),y=lines.findIndex(l=>l.includes('sys: EDGE')),left=pad,right=pad+contentWidth-1;assert(y>=0,'row absent');
   tm('set-buffer','scrollbar-sentinel');
-  if(overflow){sgr(0,pad+contentWidth,y);sgr(32,left,y);sgr(0,left,y,'m');await sleep(100);assert(clipboard()==='scrollbar-sentinel','scrollbar-origin drag copied text');}
-  // Scrollbar may move the view; find a fresh visible identical row.
-  y=cap().split('\n').findIndex(l=>l.includes('sys: EDGE'));assert(y>=0,'row after scrollbar');
   tm('set-buffer','forward-sentinel');sgr(0,left,y);sgr(32,right,y);sgr(0,right,y,'m');await wait(()=>clipboard()===expected,'forward final cell copy');shot('selected');keys('Escape');await sleep(100);
   tm('set-buffer','reverse-sentinel');sgr(0,right,y);sgr(32,left,y);sgr(0,left,y,'m');await wait(()=>clipboard()===expected,'reverse final cell copy');keys('Escape');await sleep(100);
   assert(cap().replaceAll('▌','').includes('draft β middle'),'selection lost draft');type('X');await sleep(100);assert(cap().replaceAll('▌','').includes('draft β midXdle'),'selection moved cursor');keys('BSpace');

@@ -89,6 +89,8 @@ Makefile             canonical build/test/run interface
 
 ### 3. Test
 
+Run tests **one at a time** through the Makefile: `test*` targets run niced (`TEST_NICE`, default 10), make is `.NOTPARALLEL`, and Go tests use `-p=1`. Never launch several test suites in one command or in the background.
+
 **Every user-visible feature must have corresponding functional tests.**
 
 Before committing:

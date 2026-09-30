@@ -1,6 +1,15 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
+# Tests run one at a time at low CPU priority: no parallel make jobs, one
+# Go test package at a time, and every test recipe (plus the builds it
+# pulls in) under nice. Override with TEST_NICE=0.
+.NOTPARALLEL:
+TEST_NICE ?= 10
+test%: SHELL := /usr/bin/nice
+test%: .SHELLFLAGS := -n $(TEST_NICE) /usr/bin/env bash -c
+test%: export GOFLAGS += -p=1
+
 # ── Tool commands ───────────────────────────────────────────────────────
 
 GO ?= go

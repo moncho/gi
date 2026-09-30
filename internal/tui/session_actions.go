@@ -171,6 +171,10 @@ func (c *chatTUI) finishSessionMutation() {
 			}
 			delete(c.modelMenuValues, old)
 			c.modelMenuValues[label] = target
+			if c.modelMenuSessionRows != nil {
+				delete(c.modelMenuSessionRows, old)
+				c.modelMenuSessionRows[label] = c.sessionPickerRowFor(sess)
+			}
 			break
 		}
 	}

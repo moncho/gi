@@ -60,7 +60,7 @@ for(const mode of (process.env.GI_INDEX_TEST_MODE?[process.env.GI_INDEX_TEST_MOD
   await sleep(2100);assert(!capture().includes('refresh remains pending'),'late error leaked');sql("delete from workspace_index_leases where owner_token='held-peer'");
   open();await wait(()=>capture().includes('State: ready'),'open after busy');keys('Escape');await sleep(100);
   assert(count()==='12','busy close sent draft');
-  keys('Escape','s');await wait(()=>capture().includes('Select session'),'session selector after panel');await sleep(180);keys('Escape');await wait(()=>!capture().includes('Select session'),'close session selector');await sleep(180);
+  keys('Escape','s');await wait(()=>capture().includes('Resume Session'),'session selector after panel');await sleep(180);keys('Escape');await wait(()=>!capture().includes('Resume Session'),'close session selector');await sleep(180);
   assert(capture().replaceAll('▌','').includes('unsent index draft'),'selector lost draft');
   if(mode==='regular')writeFileSync(join(artifacts,`${mode}-${width}-pre-multiline.txt`),terminalHistory());
   keys('C-e','C-j');type('second line');await sleep(150);

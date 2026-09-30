@@ -73,7 +73,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   // Session changes label append-only history; editor snapshots stay local.
   const originId=sql('select id from sessions limit 1;');
   type('/fork regular-child');keys('Enter');await wait(()=>sql('select count(*) from sessions;')==='2','child created');
-  type('child draft');keys('M-s');await wait(()=>capture().includes('Select session'),'session selector');type('@agent');await sleep(150);keys('Enter');
+  type('child draft');keys('M-s');await wait(()=>capture().includes('Resume Session'),'session selector');type('@agent');await sleep(150);keys('Enter');
   await wait(()=>{const m=[...history().matchAll(/sys: session (\S+)/g)];return m.length>1&&m[m.length-1][1]===originId;},'origin selected');
   assert(!capture().includes('child draft'),'child editor leaked into origin');assert(history().includes('sys: session '),'session boundary missing');
   keys('C-d');await wait(()=>capture().includes('REGULAR EXITED'),'normal exit');assert(history().includes('NATIVE-LONG-01'),'exit erased scrollback');shot('exit');

@@ -226,9 +226,10 @@ type chatTUI struct {
 	regularResizeBase           int // height before the current resize burst
 	regularResizeBaseWidth      int
 	regularResizeWidthChanged   bool
-	regularResizePeak           int // tallest height during the burst
+	regularResizePeak           int    // tallest height during the burst
 	modelMenuScope              string // Pi selector scope: "scoped" or "all"
 	modelMenuDefault            string // saved default model (Pi's "default" badge)
+	modelMenuSessionRows        map[string]sessionPickerRow
 	slash                       slashMenu
 	slashLastText               string
 	footerUsage                 *footerUsageCache
@@ -1668,6 +1669,18 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 		return c.sessionRenameKeys()
 	}
 	if c.modelMenuOpen {
+		if c.modelMenuKind == "thinking" {
+			return gotui.KeyMap{
+				gotui.OnPreemptStop(gotui.KeyCtrlC, func(ke gotui.KeyEvent) { c.closeModelMenu() }),
+				gotui.OnPreemptStop(gotui.KeyEscape, func(ke gotui.KeyEvent) { c.closeModelMenu() }),
+				gotui.OnPreemptStop(gotui.Rune('s').Ctrl(), func(ke gotui.KeyEvent) { c.acceptThinkingMenuAsDefault() }),
+				gotui.OnPreemptStop(gotui.KeyUp, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(-1) }),
+				gotui.OnPreemptStop(gotui.KeyDown, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(1) }),
+				gotui.OnPreemptStop(gotui.KeyEnter, func(ke gotui.KeyEvent) { c.acceptModelMenuSelection() }),
+				gotui.OnPreemptStop(gotui.KeyBackspace, func(ke gotui.KeyEvent) { c.modelMenuBackspace() }),
+				gotui.OnFocused(gotui.AnyRune, func(ke gotui.KeyEvent) { c.modelMenuTypeRune(ke.Rune) }),
+			}
+		}
 		if c.modelMenuKind == "model" {
 			// Pi's selector: Escape/Ctrl+C cancel, Tab scope, Ctrl+S save default.
 			return gotui.KeyMap{
@@ -1841,12 +1854,14 @@ func (c *chatTUI) openSessionMenu() {
 	}
 	labels := make([]string, 0, len(sessions))
 	values := map[string]string{}
+	c.modelMenuSessionRows = map[string]sessionPickerRow{}
 	selected := 0
 	for i := range sessions {
 		sess := sessions[i]
 		label := c.sessionPickerLabel(&sess)
 		labels = append(labels, label)
 		values[label] = sess.ID
+		c.modelMenuSessionRows[label] = c.sessionPickerRowFor(&sess)
 		if sess.ID == c.sessionID {
 			selected = i
 		}
@@ -1957,6 +1972,7 @@ func (c *chatTUI) closeModelMenu() {
 	c.modelMenuError = ""
 	c.modelMenuKind = ""
 	c.modelMenuScope, c.modelMenuDefault = "", ""
+	c.modelMenuSessionRows = nil
 	c.modelMenuValues = nil
 	c.modelMenuChoices = nil
 	c.modelMenuAll = nil
@@ -2043,6 +2059,18 @@ func (c *chatTUI) modelMenuVisibleRows() int {
 	}
 	if width == 0 {
 		width = 80
+	}
+	// Pi's session selector and actions list replace the editor: their rows
+	// share the screen with the spacer and footer only.
+	if c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" {
+		chrome := 11
+		if c.modelMenuKind == "session-actions" {
+			chrome = 10
+		}
+		if !c.regularMode {
+			chrome += 1 + len(c.footerLines(width))
+		}
+		return max(1, min(6, height-chrome))
 	}
 	padding := 0 // Pi draws transcript, editor and footer edge to edge.
 	inputRows := 1
@@ -2170,12 +2198,16 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
-	if c.modelMenuKind == "model" {
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" {
 		width := c.currentContentWidth()
 		if c.app != nil {
 			width, _ = c.app.Size()
 		}
-		return len(c.piModelSelectorRows(width))
+		if c.modelMenuKind == "model" {
+			return len(c.piModelSelectorRows(width))
+		}
+		rows, _ := c.piMenuRows(width)
+		return len(rows)
 	}
 	rows := c.modelMenuVisibleRows()
 	if len(c.modelMenuChoices) < rows {
@@ -2188,6 +2220,9 @@ func (c *chatTUI) modelMenuHeight() int {
 func (c *chatTUI) renderModelMenu(width int) *gotui.Element {
 	if c.modelMenuKind == "model" {
 		return c.renderPiModelSelector(width)
+	}
+	if rows, ok := c.piMenuRows(width); ok {
+		return renderSpanRows(rows)
 	}
 	if c.modelMenuKind == "session-rename" {
 		return c.renderSessionRename(width)
@@ -3829,9 +3864,9 @@ func containsString(values []string, needle string) bool {
 }
 
 func (c *chatTUI) openThinkingMenu() {
-	choices := []string{"low", "medium", "high"}
+	choices := c.thinkingMenuLevels()
 	selected := 0
-	current := strings.ToLower(strings.TrimSpace(c.cfg.DefaultThinkingLevel))
+	current := c.effectiveThinking(c.cfg.DefaultProvider, c.cfg.DefaultModel, c.cfg.DefaultThinkingLevel)
 	for i, level := range choices {
 		if level == current {
 			selected = i
@@ -4222,7 +4257,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 		inputHeight = 1
 	}
 	// Pi's model selector replaces the editor (and its borders) while open.
-	piSelector := c.modelMenuOpen && c.modelMenuKind == "model"
+	piSelector := c.modelMenuOpen && c.modelMenuKind != "session-rename"
 	editorRows := inputHeight + 2
 	if piSelector {
 		editorRows = 0
@@ -4297,7 +4332,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	c.inputRegion = inputEl
 	switch {
 	case piSelector:
-		root.AddChild(c.renderPiModelSelector(contentWidth))
+		root.AddChild(c.renderModelMenu(contentWidth))
 		root.AddChild(c.renderFooter(contentWidth))
 		return root
 	case c.textSelection.active:

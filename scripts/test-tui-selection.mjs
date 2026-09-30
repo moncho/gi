@@ -73,7 +73,7 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   keys('Escape');await sleep(120);type('final unsent draft');
   // View/session transitions discard selections; returning preserves the draft.
   await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Clipboard off'),'selection before picker');
-  keys('M-s');await wait(()=>capture().includes('Select session'),'session picker');keys('Escape');await wait(()=>!capture().includes('Select session'),'picker closed');assert(!capture().includes('Selection'),'picker retained selection');
+  keys('M-s');await wait(()=>capture().includes('Resume Session'),'session picker');keys('Escape');await wait(()=>!capture().includes('Resume Session'),'picker closed');assert(!capture().includes('Selection'),'picker retained selection');
   assert(capture().replaceAll('▌','').includes('final unsent draft'),'picker lost editor');
   results.push(`${width}x${height}: native SGR double-word/triple-line/reverse-word and forward/reverse drag, default OSC52 release/Ctrl-C/Ctrl-X clipboard (unset mode), explicit opt-out, highlight/Escape/editor preservation, held edge autoscroll, resize/new-output invalidation; zero idle rows`);
  }catch(error){try{shot('failure')}catch{};try{writeFileSync(join(artifacts,`${width}-runtime.log`),readFileSync(join(dir,'runtime.log')))}catch{};throw error;}

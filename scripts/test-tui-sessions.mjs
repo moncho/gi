@@ -62,40 +62,40 @@ try {
     await waitFor(()=>capture().includes(`A draft ${label}`),'A draft');
     const before=await snapshot(`${label}-idle-draft`);
     keys('M-s');
-    await waitFor(()=>capture().includes('Select session'),'open selector');
+    await waitFor(()=>capture().includes('Resume Session'),'open selector');
     const open=await snapshot(`${label}-picker`);
     assert(selectorRows(open).length>0 && selectorRows(open).length<=6,`${label}: unbounded results`);
     assert(open.includes(`A draft ${label}`),`${label}: editor hidden by selector`);
     assert(separators(open).length===2,`${label}: selector added box/separator chrome`);
     type('no-matching-session-xyz');
-    await waitFor(()=>capture().includes('no matching sessions'),'empty-state noun');
+    await waitFor(()=>capture().includes('No sessions found'),'empty-state noun');
     keys('Escape');
-    await waitFor(()=>!capture().includes('Select session'),'close selector');
+    await waitFor(()=>!capture().includes('Resume Session'),'close selector');
     const after=await snapshot(`${label}-cancel`);
     assert(withoutCursor(before)===withoutCursor(after),`${label}: cancel changed layout/transcript/draft`);
-    keys('M-s'); await waitFor(()=>capture().includes('Select session'),'reopen');
+    keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'reopen');
     type('@other');
     await waitFor(()=>selectorRows(capture()).length===1,'filter other');
     keys('Enter');
-    await waitFor(()=>!capture().includes('Select session') && !capture().includes(`A draft ${label}`),'switch to B');
+    await waitFor(()=>!capture().includes('Resume Session') && !capture().includes(`A draft ${label}`),'switch to B');
     type(`B draft ${label}`);
-    keys('M-s'); await waitFor(()=>capture().includes('Select session'),'B picker');
+    keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'B picker');
     type('@agent'); await waitFor(()=>selectorRows(capture()).length===1,'filter main'); keys('Enter');
     await waitFor(()=>capture().includes(`A draft ${label}`),'restore A');
     await snapshot(`${label}-restored-A`);
-    keys('M-s'); await waitFor(()=>capture().includes('Select session'),'A picker');
+    keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'A picker');
     type('@other'); await waitFor(()=>selectorRows(capture()).length===1,'filter B'); keys('Enter');
     await waitFor(()=>capture().includes(`B draft ${label}`),'restore B');
     await snapshot(`${label}-restored-B`);
     keys('C-u'); // Clear B's unsent line, then return to A and clear it.
-    keys('M-s'); await waitFor(()=>capture().includes('Select session'),'return main picker');
+    keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'return main picker');
     type('@agent'); await waitFor(()=>selectorRows(capture()).length===1,'filter return'); keys('Enter');
     await waitFor(()=>capture().includes(`A draft ${label}`),'main restored'); keys('C-u');
     assert(sql('select count(*) from turns;')==='0',`${label}: picker submitted a prompt`);
     summaries.push(`${label}: <=6 results, exact cancel snapshot, A/B drafts, no submitted turns`);
   }
   // Resize while the popup is open: keep the selected tail row visible.
-  keys('M-s'); await waitFor(()=>capture().includes('Select session'),'resize picker'); keys('End');
+  keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'resize picker'); keys('End');
   for(const [width,height] of [[60,18],[100,22],[140,36]]) {
     tmux('resize-window','-t',target,'-x',String(width),'-y',String(height));
     const screen=await snapshot(`${width}x${height}-resize-open`);
@@ -132,9 +132,9 @@ try {
     assert(accepted.includes(`model draft ${label}`),`${label}: model selection consumed draft`);
     assert(JSON.stringify(separators(before))===JSON.stringify(separators(accepted)),`${label}: idle rows moved`);
     assert(withoutCursor(before.split('\n').slice(0,separators(before)[0]).join('\n'))===withoutCursor(accepted.split('\n').slice(0,separators(accepted)[0]).join('\n')),`${label}: picker wrote transcript noise`);
-    keys('M-s');await waitFor(()=>capture().includes('Select session'),'switch for model isolation');type('@other');await waitFor(()=>selectorRows(capture()).length===1,'other only');keys('Enter');
-    await waitFor(()=>!capture().includes('Select session')&&capture().includes('test-model'),'other keeps its model');
-    keys('M-s');await waitFor(()=>capture().includes('Select session'),'return to model origin');type('@agent');await waitFor(()=>selectorRows(capture()).length===1,'main only');keys('Enter');
+    keys('M-s');await waitFor(()=>capture().includes('Resume Session'),'switch for model isolation');type('@other');await waitFor(()=>selectorRows(capture()).length===1,'other only');keys('Enter');
+    await waitFor(()=>!capture().includes('Resume Session')&&capture().includes('test-model'),'other keeps its model');
+    keys('M-s');await waitFor(()=>capture().includes('Resume Session'),'return to model origin');type('@agent');await waitFor(()=>selectorRows(capture()).length===1,'main only');keys('Enter');
     await waitFor(()=>capture().includes(`model draft ${label}`)&&capture().includes('bootstrap'),'model and draft restored');keys('C-u');
     assert(readFileSync(join(temp,'.pi/settings.json'),'utf8')===settings,`${label}: global model config changed`);
     assert(sql('select count(*) from turns;')==='0',`${label}: model picker submitted turn`);

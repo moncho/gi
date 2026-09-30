@@ -299,11 +299,13 @@ func (c *chatTUI) ensureInput() {
 		if c.input.onChange == nil {
 			c.input.onChange = c.onInputChanged
 		}
+		c.input.onEdit = c.scrollTranscriptToBottom
 		c.input.onEscape = c.handleTranscriptEscape
 		c.bindTranscriptNavigation()
 		return
 	}
 	c.input = newMultilineInput(80, "Send a message…", c.onSubmit, c.onInputChanged)
+	c.input.onEdit = c.scrollTranscriptToBottom
 	c.input.onRestoreQueued = c.restoreQueuedDraft
 	c.input.onFollowUp = c.onFollowUp
 	c.input.onComplete = c.completeInputPath
@@ -326,8 +328,8 @@ func (c *chatTUI) onInputChanged(text string) {
 	if !c.historyApplying {
 		c.saveDurableDraft()
 	}
-	// Editing is independent of transcript navigation. Only readers already
-	// following the newest edge should move when the editor changes height.
+	// User edits resume following through onEdit. Programmatic restoration
+	// preserves the reader position unless already following the newest edge.
 	if c.stickToBottom {
 		c.scrollTranscriptToBottom()
 	}

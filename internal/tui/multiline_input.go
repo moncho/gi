@@ -36,6 +36,7 @@ type multilineInput struct {
 	// before the editor's own bindings (Pi's Editor autocomplete mode).
 	interceptKey func(gotui.Key) bool
 	onChange     func(string)
+	onEdit       func()
 	text         string
 	cursorPos    int
 	undoText     string
@@ -457,7 +458,7 @@ func (m *multilineInput) insertRune(ke gotui.KeyEvent) {
 	runes = append(runes[:pos], append([]rune{ke.Rune}, runes[pos:]...)...)
 	m.text = string(runes)
 	m.cursorPos = pos + 1
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) backspace() {
@@ -471,7 +472,7 @@ func (m *multilineInput) backspace() {
 	runes = append(runes[:pos-1], runes[pos:]...)
 	m.text = string(runes)
 	m.cursorPos = pos - 1
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) delete() {
@@ -484,7 +485,7 @@ func (m *multilineInput) delete() {
 	m.yankText = string(runes[pos : pos+1])
 	runes = append(runes[:pos], runes[pos+1:]...)
 	m.text = string(runes)
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) moveLeft() {
@@ -545,7 +546,7 @@ func (m *multilineInput) deleteWordBackward() {
 	m.yankText = string(runes[start:end])
 	m.text = string(append(runes[:start], runes[end:]...))
 	m.cursorPos = start
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) deleteWordForward() {
@@ -564,7 +565,7 @@ func (m *multilineInput) deleteWordForward() {
 	m.snapshotUndo()
 	m.yankText = string(runes[start:end])
 	m.text = string(append(runes[:start], runes[end:]...))
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) deleteToLineStart() {
@@ -577,7 +578,7 @@ func (m *multilineInput) deleteToLineStart() {
 	m.yankText = string(runes[:pos])
 	m.text = string(runes[pos:])
 	m.cursorPos = 0
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) deleteToLineEnd() {
@@ -589,7 +590,7 @@ func (m *multilineInput) deleteToLineEnd() {
 	m.snapshotUndo()
 	m.yankText = string(runes[pos:])
 	m.text = string(runes[:pos])
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func isWordSpace(r rune) bool { return r == ' ' || r == '\t' || r == '\n' || r == '\r' }
@@ -605,7 +606,7 @@ func (m *multilineInput) complete() {
 	m.snapshotUndo()
 	m.text = text
 	m.cursorPos = cursor
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) enter(ke gotui.KeyEvent) {
@@ -633,7 +634,7 @@ func (m *multilineInput) insertLiteral(r rune) {
 	runes = append(runes[:pos], append([]rune{r}, runes[pos:]...)...)
 	m.text = string(runes)
 	m.cursorPos = pos + 1
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) snapshotUndo() {
@@ -648,7 +649,7 @@ func (m *multilineInput) undo() {
 	}
 	m.text, m.undoText = m.undoText, m.text
 	m.cursorPos, m.undoCursor = m.undoCursor, m.clampCursor()
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) yank() {
@@ -662,7 +663,7 @@ func (m *multilineInput) yank() {
 	runes = append(runes[:pos], append(yankRunes, runes[pos:]...)...)
 	m.text = string(runes)
 	m.cursorPos = pos + len(yankRunes)
-	m.notifyChanged()
+	m.notifyEdited()
 }
 
 func (m *multilineInput) clampCursor() int {
@@ -674,6 +675,13 @@ func (m *multilineInput) clampCursor() int {
 		return count
 	}
 	return m.cursorPos
+}
+
+func (m *multilineInput) notifyEdited() {
+	if m.onEdit != nil {
+		m.onEdit()
+	}
+	m.notifyChanged()
 }
 
 func (m *multilineInput) notifyChanged() {

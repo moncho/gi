@@ -121,17 +121,32 @@ func TestVisibleTranscriptDoesNotMutateDraftLineIndex(t *testing.T) {
 	}
 }
 
-func TestInputChangeRespectsTranscriptFollowing(t *testing.T) {
+func TestInputChangeReturnsTranscriptToBottom(t *testing.T) {
 	c := &chatTUI{transcript: []string{"1", "2", "3", "4", "5", "6", "7", "8"}, transcriptScroll: 1}
 	c.ensureInput()
-	c.input.SetText("hello")
-	if c.stickToBottom || c.transcriptScroll != 1 {
-		t.Fatal("typing moved a history reader")
+	c.input.insertRune(gotui.KeyEvent{Rune: 'h'})
+	if !c.stickToBottom || c.transcriptScroll != c.transcriptMaxScroll() {
+		t.Fatal("typing did not return to the newest edge")
 	}
 	c.scrollTranscriptToBottom()
 	c.input.SetText("newer\ndraft")
 	if !c.stickToBottom || c.transcriptScroll != 4 {
 		t.Fatalf("newest-edge following lost: %d", c.transcriptScroll)
+	}
+}
+
+func TestInputRestorePreservesTranscriptPosition(t *testing.T) {
+	for _, restore := range []string{"history", "draft"} {
+		t.Run(restore, func(t *testing.T) {
+			c := &chatTUI{transcript: []string{"1", "2", "3", "4", "5", "6", "7", "8"}, transcriptScroll: 1}
+			c.ensureInput()
+			c.historyApplying = restore == "history"
+			c.draftApplying = restore == "draft"
+			c.input.SetText("restored text")
+			if c.stickToBottom || c.transcriptScroll != 1 {
+				t.Fatal("restoring input moved a history reader")
+			}
+		})
 	}
 }
 

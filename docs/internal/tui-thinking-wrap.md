@@ -29,3 +29,10 @@ visual test or a resolution claim for the separate emoji redraw issue.
 The full TUI suite currently fails `TestDurableHistoryDoesNotRecordRejectedRoute`
 on this branch's base (`b1355dc6`): its peer-routing rejection assumption conflicts
 with the new composer routing behavior. That test and routing code are untouched.
+
+## Composer navigation
+
+Editing new composer input returns the transcript to the bottom and resumes
+following new output. Programmatic history/draft restoration preserves a reader's
+scroll position. `TestInputChangeReturnsTranscriptToBottom` and
+`TestInputRestorePreservesTranscriptPosition` cover this distinction.

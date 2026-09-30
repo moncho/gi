@@ -206,6 +206,8 @@ The frozen catalogue contains 236 Classic scenario IDs (256 expanded cases) and 
 
 The `test-tui-smoke` target launches `gi -tui` inside tmux, captures the pane, submits input, verifies blur handling, exercises transcript scrolling keys, resizes the terminal, and writes pane captures plus session artifacts under `test-results/tui-smoke/`. Mouse click focus is covered in unit tests.
 
+The smoke workspace is isolated from `SMOKE_LOWER` (default `/workspace`) with a kernel overlay (`sudo -n`), falling back to `fuse-overlayfs`, a `--reflink=auto` copy (`SMOKE_COPY_LOWER=1`), or an empty scratch workspace where overlayfs, root or the lower directory are unavailable. The chosen mode is written to `test-results/tui-smoke/workspace-mode.txt`.
+
 ## Documentation
 
 See the [documentation index][docs], [feature and parity matrix][parity], and [implementation checklist][checklist]. The matrix covers browser behaviour, compact terminal adaptations and planned integrations separately.

@@ -19,6 +19,23 @@ export GOMAXPROCS := $(CPU_PROCS)
 export GOFLAGS += -p=$(CPU_PROCS)
 test%: export GOFLAGS := $(filter-out -p=%,$(GOFLAGS)) -p=1
 
+# ── Build cache ─────────────────────────────────────────────────────────
+# The Go build cache lives on disk, never on tmpfs: /tmp is RAM here, there
+# is no swap, and a pinned multi-GB cache starves the page cache (the VM's
+# memory balloon already takes a large share). It is trimmed back to empty
+# whenever it grows past GO_CACHE_MAX_MB; checked once per make invocation.
+GO_CACHE_MAX_MB ?= 1500
+export GOCACHE := $(or $(GI_GOCACHE),$(HOME)/.cache/go-build)
+ifneq ($(filter-out help status logs stop,$(or $(MAKECMDGOALS),help)),)
+_GO_CACHE_MB := $(shell du -sm "$(GOCACHE)" 2>/dev/null | cut -f1)
+ifneq ($(_GO_CACHE_MB),)
+ifeq ($(shell [ $(_GO_CACHE_MB) -gt $(GO_CACHE_MAX_MB) ] && echo over),over)
+$(info Go build cache $(_GO_CACHE_MB) MB > $(GO_CACHE_MAX_MB) MB: trimming)
+_ := $(shell GOCACHE="$(GOCACHE)" $(or $(GO),go) clean -cache)
+endif
+endif
+endif
+
 # The race detector needs a ThreadSanitizer-compatible address layout; some
 # kernels (e.g. 39/42-bit arm64 VMs) lack it. Probe once and drop -race there.
 ifndef RACE

@@ -240,7 +240,7 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	c.input.width = w
 	c.input.suspended = c.modelMenuOpen
 	footer := c.footerLines(w)
-	queue := c.pendingQueueLines(w, h)
+	queue := c.pendingDockLines(w, h)
 	// Pi's Spacer(1) above the editor (widget container).
 	widgets := append([]string{""}, c.extensionWidgetLines()...)
 	if c.editorAskActive {

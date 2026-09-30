@@ -2049,11 +2049,11 @@ func (c *chatTUI) modelMenuVisibleRows() int {
 	if c.input != nil {
 		input := *c.input
 		input.width = max(1, width-padding)
-		input.maxLines = editorViewportRows(height, height-padding-len(c.footerLines(width))-len(c.pendingQueueLines(width-padding, height))-len(c.extensionWidgetLines())-1-2-4-3)
+		input.maxLines = editorViewportRows(height, height-padding-len(c.footerLines(width))-len(c.pendingDockLines(width-padding, height))-len(c.extensionWidgetLines())-1-2-4-3)
 		inputRows = max(1, len(input.renderLines()))
 	}
 	// Leave transcript, editor/separators and the existing footer intact.
-	available := height - padding - len(c.footerLines(width)) - len(c.pendingQueueLines(width-padding, height)) - len(c.extensionWidgetLines()) - 1 - inputRows - 2 - 4 - 2
+	available := height - padding - len(c.footerLines(width)) - len(c.pendingDockLines(width-padding, height)) - len(c.extensionWidgetLines()) - 1 - inputRows - 2 - 4 - 2
 	return min(6, max(1, available))
 }
 
@@ -4172,7 +4172,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	c.input.width = contentWidth
 	c.input.suspended = c.workspaceIndex.active || c.modelMenuOpen
 	footerLines := c.footerLines(contentWidth)
-	pendingLines := c.pendingQueueLines(contentWidth, h)
+	pendingLines := c.pendingDockLines(contentWidth, h)
 	// Pi's widget container above the editor always starts with Spacer(1),
 	// leaving one blank row between the transcript and the input.
 	widgetLines := append([]string{""}, c.extensionWidgetLines()...)

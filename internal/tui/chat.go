@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"log"
 	"errors"
 	"context"
 	"database/sql"
@@ -51,6 +52,9 @@ func RunMode(dbPath, workspace, model, mode string) error {
 	if model != "" {
 		cfg.DefaultModel = model
 	}
+	// Pick Pi's theme for this terminal before the UI owns input (issue #12).
+	themeName := initPiTheme(cfg.Theme)
+	log.Printf("tui theme: %s (setting %q)", themeName, cfg.Theme)
 
 	s, err := store.Open(dbPath)
 	if err != nil {

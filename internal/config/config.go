@@ -33,6 +33,8 @@ type RuntimeConfig struct {
 	EnabledModelsConfigured bool `json:"-"`
 	// TUIWheelScrollLines is Pi's fullscreenWheelScrollLines; 0 means "auto".
 	TUIWheelScrollLines int                    `json:"tui_wheel_scroll_lines"`
+	// Theme is Pi's theme setting (project .pi/settings.json, else global).
+	Theme string `json:"theme,omitempty"`
 	Compaction          CompactionSettings     `json:"compaction"`
 	Retry               ProviderRetrySettings  `json:"retry"`
 	Hooks               HookSettings           `json:"hooks"`
@@ -102,6 +104,9 @@ type WorkspaceIndexSettings struct {
 }
 
 type piSettings struct {
+	// Theme is Pi's theme setting: a theme name ("dark", "light", custom) or
+	// an auto pair "light/dark" resolved by the terminal's detected scheme.
+	Theme                string   `json:"theme"`
 	DefaultProvider      string   `json:"defaultProvider"`
 	DefaultModel         string   `json:"defaultModel"`
 	DefaultThinkingLevel string   `json:"defaultThinkingLevel"`
@@ -161,6 +166,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.Session = ps.Session
 		cfg.Routing = ps.Routing
 		cfg.WorkspaceIndex = ps.WorkspaceIndex
+		cfg.Theme = strings.TrimSpace(ps.Theme)
 	}
 	applyGlobalPiSettings(&cfg)
 	if discovery, err := skills.Discover(workspaceRoot); err == nil {
@@ -333,6 +339,9 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	}
 	if cfg.TUIWheelScrollLines == 0 {
 		cfg.TUIWheelScrollLines = wheelScrollLines(global.FullscreenWheelScrollLines)
+	}
+	if cfg.Theme == "" {
+		cfg.Theme = strings.TrimSpace(global.Theme)
 	}
 	if len(cfg.EnabledModels) == 0 && len(global.EnabledModels) > 0 {
 		cfg.EnabledModels = append([]string(nil), global.EnabledModels...)

@@ -31,18 +31,19 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   tmux('set-option','-s','set-clipboard','on');tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   for(let i=1;i<=22;i++){type(`SELECT-${String(i).padStart(2,'0')} unicode 中文🙂`);keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='completed';")===String(i),'native history');}
   type('newer selection draft');keys('Left','Left','Left');keys('Home');await wait(()=>capture().includes('SELECT-01'),'top');
-  const baseline=shot('before'),idleBars=bars(baseline),lines=baseline.split('\n'),row=lines.findIndex(l=>l.includes('SELECT-01')),col=lines[row].indexOf('you:'),secondRow=lines.findIndex(l=>l.includes('you: SELECT-02'));
-  assert(secondRow>row,'second prompt must be visible for padded drag');
+  const baseline=shot('before'),idleBars=bars(baseline),lines=baseline.split('\n'),row=lines.findIndex(l=>l.includes('SELECT-01')),col=lines[row].indexOf('SELECT-01'),secondRow=lines.findIndex(l=>l.includes('Gi received: SELECT-01'));
+  // Pi spacing puts the next prompt off a small screen; drag to the reply instead.
+  assert(secondRow>row,'reply must be visible for padded drag');
   // Native rapid SGR click sequence: no synthetic click-count field.
-  const wordCol=lines[row].indexOf('SELECT-01')+2;
+  const wordCol=lines[row].indexOf('SELECT-01')+2,replyCol=lines[secondRow].indexOf('SELECT-01')+2;
   const clickBytes=(x,y)=>`\x1b[<0;${x+1};${y+1}M\x1b[<0;${x+1};${y+1}m`;
   tmux('set-buffer','word sentinel');sequence(clickBytes(wordCol,row)+clickBytes(wordCol+1,row));await wait(()=>clip()==='SELECT-01','double-click word');shot('word');
-  keys('Escape');await wait(()=>!capture().includes('Selection'),'clear before triple');sequence(clickBytes(wordCol,row).repeat(3));await wait(()=>clip().includes('you: SELECT-01 unicode 中文🙂'),'triple-click line');shot('line');keys('Escape');await wait(()=>!capture().includes('Selection'),'clear word/line');
-  tmux('set-buffer','reverse word sentinel');sequence(clickBytes(wordCol,secondRow)+`\x1b[<0;${wordCol+1};${secondRow+1}M`);mouse(32,wordCol,row);mouse(0,wordCol,row,true);await wait(()=>clip().startsWith('SELECT-01')&&clip().endsWith('SELECT-02'),'reverse word-range drag');keys('Escape');await wait(()=>!capture().includes('Selection'),'clear word drag');
+  keys('Escape');await wait(()=>!capture().includes('Selection'),'clear before triple');sequence(clickBytes(wordCol,row).repeat(3));await wait(()=>clip().includes('SELECT-01 unicode 中文🙂'),'triple-click line');shot('line');keys('Escape');await wait(()=>!capture().includes('Selection'),'clear word/line');
+  tmux('set-buffer','reverse word sentinel');sequence(clickBytes(replyCol,secondRow)+`\x1b[<0;${replyCol+1};${secondRow+1}M`);mouse(32,wordCol,row);mouse(0,wordCol,row,true);await wait(()=>clip().startsWith('SELECT-01')&&clip().includes('received')&&clip().endsWith('SELECT-01'),'reverse word-range drag');keys('Escape');await wait(()=>!capture().includes('Selection'),'clear word drag');
   assert(JSON.stringify(bars(capture()))===JSON.stringify(idleBars),'word selection added rows');
   tmux('set-buffer','sentinel');await drag(col,row,col+24,secondRow);await wait(()=>capture().includes('Selection sent to terminal (OSC 52)'),'release copy');
-  const copied=clip();assert(copied.includes('SELECT-01')&&copied.includes('SELECT-02'),'copy missing native rows');assert(!copied.includes('\x1b'),'ANSI in copied selection');
-  assert(ansi().includes('48;2;212;212;212'),'highlight absent');shot('selected');
+  const copied=clip();assert(copied.includes('SELECT-01')&&copied.includes('Gi received'),'copy missing native rows');assert(!copied.includes('\x1b'),'ANSI in copied selection');
+  assert(ansi().includes('48;2;222;224;225'),'highlight absent');shot('selected');
   tmux('set-buffer','reset');keys('C-c');await wait(()=>clip()===copied,'Ctrl-C selection copy');keys('C-x');await wait(()=>clip()===copied,'Ctrl-X selection copy');
   keys('Escape');await wait(()=>!capture().includes('Selection'),'Escape clears');
   assert(JSON.stringify(bars(capture()))===JSON.stringify(idleBars),'selection added idle rows');
@@ -64,9 +65,9 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   assert(capture().replaceAll('▌','').includes('newer active draft'),'arrival lost editor');
   assert(sql("select count(*) from messages where role='user';")==='23','selection submitted draft');shot('completed');
   // A normal click still expands a tool, without clipboard writes.
-  keys('End','C-a','C-k');type("!!for i in $(seq 1 24); do printf 'TOOL-%02d\\n' $i; done");keys('Enter');await wait(()=>capture().includes('F8 expand'),'collapsed tool');
-  const toolRow=capture().split('\n').findIndex(l=>l.includes('F8 expand'));tmux('set-buffer','click unchanged');
-  mouse(0,col+3,toolRow);await sleep(150);mouse(0,col+3,toolRow,true);await wait(()=>capture().includes('F8 collapse'),'plain click expands');assert(clip()==='click unchanged','click copied text');
+  keys('End','C-a','C-k');type("!!for i in $(seq 1 24); do printf 'TOOL-%02d\\n' $i; done");keys('Enter');await wait(()=>capture().includes('to expand)'),'collapsed tool');
+  const toolRow=capture().split('\n').findIndex(l=>l.includes('to expand)'));tmux('set-buffer','click unchanged');
+  mouse(0,col+3,toolRow);await sleep(150);mouse(0,col+3,toolRow,true);await wait(()=>capture().includes('to collapse)'),'plain click expands');assert(clip()==='click unchanged','click copied text');
   // Clipboard opt-out is respected by drag release too.
   type('/copy --off --persist');keys('Enter');await wait(()=>capture().includes('clipboard unavailable'),'clipboard off');
   keys('Home');await wait(()=>capture().includes('SELECT-01'),'top off');await drag(col,row,col+12,row+1);await wait(()=>capture().includes('Clipboard off'),'opt-out feedback');assert(clip()==='click unchanged','opt-out emitted OSC52');

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -33,32 +32,6 @@ func ScriptWithPayload(engine, name string, payload map[string]any, script strin
 		return fmt.Sprintf("(def *gi-%s* (walk/keywordize-keys (json/read-string %q)))\n%s", name, string(b), script)
 	}
 	return fmt.Sprintf("gi.%s = %s; gi.%sPayload = gi.%s; gi.toolArgs = (gi.tool && gi.tool.arguments) || {};\n%s", name, string(b), name, name, script)
-}
-
-func ExecuteRead(ctx context.Context, workspaceRoot string, s *store.Store, call goai.ToolCall) (string, error) {
-	path, _ := call.Arguments["path"].(string)
-	if path == "" {
-		return "", fmt.Errorf("read: path is required")
-	}
-	resolved, err := ResolveToolPath(workspaceRoot, path, false)
-	if err != nil {
-		return "", err
-	}
-	if resolved.IsVFS() {
-		if resolved.VFSNamespace == "fts" {
-			return ReadFTSQuery(ctx, workspaceRoot, s, resolved.VFSPath)
-		}
-		_, raw, err := s.GetVFSFileContent(ctx, resolved.VFSNamespace, resolved.VFSPath)
-		if err != nil {
-			return "", err
-		}
-		return string(raw), nil
-	}
-	content, err := os.ReadFile(resolved.WorkspacePath)
-	if err != nil {
-		return "", err
-	}
-	return string(content), nil
 }
 
 func ExecuteWrite(ctx context.Context, cfg config.RuntimeConfig, s *store.Store, call goai.ToolCall) (string, error) {

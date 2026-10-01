@@ -4028,14 +4028,14 @@ func (e *Engine) registerDefaultTools() {
 	must(tools.MessagesTool())
 	must(tools.RegisteredTool{
 		Name:        "read",
-		Description: "Read text content from a workspace file. Supports workspace-relative paths and vfs:// paths.",
-		Parameters:  json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"Workspace-relative path or vfs://namespace/path"}},"required":["path"]}`),
+		Description: tools.ReadToolDescription,
+		Parameters:  json.RawMessage(tools.ReadToolParameters),
 		Source:      "builtin",
 		Kind:        "read-only",
 		Weight:      "lightweight",
 		Activation:  "default",
 		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
-			return tools.ExecuteRead(ctx, rt.WorkspaceRoot, rt.Store, call)
+			return tools.ExecuteReadTool(ctx, rt, call)
 		},
 	})
 	must(tools.RegisteredTool{

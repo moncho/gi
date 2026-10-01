@@ -59,31 +59,96 @@ Pi's MCP and codemode behaviour is documented in its `docs/mcp.md` and in
 | stdio MCP broker on the official Go SDK (`modelcontextprotocol/go-sdk` v1.8.0): lazy connections, allowlists, `mcp__server__tool` naming, bounded frames and output, process-group stop | `feat/joker-mcp-codemode`: `internal/codemode` (unformatted prototype; its own config format; no CLI wiring yet) | Rewrite against Pi's `mcp.json` format and move into `internal/mcp`. Keep the bounds and the process handling. |
 | Tool registry and turn pipeline (hooks, events, audit) | `internal/tools`, `internal/turn` | MCP and codemode tools register here, so hooks and permissions apply as in Pi. |
 
-## Decision needed: the codemode language
+## Decisions (2026-10-01)
 
-Two options:
+- **Engine:** codemode ships on **QuickJS under wazero**, which gives Pi
+  parity: the same JavaScript script API and `// @options` grammar.
+  `quickjs-wasi` 3.6.2 is MIT-licensed and 637 KB. It needs six `env` imports
+  (`host_call`, `host_interrupt`, …) and six WASI calls, and exports the
+  QuickJS C API.
+- **Joker:** supported later, through the roadmap below, preferably by
+  compiling Joker scripts to WASM with Joker's own compiler.
+- **Toggle:** codemode is optional, as in Pi (see *Toggling codemode*).
+- **Web tests:** browser (Playwright) tests are not run on this machine.
+  Acceptance uses Go and terminal (PTY) tests here.
 
-1. **QuickJS under wazero.** This is the recommended option.
-   - **Exact parity:** it runs the same JavaScript, the same script API and the
-     same `// @options` grammar as Pi.
-   - **Same model behaviour:** models already know how to write this script
-     format for Pi.
-   - **Small:** `quickjs-wasi` 3.6.2 is MIT-licensed and 637 KB. It needs only
-     six `env` host imports (`host_call`, `host_interrupt`, …) and six WASI
-     calls, and exports the QuickJS C API (450 functions).
-   - **Cost:** gi must drive that C API from Go, porting what pi-codemode's
-     worker does.
-2. **Joker under wazero.** This is gi's own scripting language, and the probe
-   exists.
-   - **Not Pi-compatible:** scripts would differ from Pi's, and the model
-     prompts and script grammar would have to be gi-specific.
-   - **Heavier:** a whole-interpreter guest that needs a source overlay to
-     compile.
-   - **Unmeasured:** startup and throughput have not been measured.
+## Engine-neutral host interface
 
-The recommendation is option 1 for the `codemode` tool. Keep the Joker WASI probe
-as evidence of sandboxing and as a possible future engine for gi-specific
-scripting.
+Both engines talk to the same host. The guest side is engine-specific; the host
+side is shared.
+
+- **Host functions:**
+  - `tool_call(name, argsJSON) -> resultJSON | error`, which goes through the
+    tool pipeline and its hooks, with `parentToolCallId`.
+  - `text`, `image`, `store`/`load`, `search_tools`, `describe_tool`,
+    `describe_namespace`, and `exit`.
+- **Host-enforced limits:** deadline and cancellation, guest memory ceiling,
+  and caps on output and store size. Results are encoded as JSON.
+
+The QuickJS guest maps these onto Pi's JavaScript globals. A Joker guest maps
+them onto a `codemode` namespace. The tool description, declarations and result
+rendering come from the host and are shared by both.
+
+## Joker roadmap
+
+Joker's compiler today lowers IR to WASM only for **pure numeric functions**
+(`core/wasm` eligibility; `joker.jit/compile-wasm`). There is also an
+`EligibleWithImports` variant that can call host imports. Model-written scripts
+use strings, collections and tool calls, so the backend has to grow first.
+
+1. **J1, interim interpreter guest.** Reuse the merged probe: the whole Joker
+   interpreter built for `wasip1` with the bootstrap overlay. Add the shared
+   host interface as WASI host imports and offer it as an engine option
+   (`codemode.engine: "joker"`). This proves the interface works and gives a
+   performance baseline; startup and memory are expected to be heavy.
+2. **J2, extend Joker's WASM backend** (in go-joker).
+   - Represent values in linear memory, or as host handles, so strings,
+     keywords, vectors and maps can be compiled.
+   - Lower calls to `codemode` functions into host imports, building on
+     `EligibleWithImports`.
+   - Define a stable import ABI that matches the host interface above.
+3. **J3, per-script compilation.**
+   - Compile each model-written Joker script into a small WASM module whose
+     only imports are the codemode host functions; no interpreter in the guest.
+   - Scripts the compiler can't handle fall back to the J1 interpreter guest,
+     mirroring Joker's WASM → typed IR → boxed IR → tree-walker chain.
+   - Cache compiled modules by content hash.
+4. **J4, parity and defaults.**
+   - Run the codemode golden tests against both engines.
+   - Add model prompts for Joker scripts.
+   - QuickJS stays the default for Pi parity.
+
+The model-facing tool stays `codemode` with JavaScript unless the engine setting
+selects Joker, in which case its description and declarations switch to Joker.
+
+## Toggling codemode
+
+Codemode is optional in Pi, and gi follows the same settings: user settings,
+then project settings applied on top.
+
+- `defaultTools`: `"+codemode"` / `"-codemode"` add or remove it. A list
+  containing only `+`/`-` entries edits the inherited selection; plain names
+  replace it.
+- `autoEnableCodemode: false` (beside `mcpServers`) stops it being activated
+  automatically when a server with `codemode` exposure connects.
+- `codemode.mode`:
+  - `on` (the default): declared tools also get a codemode declaration;
+  - `only`: tools are reached only through codemode.
+- `codemode.inlineBudget`: the token budget for declarations listed in its
+  description.
+- `"extensions": ["-builtin:codemode"]` disables the built-in implementation.
+
+gi adds a runtime toggle that Pi does not have as a command:
+
+- `/codemode [on|off|only|status]` switches it for the current session. The
+  choice is stored in the session state, so it survives restarts and
+  `/resume`.
+- `/tools activate|deactivate codemode` does the same through the tool
+  selection.
+- The web settings pane gets the same switch.
+
+When codemode is off and MCP tools have `codemode` exposure, gi warns once
+(like Pi) that they cannot be called, unless `tool_search` is active.
 
 ## Phases
 
@@ -108,7 +173,8 @@ Each phase lands with its own tests, through the Makefile, sequentially.
    - Search ranked by server description and tool metadata.
    - Tools it loads are recorded in the transcript and stay declared on that
      branch.
-4. **Codemode engine (`internal/codemode`, QuickJS on wazero)**
+4. **Codemode engine (`internal/codemode`, QuickJS on wazero), through the
+   engine-neutral host interface**
    - Embed `quickjs.wasm`.
    - Run one module instance per execution, with memory limits, a deadline via
      `host_interrupt`, and context cancellation.
@@ -118,10 +184,11 @@ Each phase lands with its own tests, through the Makefile, sequentially.
    - Use JSON round-trips for arguments and results.
    - Bound output and store sizes (`MAX_STORE_*`).
    - Port pi-codemode's behavioural tests as golden cases.
-5. **The `codemode` tool and its activation**
+5. **The `codemode` tool, its activation and the toggles**
    - Generate TypeScript declarations from tool schemas.
-   - Activate automatically when a server with codemode exposure connects;
-     respect `autoEnableCodemode` and `defaultTools: ["+codemode"]`.
+   - Activate automatically when a server with codemode exposure connects.
+   - Honour every setting in *Toggling codemode*, plus `/codemode` and the
+     web switch.
    - Nested calls go through the tool pipeline with `parentToolCallId`.
    - Show it in TUI and web tool blocks.
 6. **OAuth and the UI**
@@ -130,11 +197,13 @@ Each phase lands with its own tests, through the Makefile, sequentially.
    - `/mcp` in the TUI and web UI.
    - The `gi mcp …` CLI.
 7. **Acceptance**
-   - Terminal tests and Playwright tests against fake stdio and HTTP servers.
+   - Go and terminal (PTY) tests against fake stdio and HTTP servers. No web
+     tests on this machine.
    - Hostile-script tests: infinite loops, memory exhaustion, huge output,
      forged tool names.
    - Measure startup and per-call latency.
    - Document everything in `docs/internal/` and the README.
+8. **Joker engine: J1–J4** from the roadmap above.
 
 ## Security notes
 

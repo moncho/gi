@@ -1139,3 +1139,14 @@ test-tui-tool-syntax-pty:
 	@mkdir -p $(BIN_DIR)
 	$(GO) test -c -o $(BIN_DIR)/gi-tool-syntax-test ./internal/tui
 	$(BUN) scripts/test-tui-tool-syntax.mjs
+
+.PHONY: fmt-pi-scroll test-pi-scroll test-go-tui-runtime
+fmt-pi-scroll:
+	$(GO) fmt ./internal/tui
+	cd third_party/go-tui && $(GO) fmt .
+
+test-pi-scroll:
+	$(GO) test $(RACE) ./internal/tui -run 'Test(PiRow|Wheel|TerminalWheel|MarkdownTableScroll)' -count=1
+
+test-go-tui-runtime:
+	cd third_party/go-tui && $(GO) test $(RACE) . ./internal/... -count=1

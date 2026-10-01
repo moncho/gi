@@ -106,3 +106,6 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 )
+
+// Runtime-only go-tui fork: opt-in Pi-style changed-row redraws.
+replace github.com/grindlemire/go-tui => ./third_party/go-tui

@@ -39,3 +39,41 @@ func TestWheelAcceleratorMatchesPi(t *testing.T) {
 		t.Fatal("fixed lines")
 	}
 }
+
+func TestTerminalWheelAccelerationMatchesPi(t *testing.T) {
+	for _, platform := range []string{"darwin", "linux", "windows"} {
+		for _, ssh := range []string{"", "SSH_CONNECTION", "SSH_CLIENT", "SSH_TTY"} {
+			lookup := func(name string) (string, bool) { return "", name == ssh }
+			want := platform == "darwin" && ssh == ""
+			if got := terminalAcceleratesWheel(platform, lookup); got != want {
+				t.Fatalf("%s %s: got %v want %v", platform, ssh, got, want)
+			}
+		}
+	}
+	base := time.Unix(1000, 0)
+	w := wheelAccelerator{terminalAccelerated: true}
+	for i := 0; i < 10; i++ {
+		if got := w.next(1, base.Add(time.Duration(i)*20*time.Millisecond)); got != 1 {
+			t.Fatalf("double acceleration: %d", got)
+		}
+	}
+	w.lines = 3
+	if got := w.next(1, base); got != 3 {
+		t.Fatalf("fixed override: %d", got)
+	}
+}
+
+func TestWheelSettingChangeResetsGesture(t *testing.T) {
+	base := time.Unix(1000, 0)
+	w := wheelAccelerator{}
+	w.next(1, base)
+	w.next(1, base.Add(20*time.Millisecond))
+	w.configure(3)
+	if !w.last.IsZero() || w.carry != 0 || w.averageGap != 0 {
+		t.Fatal("setting kept gesture")
+	}
+	w.configure(0)
+	if got := w.next(1, base.Add(40*time.Millisecond)); got != 1 {
+		t.Fatalf("new gesture: %d", got)
+	}
+}

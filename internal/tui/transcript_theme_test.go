@@ -73,7 +73,7 @@ func TestPiTranscriptRenderedScrollBounds(t *testing.T) {
 		}
 		root.ScrollTo(0, maxY)
 		c.pageTranscript(-1)
-		if c.transcriptScroll != max(0, maxY-9) || c.stickToBottom {
+		if c.transcriptScroll != max(0, maxY-6) || c.stickToBottom {
 			t.Fatal("page lost rendered offset", c.transcriptScroll, maxY)
 		}
 		c.scrollTranscriptToTop()

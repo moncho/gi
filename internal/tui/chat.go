@@ -99,7 +99,7 @@ func runWithEngineMode(s *store.Store, engine *turn.Engine, cfg config.RuntimeCo
 		regularMode:   regular,
 	}
 
-	options := []gotui.AppOption{gotui.WithLegacyKeyboard()}
+	options := []gotui.AppOption{gotui.WithLegacyKeyboard(), gotui.WithRowRedraw()}
 	if regular {
 		options = append(options, gotui.WithInlineHeight(5), gotui.WithPostRenderHook(chat.flushRegularTranscript))
 	} else {
@@ -2552,7 +2552,7 @@ func (c *chatTUI) handleTranscriptScrollEvent(me gotui.MouseEvent) bool {
 	if me.Button == gotui.MouseWheelUp {
 		direction = -1
 	}
-	c.wheel.lines = c.cfg.TUIWheelScrollLines
+	c.wheel.configure(c.cfg.TUIWheelScrollLines)
 	c.scrollTranscript(direction * c.wheel.next(direction, time.Now()))
 	return true
 }
@@ -5616,7 +5616,8 @@ func (c *chatTUI) scrollTranscript(delta int) {
 }
 
 func (c *chatTUI) pageTranscript(delta int) {
-	step := c.transcriptViewportHeight() - 1
+	// Pi keeps four rows of context when paging.
+	step := c.transcriptViewportHeight() - 4
 	if step < 1 {
 		step = 1
 	}

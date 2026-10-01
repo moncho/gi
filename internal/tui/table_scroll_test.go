@@ -12,7 +12,7 @@ import (
 	"github.com/rcarmo/gi/internal/config"
 )
 
-// Exercises real ANSI frame diffs, rather than comparing two width calculations
+// Exercises production Pi-style changed-row ANSI output, rather than comparing two width calculations
 // from the same renderer. Each test owns its tmux server and never touches the
 // user's terminal or sessions.
 func TestMarkdownTableScrollTerminal(t *testing.T) {
@@ -73,8 +73,7 @@ func testMarkdownTableScrollTerminal(t *testing.T, width int) {
 		buffer.Clear()
 		root.Calculate(width, 24)
 		gotui.RenderTree(buffer, root)
-		term.Flush(buffer.Diff())
-		buffer.Swap()
+		gotui.RenderRows(term, buffer, step == 0)
 		want := normalize(buffer.StringTrimmed())
 		var got string
 		deadline := time.Now().Add(time.Second)

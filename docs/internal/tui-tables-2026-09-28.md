@@ -117,3 +117,10 @@ Ghostty is not installed in this development environment. The direct Ghostty
 scroll reproduction and visual acceptance are **pending**; passing buffer or
 tmux tests must not be reported as Ghostty verification. The active Gi binary
 was not changed or restarted by this worktree.
+
+## Pi-style row redraw follow-up
+
+Fullscreen now uses Pi's changed-row clear/repaint method rather than partial
+cell diffs; see [the current scrolling contract](tui-pi-scrolling.md). The table
+scroll regression now exercises that production output function. Earlier passing
+tmux captures remain evidence only for tmux, not visual acceptance in Ghostty.

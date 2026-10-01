@@ -1,0 +1,744 @@
+package tui
+
+import (
+	"strings"
+
+	"github.com/grindlemire/go-tui/internal/debug"
+)
+
+// inheritedStyle carries cascading visual properties down the element tree.
+// Text style (Fg, Attrs) and background color cascade from parent to child.
+// Each field is only used when the child does not explicitly set its own value.
+type inheritedStyle struct {
+	textStyle Style
+	bg        *Style // nil = no inherited background
+}
+
+// effectiveStyles returns the resolved text style and background for an element,
+// taking inheritance into account. If the element explicitly set its textStyle,
+// that is used; otherwise the inherited textStyle is used. Similarly for background.
+//
+// Automatic contrast: If the background is light and no explicit foreground color
+// is set, the foreground is automatically set to black for readability.
+func effectiveStyles(e *Element, inherited inheritedStyle) (textStyle Style, bg *Style) {
+	if e.textStyleSet {
+		textStyle = e.textStyle
+	} else {
+		textStyle = inherited.textStyle
+	}
+
+	if e.background != nil {
+		bg = e.background
+	} else {
+		bg = inherited.bg
+	}
+
+	// Auto-contrast: if background is light and foreground is default, use black text
+	if bg != nil && !bg.Bg.IsDefault() && textStyle.Fg.IsDefault() && bg.Bg.IsLight() {
+		textStyle.Fg = Black
+	}
+
+	return textStyle, bg
+}
+
+// renderContext holds resolved state for rendering an element.
+type renderContext struct {
+	textStyle      Style
+	bg             *Style
+	childInherited inheritedStyle
+}
+
+// resolveRenderContext resolves effective styles and builds child inherited style.
+// Handles style inheritance and <th> bold default.
+func resolveRenderContext(e *Element, inherited inheritedStyle) renderContext {
+	textStyle, bg := effectiveStyles(e, inherited)
+	if e.tag == "th" && !e.textStyleSet {
+		textStyle = textStyle.Bold()
+	}
+	return renderContext{
+		textStyle: textStyle,
+		bg:        bg,
+		childInherited: inheritedStyle{
+			textStyle: textStyle,
+			bg:        bg,
+		},
+	}
+}
+
+// RenderTree traverses the Element tree and renders to the buffer.
+// This renders the element and all its descendants.
+func RenderTree(buf *Buffer, root *Element) {
+	renderElement(buf, root, inheritedStyle{})
+}
+
+// renderElement renders a single element and recurses to its children.
+func renderElement(buf *Buffer, e *Element, inherited inheritedStyle) {
+	if e.hidden {
+		return
+	}
+
+	// Call pre-render hook for custom update logic (polling, animations, etc.)
+	if e.onUpdate != nil {
+		e.onUpdate()
+	}
+
+	e.reportLayout()
+
+	rect := e.Rect()
+
+	// Skip if outside buffer bounds
+	bufRect := buf.Rect()
+	if !rect.Intersects(bufRect) {
+		return
+	}
+
+	// Use custom render hook if set (used by wrappers)
+	if e.onRender != nil {
+		e.onRender(e, buf)
+		return
+	}
+
+	// Resolve effective styles (inheritance + <th> bold)
+	rc := resolveRenderContext(e, inherited)
+
+	// Handle HR specially - draws a horizontal line and returns (no children)
+	if e.hr {
+		renderHR(buf, e, rc.textStyle)
+		return
+	}
+
+	// 1. Fill background
+	if e.bgGradient != nil {
+		bgStyle := NewStyle()
+		if rc.bg != nil {
+			bgStyle = *rc.bg
+		}
+		buf.FillGradient(rect, ' ', *e.bgGradient, bgStyle)
+	} else if rc.bg != nil {
+		buf.Fill(rect, ' ', *rc.bg)
+	}
+
+	// Debug: highlight containers whose children overflow
+	if debug.OverflowHighlight() && !e.IsScrollable() && len(e.children) > 0 {
+		contentRect := e.ContentRect()
+		for _, child := range e.children {
+			if !contentRect.ContainsRect(child.Rect()) {
+				debugBg := NewStyle().Background(BrightRed)
+				buf.Fill(rect, ' ', debugBg)
+				break
+			}
+		}
+	}
+
+	if e.border != BorderNone {
+		if e.borderGradient != nil {
+			DrawBoxGradient(buf, rect, e.border, *e.borderGradient, e.activeBorderStyle())
+		} else {
+			DrawBox(buf, rect, e.border, e.activeBorderStyle())
+		}
+		if e.borderTitle != "" {
+			drawBoxTitle(buf, rect, e.borderTitle, e.titleStyle(), e.borderTitleAlign)
+		}
+	}
+
+	// 3. Draw text content if present
+	if e.text != "" || len(e.richText) > 0 {
+		renderTextContent(buf, e, rc.textStyle, rc.bg)
+	}
+
+	// 4. Render children (with scroll handling if scrollable, or clipping if overflow-hidden)
+	if e.IsScrollable() {
+		renderScrollableChildren(buf, e, rc.childInherited)
+	} else if e.overflow == OverflowHidden {
+		clipRect := e.ContentRect()
+		for _, child := range e.children {
+			if child.overlay {
+				continue
+			}
+			renderClippedElement(buf, child, clipRect, 0, 0, clipRect.X, clipRect.Y, rc.childInherited)
+		}
+	} else {
+		for _, child := range e.children {
+			if child.overlay {
+				continue
+			}
+			renderElement(buf, child, rc.childInherited)
+		}
+	}
+
+	// Capture the cursor at its draw site (after children, so a scrollable's
+	// scrollbar state is settled). The content origin is absolute here; a
+	// scrollable also clips its own cursor to its viewport (gutter-aware).
+	if e.cursorSource != nil {
+		cr := e.ContentRect()
+		clip := buf.Rect()
+		if e.IsScrollable() {
+			viewport := cr
+			if e.needsVerticalScrollbar() {
+				viewport.Width = max(0, viewport.Width-1)
+			}
+			clip = clip.Intersect(viewport)
+		}
+		e.captureCursor(cr.X, cr.Y, clip)
+	}
+}
+
+// renderScrollableChildren renders children with scroll offset and clipping.
+func renderScrollableChildren(buf *Buffer, e *Element, childInherited inheritedStyle) {
+	// First, do scroll-aware layout
+	e.layoutScrollContent()
+
+	// Get viewport (clip region)
+	clipRect := e.ContentRect()
+
+	// Reserve space for vertical scrollbar if needed
+	if e.needsVerticalScrollbar() {
+		clipRect.Width = max(0, clipRect.Width-1)
+	}
+
+	// Render each child with scroll offset and clipping
+	for _, child := range e.children {
+		renderClippedElement(buf, child, clipRect, e.scrollX, e.scrollY, clipRect.X, clipRect.Y, childInherited)
+	}
+
+	// Draw scrollbar (scrollbar styles are independent, not inherited)
+	if e.needsVerticalScrollbar() {
+		renderVerticalScrollbar(buf, e)
+	}
+}
+
+// renderClippedElement renders an element with scroll offset and clipping.
+func renderClippedElement(buf *Buffer, e *Element, clipRect Rect, scrollX, scrollY, viewportX, viewportY int, inherited inheritedStyle) {
+	if e.hidden {
+		return
+	}
+
+	e.reportLayout()
+
+	childRect := e.Rect()
+
+	// Translate from content space to screen space
+	// Children are laid out starting from (0,0) in content space
+	// We add viewport origin and subtract scroll offset
+	screenX := viewportX + childRect.X - scrollX
+	screenY := viewportY + childRect.Y - scrollY
+
+	screenRect := Rect{
+		X:      screenX,
+		Y:      screenY,
+		Width:  childRect.Width,
+		Height: childRect.Height,
+	}
+
+	// Check if visible within clip region
+	visibleRect := screenRect.Intersect(clipRect)
+	if visibleRect.IsEmpty() {
+		return
+	}
+
+	// Capture the cursor at its draw site, using the same content origin and the
+	// active clip (already gutter-shrunk by the enclosing scrollable) the renderer
+	// uses for this element's text.
+	if e.cursorSource != nil {
+		ox := screenX + e.style.Padding.Left
+		oy := screenY + e.style.Padding.Top
+		if e.border != BorderNone {
+			ox++
+			oy++
+		}
+		e.captureCursor(ox, oy, clipRect)
+	}
+
+	// Resolve effective styles (inheritance + <th> bold)
+	rc := resolveRenderContext(e, inherited)
+
+	// Handle HR specially - draws a horizontal line and returns (no children)
+	if e.hr {
+		char := hrCharacter(e.border)
+		for x := visibleRect.X; x < visibleRect.Right(); x++ {
+			buf.SetRune(x, screenY, char, rc.textStyle)
+		}
+		return
+	}
+
+	// Render background (only visible portion)
+	if e.bgGradient != nil {
+		bgStyle := NewStyle()
+		if rc.bg != nil {
+			bgStyle = *rc.bg
+		}
+		buf.FillGradient(visibleRect, ' ', *e.bgGradient, bgStyle)
+	} else if rc.bg != nil {
+		buf.Fill(visibleRect, ' ', *rc.bg)
+	}
+
+	// Render border clipped to viewport (border style does NOT inherit)
+	if e.border != BorderNone {
+		if e.borderGradient != nil {
+			DrawBoxGradientClipped(buf, screenRect, e.border, *e.borderGradient, e.activeBorderStyle(), clipRect)
+		} else {
+			DrawBoxClipped(buf, screenRect, e.border, e.activeBorderStyle(), clipRect)
+		}
+		if e.borderTitle != "" {
+			drawBoxTitleClipped(buf, screenRect, e.borderTitle, e.titleStyle(), clipRect, e.borderTitleAlign)
+		}
+	}
+
+	// Render rich text with clipping (parallel to the plain-text block below).
+	// An element has either plain text or rich text, never both.
+	if len(e.richText) > 0 {
+		textBaseX := screenX + e.style.Padding.Left
+		textBaseY := screenY + e.style.Padding.Top
+		if e.border != BorderNone {
+			textBaseX += 1
+			textBaseY += 1
+		}
+		availTextWidth := childRect.Width - e.style.Padding.Horizontal()
+		if e.border != BorderNone {
+			availTextWidth -= 2
+		}
+
+		ts := rc.textStyle
+		if rc.bg != nil && !rc.bg.Bg.IsDefault() {
+			ts.Bg = rc.bg.Bg
+		}
+
+		var spanLines [][]TextSpan
+		if !e.noWrap && availTextWidth > 0 {
+			spanLines = wrapSpans(e.richText, availTextWidth)
+		} else {
+			spanLines = [][]TextSpan{e.richText}
+		}
+		drawSpanLines(buf, spanLines, textBaseX, textBaseY, availTextWidth, e.textAlign, ts, clipRect)
+	}
+
+	// Render text with clipping
+	if e.text != "" {
+		textBaseX := screenX + e.style.Padding.Left
+		textBaseY := screenY + e.style.Padding.Top
+		if e.border != BorderNone {
+			textBaseX += 1
+			textBaseY += 1
+		}
+
+		availTextWidth := childRect.Width - e.style.Padding.Horizontal()
+		if e.border != BorderNone {
+			availTextWidth -= 2
+		}
+
+		var lines []string
+		if !e.noWrap && availTextWidth > 0 {
+			lines = wrapText(e.text, availTextWidth)
+		} else {
+			lines = []string{e.text}
+		}
+
+		if e.truncate {
+			if e.noWrap {
+				lines[0] = truncateText(lines[0], availTextWidth)
+			} else {
+				availTextHeight := childRect.Height - e.style.Padding.Vertical()
+				if e.border != BorderNone {
+					availTextHeight -= 2
+				}
+				if len(lines) > availTextHeight && availTextHeight > 0 {
+					lines = lines[:availTextHeight]
+					lines[availTextHeight-1] = truncateText(lines[availTextHeight-1], availTextWidth)
+				}
+			}
+		}
+
+		ts := rc.textStyle
+		if rc.bg != nil && !rc.bg.Bg.IsDefault() {
+			ts.Bg = rc.bg.Bg
+		}
+		needPerCell := e.textGradient != nil || ts.Bg.IsDefault()
+
+		for lineIdx, line := range lines {
+			textY := textBaseY + lineIdx
+			if textY < clipRect.Y || textY >= clipRect.Bottom() {
+				continue
+			}
+
+			lineWidth := stringWidth(line)
+			textX := textBaseX
+
+			if availTextWidth > lineWidth {
+				switch e.textAlign {
+				case TextAlignCenter:
+					textX += (availTextWidth - lineWidth) / 2
+				case TextAlignRight:
+					textX += availTextWidth - lineWidth
+				}
+			}
+
+			if needPerCell {
+				totalClusters := clusterCount(line)
+				if totalClusters > 0 {
+					curX := textX
+					rest := line
+					clusterIdx := 0
+					for len(rest) > 0 {
+						cluster, width, size := nextCluster(rest)
+						if size == 0 {
+							break
+						}
+						rest = rest[size:]
+						idx := clusterIdx
+						clusterIdx++
+						if curX >= clipRect.Right() {
+							break
+						}
+						if curX < clipRect.X {
+							curX += width
+							continue
+						}
+						if width == 2 && curX+1 >= clipRect.Right() {
+							break
+						}
+						if curX >= clipRect.X && curX < clipRect.Right() {
+							style := ts
+							if ts.Bg.IsDefault() {
+								cellBg := buf.Cell(curX, textY).Style.Bg
+								if !cellBg.IsDefault() {
+									style.Bg = cellBg
+								}
+							}
+							if e.textGradient != nil {
+								t := float64(idx) / float64(totalClusters-1)
+								if totalClusters == 1 {
+									t = 0
+								}
+								style.Fg = e.textGradient.At(t)
+							}
+							buf.setCluster(curX, textY, cluster, width, style, "")
+						}
+						curX += width
+					}
+				}
+			} else {
+				buf.SetStringClipped(textX, textY, line, ts, clipRect)
+			}
+		}
+	}
+
+	// Recurse to children
+	// Propagate the original viewport and scroll offsets rather than re-basing
+	// to the parent's screen position. Child Rect() values are absolute in the
+	// temp container's coordinate space (from layoutScrollContent), so the same
+	// viewport+scroll translation applies at every depth.
+	for _, child := range e.children {
+		renderClippedElement(buf, child, clipRect, scrollX, scrollY, viewportX, viewportY, rc.childInherited)
+	}
+}
+
+// renderVerticalScrollbar draws the vertical scrollbar for a scrollable element.
+func renderVerticalScrollbar(buf *Buffer, e *Element) {
+	viewportRect := e.ContentRect()
+
+	// Scrollbar position: right edge of content area
+	trackX := viewportRect.Right() - 1
+	trackTop := viewportRect.Y
+	trackHeight := viewportRect.Height
+
+	if trackHeight <= 0 {
+		return
+	}
+
+	viewportHeight := viewportRect.Height
+	contentHeight := e.contentHeight
+
+	if contentHeight <= viewportHeight {
+		return
+	}
+
+	// Thumb size proportional to viewport/content ratio
+	thumbHeight := max(1, trackHeight*viewportHeight/contentHeight)
+
+	// Thumb position based on scroll offset
+	maxScroll := contentHeight - viewportHeight
+	if maxScroll <= 0 {
+		return
+	}
+	thumbTop := e.scrollY * (trackHeight - thumbHeight) / maxScroll
+
+	// Draw track and thumb
+	for y := range trackHeight {
+		screenY := trackTop + y
+		if y >= thumbTop && y < thumbTop+thumbHeight {
+			buf.SetRune(trackX, screenY, '█', e.scrollbarThumbStyle)
+		} else {
+			buf.SetRune(trackX, screenY, '│', e.scrollbarStyle)
+		}
+	}
+}
+
+// truncateText truncates a string to fit within maxWidth terminal cells,
+// replacing the overflow with an ellipsis character (…).
+func truncateText(text string, maxWidth int) string {
+	if maxWidth <= 0 {
+		return ""
+	}
+	textWidth := stringWidth(text)
+	if textWidth <= maxWidth {
+		return text
+	}
+	// Need to truncate: fit as many clusters as possible + ellipsis (1 cell wide)
+	curWidth := 0
+	var truncated strings.Builder
+	truncated.Grow(len(text))
+	rest := text
+	for len(rest) > 0 {
+		cluster, w, size := nextCluster(rest)
+		if size == 0 {
+			break
+		}
+		if curWidth+w+1 > maxWidth { // +1 for ellipsis
+			return truncated.String() + "…"
+		}
+		truncated.WriteString(cluster)
+		curWidth += w
+		rest = rest[size:]
+	}
+	return text
+}
+
+// renderTextContent draws the text content within the element's content rect.
+//
+// Text is wrapped to fit within the content rect width when wrapping is enabled
+// (the default). Each wrapped line is aligned independently according to textAlign.
+//
+// When the element width equals text width (intrinsic sizing), the text is drawn
+// at the content rect origin - the parent's AlignItems handles centering.
+//
+// When the element width is larger than text width (explicit sizing), text-level
+// alignment is applied. This supports use cases like centered text in a fixed-width
+// button, while avoiding jitter for intrinsic-width text in a centered layout.
+func renderTextContent(buf *Buffer, e *Element, textStyle Style, bg *Style) {
+	contentRect := e.ContentRect()
+
+	// Skip if content rect is empty or outside buffer
+	if contentRect.IsEmpty() {
+		return
+	}
+
+	// Rich text takes its own path (parallel to the plain-text logic below).
+	// Note: e.truncate and per-element vertical auto-scroll are not yet applied
+	// to rich text (unlike the plain-text path); rich text relies on a
+	// container's clipping/scrolling instead.
+	if len(e.richText) > 0 {
+		ts := textStyle
+		if bg != nil && !bg.Bg.IsDefault() {
+			ts.Bg = bg.Bg
+		}
+		var spanLines [][]TextSpan
+		if !e.noWrap && contentRect.Width > 0 {
+			spanLines = wrapSpans(e.richText, contentRect.Width)
+		} else {
+			spanLines = [][]TextSpan{e.richText}
+		}
+		drawSpanLines(buf, spanLines, contentRect.X, contentRect.Y, contentRect.Width, e.textAlign, ts, contentRect)
+		return
+	}
+
+	// Compute wrapped lines
+	var lines []string
+	if !e.noWrap && contentRect.Width > 0 {
+		lines = wrapText(e.text, contentRect.Width)
+	} else {
+		lines = []string{e.text}
+	}
+
+	// Apply truncation
+	if e.truncate {
+		if e.noWrap {
+			// Single-line truncation (existing behavior)
+			lines[0] = truncateText(lines[0], contentRect.Width)
+		} else if len(lines) > contentRect.Height && contentRect.Height > 0 {
+			// Truncate at last visible line
+			lines = lines[:contentRect.Height]
+			lines[contentRect.Height-1] = truncateText(lines[contentRect.Height-1], contentRect.Width)
+		}
+	}
+
+	ts := textStyle
+	// Merge background color into text style so text preserves the background
+	if bg != nil && !bg.Bg.IsDefault() {
+		ts.Bg = bg.Bg
+	}
+
+	// Determine visible line count
+	maxLines := len(lines)
+	if contentRect.Height > 0 && maxLines > contentRect.Height {
+		maxLines = contentRect.Height
+	}
+
+	// Auto-scroll: if wrapped content overflows, use scrollY as line offset
+	startLine := 0
+	if len(lines) > contentRect.Height && contentRect.Height > 0 {
+		e.contentHeight = len(lines) // store for scroll bounds
+		startLine = max(min(e.scrollY, len(lines)-contentRect.Height), 0)
+		maxLines = contentRect.Height
+	}
+
+	// Total cluster count across visible lines (for gradient calculation).
+	// One gradient color is applied per cluster.
+	totalClusters := 0
+	if e.textGradient != nil {
+		for i := startLine; i < startLine+maxLines && i < len(lines); i++ {
+			totalClusters += clusterCount(lines[i])
+		}
+	}
+
+	needPerCell := e.textGradient != nil || ts.Bg.IsDefault()
+	clusterOffset := 0 // running offset for gradient
+
+	for lineIdx := 0; lineIdx < maxLines; lineIdx++ {
+		srcIdx := startLine + lineIdx
+		if srcIdx >= len(lines) {
+			break
+		}
+		line := lines[srcIdx]
+		lineWidth := stringWidth(line)
+		x := contentRect.X
+		y := contentRect.Y + lineIdx
+
+		if y >= contentRect.Bottom() {
+			break
+		}
+
+		// Per-line text alignment
+		if contentRect.Width > lineWidth {
+			switch e.textAlign {
+			case TextAlignCenter:
+				x += (contentRect.Width - lineWidth) / 2
+			case TextAlignRight:
+				x += contentRect.Width - lineWidth
+			}
+		}
+
+		if needPerCell {
+			curX := x
+			rest := line
+			for len(rest) > 0 {
+				cluster, width, size := nextCluster(rest)
+				if size == 0 {
+					break
+				}
+				rest = rest[size:]
+				if curX >= contentRect.Right() {
+					break
+				}
+				if width == 2 && curX+1 >= contentRect.Right() {
+					break
+				}
+				style := ts
+				if ts.Bg.IsDefault() {
+					cellBg := buf.Cell(curX, y).Style.Bg
+					if !cellBg.IsDefault() {
+						style.Bg = cellBg
+					}
+				}
+				if e.textGradient != nil {
+					t := 0.0
+					if totalClusters > 1 {
+						t = float64(clusterOffset) / float64(totalClusters-1)
+					}
+					style.Fg = e.textGradient.At(t)
+					clusterOffset++
+				}
+				buf.setCluster(curX, y, cluster, width, style, "")
+				curX += width
+			}
+		} else {
+			buf.SetStringClipped(x, y, line, ts, contentRect)
+		}
+	}
+}
+
+// drawSpanLines renders pre-wrapped rich-text lines into the buffer.
+// originX/originY is the top-left content cell, contentWidth is the line box used
+// for alignment, base is the element's resolved text style (with background
+// already merged), and clip bounds the drawable region. Cells outside clip are
+// skipped but still advance x (so horizontal scroll offsets line up).
+func drawSpanLines(buf *Buffer, lines [][]TextSpan, originX, originY, contentWidth int, align TextAlign, base Style, clip Rect) {
+nextLine:
+	for li, line := range lines {
+		y := originY + li
+		if y < clip.Y || y >= clip.Bottom() {
+			continue
+		}
+		x := originX
+		if lw := spanLineWidth(line); contentWidth > lw {
+			switch align {
+			case TextAlignCenter:
+				x += (contentWidth - lw) / 2
+			case TextAlignRight:
+				x += contentWidth - lw
+			}
+		}
+		// Flatten the line's spans into a styled-rune stream, then segment into
+		// clusters so a cluster whose base and combining mark fall in adjacent
+		// spans stays one cell. Each cluster takes its base rune's style/link.
+		clusters := segmentLineClusters(line, base)
+		for _, cl := range clusters {
+			// Reached the right clip edge: clip this line and move to the next
+			// (matching the plain-text paths' per-line break), rather than
+			// abandoning all remaining lines.
+			if x >= clip.Right() {
+				continue nextLine
+			}
+			if cl.width == 2 && x+1 >= clip.Right() {
+				continue nextLine
+			}
+			if x >= clip.X {
+				style := cl.st
+				if style.Bg.IsDefault() {
+					if cellBg := buf.Cell(x, y).Style.Bg; !cellBg.IsDefault() {
+						style.Bg = cellBg
+					}
+				}
+				buf.setCluster(x, y, cl.text, cl.width, style, cl.link)
+			}
+			x += cl.width
+		}
+	}
+}
+
+// RenderTo calculates layout (if needed) and renders the entire tree to the buffer.
+// This is the main entry point for rendering an Element tree.
+// Note: onUpdate hooks are called in renderElement for each element in the tree.
+func (e *Element) RenderTo(buf *Buffer, width, height int) {
+	if e.dirty {
+		Calculate(e, width, height)
+	}
+	RenderTree(buf, e)
+}
+
+// Render returns the element itself so an Element satisfies Component (and
+// works with @expr in gsx). RenderTo draws to a buffer.
+func (e *Element) Render(app *App) *Element {
+	return e
+}
+
+// hrCharacter returns the horizontal rule character based on border style.
+func hrCharacter(border BorderStyle) rune {
+	switch border {
+	case BorderDouble:
+		return '═' // U+2550
+	case BorderThick:
+		return '━' // U+2501
+	default:
+		return '─' // U+2500
+	}
+}
+
+// renderHR draws a horizontal rule across the element's width.
+func renderHR(buf *Buffer, e *Element, textStyle Style) {
+	rect := e.ContentRect()
+	char := hrCharacter(e.border)
+
+	for x := rect.X; x < rect.Right(); x++ {
+		buf.SetRune(x, rect.Y, char, textStyle)
+	}
+}

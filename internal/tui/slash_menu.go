@@ -191,15 +191,22 @@ func (c *chatTUI) slashMatches(prefix string) []slashItem {
 }
 
 // slashPrefix returns the command name typed so far, when the draft is a
-// single-line slash command with no argument yet.
+// single-line slash command with no argument yet. Leading whitespace is
+// allowed, as in Pi (pi-tui: textBeforeCursor.trimStart()).
 func slashPrefix(text string, cursor int) (string, bool) {
 	runes := []rune(text)
 	cursor = max(0, min(cursor, len(runes)))
-	before := string(runes[:cursor])
+	before := strings.TrimLeft(string(runes[:cursor]), " \t")
 	if !strings.HasPrefix(before, "/") || strings.ContainsAny(before, " \t\n") || strings.Contains(text, "\n") {
 		return "", false
 	}
 	return strings.TrimPrefix(before, "/"), true
+}
+
+// slashLead is the whitespace before the command, kept when a completion is
+// applied (Pi's beforePrefix).
+func slashLead(text string) string {
+	return text[:len(text)-len(strings.TrimLeft(text, " \t"))]
 }
 
 // updateSlashMenu follows Pi: typing "/" as the first character opens the
@@ -212,7 +219,9 @@ func (c *chatTUI) updateSlashMenu(previous string) {
 	text := c.input.Text()
 	prefix, ok := slashPrefix(text, c.input.cursorPos)
 	if !c.slash.active {
-		if !ok || text != "/" || previous != "" {
+		// Pi opens the list when "/" is typed at the start of the message,
+		// after nothing but whitespace.
+		if !ok || strings.TrimLeft(text, " \t") != "/" || strings.TrimSpace(previous) != "" {
 			return
 		}
 	}
@@ -249,8 +258,9 @@ func (c *chatTUI) applySlashSelection(submit bool) {
 	after := string(runes[cursor:])
 	c.slash = slashMenu{}
 	c.input.snapshotUndo()
-	c.input.text = "/" + item.name + " " + after
-	c.input.cursorPos = len([]rune(item.name)) + 2
+	lead := slashLead(c.input.text)
+	c.input.text = lead + "/" + item.name + " " + after
+	c.input.cursorPos = len([]rune(lead)) + len([]rune(item.name)) + 2
 	c.input.notifyChanged()
 	if submit {
 		c.input.enter(gotui.KeyEvent{Key: gotui.KeyEnter})

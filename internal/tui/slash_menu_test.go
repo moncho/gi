@@ -92,3 +92,28 @@ func TestSlashCatalogueFollowsPiBuiltinOrder(t *testing.T) {
 		}
 	}
 }
+
+// Pi 1.0 (#10218): the slash menu also works after leading whitespace, and
+// completing keeps the whitespace.
+func TestSlashMenuAfterLeadingWhitespace(t *testing.T) {
+	c := &chatTUI{}
+	c.ensureInput()
+	for _, r := range "  /mo" {
+		c.input.insertRune(gotui.KeyEvent{Key: gotui.KeyRune, Rune: r})
+	}
+	if !c.slash.active || c.slash.items[0].name != "model" {
+		t.Fatalf("slash menu after whitespace: %+v", c.slash)
+	}
+	c.applySlashSelection(false)
+	if c.input.Text() != "  /model " || c.input.cursorPos != 9 {
+		t.Fatalf("completion %q cursor %d", c.input.Text(), c.input.cursorPos)
+	}
+	c.input.SetText("")
+	c.slash = slashMenu{}
+	for _, r := range "a /" {
+		c.input.insertRune(gotui.KeyEvent{Key: gotui.KeyRune, Rune: r})
+	}
+	if c.slash.active {
+		t.Fatal("slash menu opened after text")
+	}
+}

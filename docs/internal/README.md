@@ -99,6 +99,7 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 - [Thinking transcript wrapping](tui-thinking-wrap.md) — padded width, retained source, resize and regression evidence
 - `tools/` — built-in tool contracts
 - `scripting/` — scripting runtimes and bridge docs
+- [MCP and codemode plan](mcp-codemode-plan.md) — Pi-parity target, existing branches, engine decision (QuickJS vs Joker on wazero) and phases
 - [Joker WASI feasibility](scripting/joker-wasi.md) — dependency pins, whole-interpreter guest probe, ARM64 bootstrap fix and unimplemented sandbox boundaries
 - `hooks/` — hook and lifecycle docs
 - `vfs/` — managed VFS and `vfs://` URL docs (including `vfs://chat` projection)

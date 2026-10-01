@@ -35,6 +35,26 @@ var (
 	piThinkingMax     = piRGB(254, 84, 98)
 )
 
+// Keep distinct Pi roles independent even when the built-ins share RGB values.
+var (
+	piMdHeading     = piWarning
+	piMdCodeBlock   = piSuccess
+	piMdCodeBorder  = piMuted
+	piMdQuote       = piMuted
+	piMdQuoteBorder = piMuted
+	piMdHr          = piMuted
+	piMdLinkUrl     = piMuted
+	piMdListBullet  = piAccent
+	piToolTitle     = piText
+	piToolOutput    = piMuted
+	piDiffAdded     = piSuccess
+	piDiffRemoved   = piError
+	piDiffContext   = piMuted
+	piUserText      = piText
+	piCustomLabel   = piAccent
+	piCustomText    = piMuted
+)
+
 func piFg(c gotui.Color) gotui.Style { return gotui.NewStyle().Foreground(c) }
 
 // Pi colors the editor border (and the embedded working status) by thinking

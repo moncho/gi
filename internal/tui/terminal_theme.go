@@ -9,7 +9,6 @@ import (
 	"time"
 
 	gotui "github.com/grindlemire/go-tui"
-	"golang.org/x/term"
 )
 
 // Terminal theme detection and Pi theme selection (issue #12), ported from
@@ -42,43 +41,6 @@ var (
 	schemeReport     = regexp.MustCompile(`\x1b\[\?997;([12])n`)
 	deviceAttributes = regexp.MustCompile(`\x1b\[\?[\d;]*c`)
 )
-
-// queryTerminalColors asks the controlling terminal for its colours before
-// the UI takes over input. It never blocks longer than timeout and reports
-// nothing when there is no terminal or it does not answer.
-func queryTerminalColors(timeout time.Duration) terminalColors {
-	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
-	if err != nil {
-		return terminalColors{}
-	}
-	defer tty.Close()
-	fd := int(tty.Fd())
-	if !term.IsTerminal(fd) {
-		return terminalColors{}
-	}
-	state, err := term.MakeRaw(fd)
-	if err != nil {
-		return terminalColors{}
-	}
-	defer term.Restore(fd, state)
-	if _, err := tty.WriteString(terminalThemeQuery); err != nil {
-		return terminalColors{}
-	}
-	deadline := time.Now().Add(timeout)
-	var buf []byte
-	chunk := make([]byte, 256)
-	for time.Now().Before(deadline) {
-		if err := tty.SetReadDeadline(deadline); err != nil {
-			break // not pollable: give up rather than block
-		}
-		n, err := tty.Read(chunk)
-		buf = append(buf, chunk[:n]...)
-		if deviceAttributes.Match(buf) || err != nil {
-			break // DA1 answers last: every earlier reply has arrived
-		}
-	}
-	return parseTerminalReplies(string(buf))
-}
 
 // parseTerminalReplies extracts OSC 10/11 colours and the scheme report.
 func parseTerminalReplies(data string) terminalColors {
@@ -128,10 +90,22 @@ func parseOSCColor(raw string) (rgb, bool) {
 		}
 	} else {
 		lower := strings.ToLower(value)
+		if !strings.HasPrefix(lower, "rgb:") && !strings.HasPrefix(lower, "rgba:") {
+			return rgb{}, false
+		}
+		want := 3
+		if strings.HasPrefix(lower, "rgba:") {
+			want = 4
+		}
 		lower = strings.TrimPrefix(strings.TrimPrefix(lower, "rgba:"), "rgb:")
 		parts = strings.Split(lower, "/")
-		if len(parts) < 3 {
+		if len(parts) != want {
 			return rgb{}, false
+		}
+		if want == 4 {
+			if _, ok := channel(parts[3]); !ok {
+				return rgb{}, false
+			}
 		}
 		parts = parts[:3]
 	}
@@ -209,6 +183,9 @@ func colorFgBgTheme(value string) string {
 	if err != nil || index > 15 {
 		return ""
 	}
+	if index < 0 {
+		return ""
+	}
 	if index <= 6 || index == 8 {
 		return "dark"
 	}
@@ -283,6 +260,12 @@ func applyPiTheme(name string) bool {
 	piSyntaxKeyword, piSyntaxFunction, piSyntaxVariable = c("syntaxKeyword"), c("syntaxFunction"), c("syntaxVariable")
 	piSyntaxString, piSyntaxNumber, piSyntaxType, piSyntaxComment = c("syntaxString"), c("syntaxNumber"), c("syntaxType"), c("syntaxComment")
 	piToolPendingBg, piToolSuccessBg, piToolErrorBg = c("toolPendingBg"), c("toolSuccessBg"), c("toolErrorBg")
+	piMdHeading, piMdCodeBlock = c("mdHeading"), c("mdCodeBlock")
+	piMdCodeBorder, piMdQuote, piMdQuoteBorder = c("mdCodeBlockBorder"), c("mdQuote"), c("mdQuoteBorder")
+	piMdHr, piMdLinkUrl, piMdListBullet = c("mdHr"), c("mdLinkUrl"), c("mdListBullet")
+	piToolTitle, piToolOutput = c("toolTitle"), c("toolOutput")
+	piDiffAdded, piDiffRemoved, piDiffContext = c("toolDiffAdded"), c("toolDiffRemoved"), c("toolDiffContext")
+	piUserText, piCustomLabel, piCustomText = c("userMessageText"), c("customMessageLabel"), c("customMessageText")
 	piActiveTheme = name
 	return true
 }

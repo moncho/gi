@@ -30,17 +30,25 @@ func mdStyled(name, text string) string {
 
 var markdownMarkerPattern = regexp.MustCompile("\x00gi-[^\x00]*\x00")
 
-// piMarkdownStyle maps a marker style onto Pi's dark-theme Markdown colours.
+// piMarkdownStyle maps a marker style onto the active Pi theme's Markdown colours.
 func piMarkdownStyle(base gotui.Style, name string) gotui.Style {
 	switch name {
 	case "heading":
-		return base.Foreground(piWarning).Bold() // mdHeading
+		return base.Foreground(piMdHeading).Bold()
 	case "codeblock":
-		return base.Foreground(piSuccess) // mdCodeBlock
-	case "codeborder", "quoteborder", "quote", "hr", "url":
-		return base.Foreground(piMuted) // mdCodeBlockBorder, mdQuote*, mdHr, mdLinkUrl
+		return base.Foreground(piMdCodeBlock)
+	case "codeborder":
+		return base.Foreground(piMdCodeBorder)
+	case "quoteborder":
+		return base.Foreground(piMdQuoteBorder)
+	case "quote":
+		return base.Foreground(piMdQuote)
+	case "hr":
+		return base.Foreground(piMdHr)
+	case "url":
+		return base.Foreground(piMdLinkUrl)
 	case "bullet":
-		return base.Foreground(piAccent) // mdListBullet
+		return base.Foreground(piMdListBullet)
 	case "link":
 		return base.Foreground(piMdLink).Underline()
 	case "bold":

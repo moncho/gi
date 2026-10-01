@@ -1,3 +1,12 @@
+### Issue #12 — terminal-derived themes
+
+- [x] Bound terminal colour probing on silent Unix PTYs; validate OSC values and COLORFGBG indices.
+- [x] Apply independent Markdown, tool/diff, user and custom-message roles with built-in light/dark selection.
+- [x] Add Bun-only real-PTY acceptance for negotiation, fallback, explicit/auto settings and light/dark native UI.
+- [ ] Load Pi custom theme JSON with vars/OKHSL/OKLCH; add live switching.
+- [ ] Optionally derive Pi system theme from terminal palette; Windows console querying/input preservation remain open.
+- Contract and verification: [terminal themes](../internal/tui-terminal-theme.md). Issue #12 remains open.
+
 # gi implementation checklist
 
 - [x] Make `/settings` and `/config` explicitly identify the live runtime summary; preserve full workspace paths, distinguish effective/configured thinking and theme, show wheel scrolling, normalized provider retry policy and complete compaction budgets. [Contract](../internal/tui-settings.md).

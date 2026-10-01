@@ -97,7 +97,7 @@ func (c *chatTUI) registerBlockTarget(key string, el *gotui.Element) {
 // toolCallSpans is Pi's renderCall: "$ command" for shell tools, otherwise the
 // tool name in bold toolTitle followed by its argument in accent.
 func toolCallSpans(block transcriptRenderableBlock) []gotui.TextSpan {
-	title := piFg(piText).Bold()
+	title := piFg(piToolTitle).Bold()
 	name := strings.TrimSpace(block.Header)
 	arg := strings.TrimSpace(block.ToolArg)
 	if isShellTool(name) {
@@ -123,7 +123,7 @@ func toolOutputStyle(line string) gotui.Style {
 	if strings.HasPrefix(line, "reason=") {
 		return piFg(piWarning)
 	}
-	return piFg(piMuted)
+	return piFg(piToolOutput)
 }
 
 func (c *chatTUI) renderPiToolBlock(block transcriptRenderableBlock) *gotui.Element {

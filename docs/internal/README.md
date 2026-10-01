@@ -21,6 +21,8 @@ turn ownership and provider request evidence.
 [Context estimate provenance](context-estimate-provenance.md) separates native
 compaction history estimates from measured request usage and records Shared35 evidence.
 
+[Terminal-derived TUI themes](tui-terminal-theme.md) records built-in detection, bounded startup probing, and the remaining custom/system-theme scope.
+
 For the current product comparison, see [features and Piclaw parity](../feature-parity.md).
 The [full web/TUI plan](full-web-tui-parity-plan.md) and
 [UX audit](ux-test-audit-2026-09-24.md) distinguish implemented slices from

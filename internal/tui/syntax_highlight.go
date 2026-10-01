@@ -44,9 +44,9 @@ func piSyntaxStyle(base gotui.Style, name string) (gotui.Style, bool) {
 	case "syn-comment", "syn-meta":
 		return base.Foreground(piSyntaxComment), true
 	case "syn-added":
-		return base.Foreground(piSuccess), true // toolDiffAdded
+		return base.Foreground(piDiffAdded), true
 	case "syn-removed":
-		return base.Foreground(piError), true // toolDiffRemoved
+		return base.Foreground(piDiffRemoved), true
 	case "syn-emph":
 		return base.Italic(), true
 	case "syn-strong":

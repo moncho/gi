@@ -41,14 +41,15 @@ func initialSessionID(ctx context.Context, s *store.Store) (string, error) {
 }
 
 func Run(dbPath, workspace, model string) error {
-	return RunMode(dbPath, workspace, model, "fullscreen")
+	return RunMode(dbPath, workspace, model, "")
 }
 
 func RunMode(dbPath, workspace, model, mode string) error {
-	if mode != "regular" && mode != "fullscreen" {
+	if mode != "" && mode != "regular" && mode != "fullscreen" {
 		return fmt.Errorf("invalid tui mode %q: use regular or fullscreen", mode)
 	}
 	cfg := config.Load(workspace)
+	mode = resolveTUIMode(mode, cfg.TUIMode)
 	if model != "" {
 		cfg.DefaultModel = model
 	}
@@ -5777,10 +5778,26 @@ func Main() {
 	dbPath := flag.String("db", config.DefaultTUIDBPath(), "SQLite database path")
 	workspace := flag.String("workspace", config.DefaultWorkspaceRoot(), "Workspace root")
 	model := flag.String("model", "", "Override default model")
-	mode := flag.String("tui-mode", "fullscreen", "Terminal rendering: fullscreen or regular (native scrollback)")
+	mode := flag.String("tui-mode", "", "Terminal rendering: fullscreen or regular (native scrollback); default: tuiMode setting, else fullscreen")
 	flag.Parse()
 	if err := RunMode(*dbPath, *workspace, *model, *mode); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// resolveTUIMode picks the terminal mode like Pi: the --tui-mode flag, else
+// the tuiMode setting, else fullscreen (Pi 1.0's default).
+func resolveTUIMode(flagValue, setting string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	switch setting {
+	case "regular", "fullscreen":
+		return setting
+	case "":
+	default:
+		log.Printf("tuiMode %q is not regular or fullscreen; using fullscreen", setting)
+	}
+	return "fullscreen"
 }

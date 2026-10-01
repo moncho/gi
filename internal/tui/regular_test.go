@@ -111,3 +111,17 @@ func TestMultilineEditorRendersSeparateRowsAndBindsNewline(t *testing.T) {
 		t.Fatal("missing explicit newline binding")
 	}
 }
+
+// Pi 1.0: --tui-mode wins, then the tuiMode setting, then fullscreen.
+func TestResolveTUIMode(t *testing.T) {
+	for _, c := range []struct{ flag, setting, want string }{
+		{"", "", "fullscreen"},
+		{"", "regular", "regular"},
+		{"fullscreen", "regular", "fullscreen"},
+		{"", "bogus", "fullscreen"},
+	} {
+		if got := resolveTUIMode(c.flag, c.setting); got != c.want {
+			t.Fatalf("resolveTUIMode(%q, %q) = %q, want %q", c.flag, c.setting, got, c.want)
+		}
+	}
+}

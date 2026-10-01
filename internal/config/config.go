@@ -35,6 +35,9 @@ type RuntimeConfig struct {
 	TUIWheelScrollLines int `json:"tui_wheel_scroll_lines"`
 	// Theme is Pi's theme setting (project .pi/settings.json, else global).
 	Theme string `json:"theme,omitempty"`
+	// TUIMode is Pi's tuiMode setting (project, else global); the -tui-mode
+	// flag overrides it.
+	TUIMode string `json:"tui_mode,omitempty"`
 	// DefaultToolsLayers are Pi's defaultTools lists, user then project.
 	DefaultToolsLayers [][]string `json:"default_tools_layers,omitempty"`
 	// ExtensionsLayers are Pi's extensions lists, user then project.
@@ -116,6 +119,8 @@ type piSettings struct {
 	// Theme is Pi's theme setting: a theme name ("dark", "light", custom) or
 	// an auto pair "light/dark" resolved by the terminal's detected scheme.
 	Theme                string   `json:"theme"`
+	// TUIMode is Pi's tuiMode: "fullscreen" (default) or "regular".
+	TUIMode string `json:"tuiMode"`
 	DefaultProvider      string   `json:"defaultProvider"`
 	DefaultModel         string   `json:"defaultModel"`
 	DefaultThinkingLevel string   `json:"defaultThinkingLevel"`
@@ -178,6 +183,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.Routing = ps.Routing
 		cfg.WorkspaceIndex = ps.WorkspaceIndex
 		cfg.Theme = strings.TrimSpace(ps.Theme)
+		cfg.TUIMode = strings.TrimSpace(ps.TUIMode)
 		projectTools, projectExtensions, projectCodemode = ps.DefaultTools, ps.Extensions, ps.Codemode
 	}
 	applyGlobalPiSettings(&cfg)
@@ -369,6 +375,9 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	}
 	if cfg.Theme == "" {
 		cfg.Theme = strings.TrimSpace(global.Theme)
+	}
+	if cfg.TUIMode == "" {
+		cfg.TUIMode = strings.TrimSpace(global.TUIMode)
 	}
 	if global.DefaultTools != nil {
 		cfg.DefaultToolsLayers = append([][]string{global.DefaultTools}, cfg.DefaultToolsLayers...)

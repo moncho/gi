@@ -243,3 +243,21 @@ func TestLoadMergesGlobalPiSettingsUnderProject(t *testing.T) {
 		t.Fatalf("project must override global: %q %q %q", cfg.DefaultProvider, cfg.DefaultModel, cfg.DefaultThinkingLevel)
 	}
 }
+
+// Pi's tuiMode: project settings over global ones.
+func TestLoadTUIModeSetting(t *testing.T) {
+	agent := t.TempDir()
+	t.Setenv("PI_CODING_AGENT_DIR", agent)
+	if err := os.WriteFile(filepath.Join(agent, "settings.json"), []byte(`{"tuiMode":"regular"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if cfg := Load(t.TempDir()); cfg.TUIMode != "regular" {
+		t.Fatalf("global tuiMode: %q", cfg.TUIMode)
+	}
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, ".pi"), 0o755)
+	os.WriteFile(filepath.Join(root, ".pi", "settings.json"), []byte(`{"tuiMode":"fullscreen"}`), 0o644)
+	if cfg := Load(root); cfg.TUIMode != "fullscreen" {
+		t.Fatalf("project tuiMode: %q", cfg.TUIMode)
+	}
+}

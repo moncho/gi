@@ -84,7 +84,7 @@ func run() error {
 	pidFile := flag.String("pid-file", "", "Optional pid file path")
 	webMode := flag.Bool("web", false, "Run the web UI server instead of the terminal UI")
 	_ = flag.Bool("tui", true, "Run the terminal UI (default; kept for compatibility)")
-	tuiLayout := flag.String("tui-mode", "fullscreen", "Terminal rendering: fullscreen or regular (native scrollback)")
+	tuiLayout := flag.String("tui-mode", "", "Terminal rendering: fullscreen or regular (native scrollback); default: tuiMode setting, else fullscreen")
 	flag.Parse()
 
 	if !*webMode {

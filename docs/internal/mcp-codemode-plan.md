@@ -69,8 +69,9 @@ Pi's MCP and codemode behaviour is documented in its `docs/mcp.md` and in
 - **Joker:** supported later, through the roadmap below, preferably by
   compiling Joker scripts to WASM with Joker's own compiler.
 - **Toggle:** codemode is optional, as in Pi (see *Toggling codemode*).
-- **Web tests:** browser (Playwright) tests are not run on this machine.
-  Acceptance uses Go and terminal (PTY) tests here.
+- **Web tests:** for now, browser (Playwright) tests are not run on the
+  ChromeOS development laptop. Acceptance there uses Go and terminal (PTY)
+  tests; browser suites run on other hosts.
 
 ## Engine-neutral host interface
 
@@ -197,8 +198,8 @@ Each phase lands with its own tests, through the Makefile, sequentially.
    - `/mcp` in the TUI and web UI.
    - The `gi mcp …` CLI.
 7. **Acceptance**
-   - Go and terminal (PTY) tests against fake stdio and HTTP servers. No web
-     tests on this machine.
+   - Go and terminal (PTY) tests against fake stdio and HTTP servers.
+   - Browser suites run on a host other than the ChromeOS laptop.
    - Hostile-script tests: infinite loops, memory exhaustion, huge output,
      forged tool names.
    - Measure startup and per-call latency.

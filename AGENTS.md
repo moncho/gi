@@ -93,7 +93,7 @@ Run tests **one at a time, through the Makefile only** (see *CPU throttling* bel
 
 **Every user-visible feature must have corresponding functional tests.**
 
-**On this development machine, web (Playwright) tests are not run** (`make test-ux` and the other browser targets). Verify web-facing changes with Go tests (for example `internal/web` handler tests) and leave browser acceptance to a provisioned host.
+**For now, web (Playwright) tests are not run on the ChromeOS (Crostini) laptop** used for development: `make test-ux` and the other browser targets are skipped there. Verify web-facing changes on that laptop with Go tests (for example `internal/web` handler tests), and run browser acceptance on another host. This is temporary and specific to that laptop; other machines run the web suites as usual.
 
 Before committing:
 ```sh

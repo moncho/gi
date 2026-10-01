@@ -513,3 +513,23 @@ func (e *Engine) updateToolSearchLocked() {
 		e.tools.Unregister(tools.ToolSearchName)
 	}
 }
+
+// MCPStatus reports the configured MCP servers (nil without MCP).
+func (e *Engine) MCPStatus() ([]gimcp.Status, []error) {
+	if e.mcp == nil {
+		return nil, nil
+	}
+	return e.mcp.manager.Status(), e.mcp.manager.Config().Errors
+}
+
+// MCPReconnect reconnects a server and re-registers its tools.
+func (e *Engine) MCPReconnect(ctx context.Context, name string) error {
+	if e.mcp == nil {
+		return fmt.Errorf("No MCP servers configured.")
+	}
+	if err := e.mcp.manager.Reconnect(ctx, name); err != nil {
+		return err
+	}
+	e.refreshMCPServer(ctx, name)
+	return nil
+}

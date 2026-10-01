@@ -183,3 +183,12 @@ Rules, as in Pi:
   - Exits 1 when an entry is invalid or an enabled server does not connect.
 - **Project config:** gi does not read project MCP configuration until it has project trust (#16), so the project file is reported as ignored.
 - **Sign-in:** `login` and `logout` report that OAuth is not supported yet (#25 phase 6c).
+
+## `/mcp` in the TUI (`internal/tui/mcp_command.go`)
+
+- `/mcp` prints Pi's status text (the non-interactive form of Pi's `formatStatus`): one line per server with its state, tool count and exposure, connection errors indented below it, then config errors.
+- `/mcp reconnect [server]` drops the connection, connects again and re-registers the server's tools (`Manager.Reconnect`, `Engine.MCPReconnect`).
+  - Without a name it picks the only enabled server, or the only failed or disconnected one; otherwise it asks for a name.
+- Not yet ported:
+  - Pi's interactive manager (inspect tools, enable or disable a server, change exposure).
+  - `/mcp login` and `/mcp logout`, which need OAuth.

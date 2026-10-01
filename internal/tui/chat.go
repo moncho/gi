@@ -2919,6 +2919,8 @@ func (c *chatTUI) handleCommand(text string) {
 			c.app.Stop()
 		}
 		return
+	case "/mcp":
+		c.appendTranscript(c.mcpCommand(fields)...)
 	case "/codemode":
 		c.appendTranscript(c.codemodeCommand(fields)...)
 	case "/abort":
@@ -3090,6 +3092,7 @@ var giCommands = []struct{ name, hint string }{
 	{"/detach <media:id|all|unresolved>", "Remove pending media refs"},
 	{"/paste-image [prompt]", "Paste a clipboard image, optionally with a prompt"},
 	{"/tools [query|active|activate|reset]", "Inspect or change active tools"},
+	{"/mcp [reconnect [server]]", "Show MCP server status; reconnect a server"},
 	{"/codemode [on|off|only|default|status]", "Toggle the codemode tool for this session"},
 	{"/skills [query]", "List discovered skills"},
 	{"/skill:name [args]", "Load a discovered SKILL.md"},

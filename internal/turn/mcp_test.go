@@ -374,3 +374,25 @@ func TestToolSearchInTurn(t *testing.T) {
 		t.Fatal("turn did not reach the final call")
 	}
 }
+
+// /mcp reconnect drops and re-establishes a server's connection and keeps
+// its tools registered.
+func TestMCPReconnect(t *testing.T) {
+	e, _ := mcpTestEngine(t)
+	ctx := context.Background()
+	if err := e.MCPReconnect(ctx, "fake_direct"); err == nil {
+		t.Fatal("unknown server reconnected")
+	}
+	if err := e.MCPReconnect(ctx, "fake-direct"); err != nil {
+		t.Fatal(err)
+	}
+	statuses, _ := e.MCPStatus()
+	for _, st := range statuses {
+		if st.Name == "fake-direct" && (st.State != gimcp.StateConnected || st.Tools == 0) {
+			t.Fatalf("after reconnect: %+v", st)
+		}
+	}
+	if _, ok := e.tools.GetRegistered("mcp__fake_direct__echo"); !ok {
+		t.Fatal("tools lost after reconnect")
+	}
+}

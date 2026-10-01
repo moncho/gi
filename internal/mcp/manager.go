@@ -635,3 +635,26 @@ func withSession[T any](ctx context.Context, m *Manager, name string, call func(
 	}
 	return zero, fmt.Errorf("mcp %s: %w", name, lastErr)
 }
+
+// Reconnect drops the server's connection and connects again, listing its
+// tools (Pi's /mcp reconnect).
+func (m *Manager) Reconnect(ctx context.Context, name string) error {
+	s, err := m.server(name)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	if !s.cfg.Enabled {
+		s.mu.Unlock()
+		return fmt.Errorf("MCP server %q is disabled.", name)
+	}
+	closeConn := s.closeConn
+	s.session, s.closeConn, s.toolsValid = nil, nil, false
+	s.state, s.err = StateDisconnected, nil
+	s.mu.Unlock()
+	if closeConn != nil {
+		closeConn()
+	}
+	_, err = m.Tools(ctx, name)
+	return err
+}

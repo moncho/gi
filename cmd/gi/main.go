@@ -228,6 +228,7 @@ func runMCPCommand(args []string) int {
 	}
 	return gimcp.RunCommand(args, gimcp.CLIOptions{
 		Cwd: cwd, UserPath: gimcp.UserConfigPath(), ProjectPath: gimcp.ProjectConfigPath(cwd),
-		LogPath: config.UserConfigCandidates("mcp.log")[0],
+		LogPath:         config.UserConfigCandidates("mcp.log")[0],
+		CredentialsPath: config.UserConfigFile("mcp-auth.json"),
 	})
 }

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
@@ -25,6 +26,7 @@ const (
 	StateConnecting   = "connecting"
 	StateConnected    = "connected"
 	StateFailed       = "failed"
+	StateNeedsAuth    = "needs-auth"
 )
 
 const (
@@ -62,7 +64,15 @@ type Manager struct {
 	servers        map[string]*server
 	closed         bool
 	onToolsChanged func(server string)
+	credentials    *CredentialStore // OAuth (mcp-auth.json); nil: no OAuth
 }
+
+// SetCredentials enables OAuth for HTTP servers without an Authorization
+// header, with credentials in store (Pi's mcp-auth.json).
+func (m *Manager) SetCredentials(store *CredentialStore) { m.credentials = store }
+
+// Credentials returns the OAuth credential store (nil without OAuth).
+func (m *Manager) Credentials() *CredentialStore { return m.credentials }
 
 // SetOnToolsChanged registers a callback run (in its own goroutine) when a
 // server announces a changed tool list, so callers can re-register tools.
@@ -84,6 +94,8 @@ type server struct {
 	toolsValid   bool
 	instructions string
 	stderr       *tailBuffer
+	auth         *connectionAuth // OAuth servers
+	needsAuth    atomic.Bool     // the last connection needed a sign-in
 }
 
 // NewManager prepares servers without connecting. logPath receives server
@@ -292,8 +304,13 @@ func (m *Manager) ensureSession(ctx context.Context, s *server) (*mcp.ClientSess
 		return s.session, nil
 	}
 	s.state, s.err = StateConnecting, nil
+	s.needsAuth.Store(false)
 	session, closeConn, err := m.connect(ctx, s)
 	if err != nil {
+		if s.needsAuth.Load() || errors.Is(err, ErrAuthorizationRequired) {
+			s.state, s.err = StateNeedsAuth, nil
+			return nil, fmt.Errorf("mcp %s: %w", s.cfg.Name, ErrAuthorizationRequired)
+		}
 		s.state, s.err = StateFailed, err
 		return nil, fmt.Errorf("mcp %s: %w", s.cfg.Name, err)
 	}
@@ -419,7 +436,16 @@ func (m *Manager) connectHTTP(ctx context.Context, s *server) (*mcp.ClientSessio
 		}
 		headers.Set(key, expanded)
 	}
-	client := &http.Client{Transport: headerTransport{base: http.DefaultTransport, headers: headers}}
+	var rt http.RoundTripper = headerTransport{base: http.DefaultTransport, headers: headers}
+	if s.cfg.UsesOAuth() && m.credentials != nil {
+		if s.auth == nil {
+			cfg := s.cfg
+			s.auth = &connectionAuth{serverURL: normalizeServerURL(cfg.URL), store: m.credentials,
+				settings: func() (OAuthSettings, error) { return m.oauthSettings(context.Background(), cfg) }}
+		}
+		rt = &oauthTransport{base: rt, auth: s.auth, onNeedsAuth: func() { s.needsAuth.Store(true) }}
+	}
+	client := &http.Client{Transport: rt}
 	var lastErr error
 	for attempt := 0; attempt < httpConnectTries; attempt++ {
 		transport := &mcp.StreamableClientTransport{Endpoint: s.cfg.URL, HTTPClient: client}

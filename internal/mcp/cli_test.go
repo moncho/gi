@@ -27,7 +27,8 @@ func runCLI(t *testing.T, opts gimcp.CLIOptions, args ...string) cliRun {
 func cliOptions(t *testing.T) gimcp.CLIOptions {
 	dir := t.TempDir()
 	return gimcp.CLIOptions{Cwd: dir, UserPath: filepath.Join(dir, "home", "mcp.json"),
-		ProjectPath: filepath.Join(dir, ".pi", "mcp.json"), LogPath: filepath.Join(dir, "mcp.log")}
+		ProjectPath: filepath.Join(dir, ".pi", "mcp.json"), LogPath: filepath.Join(dir, "mcp.log"),
+		CredentialsPath: filepath.Join(dir, "home", "mcp-auth.json")}
 }
 
 // add writes Pi's entry shape, keeps other content and the file's indent.
@@ -96,7 +97,7 @@ func TestCLIList(t *testing.T) {
 	if r.code != 1 || !strings.Contains(r.out, `"state": "failed"`) {
 		t.Fatalf("%+v", r)
 	}
-	if r := runCLI(t, opts, "login", "fake"); r.code != 1 || !strings.Contains(r.err, "not supported") {
+	if r := runCLI(t, opts, "login", "fake"); r.code != 0 || r.out != `Already signed in to MCP server "fake" (4 tools).` {
 		t.Fatalf("%+v", r)
 	}
 }

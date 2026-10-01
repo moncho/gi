@@ -28,7 +28,12 @@ func (c *chatTUI) mcpCommand(fields []string) []string {
 	}
 	switch action {
 	case "login", "logout":
-		return []string{"MCP OAuth sign-in is not supported by gi yet."}
+		// The browser flow runs from a shell for now; reconnect afterwards.
+		target := name
+		if target == "" {
+			target = "<server>"
+		}
+		return []string{fmt.Sprintf("Run `gi mcp %s %s` in a shell, then /mcp reconnect %s.", action, target, target)}
 	case "reconnect":
 		statuses, _ := c.engine.MCPStatus()
 		if name == "" {
@@ -87,6 +92,8 @@ func describeMCPState(st gimcp.Status) string {
 			plural = ""
 		}
 		return fmt.Sprintf("connected · %d tool%s", st.Tools, plural)
+	case gimcp.StateNeedsAuth:
+		return "needs sign-in"
 	case gimcp.StateConnecting:
 		return "connecting…"
 	}
@@ -101,6 +108,10 @@ func (c *chatTUI) mcpStatusText() string {
 	}
 	var lines []string
 	for _, st := range statuses {
+		if st.State == gimcp.StateNeedsAuth {
+			lines = append(lines, fmt.Sprintf("%s: needs sign-in, run gi mcp login %s (%s)", st.Name, st.Name, st.Exposure))
+			continue
+		}
 		tools := ""
 		if st.State == gimcp.StateConnected {
 			tools = fmt.Sprintf(", %d tools", st.Tools)

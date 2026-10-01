@@ -98,7 +98,10 @@ func (e *Engine) EnableMCP() {
 	}
 	// gi writes its own log (Pi's is ~/.pi/agent/mcp.log).
 	logPath := config.UserConfigCandidates("mcp.log")[0]
-	e.enableMCPWith(gimcp.NewManager(cfg, e.runtimeCfg.WorkspaceRoot, logPath))
+	m := gimcp.NewManager(cfg, e.runtimeCfg.WorkspaceRoot, logPath)
+	// OAuth credentials are shared with Pi (mcp-auth.json).
+	m.SetCredentials(gimcp.NewCredentialStore(config.UserConfigFile("mcp-auth.json")))
+	e.enableMCPWith(m)
 }
 
 // enableMCPWith installs a manager (tests pass their own).

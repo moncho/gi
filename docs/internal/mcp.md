@@ -192,3 +192,19 @@ Rules, as in Pi:
 - Not yet ported:
   - Pi's interactive manager (inspect tools, enable or disable a server, change exposure).
   - `/mcp login` and `/mcp logout`, which need OAuth.
+
+## OAuth (`internal/mcp/oauth.go`)
+
+This is a port of Pi's MCP OAuth (pi-coding-agent `extensions/mcp/oauth.js`, pi-mcp `oauth/{flow,discovery,provider}.js`).
+
+- **Which servers:** HTTP servers without an `Authorization` header (`ServerConfig.UsesOAuth`).
+- **Credentials:** stored in Pi's `mcp-auth.json`, in Pi's per-URL format, so gi and Pi share sign-ins. Writes are guarded by a `<file>.lock` directory; refreshes use per-server `mcp-auth-refresh-<hash>.lock` locks, as in Pi.
+- **Connecting:**
+  - The stored access token is sent, refreshed first when it is within 30 s of expiry.
+  - After a 401 (or a 403 `insufficient_scope`), one refresh is shared by concurrent requests, then the request is retried once.
+  - When the user must sign in, the server's state becomes `needs-auth`; connections never open a browser.
+- **Sign-in** (`gi mcp login`): discovery (protected resource metadata, authorization server metadata with issuer check), dynamic client registration, PKCE S256 and a loopback callback on `127.0.0.1/callback`.
+  - In a terminal, the redirect URL can also be pasted.
+  - `invalid_client` and `invalid_grant` errors reset credentials and retry, as in Pi.
+- **Sign-out** (`gi mcp logout`) deletes the stored credentials.
+- **TUI:** `/mcp` shows `needs sign-in`; `/mcp login` currently points to `gi mcp login`, followed by `/mcp reconnect`.

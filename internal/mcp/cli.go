@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -65,11 +67,120 @@ const cliHelpHint = `Use "gi mcp --help" for usage.`
 
 // CLIOptions configure RunCommand.
 type CLIOptions struct {
-	Cwd         string
-	UserPath    string // user mcp.json (written by add/remove)
-	ProjectPath string // project mcp.json (add/remove -l)
-	LogPath     string
-	Log, Error  func(string)
+	Cwd             string
+	UserPath        string // user mcp.json (written by add/remove)
+	ProjectPath     string // project mcp.json (add/remove -l)
+	LogPath         string
+	CredentialsPath string           // mcp-auth.json
+	Credentials     *CredentialStore // overrides CredentialsPath (tests)
+	Log, Error      func(string)
+	// OpenURL opens the authorization page (default: the system browser);
+	// when set, login does not read a pasted redirect URL from stdin.
+	OpenURL func(string)
+}
+
+const defaultLoginTimeoutSeconds = 300
+
+// cliLogin ports Pi's login: connect first (already signed in, or the
+// server's challenge), then the browser flow, then reconnect.
+func cliLogin(name string, cfg Config, credentials *CredentialStore, timeout time.Duration, opts CLIOptions, logf, errf func(string)) int {
+	m := NewManager(cfg, opts.Cwd, opts.LogPath)
+	m.SetCredentials(credentials)
+	defer m.Close()
+	ctx := context.Background()
+	connectCtx, cancel := context.WithTimeout(ctx, cfg.Servers[name].Timeout+5*time.Second)
+	tools, err := m.Tools(connectCtx, name)
+	cancel()
+	if err == nil {
+		logf(fmt.Sprintf("Already signed in to MCP server %q (%d tools).", name, len(tools)))
+		return 0
+	}
+	if st := m.serverStatus(name); st.State != StateNeedsAuth {
+		msg := st.Error
+		if msg == "" {
+			msg = "unknown error"
+		}
+		errf(fmt.Sprintf("MCP server %q failed to connect: %s", name, msg))
+		return 1
+	}
+	openURL := opts.OpenURL
+	interactive := openURL == nil && stdinIsTerminal()
+	if openURL == nil {
+		openURL = OpenBrowser
+	}
+	signCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	prompt := SignInPrompt{ShowAuthorizationURL: func(u string) {
+		logf(fmt.Sprintf("Sign in to MCP server %q in your browser:\n%s", name, u))
+		openURL(u)
+	}}
+	if interactive {
+		prompt.PromptForRedirectURL = readRedirectURL
+	}
+	if err := m.SignIn(signCtx, name, prompt); err != nil {
+		if errors.Is(err, ErrSignInCancelled) || errors.Is(err, context.DeadlineExceeded) {
+			errf(fmt.Sprintf("Sign-in to MCP server %q was cancelled or not completed within %d seconds.", name, int(timeout.Round(time.Second)/time.Second)))
+		} else {
+			errf(fmt.Sprintf("Sign-in to MCP server %q failed: %v", name, err))
+		}
+		return 1
+	}
+	reconnectCtx, cancel2 := context.WithTimeout(ctx, cfg.Servers[name].Timeout+5*time.Second)
+	defer cancel2()
+	if err := m.Reconnect(reconnectCtx, name); err != nil {
+		errf("Signed in, but " + err.Error())
+		return 1
+	}
+	logf(fmt.Sprintf("Signed in to MCP server %q (%d tools).", name, m.serverStatus(name).Tools))
+	return 0
+}
+
+func (m *Manager) serverStatus(name string) Status {
+	for _, st := range m.Status() {
+		if st.Name == name {
+			return st
+		}
+	}
+	return Status{}
+}
+
+// readRedirectURL reads a pasted redirect URL from stdin (Pi's prompt for
+// browsers that cannot reach this machine).
+func readRedirectURL(ctx context.Context) string {
+	fmt.Fprint(os.Stderr, "If the browser cannot reach this machine, paste the URL it was redirected to: ")
+	line := make(chan string, 1)
+	go func() {
+		var buf [8192]byte
+		n, _ := os.Stdin.Read(buf[:])
+		line <- string(buf[:n])
+	}()
+	select {
+	case <-ctx.Done():
+		return ""
+	case l := <-line:
+		return strings.TrimSpace(l)
+	}
+}
+
+func stdinIsTerminal() bool {
+	info, err := os.Stdin.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
+
+// OpenBrowser opens u in the system browser, best effort.
+func OpenBrowser(u string) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", u)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", u)
+	default:
+		cmd = exec.Command("xdg-open", u)
+	}
+	if err := cmd.Start(); err == nil {
+		go func() { _ = cmd.Wait() }()
+	}
 }
 
 type parsedOptions struct {
@@ -186,8 +297,33 @@ func RunCommand(args []string, opts CLIOptions) int {
 			errf(fmt.Sprintf("No MCP server named %q.%s Configured: %s.", name, note, configured))
 			return 1
 		}
-		errf("MCP OAuth sign-in is not supported by gi yet.")
-		return 1
+		entry := cfg.Servers[name]
+		if !entry.UsesOAuth() {
+			errf(fmt.Sprintf("MCP server %q does not use OAuth. Only HTTP servers without an Authorization header do.", name))
+			return 1
+		}
+		credentials := opts.Credentials
+		if credentials == nil {
+			credentials = NewCredentialStore(opts.CredentialsPath)
+		}
+		if command == "logout" {
+			if credentials.Remove(entry.URL) {
+				logf(fmt.Sprintf("Signed out of MCP server %q.", name))
+			} else {
+				logf(fmt.Sprintf("No stored credentials for MCP server %q.", name))
+			}
+			return 0
+		}
+		timeout := float64(defaultLoginTimeoutSeconds)
+		if v, ok := p.values["timeout"]; ok {
+			n, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
+			if err != nil || n <= 0 {
+				errf("--timeout must be a positive number of seconds.")
+				return 1
+			}
+			timeout = n
+		}
+		return cliLogin(name, cfg, credentials, time.Duration(timeout*float64(time.Second)), opts, logf, errf)
 	}
 	errf(fmt.Sprintf("Unknown mcp command %q.\n%s", command, cliHelpHint))
 	return 1
@@ -554,6 +690,11 @@ func describeTransport(s ServerConfig) string {
 // errors; it fails when an entry is invalid or a server did not connect.
 func cliList(cfg Config, asJSON bool, untrustedNote string, opts CLIOptions, logf func(string)) int {
 	m := NewManager(cfg, opts.Cwd, opts.LogPath)
+	if opts.Credentials != nil {
+		m.SetCredentials(opts.Credentials)
+	} else if opts.CredentialsPath != "" {
+		m.SetCredentials(NewCredentialStore(opts.CredentialsPath))
+	}
 	defer m.Close()
 	names := cfg.Names()
 	reports := make([]listReport, len(names))
@@ -638,9 +779,14 @@ func cliList(cfg Config, asJSON bool, untrustedNote string, opts CLIOptions, log
 				plural = ""
 			}
 			state = fmt.Sprintf("connected, %d tool%s", len(r.Tools), plural)
+		} else if r.State == StateNeedsAuth {
+			state = "needs sign-in"
 		}
 		logf(fmt.Sprintf("%s: %s (%s, %s)", r.Name, state, r.Exposure, r.Scope))
 		logf("  " + r.Transport)
+		if r.State == StateNeedsAuth {
+			logf("  sign in with: gi mcp login " + r.Name)
+		}
 		if len(r.Tools) > 0 {
 			tools := make([]string, len(r.Tools))
 			for i, t := range r.Tools {

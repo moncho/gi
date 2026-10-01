@@ -90,7 +90,7 @@ func (e *Engine) declareLoadedTools(convCtx *goai.Context, names []string) {
 func (e *Engine) toolSearchTool() tools.RegisteredTool {
 	return tools.RegisteredTool{
 		Name: tools.ToolSearchName, Description: tools.ToolSearchDescription, Parameters: json.RawMessage(tools.ToolSearchParameters),
-		Source: "builtin", Kind: "read", Weight: "lightweight",
+		Source: "builtin", Kind: "read", Weight: "lightweight", ModelOnly: true,
 		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
 			query, _ := call.Arguments["query"].(string)
 			if strings.TrimSpace(query) == "" {

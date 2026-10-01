@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rcarmo/gi/internal/codemode"
 	"github.com/rcarmo/gi/internal/config"
 	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/tools"
@@ -44,10 +45,12 @@ const (
 
 // pruneMCPOutput deletes saved MCP outputs older than the retention period.
 func (e *Engine) pruneMCPOutput(ctx context.Context) {
-	if n, err := e.store.PruneVFSNamespace(ctx, mcpOutputNamespace, time.Now().Add(-mcpOutputRetention)); err != nil {
-		log.Printf("mcp: prune outputs: %v", err)
-	} else if n > 0 {
-		log.Printf("mcp: pruned %d saved outputs older than %s", n, mcpOutputRetention)
+	for _, ns := range []string{mcpOutputNamespace, codemodeOutputNamespace} {
+		if n, err := e.store.PruneVFSNamespace(ctx, ns, time.Now().Add(-mcpOutputRetention)); err != nil {
+			log.Printf("prune %s: %v", ns, err)
+		} else if n > 0 {
+			log.Printf("pruned %d saved outputs in %s older than %s", n, ns, mcpOutputRetention)
+		}
 	}
 }
 
@@ -108,7 +111,7 @@ func (e *Engine) enableMCPWith(m *gimcp.Manager) {
 	st.mu.Lock()
 	e.updateToolSearchLocked() // from config, before servers connect (Pi)
 	st.mu.Unlock()
-	go e.runMCPOutputPruner(e.backgroundContext())
+	e.autoEnableCodemode(m.Config())
 	m.SetOnToolsChanged(func(server string) { e.refreshMCPServer(e.backgroundContext(), server) })
 	for _, name := range m.Config().Names() {
 		if !m.Config().Servers[name].Enabled {
@@ -223,8 +226,30 @@ func (e *Engine) mcpRegisteredTool(mt mcpTool) tools.RegisteredTool {
 		kind = "read"
 	}
 	server, toolName := mt.Server, mt.Tool.Name
+	var structured json.RawMessage
+	if mt.Tool.OutputSchema != nil {
+		structured, _ = json.Marshal(mt.Tool.OutputSchema)
+	}
 	return tools.RegisteredTool{
 		Name: mt.Name, Description: desc, Parameters: params, Source: "mcp:" + server, Kind: kind,
+		// Scripts receive the whole CallToolResult (without _meta), as in Pi.
+		OutputSchema: codemode.MCPResultSchema(structured),
+		StructuredExecutor: func(ctx context.Context, _ tools.ToolRuntime, call goai.ToolCall) (json.RawMessage, bool, error) {
+			result, err := e.mcp.manager.CallTool(ctx, server, toolName, nonNilArgs(call.Arguments))
+			if err != nil {
+				return nil, false, err
+			}
+			raw, err := json.Marshal(result)
+			if err != nil {
+				return nil, false, err
+			}
+			var obj map[string]any
+			if err := json.Unmarshal(raw, &obj); err == nil {
+				delete(obj, "_meta")
+				raw, _ = json.Marshal(obj)
+			}
+			return raw, result.IsError, nil
+		},
 		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
 			result, err := e.mcp.manager.CallTool(ctx, server, toolName, nonNilArgs(call.Arguments))
 			if err != nil {

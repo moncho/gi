@@ -35,6 +35,12 @@ type RuntimeConfig struct {
 	TUIWheelScrollLines int                    `json:"tui_wheel_scroll_lines"`
 	// Theme is Pi's theme setting (project .pi/settings.json, else global).
 	Theme string `json:"theme,omitempty"`
+	// DefaultToolsLayers are Pi's defaultTools lists, user then project.
+	DefaultToolsLayers [][]string `json:"default_tools_layers,omitempty"`
+	// ExtensionsLayers are Pi's extensions lists, user then project.
+	ExtensionsLayers [][]string `json:"extensions_layers,omitempty"`
+	// Codemode is Pi's codemode settings (project values override user ones).
+	Codemode CodemodeSettings `json:"codemode"`
 	Compaction          CompactionSettings     `json:"compaction"`
 	Retry               ProviderRetrySettings  `json:"retry"`
 	Hooks               HookSettings           `json:"hooks"`
@@ -104,6 +110,9 @@ type WorkspaceIndexSettings struct {
 }
 
 type piSettings struct {
+	DefaultTools []string          `json:"defaultTools"`
+	Extensions   []string          `json:"extensions"`
+	Codemode     *CodemodeSettings `json:"codemode"`
 	// Theme is Pi's theme setting: a theme name ("dark", "light", custom) or
 	// an auto pair "light/dark" resolved by the terminal's detected scheme.
 	Theme                string   `json:"theme"`
@@ -135,6 +144,8 @@ func Load(workspaceRoot string) RuntimeConfig {
 		workspaceRoot = DefaultWorkspaceRoot()
 	}
 	cfg := RuntimeConfig{WorkspaceRoot: workspaceRoot, Compaction: CompactionSettings{Enabled: true}, InboundWork: InboundWorkSettings{Enabled: true}}
+	var projectTools, projectExtensions []string
+	var projectCodemode *CodemodeSettings
 	var pc piclawConfig
 	if err := readJSON(filepath.Join(workspaceRoot, ".piclaw", "config.json"), &pc); err == nil {
 		cfg.AssistantName = pc.Assistant.AssistantName
@@ -167,8 +178,24 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.Routing = ps.Routing
 		cfg.WorkspaceIndex = ps.WorkspaceIndex
 		cfg.Theme = strings.TrimSpace(ps.Theme)
+		projectTools, projectExtensions, projectCodemode = ps.DefaultTools, ps.Extensions, ps.Codemode
 	}
 	applyGlobalPiSettings(&cfg)
+	// Project settings apply on top of the user's (Pi).
+	if projectTools != nil {
+		cfg.DefaultToolsLayers = append(cfg.DefaultToolsLayers, projectTools)
+	}
+	if projectExtensions != nil {
+		cfg.ExtensionsLayers = append(cfg.ExtensionsLayers, projectExtensions)
+	}
+	if projectCodemode != nil {
+		if projectCodemode.Mode != "" {
+			cfg.Codemode.Mode = projectCodemode.Mode
+		}
+		if projectCodemode.InlineBudget != nil {
+			cfg.Codemode.InlineBudget = projectCodemode.InlineBudget
+		}
+	}
 	if discovery, err := skills.Discover(workspaceRoot); err == nil {
 		cfg.Discovery = discovery
 	}
@@ -343,6 +370,15 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	if cfg.Theme == "" {
 		cfg.Theme = strings.TrimSpace(global.Theme)
 	}
+	if global.DefaultTools != nil {
+		cfg.DefaultToolsLayers = append([][]string{global.DefaultTools}, cfg.DefaultToolsLayers...)
+	}
+	if global.Extensions != nil {
+		cfg.ExtensionsLayers = append([][]string{global.Extensions}, cfg.ExtensionsLayers...)
+	}
+	if global.Codemode != nil {
+		cfg.Codemode = *global.Codemode
+	}
 	if len(cfg.EnabledModels) == 0 && len(global.EnabledModels) > 0 {
 		cfg.EnabledModels = append([]string(nil), global.EnabledModels...)
 	}
@@ -356,4 +392,53 @@ func wheelScrollLines(v any) int {
 		return 0
 	}
 	return max(1, min(100, int(n)))
+}
+
+// CodemodeSettings are Pi's codemode settings.
+type CodemodeSettings struct {
+	Mode         string `json:"mode,omitempty"`         // "on" (default) or "only"
+	InlineBudget *int   `json:"inlineBudget,omitempty"` // description token budget
+}
+
+// ToolEnabledByDefault applies Pi's defaultTools layers to one tool: a list
+// with plain names replaces the selection, +name/-name edit it.
+func (c RuntimeConfig) ToolEnabledByDefault(name string, initial bool) bool {
+	enabled := initial
+	for _, layer := range c.DefaultToolsLayers {
+		plain := false
+		for _, entry := range layer {
+			if e := strings.TrimSpace(entry); e != "" && !strings.HasPrefix(e, "+") && !strings.HasPrefix(e, "-") {
+				plain = true
+			}
+		}
+		if plain {
+			enabled = false
+		}
+		for _, entry := range layer {
+			switch e := strings.TrimSpace(entry); {
+			case e == name, e == "+"+name:
+				enabled = true
+			case e == "-"+name:
+				enabled = false
+			}
+		}
+	}
+	return enabled
+}
+
+// BuiltinDisabled reports whether "-builtin:<name>" appears in Pi's
+// extensions setting (the last layer to mention it wins).
+func (c RuntimeConfig) BuiltinDisabled(name string) bool {
+	disabled := false
+	for _, layer := range c.ExtensionsLayers {
+		for _, entry := range layer {
+			switch strings.TrimSpace(entry) {
+			case "-builtin:" + name:
+				disabled = true
+			case "+builtin:" + name, "builtin:" + name:
+				disabled = false
+			}
+		}
+	}
+	return disabled
 }

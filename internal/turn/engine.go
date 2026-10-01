@@ -52,6 +52,7 @@ type Engine struct {
 	bgCtx                             context.Context
 	bgCancel                          context.CancelFunc
 	mcp                               *mcpState // nil unless EnableMCP was called
+	codemode                          *codemodeState // nil when -builtin:codemode
 	closing                           atomic.Bool    // set by Close: no new launches
 	runs                              sync.WaitGroup // in-flight runTurn goroutines
 	extensions                        []ExtensionInfo
@@ -207,7 +208,11 @@ func NewWithRuntimeConfig(s *store.Store, cfg config.RuntimeConfig, systemPrompt
 		subs:              map[string]map[chan map[string]any]bool{},
 	}
 	e.registerDefaultTools()
+	e.registerCodemodeTool()
 	e.startTopicBridge()
+	if e.store != nil {
+		go e.runMCPOutputPruner(e.backgroundContext()) // mcp-output and codemode-output
+	}
 	if e.store != nil {
 		if _, err := e.recoverInterruptedTurns(e.backgroundContext(), ""); err != nil {
 			log.Printf("turn recovery: startup scan failed: %v", err)
@@ -614,6 +619,9 @@ func (e *Engine) submitPrompt(ctx context.Context, in RunInput, retry *store.Hel
 	effectiveTools, restrictedTools, err := e.resolveEffectiveToolNames(parentTurn, in.Metadata)
 	if err != nil {
 		return nil, err
+	}
+	if parentTurn == nil {
+		effectiveTools = e.applySessionCodemodeToggle(opCtx, in.SessionID, effectiveTools)
 	}
 	subTurnToolsRestricted = restrictedTools
 	for k, v := range in.Metadata {
@@ -4378,6 +4386,7 @@ func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.Too
 		OnOutput:      onOutput,
 		AttachImage:   images.attachFunc(),
 		AddTools:      images.addToolsFunc(),
+		ToolCallID:    call.ID,
 	}, call)
 }
 
@@ -4894,6 +4903,7 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 	}
 	// Tools loaded by tool_search earlier in the session stay declared.
 	r.engine.declareLoadedTools(convCtx, r.engine.sessionLoadedTools(ctx, sessionID))
+	r.engine.applyCodemodeLoadout(ctx, convCtx, sessionID, turnMetadata)
 	ids, offset := snapshotMessageIDs(snapshot)
 	if plan := r.engine.planMCPSection(ctx, sessionID, ids, offset, convCtx.Messages); plan != nil {
 		mcpSectionPlans.Store(sessionID, plan)

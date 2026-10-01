@@ -61,3 +61,44 @@ e, _ := codemode.Default()
 res := e.Execute(ctx, code, codemode.Options{Tools: []codemode.Tool{...}, Globals: ..., Store: ..., Timeout: ..., MemoryLimitBytes: ...})
 // res.OK, res.Value (JSON), res.Error{Kind,Name,Message,Stack}, res.Output, res.Calls, res.StoreWrites
 ```
+
+## The `codemode` tool (`internal/turn/codemode_tool.go`)
+
+The tool the model calls is a port of Pi's codemode extension. Its input is
+`{ "code": "<JavaScript>" }`. The code may start with a
+`// @options: {"max_output_tokens": N, "timeout_ms": N}` line, which
+`codemode.ParseSource` reads with Pi's rules and messages.
+
+- **Description:**
+  - **Generation:** `codemode.Description` ports `createCodemodeDescription`. Pi's intro and guidance texts are extracted verbatim from Pi's codemode extension by `scripts/vendor-codemode.mjs`.
+  - **Tool samples:** rendered by Pi's own `declarations.js`, run in QuickJS (`Engine.RenderDeclarations`). Results are cached by a hash of the declarations.
+  - **Listed tools:** in mode `on`, tools without direct exposure (MCP codemode and deferred tools); in mode `only`, every callable tool.
+  - **Inline budget:** sections are chosen per namespace, cheapest first, until `codemode.inlineBudget` is spent (default 3000 tokens). Deferred-exposure tools are never listed.
+  - **Models API:** omitted (gi has no `models.*`).
+- **Loadout (each request):**
+  - **Mode `on`:** declared callable tools get their codemode declaration as their description.
+  - **Mode `only`:** declarations of direct tools are left out. `codemode` and `tool_search` stay.
+- **Callable tools:**
+  - **Included:** the turn's active tools, plus every deferred registry entry (MCP codemode/deferred tools).
+  - **Excluded:** `ModelOnly` tools (`codemode`, `tool_search`).
+- **What scripts receive:**
+  - **MCP tools:** their `CallToolResult` (without `_meta`), via `RegisteredTool.StructuredExecutor`, with `OutputSchema` from `codemode.MCPResultSchema`.
+  - **Other tools:** their text.
+- **Nested calls:**
+  - **Hooks:** they run `tool_call`, `approve_tool` and `tool_result` (text tools). Payloads carry `parent_tool_call_id` and IDs look like `<parent>/<n>`.
+  - **Events:** `tool_started`/`tool_finished`/`tool_failed` runtime events are published.
+  - **Results:** they are not added to the transcript. Only the script's output reaches the model, as in Pi.
+  - **Errors:** a blocked or failed call rejects with an Error.
+- **Globals:**
+  - **Discovery:** `searchTools(query, {limit, namespace})` (BM25 from `tool_search`), `describeTool(name)` and `describeNamespace(name)` (MCP servers).
+  - **Store:** `store`/`load` persist in session state (`codemode_store`), applied only when the script succeeds.
+- **Output:**
+  - **Format:** `Script completed|Script failed\nWall time X seconds\nOutput:\n` followed by the text items. A returned value is appended like `text()`.
+  - **Failures:** they add `Script error:\n<stack>` plus Pi's tool-call summary, and the tool result is an error.
+  - **Long output:** past `max_output_tokens` (default 10000, 4 characters per token) the text keeps its start and end. The full text is saved at `vfs://codemode-output/<session>/<id>.txt`, which is pruned after 7 days with `mcp-output`.
+  - **Images:** attached to the tool result.
+- **Limits:** 256 MiB of memory; no timeout unless `timeout_ms` is set. Aborting the turn cancels the script.
+- **Enabling codemode:**
+  - **Built-in:** codemode is registered unless `extensions` contains `-builtin:codemode`.
+  - **Declared by default:** when `defaultTools` enables it (layered user→project: `+codemode`/`-codemode` edit the selection, plain names replace it), or when an enabled MCP server has codemode exposure and `autoEnableCodemode` is not false (an explicit `-codemode` wins).
+  - **Session toggle:** `codemode_mode` (`on`/`off`/`only`, set by `Engine.SetSessionCodemode`) overrides this at admission. `only` also forces the `only` presentation, as does `codemode.mode: "only"` in settings.

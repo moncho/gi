@@ -101,6 +101,7 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 - [Thinking transcript wrapping](tui-thinking-wrap.md) — padded width, retained source, resize and regression evidence
 - `tools/` — built-in tool contracts
 - `scripting/` — scripting runtimes and bridge docs
+- [Codemode engine](codemode.md) — QuickJS (WASI) on wazero with Pi's vendored prelude; script API, limits, error kinds
 - [MCP client](mcp.md) — mcp.json format and lookup (.gi then .pi), validation, transports, lifecycle and logging
 - [MCP and codemode plan](mcp-codemode-plan.md) — Pi-parity target, existing branches, engine decision (QuickJS vs Joker on wazero) and phases
 - [Joker WASI feasibility](scripting/joker-wasi.md) — dependency pins, whole-interpreter guest probe, ARM64 bootstrap fix and unimplemented sandbox boundaries

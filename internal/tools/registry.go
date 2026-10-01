@@ -36,6 +36,9 @@ type ToolRuntime struct {
 	// AddTools reports tools this call loaded for the session (tool_search);
 	// they are declared from the next model call (nil outside turns).
 	AddTools func(names []string)
+	// ToolCallID is the model's ID for this call (the parent of codemode's
+	// nested calls).
+	ToolCallID string
 }
 
 type ToolExecutor func(context.Context, ToolRuntime, goai.ToolCall) (string, error)
@@ -53,6 +56,16 @@ type RegisteredTool struct {
 	// they reach the model only when loaded (tool_search) or listed explicitly
 	// in the active set (Pi's deferred/codemode exposure).
 	Deferred bool
+	// ModelOnly tools (codemode, tool_search) cannot be called from codemode
+	// scripts.
+	ModelOnly bool
+	// OutputSchema is the JSON Schema of the value codemode scripts receive;
+	// empty means text (Pi's default). MCP tools declare a CallToolResult.
+	OutputSchema json.RawMessage
+	// StructuredExecutor, when set, returns the value codemode scripts
+	// receive (e.g. an MCP CallToolResult as JSON) and whether it reports an
+	// error; scripts still resolve to it, like Pi's structuredContent.
+	StructuredExecutor func(context.Context, ToolRuntime, goai.ToolCall) (json.RawMessage, bool, error)
 }
 
 func (t RegisteredTool) Definition() goai.Tool {

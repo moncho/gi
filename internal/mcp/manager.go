@@ -58,9 +58,18 @@ type Manager struct {
 	log       *rotatingLog
 	lookupEnv func(string) (string, bool)
 
-	mu      sync.Mutex
-	servers map[string]*server
-	closed  bool
+	mu             sync.Mutex
+	servers        map[string]*server
+	closed         bool
+	onToolsChanged func(server string)
+}
+
+// SetOnToolsChanged registers a callback run (in its own goroutine) when a
+// server announces a changed tool list, so callers can re-register tools.
+func (m *Manager) SetOnToolsChanged(fn func(server string)) {
+	m.mu.Lock()
+	m.onToolsChanged = fn
+	m.mu.Unlock()
 }
 
 type server struct {
@@ -310,6 +319,12 @@ func (m *Manager) clientFor(s *server) *mcp.Client {
 			s.mu.Lock()
 			s.toolsValid = false // new tools appear, withdrawn ones become unreachable
 			s.mu.Unlock()
+			m.mu.Lock()
+			fn := m.onToolsChanged
+			m.mu.Unlock()
+			if fn != nil {
+				go fn(name)
+			}
 		},
 		LoggingMessageHandler: func(_ context.Context, req *mcp.LoggingMessageRequest) {
 			if m.log != nil && req != nil && req.Params != nil {
@@ -556,3 +571,67 @@ func (l *rotatingLog) Close() {
 	}
 }
 
+
+// HasResources reports whether a connected server offers resources.
+func (m *Manager) HasResources(name string) bool {
+	s, err := m.server(name)
+	if err != nil {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.session == nil {
+		return false
+	}
+	res := s.session.InitializeResult()
+	return res != nil && res.Capabilities != nil && res.Capabilities.Resources != nil
+}
+
+// ListResources lists one page of a server's resources. Listing and reading
+// resources is retried once after a transient error (Pi).
+func (m *Manager) ListResources(ctx context.Context, name, cursor string) (*mcp.ListResourcesResult, error) {
+	return withSession(ctx, m, name, func(ctx context.Context, cs *mcp.ClientSession) (*mcp.ListResourcesResult, error) {
+		return cs.ListResources(ctx, &mcp.ListResourcesParams{Cursor: cursor})
+	})
+}
+
+// ListResourceTemplates lists one page of a server's resource templates.
+func (m *Manager) ListResourceTemplates(ctx context.Context, name, cursor string) (*mcp.ListResourceTemplatesResult, error) {
+	return withSession(ctx, m, name, func(ctx context.Context, cs *mcp.ClientSession) (*mcp.ListResourceTemplatesResult, error) {
+		return cs.ListResourceTemplates(ctx, &mcp.ListResourceTemplatesParams{Cursor: cursor})
+	})
+}
+
+// ReadResource reads one resource by URI.
+func (m *Manager) ReadResource(ctx context.Context, name, uri string) (*mcp.ReadResourceResult, error) {
+	return withSession(ctx, m, name, func(ctx context.Context, cs *mcp.ClientSession) (*mcp.ReadResourceResult, error) {
+		return cs.ReadResource(ctx, &mcp.ReadResourceParams{URI: uri})
+	})
+}
+
+func withSession[T any](ctx context.Context, m *Manager, name string, call func(context.Context, *mcp.ClientSession) (T, error)) (T, error) {
+	var zero T
+	s, err := m.server(name)
+	if err != nil {
+		return zero, err
+	}
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		session, err := m.ensureSession(ctx, s)
+		if err != nil {
+			return zero, err
+		}
+		callCtx, cancel := context.WithTimeout(ctx, s.cfg.Timeout)
+		out, err := call(callCtx, session)
+		cancel()
+		if err == nil {
+			return out, nil
+		}
+		lastErr = err
+		m.noteFailure(s, session, err)
+		if ctx.Err() != nil || !transientHTTPError(err) {
+			break
+		}
+	}
+	return zero, fmt.Errorf("mcp %s: %w", name, lastErr)
+}

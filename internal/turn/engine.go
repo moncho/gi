@@ -51,6 +51,7 @@ type Engine struct {
 	peering                           *peering.Manager
 	bgCtx                             context.Context
 	bgCancel                          context.CancelFunc
+	mcp                               *mcpState // nil unless EnableMCP was called
 	closing                           atomic.Bool    // set by Close: no new launches
 	runs                              sync.WaitGroup // in-flight runTurn goroutines
 	extensions                        []ExtensionInfo
@@ -314,6 +315,7 @@ func (e *Engine) Close() error {
 	}
 	if e.closing.CompareAndSwap(false, true) {
 		e.abortActiveTurns(shutdownGrace)
+		e.closeMCP()
 	}
 	if e.bgCancel != nil {
 		e.bgCancel()
@@ -484,6 +486,9 @@ func (e *Engine) SubmitPrompt(ctx context.Context, in RunInput) (*SubmitResult, 
 
 func (e *Engine) submitPrompt(ctx context.Context, in RunInput, retry *store.HeldRetryAdmission, composerToken, mediaToken string) (*SubmitResult, error) {
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
+	// Direct MCP tools must be registered before the turn's tool set is
+	// admitted; wait (bounded) for their servers outside the runner lock.
+	e.awaitDirectMCPTools(opCtx)
 	if in.Intent == "" {
 		in.Intent = "prompt"
 	}
@@ -4863,6 +4868,9 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 	sysPrompt := r.engine.systemPrompt
 	if sysPrompt == "" {
 		sysPrompt = "You are a helpful coding assistant."
+	}
+	if section := r.engine.mcpServersSection(); section != "" {
+		sysPrompt += "\n\n" + section
 	}
 
 	var turnMetadata map[string]any

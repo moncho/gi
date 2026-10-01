@@ -89,6 +89,23 @@ func (r *ToolRegistry) Register(tool RegisteredTool) error {
 	return nil
 }
 
+// Unregister removes a tool (e.g. an MCP tool its server withdrew).
+func (r *ToolRegistry) Unregister(name string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.tools[name]; !ok {
+		return
+	}
+	delete(r.tools, name)
+	delete(r.active, name)
+	for i, n := range r.order {
+		if n == name {
+			r.order = append(r.order[:i], r.order[i+1:]...)
+			break
+		}
+	}
+}
+
 func (r *ToolRegistry) Get(name string) (RegisteredTool, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

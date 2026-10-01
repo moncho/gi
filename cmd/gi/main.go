@@ -138,6 +138,7 @@ func run() error {
 	processCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	engine := turn.NewWithRuntimeConfig(s, runtimeCfg, runtimeCfg.SystemPrompt)
+	engine.EnableMCP() // Pi mcp.json servers (.gi first, then .pi); connects in the background
 	defer engine.Close()
 	server := giweb.New(s, engine, runtimeCfg)
 	server.StartInboundWorkDispatcher(processCtx)

@@ -1,8 +1,10 @@
 # MCP client (`internal/mcp`)
 
-Status: the client core is in place (#25, phase 1). It is not yet wired into
-turns: tool exposure, `tool_search`, codemode, `/mcp` and OAuth are later
-phases ([plan](mcp-codemode-plan.md)).
+Status: the client core (#25, phase 1) and tool exposure (phase 2) are in
+place. `tool_search`, codemode, `/mcp` and OAuth are later phases
+([plan](mcp-codemode-plan.md)). The TUI and web server call
+`Engine.EnableMCP()` at startup; engines built for tests never read the user's
+`mcp.json`.
 
 ## Configuration
 
@@ -82,3 +84,47 @@ Rules, as in Pi:
 - **Status:** `Status()` reports each server's state (`disabled`,
   `disconnected`, `connecting`, `connected` or `failed`), its error, tool
   count, exposure, source file, instructions and stderr tail.
+
+## How tools reach the model
+
+- **Naming:** tools are named like Pi's: `mcp__<server>__<tool>`, with every
+  character outside `[A-Za-z0-9_]` replaced by `_`.
+  - A name over 64 characters, or one that collides, gets `_` plus 8 hex
+    characters of SHA-256 of `server\0tool`.
+  - Tools of one server that sanitize to the same name all get the suffix.
+  - The server's namespace is `mcp__<server>` with `-` replaced by `_`.
+- **`direct` tools:** registered in the tool registry like built-in tools. Hooks,
+  permissions, events and audit apply, and the source is `mcp:<server>`. A
+  `readOnlyHint` annotation marks the tool as `read`.
+  - Before a turn's tool set is admitted, admission waits up to 10 s, outside
+    the runner lock, for servers that can expose direct tools.
+  - When a server announces a changed tool list, its tools are re-registered,
+    and withdrawn tools are unregistered.
+- **`codemode` and `deferred` tools** are catalogued for codemode and
+  `tool_search` (phases 3–5), and are not declared to the model.
+- **`hidden` tools** are unreachable.
+- **System prompt:** servers with codemode or deferred tools are listed in an
+  `<mcp_servers>` section, using Pi's renderer (intro line, `- mcp__<server>
+  (codemode|tool_search): <summary>`, 4096-character budget).
+  - **gi difference:** gi appends the section to the system prompt on every
+    turn. Pi instead appends changes to the conversation, so its earlier
+    messages stay cached.
+- **Results** follow Pi's `convertMcpResult`:
+  - Text and embedded text resources pass through.
+  - Resource links name `read_mcp_resource`.
+  - Empty content falls back to `structuredContent` as JSON.
+  - An `isError` result becomes a tool error.
+  - Text over 20 KB keeps its start and end around `…N chars truncated…`,
+    with Pi's warning header.
+  - **gi differences:**
+    - The full text, and any binary resource, is saved to
+      `vfs://mcp-output/<session>/<id><ext>`, where the `read` tool can open
+      it. Pi uses temp files.
+    - gi tool results are text, so images are described (`[image <mime>,
+      <size>]`) rather than attached.
+- **Resource tools:** `list_mcp_resources`, `list_mcp_resource_templates` and
+  `read_mcp_resource` are registered while an enabled, non-hidden server with
+  resources has direct exposure.
+  - Without a `server` argument, the list tools return every resource from
+    every server; with one, they return a page plus `nextCursor`.
+  - Listing and reading are retried once after a transient error.

@@ -63,6 +63,7 @@ func RunMode(dbPath, workspace, model, mode string) error {
 	defer s.Close()
 
 	engine := turn.NewWithRuntimeConfig(s, cfg, cfg.SystemPrompt)
+	engine.EnableMCP() // Pi mcp.json servers (.gi first, then .pi); connects in the background
 	defer engine.Close()
 	return runWithEngineMode(s, engine, cfg, mode == "regular")
 }

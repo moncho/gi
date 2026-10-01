@@ -106,9 +106,22 @@ Rules, as in Pi:
 - **System prompt:** servers with codemode or deferred tools are listed in an
   `<mcp_servers>` section, using Pi's renderer (intro line, `- mcp__<server>
   (codemode|tool_search): <summary>`, 4096-character budget).
-  - **gi difference:** gi appends the section to the system prompt on every
-    turn. Pi instead appends changes to the conversation, so its earlier
-    messages stay cached.
+  - **Placement, as in Pi:**
+    - The section's value when the session starts is part of the system
+      prompt.
+    - A later change (for example, a server connecting and its instructions
+      becoming available) is added once to the conversation, as a system
+      message updating the section, before the prompt that introduced it.
+      It keeps that position on later turns, so earlier messages stay cached.
+    - If MCP appears mid-session, its section is appended rather than added
+      to the system prompt.
+    - gi records the first value and the updates in the session state
+      (`mcp_servers_context`), and inserts the updates when requests are
+      built, so stored messages and compaction coverage are unchanged.
+    - If compaction removes an update's anchor, that value moves into the
+      system prompt.
+    - go-ai sends the updates as mid-conversation system messages, or folds
+      them into the system prompt for providers without support.
 - **Results** follow Pi's `convertMcpResult`:
   - Text and embedded text resources pass through.
   - Resource links name `read_mcp_resource`.

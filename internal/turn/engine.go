@@ -4876,9 +4876,6 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 	if sysPrompt == "" {
 		sysPrompt = "You are a helpful coding assistant."
 	}
-	if section := r.engine.mcpServersSection(); section != "" {
-		sysPrompt += "\n\n" + section
-	}
 
 	var turnMetadata map[string]any
 	if turnRec, err := s.GetTurn(ctx, turnID); err == nil {
@@ -4893,6 +4890,12 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 		SystemPrompt: sysPrompt,
 		Tools:        r.engine.toolDefsForMetadata(turnMetadata),
 		Messages:     r.projectContextSnapshot(ctx, sessionID, snapshot),
+	}
+	ids, offset := snapshotMessageIDs(snapshot)
+	if plan := r.engine.planMCPSection(ctx, sessionID, ids, offset, convCtx.Messages); plan != nil {
+		mcpSectionPlans.Store(sessionID, plan)
+	} else {
+		mcpSectionPlans.Delete(sessionID)
 	}
 
 	if resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeAgentStart, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, SystemPrompt: convCtx.SystemPrompt, Messages: convCtx.Messages, Tools: convCtx.Tools}); err != nil {
@@ -4956,6 +4959,9 @@ func (r *sessionRunner) prepareAgentIteration(ctx context.Context, sessionID, tu
 
 func (r *sessionRunner) runProviderIteration(ctx context.Context, s *store.Store, turnID, sessionID, model, agentID string, iter, maxIter int, convCtx *goai.Context) (*inference.StreamResult, error) {
 	requestCtx := &goai.Context{SystemPrompt: convCtx.SystemPrompt, Messages: append([]goai.Message(nil), convCtx.Messages...), Tools: append([]goai.Tool(nil), convCtx.Tools...)}
+	if plan, ok := mcpSectionPlans.Load(sessionID); ok {
+		requestCtx.SystemPrompt, requestCtx.Messages = plan.(*mcpSectionPlan).apply(requestCtx.SystemPrompt, requestCtx.Messages)
+	}
 	if resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeProviderRequest, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, SystemPrompt: convCtx.SystemPrompt, Messages: convCtx.Messages, Tools: convCtx.Tools, Payload: map[string]any{"model": model, "messages": len(convCtx.Messages), "tools": len(convCtx.Tools), "stage": "context"}}); err != nil {
 		log.Printf("hook before_provider_request error: %v", err)
 	} else {

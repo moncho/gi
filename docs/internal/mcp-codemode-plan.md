@@ -144,10 +144,9 @@ gi adds a runtime toggle that Pi does not have as a command:
 - `/codemode [on|off|only|default|status]` switches it for the current
   session. The choice is stored in the session state, so it survives
   restarts and `/resume`.
-- `/tools` is not used for codemode. It is gi's own command (Pi only ships
-  one as an example extension) and manages the engine-wide active tool set,
-  while codemode is a per-session toggle applied when each prompt is
-  admitted. `/codemode` is the only control for it.
+- `/tools activate codemode` turns it on for the session (the same toggle
+  as `/codemode on`; other names still go to gi's engine-wide active set),
+  and `/tools reset` returns it to the settings default.
 - The web settings pane gets the same switch.
 
 When codemode is off and MCP tools have `codemode` exposure, gi warns once

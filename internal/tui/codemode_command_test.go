@@ -24,3 +24,16 @@ func TestTUICodemodeCommand(t *testing.T) {
 		t.Fatal(out)
 	}
 }
+
+// /tools activate codemode switches the session's codemode toggle on;
+// /tools reset returns it to the settings default.
+func TestTUIToolsActivateCodemode(t *testing.T) {
+	c := sessionTestChat(t)
+	if out := c.toolCommand([]string{"/tools", "activate", "codemode"}); len(out) == 0 || !strings.Contains(out[0], "codemode: on (on) for this session (from session)") {
+		t.Fatal(out)
+	}
+	out := c.toolCommand([]string{"/tools", "reset"})
+	if !strings.Contains(strings.Join(out, "\n"), "codemode: off for this session (from settings)") {
+		t.Fatal(out)
+	}
+}

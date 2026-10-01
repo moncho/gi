@@ -4228,22 +4228,36 @@ func (c *chatTUI) toolCommand(fields []string) []string {
 				return []string{"tools: usage /tools activate <tool> [tool...]"}
 			}
 			names := make([]any, 0, len(fields)-2)
+			var lines []string
 			for _, name := range fields[2:] {
-				if strings.TrimSpace(name) != "" {
-					names = append(names, strings.TrimSpace(name))
+				name = strings.TrimSpace(name)
+				if name == "codemode" {
+					// Codemode is a per-session toggle (#25), not part of the
+					// engine-wide active set.
+					lines = append(lines, c.codemodeCommand([]string{"/codemode", "on"})...)
+				} else if name != "" {
+					names = append(names, name)
 				}
+			}
+			if len(names) == 0 {
+				return lines
 			}
 			out, err := c.engine.ExecuteToolsMeta(map[string]any{"activate": names})
 			if err != nil {
-				return []string{fmt.Sprintf("error: %v", err)}
+				return append(lines, fmt.Sprintf("error: %v", err))
 			}
-			return prefixMultiline("tools", out)
+			return append(lines, prefixMultiline("tools", out)...)
 		case "reset":
 			out, err := c.engine.ExecuteToolsMeta(map[string]any{"reset_active": true})
 			if err != nil {
 				return []string{fmt.Sprintf("error: %v", err)}
 			}
-			return prefixMultiline("tools", out)
+			lines := prefixMultiline("tools", out)
+			if c.engine != nil && c.sessionID != "" {
+				// Codemode returns to its settings default too.
+				lines = append(lines, c.codemodeCommand([]string{"/codemode", "default"})...)
+			}
+			return lines
 		}
 	}
 	query := ""

@@ -49,7 +49,10 @@ type ServerConfig struct {
 	Description  string            `json:"description,omitempty"`
 	Exposure     string            `json:"-"`
 	ToolExposure map[string]string `json:"toolExposure,omitempty"`
-	Source       string            `json:"-"` // file that defined the entry
+	// toolExposureOrder keeps toolExposure keys in file order: among *
+	// patterns the first match wins (Pi), and Go maps do not keep order.
+	toolExposureOrder []string
+	Source            string `json:"-"` // file that defined the entry
 }
 
 // Config is the merged user and (trusted) project configuration.
@@ -224,6 +227,7 @@ func parseServer(name string, raw json.RawMessage, source string) (ServerConfig,
 		return ServerConfig{}, err
 	}
 	s.Exposure = exposure
+	s.toolExposureOrder = orderedKeys(raw, "toolExposure")
 	for pattern, value := range r.ToolExposure {
 		if strings.TrimSpace(pattern) == "" {
 			return ServerConfig{}, fmt.Errorf("toolExposure keys must be tool names or * patterns")
@@ -258,14 +262,18 @@ func (s ServerConfig) ToolExposureFor(tool string) string {
 		e, _ := normalizeExposure(v, s.Exposure)
 		return e
 	}
-	patterns := make([]string, 0, len(s.ToolExposure))
-	for p := range s.ToolExposure {
-		if strings.Contains(p, "*") {
-			patterns = append(patterns, p)
+	order := s.toolExposureOrder
+	if len(order) != len(s.ToolExposure) { // built in code rather than parsed
+		order = order[:0:0]
+		for p := range s.ToolExposure {
+			order = append(order, p)
 		}
+		sort.Strings(order)
 	}
-	sort.Strings(patterns) // JSON object order is not preserved by Go maps
-	for _, p := range patterns {
+	for _, p := range order {
+		if !strings.Contains(p, "*") {
+			continue
+		}
 		if globMatch(p, tool) {
 			e, _ := normalizeExposure(s.ToolExposure[p], s.Exposure)
 			return e
@@ -312,4 +320,35 @@ func expandHome(value string) string {
 		}
 	}
 	return value
+}
+
+// orderedKeys returns the keys of the object stored under field in raw, in
+// file order (empty when absent or not an object).
+func orderedKeys(raw json.RawMessage, field string) []string {
+	var outer map[string]json.RawMessage
+	if json.Unmarshal(raw, &outer) != nil {
+		return nil
+	}
+	inner, ok := outer[field]
+	if !ok {
+		return nil
+	}
+	dec := json.NewDecoder(bytes.NewReader(inner))
+	if tok, err := dec.Token(); err != nil || tok != json.Delim('{') {
+		return nil
+	}
+	var keys []string
+	for dec.More() {
+		tok, err := dec.Token()
+		if err != nil {
+			return keys
+		}
+		key, _ := tok.(string)
+		keys = append(keys, key)
+		var skip json.RawMessage
+		if dec.Decode(&skip) != nil {
+			return keys
+		}
+	}
+	return keys
 }

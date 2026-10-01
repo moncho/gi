@@ -103,7 +103,7 @@ func runWithEngineMode(s *store.Store, engine *turn.Engine, cfg config.RuntimeCo
 	if regular {
 		options = append(options, gotui.WithInlineHeight(5), gotui.WithPostRenderHook(chat.flushRegularTranscript))
 	} else {
-		options = append(options, gotui.WithMouse())
+		options = append(options, gotui.WithMouse(), gotui.WithPreFlushHook(chat.compositeJumpToLatest))
 	}
 	enableGoTUIColorOutput()
 	app, err := gotui.NewApp(options...)
@@ -229,6 +229,7 @@ type chatTUI struct {
 	transcriptRef               *gotui.Ref
 	transcript                  []string
 	regularMode                 bool
+	jumpToLatest                jumpToLatestRect // where the cue was drawn (none: width 0)
 	regularPrinted              int
 	regularSessionPending       bool
 	regularWidth, regularHeight int
@@ -2495,6 +2496,9 @@ func (c *chatTUI) HandleMouse(me gotui.MouseEvent) bool {
 		return true
 	}
 	if c.workspaceIndex.active {
+		return true
+	}
+	if c.handleJumpToLatestClick(me) {
 		return true
 	}
 	if c.handleTranscriptSelection(me) {

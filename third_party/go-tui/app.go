@@ -84,6 +84,7 @@ type App struct {
 	rootComponent  Component      // Root struct component (set via SetRoot with Component)
 	preRenderHook  func()
 	postRenderHook func()
+	preFlushHook   func(*Buffer)
 	rootUnbinder   AppUnbinder // Tracks the current root's AppUnbinder for swap-time teardown. Covers SetRootView where rootComponent is nil.
 
 	// Component watchers (from WatcherProvider components)

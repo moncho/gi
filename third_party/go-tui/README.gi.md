@@ -19,3 +19,4 @@ Maintenance: rebase the patch onto a newer runtime snapshot and run
 `make test-go-tui-runtime`, Gi's full suite and terminal regressions. Remove the
 snapshot and `go.mod` replacement once upstream provides equivalent row redraws.
 The patch is suitable for upstream review; it has not been submitted upstream.
+- `WithPreFlushHook(func(*Buffer))`: called after the element tree and overlays render and before the frame is flushed, so gi can composite Pi's "Jump to latest message" indicator over the laid-out frame.

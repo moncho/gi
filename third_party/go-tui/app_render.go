@@ -77,6 +77,9 @@ func (a *App) renderFrame() {
 	}
 
 	a.renderOverlays(width, renderHeight)
+	if a.preFlushHook != nil {
+		a.preFlushHook(a.buffer)
+	}
 
 	// Sweep mount cache: clean up components no longer in the tree.
 	// Mount() marks active keys during Render(); sweep removes the rest.

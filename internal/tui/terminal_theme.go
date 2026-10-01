@@ -275,7 +275,7 @@ func applyPiTheme(name string) bool {
 	}
 	piText, piMuted, piDim, piAccent = c("text"), c("muted"), c("dim"), c("accent")
 	piError, piWarning, piSuccess = c("error"), c("warning"), c("success")
-	piThinkingText, piUserBg, piSearchMatchBg = c("thinkingText"), c("userMessageBg"), c("searchMatchBg")
+	piThinkingText, piUserBg, piSearchMatchBg, piSelectedBg = c("thinkingText"), c("userMessageBg"), c("searchMatchBg"), c("selectedBg")
 	piMdCode, piMdLink, piBashMode = c("mdCode"), c("mdLink"), c("bashMode")
 	piBorder, piBorderMuted = c("border"), c("borderMuted")
 	piThinkingOff, piThinkingMinimal, piThinkingLow = c("thinkingOff"), c("thinkingMinimal"), c("thinkingLow")

@@ -132,6 +132,17 @@ func WithPreRenderHook(fn func()) AppOption {
 	}
 }
 
+// WithPreFlushHook sets a function called with the frame buffer after the
+// element tree and overlays are rendered and before the frame is flushed, so
+// an application can composite cells over the laid-out frame (gi: Pi's
+// "Jump to latest message" indicator).
+func WithPreFlushHook(fn func(*Buffer)) AppOption {
+	return func(a *App) error {
+		a.preFlushHook = fn
+		return nil
+	}
+}
+
 // WithPostRenderHook sets a callback that runs after every render cycle.
 func WithPostRenderHook(fn func()) AppOption {
 	return func(a *App) error {

@@ -73,3 +73,12 @@ should be removed when equivalent support is available upstream.
 redraw method; tmux tests establish tmux rendering, not Ghostty rendering. The
 prior Ghostty probe remains available but is not required to implement this
 redraw change. Neither the live binary nor the user's terminal was restarted.
+
+## Jump to latest message
+
+The cue matches Pi's fullscreen `scrollToEndIndicator` (pi-tui `TuiAltScreen`, as configured by pi-coding-agent's `tui-renderer`). It is implemented in `internal/tui/jump_to_latest.go`.
+
+- **When:** fullscreen only, while the transcript is not following its end.
+- **What:** ` ↓ Jump to latest message · End ` (`End` is Pi's default key for `tui.altScreen.bottom`), drawn in the theme's `text` colour on `selectedBg`.
+- **Where:** centred on the transcript's last visible row and cut to the transcript width. It is composited over the laid-out frame through go-tui's `WithPreFlushHook` and does not take a layout row.
+- **Clicking it** (a left press) scrolls to the bottom and resumes following. A click on the cue is handled before text selection starts. `End` does the same.

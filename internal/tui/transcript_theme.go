@@ -21,6 +21,7 @@ var (
 	piSuccess         = piRGB(104, 183, 141)
 	piThinkingText    = piRGB(150, 160, 164)
 	piUserBg          = piRGB(33, 59, 73)
+	piSelectedBg      = piRGB(33, 59, 73)
 	piSearchMatchBg   = piRGB(78, 47, 27)
 	piMdCode          = piAccent
 	piBashMode        = piRGB(94, 178, 134)

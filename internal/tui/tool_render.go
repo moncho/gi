@@ -139,7 +139,22 @@ func (c *chatTUI) renderPiToolBlock(block transcriptRenderableBlock) *gotui.Elem
 	if limit <= 0 {
 		limit = toolPreviewLines
 	}
-	if len(body) > 0 {
+	fileTool := block.Header == "read" && block.ToolPath != "" || block.Header == "write" && block.ToolContent != nil
+	if fileTool && c.extensionToolModes[block.Header] != "hidden" {
+		if block.Header == "read" {
+			if block.Expanded || block.Status != "ok" {
+				c.appendFileToolPreview(container, block, strings.Join(body, "\n"), block.Status == "ok")
+			}
+		} else {
+			if block.ToolContent != nil {
+				c.appendFileToolPreview(container, block, *block.ToolContent, true)
+			}
+			if block.Status == "error" || block.Status == "failed" || block.Status == "skipped" {
+				c.appendFileToolPreview(container, block, strings.Join(body, "\n"), false)
+			}
+		}
+	}
+	if !fileTool && len(body) > 0 {
 		container.AddChild(blankRow())
 		visible, hidden := body, 0
 		if !block.Expanded && len(body) > limit {

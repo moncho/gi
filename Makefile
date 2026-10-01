@@ -1126,3 +1126,16 @@ test-joker-wasi:
 .PHONY: fmt-joker-wasi
 fmt-joker-wasi:
 	$(GO) fmt ./scripts/joker-wasi-overlay ./tests/joker-wasi/...
+
+.PHONY: fmt-tool-syntax test-tui-tool-syntax
+fmt-tool-syntax:
+	$(GO) fmt ./internal/tui
+
+test-tui-tool-syntax:
+	$(GO) test -run 'Test(FileTool|PiTool|ToolSyntax)' ./internal/tui
+
+.PHONY: test-tui-tool-syntax-pty
+test-tui-tool-syntax-pty:
+	@mkdir -p $(BIN_DIR)
+	$(GO) test -c -o $(BIN_DIR)/gi-tool-syntax-test ./internal/tui
+	$(BUN) scripts/test-tui-tool-syntax.mjs

@@ -72,6 +72,8 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 
 ## Current structure
 
+- [tui-tool-syntax.md](tui-tool-syntax.md) — file-extension highlighting, read/write previews, historical arguments and terminal acceptance
+
 - [local-notifications.md](local-notifications.md) — browser-scoped opt-in, cross-tab local delivery and logout cleanup; no Web Push
 
 - [voice-input.md](voice-input.md) — capability-gated browser recognition, draft ownership and explicit microphone/device acceptance limits

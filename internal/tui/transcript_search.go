@@ -57,7 +57,7 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 		}
 		gap := assistantGapBefore(previousKind, block.Kind)
 		previousWidth := c.outputWidth
-		if block.MarkdownSource != "" {
+		if block.MarkdownSource != "" || block.ToolPath != "" || block.ToolContent != nil {
 			c.outputWidth = width
 		}
 		el := c.renderTranscriptBlockAfter(block, previousKind)
@@ -88,7 +88,7 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 			}
 			key := ""
 			separator, _, _ := transcriptSpacing(block.Kind)
-			if y >= separator+gap && (len(block.Body) > 0 || block.Subheader != "") && block.Kind != "user" && block.Kind != "assistant" {
+			if y >= separator+gap && (len(block.Body) > 0 || block.Subheader != "" || block.ToolContent != nil) && block.Kind != "user" && block.Kind != "assistant" {
 				key = block.Key
 			}
 			rows = append(rows, transcriptSearchRow{text: strings.TrimRight(text.String(), " "), spans: spans, prompt: block.Kind == "user" && y == gap, blockKey: key}) // prompt = top of the padded user band

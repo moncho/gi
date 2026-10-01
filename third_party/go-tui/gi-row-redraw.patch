@@ -1,0 +1,122 @@
+--- a/app.go
++++ b/app.go
+@@ -30,0 +31 @@
++	rowRedraw       bool // Opt-in complete changed-row output (fullscreen only).
+--- a/app_options.go
++++ b/app_options.go
+@@ -239,0 +240,7 @@
++
++// WithRowRedraw clears and repaints complete changed rows instead of cell diffs.
++// This avoids stale glyph fragments across wide/compound Unicode transitions.
++// Inline mode continues to use its existing terminal-scrollback renderer.
++func WithRowRedraw() AppOption {
++	return func(a *App) error { a.rowRedraw = true; return nil }
++}
+--- a/app_render.go
++++ b/app_render.go
+@@ -105,0 +106,3 @@
++	} else if a.rowRedraw {
++		RenderRows(a.terminal, a.buffer, a.needsFullRedraw)
++		a.needsFullRedraw = false
+--- a/render_rows.go
++++ b/render_rows.go
+@@ -0,0 +1,43 @@
++package tui
++
++// RenderRows uses Pi's fullscreen redraw granularity: compare complete rows,
++// clear each changed row from column zero, then write its complete contents.
++// No cursor jumps into a previously painted grapheme are needed. Call within
++// the app's synchronized update window, like Render and RenderFull.
++// full forces every row on startup, resize and resume without clearing scrollback.
++func RenderRows(term Terminal, buf *Buffer, full bool) {
++	changes := buf.RowDiff(full)
++	if len(changes) > 0 {
++		term.Flush(changes)
++	}
++	buf.Swap()
++}
++
++// RowDiff returns clear-before-paint changes for each changed row. Blank tails
++// remain erased rather than written spaces, preserving terminal copy trimming.
++func (b *Buffer) RowDiff(full bool) []CellChange {
++	changes := make([]CellChange, 0, b.width)
++	for y := 0; y < b.height; y++ {
++		changed := full
++		lastContent := -1
++		for x := 0; x < b.width; x++ {
++			idx := y*b.width + x
++			cell := b.back[idx]
++			if !cell.Equal(b.front[idx]) {
++				changed = true
++			}
++			if !cell.IsEmpty() && !cell.IsContinuation() {
++				lastContent = x + int(cell.Width) - 1
++			}
++		}
++		if !changed {
++			continue
++		}
++		// EraseToEOL at column zero is equivalent to Pi's whole-line EL.
++		changes = append(changes, CellChange{X: 0, Y: y, EraseToEOL: true})
++		for x := 0; x <= lastContent && x < b.width; x++ {
++			changes = append(changes, CellChange{X: x, Y: y, Cell: b.back[y*b.width+x]})
++		}
++	}
++	return changes
++}
+--- a/render_rows_test.go
++++ b/render_rows_test.go
+@@ -0,0 +1,53 @@
++package tui
++
++import "testing"
++
++func TestRowRedrawOptionFrameSync(t *testing.T) {
++	term := newSyncRecordingTerminal(20, 4)
++	app := &App{terminal: term, buffer: NewBuffer(20, 4), focus: newFocusManager(), mounts: newMountState(), root: New(WithText("flag 🇵🇹"))}
++	if err := WithRowRedraw()(app); err != nil {
++		t.Fatal(err)
++	}
++	app.needsFullRedraw = true
++	app.renderFrame()
++	assertWrapped(t, term.ops)
++	for _, op := range term.ops {
++		if op == "clear" {
++			t.Fatal("row redraw cleared whole screen/scrollback")
++		}
++	}
++	if app.needsFullRedraw {
++		t.Fatal("did not consume forced redraw")
++	}
++	term.ops = nil
++	app.root.SetText("flag 🇯🇵")
++	app.renderFrame()
++	assertWrapped(t, term.ops)
++}
++
++func TestRowRedrawIgnoredInlineAndRetainedOnModeSwitch(t *testing.T) {
++	app, emu := newInlineTestApp(20, 8, 3)
++	app.mounts = newMountState()
++	app.root = New(WithText("draft"))
++	if err := WithRowRedraw()(app); err != nil {
++		t.Fatal(err)
++	}
++	app.renderFrame()
++	if app.buffer.Height() != 3 || emu.inAltScreen {
++		t.Fatal("row option changed regular mode")
++	}
++	if err := app.EnterAlternateScreen(); err != nil {
++		t.Fatal(err)
++	}
++	app.renderFrame()
++	if !app.rowRedraw || app.needsFullRedraw || app.buffer.Height() != 8 {
++		t.Fatal("switch lost row redraw")
++	}
++	if err := app.ExitAlternateScreen(); err != nil {
++		t.Fatal(err)
++	}
++	app.renderFrame()
++	if app.buffer.Height() != 3 || app.inlineHeight != 3 || !app.rowRedraw {
++		t.Fatal("regular restoration lost mode state")
++	}
++}

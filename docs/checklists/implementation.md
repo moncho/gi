@@ -861,3 +861,9 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 - [x] Highlight file-tool content by Pi-compatible extension mapping, preserving source and theme colours.
 - [x] Recover arguments from stored calls; retain Pi read/write preview behavior on reload.
 - [x] Verify live/history rendering, errors, narrow widths/resizes, and PTY keyword colours.
+
+### Pi fullscreen scrolling/redraw parity
+
+- [x] Use complete changed-row clear/repaint output instead of partial cell diffs, with Unicode, resize, style/link and regular-mode regression coverage.
+- [x] Match Pi wheel acceleration policy, including local macOS versus SSH and gesture reset on setting changes.
+- [x] Match Pi’s four-row paging overlap; document the opt-in go-tui runtime patch and terminal verification limits.

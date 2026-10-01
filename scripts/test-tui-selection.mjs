@@ -48,6 +48,9 @@ try{for(const [width,height] of [[60,18],[100,22],[140,36]]){
   keys('Escape');await wait(()=>!capture().includes('Selection'),'Escape clears');
   assert(JSON.stringify(bars(capture()))===JSON.stringify(idleBars),'selection added idle rows');
   type('X');await sleep(120);assert(capture().replaceAll('▌','').includes('selection drXaft'),'selection changed cursor');keys('BSpace');
+  // User edits now intentionally jump to latest; restore the original reading
+  // position before comparing a reverse drag against the earlier selection.
+  keys('Home');await wait(()=>capture().includes('SELECT-01'),'top before reverse drag');
   // Drag in reverse copies the same visible rows.
   await drag(col+24,secondRow,col,row);await wait(()=>capture().includes('Selection sent to terminal (OSC 52)'),'reverse copy');assert(clip()===copied,'reverse differs');keys('Escape');await sleep(120);
   // Hold below the viewport. The timer scrolls without more mouse motion.

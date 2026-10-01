@@ -5226,11 +5226,11 @@ func diffLineStyle(line string) (gotui.Style, bool) {
 	trimmed := strings.TrimLeft(line, " ")
 	switch {
 	case strings.HasPrefix(trimmed, "+++") || strings.HasPrefix(trimmed, "---") || strings.HasPrefix(trimmed, "@@"):
-		return piFg(piMuted), true
+		return piFg(piDiffContext), true
 	case strings.HasPrefix(trimmed, "+"):
-		return piFg(piSuccess), true
+		return piFg(piDiffAdded), true
 	case strings.HasPrefix(trimmed, "-"):
-		return piFg(piError), true
+		return piFg(piDiffRemoved), true
 	}
 	return gotui.Style{}, false
 }
@@ -5253,15 +5253,15 @@ func transcriptBlockPalette(kind, status string, selected bool) (gotui.Style, go
 	failed := status == "error" || status == "failed"
 	switch kind {
 	case "user":
-		head, body = piFg(piText), piFg(piText)
+		head, body = piFg(piUserText), piFg(piUserText)
 	case "tool":
-		head, body = piFg(piText).Bold(), piFg(piMuted)
+		head, body = piFg(piToolTitle).Bold(), piFg(piToolOutput)
 	case "bash", "local":
 		head, body = piFg(piBashMode).Bold(), piFg(piMuted)
 	case "thought", "thinking", "thinking_indicator":
 		head, body = piFg(piThinkingText).Italic(), piFg(piThinkingText).Italic()
 	case "hook", "route", "dispatcher", "subturn", "compact":
-		head, body = piFg(piAccent).Bold(), piFg(piMuted)
+		head, body = piFg(piCustomLabel).Bold(), piFg(piCustomText)
 	case "error":
 		head, body = piFg(piError).Bold(), piFg(piError)
 	case "system":

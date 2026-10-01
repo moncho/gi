@@ -1150,3 +1150,10 @@ test-pi-scroll:
 
 test-go-tui-runtime:
 	cd third_party/go-tui && $(GO) test $(RACE) . ./internal/... -count=1
+
+# Native controlling-terminal colour negotiation; Bun, no npm dependencies.
+.PHONY: test-tui-theme-pty
+test-tui-theme-pty:
+	mkdir -p $(BIN_DIR)
+	$(GO) test -c -o $(BIN_DIR)/gi-theme-test ./internal/tui
+	GI_THEME_TEST_BIN=$(abspath $(BIN_DIR)/gi-theme-test) $(BUN) scripts/test-tui-theme.mjs

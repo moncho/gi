@@ -1,6 +1,10 @@
 package tui
 
-import "testing"
+import (
+	"fmt"
+	gotui "github.com/grindlemire/go-tui"
+	"testing"
+)
 
 func TestParseTerminalThemeReplies(t *testing.T) {
 	c := parseTerminalReplies("\x1b]10;rgb:dede/e0e0/e1e1\x07\x1b]11;#1e1e2e\x1b\\\x1b[?997;2n\x1b[?62;22c")
@@ -72,5 +76,62 @@ func TestApplyPiThemeSwapsPalette(t *testing.T) {
 	}
 	if applyPiTheme("no-such-theme") {
 		t.Fatal("unknown theme applied")
+	}
+}
+
+func TestTerminalThemeRejectsMalformedColorsAndIndices(t *testing.T) {
+	for _, value := range []string{"f/f/f", "rgb:f/f/f/f", "rgba:f/f/f", "rgba:f/f/f/no", "rgb:fffff/f/f", "rgb:/f/f", "#fff", "rgb:gg/f/f"} {
+		if _, ok := parseOSCColor(value); ok {
+			t.Errorf("accepted malformed colour %q", value)
+		}
+	}
+	for _, value := range []string{"15;-1", "0;16", "0;256", "0;", "nonsense"} {
+		if got := colorFgBgTheme(value); got != "" {
+			t.Errorf("%q classified as %q", value, got)
+		}
+	}
+	for i := 0; i < 16; i++ {
+		want := "light"
+		if i <= 6 || i == 8 {
+			want = "dark"
+		}
+		if got := colorFgBgTheme(fmt.Sprintf("15;%d", i)); got != want {
+			t.Errorf("index %d: %s", i, got)
+		}
+	}
+}
+
+func TestThemeRolesAppliedIndependently(t *testing.T) {
+	t.Cleanup(func() { applyPiTheme("dark") })
+	// An artificial full palette proves roles are not accidentally aliases.
+	palette := make(map[string][3]uint8)
+	for key, value := range piBuiltinThemes["light"] {
+		palette[key] = value
+	}
+	keys := []string{"mdHeading", "mdCodeBlock", "mdCodeBlockBorder", "mdQuote", "mdQuoteBorder", "mdHr", "mdLinkUrl", "mdListBullet", "toolTitle", "toolOutput", "toolDiffAdded", "toolDiffRemoved", "toolDiffContext", "userMessageText", "customMessageLabel", "customMessageText"}
+	for i, key := range keys {
+		palette[key] = [3]uint8{uint8(i + 1), 2, 3}
+	}
+	piBuiltinThemes["role-fixture"] = palette
+	defer delete(piBuiltinThemes, "role-fixture")
+	applyPiTheme("role-fixture")
+	colors := []gotui.Color{piMdHeading, piMdCodeBlock, piMdCodeBorder, piMdQuote, piMdQuoteBorder, piMdHr, piMdLinkUrl, piMdListBullet, piToolTitle, piToolOutput, piDiffAdded, piDiffRemoved, piDiffContext, piUserText, piCustomLabel, piCustomText}
+	for i, color := range colors {
+		if color != piRGB(uint8(i+1), 2, 3) {
+			t.Errorf("role %s not applied", keys[i])
+		}
+	}
+	base := gotui.NewStyle()
+	if piMarkdownStyle(base, "heading") != base.Foreground(piMdHeading).Bold() {
+		t.Fatal("heading still aliases warning")
+	}
+	if toolOutputStyle("ordinary source") != base.Foreground(piToolOutput) {
+		t.Fatal("tool output still aliases muted")
+	}
+	if s, _ := diffLineStyle("+source"); s != base.Foreground(piDiffAdded) {
+		t.Fatal("diff still aliases success")
+	}
+	if s, _ := piSyntaxStyle(base, "syn-removed"); s != base.Foreground(piDiffRemoved) {
+		t.Fatal("syntax diff still aliases error")
 	}
 }

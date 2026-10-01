@@ -83,6 +83,9 @@ func (e *Engine) registerCodemode() {
 // removes it.
 func (e *Engine) autoEnableCodemode(cfg gimcp.Config) {
 	if e.codemode == nil || !cfg.AutoEnableCodemode || !e.runtimeCfg.ToolEnabledByDefault(codemodeToolName, true) {
+		if warning := e.CodemodeWarning(context.Background(), ""); warning != "" {
+			log.Printf("codemode: %s (enable with /codemode on)", warning) // warned once, at startup
+		}
 		return
 	}
 	for _, name := range cfg.Names() {
@@ -147,6 +150,28 @@ func (e *Engine) CodemodeStatus(ctx context.Context, sessionID string) (enabled 
 	on := e.codemode.defaultOn
 	e.codemode.mu.Unlock()
 	return on, mode, "settings"
+}
+
+// CodemodeWarning explains why MCP codemode tools are unreachable: they
+// are only callable from codemode scripts.
+func (e *Engine) CodemodeWarning(ctx context.Context, sessionID string) string {
+	if e.mcp == nil {
+		return ""
+	}
+	if enabled, _, _ := e.CodemodeStatus(ctx, sessionID); enabled {
+		return ""
+	}
+	var servers []string
+	cfg := e.mcp.manager.Config()
+	for _, name := range cfg.Names() {
+		if sc := cfg.Servers[name]; sc.Enabled && sc.HasCodemodeTools() {
+			servers = append(servers, name)
+		}
+	}
+	if len(servers) == 0 {
+		return ""
+	}
+	return "warning: codemode is off, so the codemode tools of MCP server(s) " + strings.Join(servers, ", ") + " cannot be called"
 }
 
 // codemodePresentation is codemode.mode: the session's "only" wins, else

@@ -2919,6 +2919,8 @@ func (c *chatTUI) handleCommand(text string) {
 			c.app.Stop()
 		}
 		return
+	case "/codemode":
+		c.appendTranscript(c.codemodeCommand(fields)...)
 	case "/abort":
 		if line := c.abortCommand(); line != "" {
 			c.appendTranscript(line)
@@ -3088,6 +3090,7 @@ var giCommands = []struct{ name, hint string }{
 	{"/detach <media:id|all|unresolved>", "Remove pending media refs"},
 	{"/paste-image [prompt]", "Paste a clipboard image, optionally with a prompt"},
 	{"/tools [query|active|activate|reset]", "Inspect or change active tools"},
+	{"/codemode [on|off|only|default|status]", "Toggle the codemode tool for this session"},
 	{"/skills [query]", "List discovered skills"},
 	{"/skill:name [args]", "Load a discovered SKILL.md"},
 	{"/agents", "List configured agents"},

@@ -124,15 +124,17 @@ type transcriptBlockHitTarget struct {
 }
 
 type transcriptBlockMeta struct {
-	Key            string `json:"key"`
-	Kind           string `json:"kind"`
-	Title          string `json:"title"`
-	Status         string `json:"status,omitempty"`
-	StartedAt      string `json:"started_at,omitempty"`
-	EndedAt        string `json:"ended_at,omitempty"`
-	Detail         string `json:"detail,omitempty"`
-	Footer         string `json:"footer,omitempty"`
-	MarkdownSource string `json:"markdown_source,omitempty"`
+	Key            string  `json:"key"`
+	Kind           string  `json:"kind"`
+	Title          string  `json:"title"`
+	Status         string  `json:"status,omitempty"`
+	StartedAt      string  `json:"started_at,omitempty"`
+	EndedAt        string  `json:"ended_at,omitempty"`
+	Detail         string  `json:"detail,omitempty"`
+	Footer         string  `json:"footer,omitempty"`
+	MarkdownSource string  `json:"markdown_source,omitempty"`
+	ToolPath       string  `json:"tool_path,omitempty"`
+	ToolContent    *string `json:"tool_content,omitempty"`
 }
 
 type transcriptBlockSpan struct {
@@ -164,6 +166,8 @@ type transcriptRenderableBlock struct {
 	// cannot be toggled, so no expand/collapse hints are shown.
 	Static bool
 	// Tool call rendering (Pi's renderCall): argument text and timing.
+	ToolPath           string
+	ToolContent        *string
 	ToolArg            string
 	StartedAt, EndedAt string
 }
@@ -1527,10 +1531,11 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 	}
 	// Pi renders the call (e.g. "$ ls -la", "read path") as the tool header;
 	// the body holds only the result output.
-	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName, Detail: previous.Detail}
+	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName, Detail: previous.Detail, ToolPath: previous.ToolPath, ToolContent: previous.ToolContent}
 	if invocation := c.toolInvocationBody(toolName, payload); len(invocation) > 0 {
 		meta.Detail = invocation[0]
 	}
+	setFileToolArguments(&meta, payload["arguments"])
 	var body []string
 	switch typ {
 	case "tool_started":
@@ -5054,13 +5059,19 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 					previewLimit, previewTail = toolShellPreviewLines, true
 				}
 				expandable = expandable && len(body) > previewLimit
+				if meta.Title == "read" && meta.ToolPath != "" && meta.Status == "ok" {
+					expandable = len(body) > 0 && c.extensionToolModes[meta.Title] == ""
+				}
+				if meta.Title == "write" && meta.ToolContent != nil {
+					expandable = c.extensionToolModes[meta.Title] == "" && len(strings.Split(*meta.ToolContent, "\n")) > previewLimit
+				}
 			}
 			if meta.Kind == "bash" {
 				previewLimit = bashPreviewLines
 				previewTail = true
 				expandable = len(body) > bashPreviewLines
 			}
-			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
+			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolPath: meta.ToolPath, ToolContent: meta.ToolContent, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
 			i = j - 1
 			continue
 		}
@@ -5399,8 +5410,33 @@ func (c *chatTUI) loadTranscript() []string {
 		return nil
 	}
 	out := make([]string, 0, len(msgs))
+	// Calls precede results. Scope IDs to their turn because providers can reuse them.
+	calls := map[string]any{}
 	for _, m := range msgs {
-		out = append(out, c.renderMessageLines(m, c.transcriptRenderWidth())...)
+		if kind, _ := m.Payload["kind"].(string); kind == "tool_calls" {
+			turnID, _ := m.Payload["turn_id"].(string)
+			raw, _ := json.Marshal(m.Payload["tool_calls"])
+			var entries []struct {
+				ID        string         `json:"id"`
+				Arguments map[string]any `json:"arguments"`
+			}
+			if json.Unmarshal(raw, &entries) == nil {
+				for _, call := range entries {
+					calls[turnID+"\x00"+call.ID] = call.Arguments
+				}
+			}
+		}
+		if m.Role == "tool_result" {
+			turnID, _ := m.Payload["turn_id"].(string)
+			callID, _ := m.Payload["tool_call_id"].(string)
+			arguments := calls[turnID+"\x00"+callID]
+			if arguments == nil {
+				arguments = m.Payload["arguments"]
+			}
+			out = append(out, c.renderToolResultWithArguments(m, arguments)...)
+		} else {
+			out = append(out, c.renderMessageLines(m, c.transcriptRenderWidth())...)
+		}
 	}
 	return c.pruneTranscript(out)
 }
@@ -5434,6 +5470,10 @@ func (c *chatTUI) renderMessageLines(m store.Message, width int) []string {
 }
 
 func (c *chatTUI) renderToolResultLines(m store.Message) []string {
+	return c.renderToolResultWithArguments(m, m.Payload["arguments"])
+}
+
+func (c *chatTUI) renderToolResultWithArguments(m store.Message, arguments any) []string {
 	toolName, _ := m.Payload["tool_name"].(string)
 	if toolName == "" {
 		toolName = "tool"
@@ -5443,19 +5483,15 @@ func (c *chatTUI) renderToolResultLines(m store.Message) []string {
 	if isErr {
 		status = "error"
 	}
-	trimmed := strings.TrimRight(plainTerminalOutput(m.Content), "\r\n")
 	meta := transcriptBlockMeta{Key: "msg:" + m.ID, Kind: "tool", Title: toolName, Status: status, StartedAt: strings.TrimSpace(m.CreatedAt), EndedAt: strings.TrimSpace(m.CreatedAt)}
-	if strings.TrimSpace(trimmed) == "" {
-		return []string{encodeTranscriptBlockMarker(meta), "│ (empty)"}
-	}
-	parts := strings.Split(trimmed, "\n")
+	meta.Detail = toolInvocationText(toolName, arguments)
+	setFileToolArguments(&meta, arguments)
 	lines := []string{encodeTranscriptBlockMarker(meta)}
-	if len(parts) == 1 {
-		lines = append(lines, "│ "+truncate(parts[0], 200))
-		return lines
-	}
-	for _, part := range parts {
-		lines = append(lines, "│ "+truncate(strings.TrimRight(part, "\r"), 200))
+	for _, line := range toolOutputBodyLines(m.Content) {
+		if toolName != "read" {
+			line = truncate(line, 200)
+		}
+		lines = append(lines, "│ "+line)
 	}
 	return lines
 }

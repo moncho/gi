@@ -1855,6 +1855,56 @@ func TestSettingsLinesExposeRuntimeState(t *testing.T) {
 	}
 }
 
+func TestSettingsCommandReportsEffectiveValuesWithoutTruncation(t *testing.T) {
+	root := t.TempDir()
+	cfg := config.Load(root)
+	cfg.WorkspaceRoot = root + "/a-long-workspace-path-that-must-not-be-abbreviated"
+	cfg.DefaultProvider = "unknown-provider"
+	cfg.DefaultModel = "unknown-model"
+	cfg.DefaultThinkingLevel = ""
+	cfg.Theme = "light/dark"
+	cfg.TUIWheelScrollLines = 4
+	cfg.Peering.AuthKeyEnv = "GI_TEST_PEERING_SECRET"
+	t.Setenv("GI_TEST_PEERING_SECRET", "secret-value-must-not-appear")
+	c := &chatTUI{cfg: cfg}
+	for _, command := range []string{"/settings", "/config"} {
+		c.transcript = nil
+		c.handleCommand(command)
+		output := strings.Join(c.transcript, "\n")
+		for _, want := range []string{
+			"live runtime summary", "workspace: " + cfg.WorkspaceRoot,
+			"thinking: medium", "thinking_configured:",
+			"theme: " + piActiveTheme, "theme_configured: light/dark",
+			"fullscreen_wheel_scroll_lines: 4", "context_window: 128000",
+			"threshold_tokens: 108000", "reserve_tokens: 20000", "strategy: default",
+			"settings: provider retry", "max_retries: 3", "base_delay_ms: 2000",
+			"max_agent_delay_ms: 60000", "auth_key_env: GI_TEST_PEERING_SECRET",
+		} {
+			if !strings.Contains(output, want) {
+				t.Fatalf("%s missing %q:\n%s", command, want, output)
+			}
+		}
+		if strings.Contains(output, "secret-value-must-not-appear") {
+			t.Fatal("settings leaked a credential")
+		}
+	}
+}
+
+func TestSettingsLinesRetryAndEditorOverrides(t *testing.T) {
+	no := false
+	retries, delay, maximum := 100, 250, 500
+	c := &chatTUI{cfg: config.RuntimeConfig{
+		TUIClipboardMode: "off",
+		Retry:            config.ProviderRetrySettings{Enabled: &no, MaxRetries: &retries, BaseDelayMS: &delay, MaxAgentDelayMS: &maximum},
+	}}
+	output := strings.Join(c.settingsLines(), "\n")
+	for _, want := range []string{"theme_configured: (auto)", "fullscreen_wheel_scroll_lines: auto", "clipboard_mode: off", "max_retries: 10", "base_delay_ms: 250", "max_agent_delay_ms: 500", "settings: provider retry\n- enabled: false"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("settings missing %q:\n%s", want, output)
+		}
+	}
+}
+
 func TestRenderMessageLinesFormatsMarkdown(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: "# Title\n\n- first\n- second", Payload: map[string]any{"kind": "chat"}}, 80)

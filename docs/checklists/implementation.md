@@ -1,5 +1,7 @@
 # gi implementation checklist
 
+- [x] Make `/settings` and `/config` explicitly identify the live runtime summary; preserve full workspace paths, distinguish effective/configured thinking and theme, show wheel scrolling, normalized provider retry policy and complete compaction budgets. [Contract](../internal/tui-settings.md).
+
 - [x] Upgrade Joker and go-ai to pinned upstream commits; add a whole-interpreter WASI evaluation/cancellation smoke target. [Scope and WASI bootstrap fix](../internal/scripting/joker-wasi.md). No production codemode or MCP support claimed.
 - [x] Split large generated Joker WASI bootstrap initializers via a reproducible build overlay; preserve initialization dependencies and verify evaluation/cancellation on interpreter and ARM64 native compiler backends.
 - [ ] Replace go-ai Pi 0.99.2 parity commit pin with a proper upstream release tag when available.

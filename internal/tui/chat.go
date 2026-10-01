@@ -4048,17 +4048,35 @@ func (c *chatTUI) settingsLines() []string {
 	if clipboardMode == "" {
 		clipboardMode = "default (selection: osc52; /copy: off)"
 	}
+	themeSetting := c.cfg.Theme
+	if themeSetting == "" {
+		themeSetting = "(auto)"
+	}
+	wheel := "auto"
+	if c.cfg.TUIWheelScrollLines > 0 {
+		wheel = strconv.Itoa(c.cfg.TUIWheelScrollLines)
+	}
+	thinking := c.effectiveThinking(c.cfg.DefaultProvider, c.cfg.DefaultModel, c.cfg.DefaultThinkingLevel)
+	if thinking == "" {
+		thinking = "off (model does not support reasoning)"
+	}
+	retry := c.cfg.Retry.Policy()
 	return []string{
+		"settings: live runtime summary (not a settings-file dump; secrets omitted)",
 		"settings: runtime",
-		fmt.Sprintf("- workspace: %s", compactMaybe(c.cfg.WorkspaceRoot, c.compactOutput(), 48)),
+		fmt.Sprintf("- workspace: %s", c.cfg.WorkspaceRoot),
 		fmt.Sprintf("- max_iterations: %d", c.cfg.MaxIterations),
 		fmt.Sprintf("- active_tools: %s", activeTools),
 		"settings: model",
 		fmt.Sprintf("- provider: %s", c.cfg.DefaultProvider),
 		fmt.Sprintf("- model: %s", c.cfg.DefaultModel),
-		fmt.Sprintf("- thinking: %s", c.cfg.DefaultThinkingLevel),
+		fmt.Sprintf("- thinking: %s", thinking),
+		fmt.Sprintf("- thinking_configured: %s", c.cfg.DefaultThinkingLevel),
 		fmt.Sprintf("- enabled_models: %s", enabledModels),
 		"settings: editor",
+		fmt.Sprintf("- theme: %s", piActiveTheme),
+		fmt.Sprintf("- theme_configured: %s", themeSetting),
+		fmt.Sprintf("- fullscreen_wheel_scroll_lines: %s", wheel),
 		fmt.Sprintf("- scrollback_limit: %d", c.currentScrollbackLimit()),
 		fmt.Sprintf("- clipboard_mode: %s", clipboardMode),
 		fmt.Sprintf("- history_limit: %d", c.currentHistoryLimit()),
@@ -4071,10 +4089,22 @@ func (c *chatTUI) settingsLines() []string {
 		fmt.Sprintf("- skills_discovery: %d", len(c.cfg.Discovery.Skills)),
 		"settings: compaction",
 		fmt.Sprintf("- enabled: %v", c.cfg.Compaction.Enabled),
-		fmt.Sprintf("- threshold_tokens: %d keep_recent_tokens: %d reserve_tokens: %d", c.cfg.Compaction.ThresholdTokens, c.cfg.Compaction.KeepRecentTokens, c.cfg.Compaction.ReserveTokens),
+		fmt.Sprintf("- context_window: %d", c.cfg.Compaction.ContextWindow),
+		fmt.Sprintf("- threshold_tokens: %d", c.cfg.Compaction.ThresholdTokens),
+		fmt.Sprintf("- keep_recent_tokens: %d", c.cfg.Compaction.KeepRecentTokens),
+		fmt.Sprintf("- reserve_tokens: %d", c.cfg.Compaction.ReserveTokens),
+		fmt.Sprintf("- strategy: %s", c.cfg.Compaction.Strategy),
+		"settings: provider retry",
+		fmt.Sprintf("- enabled: %v", retry.Enabled),
+		fmt.Sprintf("- max_retries: %d", retry.MaxRetries),
+		fmt.Sprintf("- base_delay_ms: %d", retry.BaseDelayMS),
+		fmt.Sprintf("- max_agent_delay_ms: %d", retry.MaxDelayMS),
 		"settings: peering",
 		fmt.Sprintf("- enabled: %v", c.cfg.Peering.Enabled),
-		fmt.Sprintf("- hostname: %s auth_key_env: %s auth_key_keychain: %s", c.cfg.Peering.Hostname, c.cfg.Peering.AuthKeyEnv, c.cfg.Peering.AuthKeyKeychain),
+		fmt.Sprintf("- hostname: %s", c.cfg.Peering.Hostname),
+		fmt.Sprintf("- state_dir: %s", c.cfg.Peering.StateDir),
+		fmt.Sprintf("- auth_key_env: %s", c.cfg.Peering.AuthKeyEnv),
+		fmt.Sprintf("- auth_key_keychain: %s", c.cfg.Peering.AuthKeyKeychain),
 	}
 }
 

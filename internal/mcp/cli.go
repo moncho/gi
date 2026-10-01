@@ -618,10 +618,11 @@ func cliList(cfg Config, asJSON bool, untrustedNote string, opts CLIOptions, log
 		code = 1
 	}
 	if asJSON {
-		out := map[string]any{"servers": reports, "errors": errs}
-		if untrustedNote != "" {
-			out["note"] = untrustedNote
-		}
+		out := struct {
+			Servers []listReport `json:"servers"`
+			Errors  []string     `json:"errors"`
+			Note    string       `json:"note,omitempty"`
+		}{reports, errs, untrustedNote}
 		b, _ := json.MarshalIndent(out, "", "  ")
 		logf(string(b))
 		return code

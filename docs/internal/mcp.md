@@ -119,7 +119,8 @@ Rules, as in Pi:
   - **gi differences:**
     - The full text, and any binary resource, is saved to
       `vfs://mcp-output/<session>/<id><ext>`, where the `read` tool can open
-      it. Pi uses temp files.
+      it. Pi uses temp files. Saved outputs are pruned after 7 days (checked at MCP
+      start and every 6 hours); Pi leaves its temp files to the OS.
     - gi tool results are text, so images are described (`[image <mime>,
       <size>]`) rather than attached.
 - **Resource tools:** `list_mcp_resources`, `list_mcp_resource_templates` and

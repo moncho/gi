@@ -35,6 +35,36 @@ const mcpDirectWait = 10 * time.Second
 // resources, readable with the read tool (Pi uses temp files).
 const mcpOutputNamespace = "mcp-output"
 
+// mcpOutputRetention bounds how long saved outputs are kept; pruned at MCP
+// start and every mcpOutputPruneEvery (Pi's temp files are left to the OS).
+const (
+	mcpOutputRetention  = 7 * 24 * time.Hour
+	mcpOutputPruneEvery = 6 * time.Hour
+)
+
+// pruneMCPOutput deletes saved MCP outputs older than the retention period.
+func (e *Engine) pruneMCPOutput(ctx context.Context) {
+	if n, err := e.store.PruneVFSNamespace(ctx, mcpOutputNamespace, time.Now().Add(-mcpOutputRetention)); err != nil {
+		log.Printf("mcp: prune outputs: %v", err)
+	} else if n > 0 {
+		log.Printf("mcp: pruned %d saved outputs older than %s", n, mcpOutputRetention)
+	}
+}
+
+func (e *Engine) runMCPOutputPruner(ctx context.Context) {
+	e.pruneMCPOutput(ctx)
+	ticker := time.NewTicker(mcpOutputPruneEvery)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			e.pruneMCPOutput(ctx)
+		}
+	}
+}
+
 // mcpTool is one MCP tool with its model-facing name and exposure.
 type mcpTool struct {
 	Name     string // mcp__server__tool
@@ -75,6 +105,7 @@ func (e *Engine) enableMCPWith(m *gimcp.Manager) {
 		st.ready[name] = make(chan struct{})
 	}
 	e.mcp = st
+	go e.runMCPOutputPruner(e.backgroundContext())
 	m.SetOnToolsChanged(func(server string) { e.refreshMCPServer(e.backgroundContext(), server) })
 	for _, name := range m.Config().Names() {
 		if !m.Config().Servers[name].Enabled {

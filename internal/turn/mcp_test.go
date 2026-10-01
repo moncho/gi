@@ -136,3 +136,36 @@ func TestMCPToolListChangeReregisters(t *testing.T) {
 		t.Fatalf("late tool: %q %v", out, err)
 	}
 }
+
+// Saved MCP outputs older than the retention period are pruned; newer ones
+// and other namespaces are kept.
+func TestMCPOutputRetention(t *testing.T) {
+	s := openTestStore(t)
+	e := New(s)
+	defer e.Close()
+	ctx := context.Background()
+	for _, f := range []struct{ ns, path string }{{mcpOutputNamespace, "s/old.txt"}, {mcpOutputNamespace, "s/new.txt"}, {"skills", "keep.md"}} {
+		if _, err := s.SaveVFSFile(ctx, f.ns, f.path, "text/plain", []byte("x"), nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old := time.Now().Add(-mcpOutputRetention - time.Hour).UTC().Format("2006-01-02T15:04:05.000Z")
+	if _, err := s.DB().ExecContext(ctx, `update vfs_files set updated_at=? where path in ('s/old.txt','keep.md')`, old); err != nil {
+		t.Fatal(err)
+	}
+	e.pruneMCPOutput(ctx)
+	var paths []string
+	rows, err := s.DB().QueryContext(ctx, `select namespace||':'||path from vfs_files order by 1`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var p string
+		_ = rows.Scan(&p)
+		paths = append(paths, p)
+	}
+	rows.Close()
+	if strings.Join(paths, ",") != "mcp-output:s/new.txt,skills:keep.md" {
+		t.Fatalf("after prune: %v", paths)
+	}
+}

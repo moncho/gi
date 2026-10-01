@@ -167,3 +167,19 @@ Rules, as in Pi:
   - Without a `server` argument, the list tools return every resource from
     every server; with one, they return a page plus `nextCursor`.
   - Listing and reading are retried once after a transient error.
+
+## `gi mcp` CLI (`internal/mcp/cli.go`)
+
+`gi mcp` is a port of `pi mcp` that works without starting a session.
+
+- **Commands:** `add`, `remove`, `list [--json]`, `login` and `logout`. The options and messages are Pi's.
+- **`add`:**
+  - Writes the server entry in Pi's shape and key order to the user `mcp.json`, or with `-l`/`--local` to the project's.
+  - Keeps the rest of the file and its indentation (an ordered JSON edit followed by re-indenting).
+  - Validates the entry with the same rules as `LoadConfig`.
+- **`remove`:** deletes an entry. When the server is defined in the other scope, the error says so.
+- **`list`:**
+  - Connects to every enabled server and prints its state, its tools (marking tools whose exposure differs from the server's), its resource counts and any errors.
+  - Exits 1 when an entry is invalid or an enabled server does not connect.
+- **Project config:** gi does not read project MCP configuration until it has project trust (#16), so the project file is reported as ignored.
+- **Sign-in:** `login` and `logout` report that OAuth is not supported yet (#25 phase 6c).

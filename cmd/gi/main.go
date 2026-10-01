@@ -19,6 +19,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/rcarmo/gi/internal/config"
+	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/httpserver"
 	"github.com/rcarmo/gi/internal/store"
 	storecache "github.com/rcarmo/gi/internal/store/cache"
@@ -57,6 +58,9 @@ func webOnlyFlagsSet() []string {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "mcp" {
+		os.Exit(runMCPCommand(os.Args[2:]))
+	}
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
@@ -214,4 +218,16 @@ func splitCSV(value string) []string {
 		}
 	}
 	return out
+}
+
+// runMCPCommand runs `gi mcp ...` (Pi's `pi mcp`) without starting a session.
+func runMCPCommand(args []string) int {
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = config.DefaultWorkspaceRoot()
+	}
+	return gimcp.RunCommand(args, gimcp.CLIOptions{
+		Cwd: cwd, UserPath: gimcp.UserConfigPath(), ProjectPath: gimcp.ProjectConfigPath(cwd),
+		LogPath: config.UserConfigCandidates("mcp.log")[0],
+	})
 }

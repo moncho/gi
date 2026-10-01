@@ -183,7 +183,7 @@ func parseServer(name string, raw json.RawMessage, source string) (ServerConfig,
 	case "http", "streamable-http":
 		s.Transport = "http"
 	case "sse":
-		return ServerConfig{}, fmt.Errorf("the legacy SSE transport is not supported; use the server's streamable HTTP endpoint (often /mcp)")
+		return ServerConfig{}, fmt.Errorf("legacy SSE transport is not supported; use the streamable HTTP URL")
 	default:
 		return ServerConfig{}, fmt.Errorf("type must be stdio, http or streamable-http")
 	}
@@ -207,7 +207,7 @@ func parseServer(name string, raw json.RawMessage, source string) (ServerConfig,
 		}
 		s.Transport = "http"
 		if !strings.HasPrefix(r.URL, "http://") && !strings.HasPrefix(r.URL, "https://") {
-			return ServerConfig{}, fmt.Errorf("url must be http:// or https://")
+			return ServerConfig{}, fmt.Errorf("url must be an http or https URL")
 		}
 		if len(r.Args) > 0 || len(r.Env) > 0 || r.Cwd != "" {
 			return ServerConfig{}, fmt.Errorf("args, env and cwd apply only to command servers")
@@ -251,7 +251,7 @@ func normalizeExposure(value, fallback string) (string, error) {
 	case ExposureDeferred, ExposureDirect, ExposureHidden:
 		return v, nil
 	default:
-		return "", fmt.Errorf("exposure must be codemode, deferred, direct or hidden, not %q", v)
+		return "", fmt.Errorf(`exposure must be one of "codemode", "deferred", "direct", "hidden"`)
 	}
 }
 

@@ -165,3 +165,20 @@ func TestCodemodeLoadout(t *testing.T) {
 		t.Fatalf("session off: %v", got)
 	}
 }
+
+// Requests that declare codemode carry Pi's codemode snippet and guideline in
+// the tool environment list.
+func TestCodemodeGuidanceInSystemPrompt(t *testing.T) {
+	base := "## Tool environment\n- Use `shell` for commands.\n" + codemodeGuidanceAnchor + "\n## Next\n"
+	if got := withCodemodeGuidance(base, []goai.Tool{{Name: "read"}}); got != base {
+		t.Fatalf("added without codemode: %q", got)
+	}
+	got := withCodemodeGuidance(base, []goai.Tool{{Name: codemodeToolName}})
+	want := "## Tool environment\n- Use `shell` for commands.\n- `codemode`: Run JavaScript that calls other tools\n- Use codemode to batch independent tool calls (Promise.allSettled), chain them, or filter large output, instead of many separate calls.\n" + codemodeGuidanceAnchor + "\n## Next\n"
+	if got != want {
+		t.Fatalf("got %q", got)
+	}
+	if got := withCodemodeGuidance("custom", []goai.Tool{{Name: codemodeToolName}}); !strings.HasPrefix(got, "custom\n\n## Codemode\n- `codemode`: ") {
+		t.Fatalf("fallback: %q", got)
+	}
+}

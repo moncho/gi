@@ -4975,6 +4975,7 @@ func (r *sessionRunner) runProviderIteration(ctx context.Context, s *store.Store
 	if plan, ok := mcpSectionPlans.Load(sessionID); ok {
 		requestCtx.SystemPrompt, requestCtx.Messages = plan.(*mcpSectionPlan).apply(requestCtx.SystemPrompt, requestCtx.Messages)
 	}
+	requestCtx.SystemPrompt = withCodemodeGuidance(requestCtx.SystemPrompt, requestCtx.Tools)
 	if resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeProviderRequest, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, SystemPrompt: convCtx.SystemPrompt, Messages: convCtx.Messages, Tools: convCtx.Tools, Payload: map[string]any{"model": model, "messages": len(convCtx.Messages), "tools": len(convCtx.Tools), "stage": "context"}}); err != nil {
 		log.Printf("hook before_provider_request error: %v", err)
 	} else {

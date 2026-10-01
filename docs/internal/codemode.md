@@ -69,14 +69,15 @@ The tool the model calls is a port of Pi's codemode extension. Its input is
 `// @options: {"max_output_tokens": N, "timeout_ms": N}` line, which
 `codemode.ParseSource` reads with Pi's rules and messages.
 
-- **Description:**
-  - **Generation:** `codemode.Description` ports `createCodemodeDescription`. Pi's intro and guidance texts are extracted verbatim from Pi's codemode extension by `scripts/vendor-codemode.mjs`.
+- **Description** (Pi 1.0's leaner form):
+  - **Generation:** `codemode.Description` ports `createCodemodeDescription`. It starts from Pi's base description (intro plus one line per global, without the `models` API), which `scripts/vendor-codemode.mjs` takes from Pi's own `createCodemodeDescription([])` into `vendor/codemode-texts.json`, together with the `code` parameter text and Pi's system-prompt snippet and guideline.
   - **Tool samples:** rendered by Pi's own `declarations.js`, run in QuickJS (`Engine.RenderDeclarations`). Results are cached by a hash of the declarations.
   - **Listed tools:** in mode `on`, tools without direct exposure (MCP codemode and deferred tools); in mode `only`, every callable tool.
   - **Inline budget:** sections are chosen per namespace, cheapest first, until `codemode.inlineBudget` is spent (default 3000 tokens). Deferred-exposure tools are never listed.
-  - **Models API:** omitted (gi has no `models.*`).
+  - **Golden values:** `scripts/golden-codemode-description.mjs` regenerates `internal/codemode/testdata/pi-description.json` from Pi.
+  - **Not ported:** Pi's codemode system-prompt guideline is not added, because gi's system prompt has no tool snippet or guideline section.
 - **Loadout (each request):**
-  - **Mode `on`:** declared callable tools get their codemode declaration as their description.
+  - **Mode `on`:** declared callable tools get one more line saying how scripts call them and what the call resolves to (`codemode.ScriptCallDescription`, a port of Pi's `describeScriptCall`), for example ``Codemode: `tools.bash(args)` resolves to `{ output, exit_code }`.``
   - **Mode `only`:** declarations of direct tools are left out. `codemode` and `tool_search` stay.
 - **Callable tools:**
   - **Included:** the turn's active tools, plus every deferred registry entry (MCP codemode/deferred tools).
@@ -90,6 +91,7 @@ The tool the model calls is a port of Pi's codemode extension. Its input is
   - **Results:** they are not added to the transcript. Only the script's output reaches the model, as in Pi.
   - **Errors:** a blocked or failed call rejects with an Error.
 - **Globals:**
+  - **Missing members:** reading a `tools` member that does not exist throws an error naming close matches (Pi 1.0's prelude). Probe with `"name" in tools`, not `typeof`.
   - **Discovery:** `searchTools(query, {limit, namespace})` (BM25 from `tool_search`), `describeTool(name)` and `describeNamespace(name)` (MCP servers).
   - **Store:** `store`/`load` persist in session state (`codemode_store`), applied only when the script succeeds.
 - **Output:**

@@ -40,7 +40,35 @@ func MCPResultSchema(structured json.RawMessage) json.RawMessage {
 type Rendered struct {
 	Samples    map[string]string // tool name -> renderToolSample
 	MCPResult  map[string]bool   // output schema is an MCP CallToolResult
+	Outputs    map[string]string // what a script call resolves to (Pi's describeOutput)
 	MCPPrelude string            // MCP_TYPESCRIPT_PREAMBLE
+}
+
+// describeOutputJS is Pi's describeOutput (codemode/tool.js), run next to
+// the vendored declarations.
+const describeOutputJS = `function __describeOutput(schema) {
+    const type = __decl.renderToolOutputType(schema);
+    if (type === "string")
+        return "a string";
+    const object = typeof schema === "object" ? schema : undefined;
+    const properties = object?.properties;
+    if (object?.type === "object" &&
+        typeof properties === "object" &&
+        properties !== null &&
+        __decl.mcpStructuredContentSchema(schema) === undefined) {
+        const required = new Set(Array.isArray(object.required) ? object.required : []);
+        const fields = Object.keys(properties).map((name) => (required.has(name) ? name : ` + "`${name}?`" + `));
+        return ` + "`\\`{ ${fields.join(\", \")} }\\``" + `;
+    }
+    return ` + "`\\`${type.replace(/\\s+/g, \" \")}\\``" + `;
+}
+`
+
+// ScriptCallDescription ports Pi's describeScriptCall: a declared tool's
+// description followed by how scripts call it and what the call resolves
+// to (codemode mode "on").
+func ScriptCallDescription(d Declaration, r Rendered) string {
+	return strings.TrimSpace(d.Description) + "\n\nCodemode: `tools." + Identifier(d.Name) + "(args)` resolves to " + r.Outputs[d.Name] + "."
 }
 
 // RenderDeclarations renders tool samples with Pi's own declarations.js,
@@ -60,9 +88,10 @@ func (e *Engine) RenderDeclarations(ctx context.Context, decls []Declaration) (R
 	if err != nil {
 		return Rendered{}, err
 	}
-	code := declarationsSource + "\nconst __in = " + string(raw) + ";\n" +
+	code := declarationsSource + "\n" + describeOutputJS + "const __in = " + string(raw) + ";\n" +
 		"return { samples: __in.map((d) => __decl.renderToolSample({ name: d.name, description: d.description, inputSchema: d.inputSchema ?? undefined, outputSchema: d.outputSchema ?? undefined })), " +
-		"mcp: __in.map((d) => __decl.mcpStructuredContentSchema(d.outputSchema ?? undefined) !== undefined), preamble: __decl.MCP_TYPESCRIPT_PREAMBLE };"
+		"mcp: __in.map((d) => __decl.mcpStructuredContentSchema(d.outputSchema ?? undefined) !== undefined), " +
+		"outputs: __in.map((d) => __describeOutput(d.outputSchema ?? undefined)), preamble: __decl.MCP_TYPESCRIPT_PREAMBLE };"
 	res := e.Execute(ctx, code, Options{})
 	if !res.OK {
 		return Rendered{}, fmt.Errorf("render declarations: %s", res.Error.Message)
@@ -70,15 +99,17 @@ func (e *Engine) RenderDeclarations(ctx context.Context, decls []Declaration) (R
 	var out struct {
 		Samples  []string `json:"samples"`
 		MCP      []bool   `json:"mcp"`
+		Outputs  []string `json:"outputs"`
 		Preamble string   `json:"preamble"`
 	}
-	if err := json.Unmarshal(res.Value, &out); err != nil || len(out.Samples) != len(decls) {
+	if err := json.Unmarshal(res.Value, &out); err != nil || len(out.Samples) != len(decls) || len(out.Outputs) != len(decls) {
 		return Rendered{}, fmt.Errorf("render declarations: unexpected result")
 	}
-	r := Rendered{Samples: map[string]string{}, MCPResult: map[string]bool{}, MCPPrelude: out.Preamble}
+	r := Rendered{Samples: map[string]string{}, MCPResult: map[string]bool{}, Outputs: map[string]string{}, MCPPrelude: out.Preamble}
 	for i, d := range decls {
 		r.Samples[d.Name] = out.Samples[i]
 		r.MCPResult[d.Name] = out.MCP[i]
+		r.Outputs[d.Name] = out.Outputs[i]
 	}
 	return r, nil
 }
@@ -90,14 +121,24 @@ func nullIfEmpty(raw json.RawMessage) json.RawMessage {
 	return raw
 }
 
-// DescriptionIntro and DeferredToolsGuidance are Pi's codemode tool texts,
-// extracted verbatim by scripts/vendor-codemode.mjs.
-var (
-	//go:embed vendor/description-intro.txt
-	DescriptionIntro string
-	//go:embed vendor/deferred-guidance.txt
-	DeferredToolsGuidance string
-)
+//go:embed vendor/codemode-texts.json
+var textsJSON []byte
+
+// Texts are Pi's model-facing codemode texts, produced by Pi's codemode
+// extension (scripts/vendor-codemode.mjs): the description without tools
+// (intro and globals; no models API), the code parameter text, and the
+// system-prompt snippet and guidelines.
+var Texts = func() (t struct {
+	BaseDescription  string   `json:"baseDescription"`
+	CodeDescription  string   `json:"codeDescription"`
+	PromptSnippet    string   `json:"promptSnippet"`
+	PromptGuidelines []string `json:"promptGuidelines"`
+}) {
+	if err := json.Unmarshal(textsJSON, &t); err != nil {
+		panic("codemode: vendored texts: " + err.Error())
+	}
+	return t
+}()
 
 // DefaultInlineBudget is Pi's default codemode.inlineBudget (estimated tokens).
 const DefaultInlineBudget = 3000
@@ -125,9 +166,9 @@ type catalogGroup struct {
 }
 
 // Description ports Pi's createCodemodeDescription (without the models API):
-// the helper list, guidance for unlisted tools, the shared MCP types when a
-// listed tool needs them, and one section per listed tool grouped by
-// namespace, limited to the inline budget.
+// the intro and globals, the shared MCP types when a listed tool needs
+// them, and one section per listed tool grouped by namespace, limited to
+// the inline budget.
 func Description(listed []Declaration, rendered Rendered, opts DescriptionOptions) string {
 	var decls []Declaration
 	for _, d := range listed {
@@ -173,7 +214,7 @@ func Description(listed []Declaration, rendered Rendered, opts DescriptionOption
 		return a.Name < b.Name
 	})
 	shown := selectCatalog(ordered, opts.InlineBudget)
-	sections := []string{DescriptionIntro, DeferredToolsGuidance}
+	sections := []string{Texts.BaseDescription}
 	for _, d := range decls {
 		if shown[d.Name] && rendered.MCPResult[d.Name] {
 			sections = append(sections, "Shared MCP Types:\n```ts\n"+rendered.MCPPrelude+"\n```")

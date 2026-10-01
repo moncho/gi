@@ -147,7 +147,7 @@ func TestCodemodeLoadout(t *testing.T) {
 	if !strings.Contains(desc, "## mcp__fake\n") || !strings.Contains(desc, "### `mcp__fake__search_code`") || strings.Contains(desc, "### `greet`") {
 		t.Fatalf("mode on description:\n%s", desc)
 	}
-	if !strings.Contains(c.Tools[0].Description, "codemode tool declaration:") {
+	if c.Tools[0].Description != "Greets someone\n\nCodemode: `tools.greet(args)` resolves to a string." {
 		t.Fatalf("direct tool lacks declaration: %q", c.Tools[0].Description)
 	}
 	if err := e.SetSessionCodemode(ctx, sess.ID, "only"); err != nil {

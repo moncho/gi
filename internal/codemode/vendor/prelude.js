@@ -1,4 +1,4 @@
-// Vendored from @earendil-works/pi-codemode 0.99.2 (MIT) by scripts/vendor-codemode.mjs; do not edit.
+// Vendored from @earendil-works/pi-codemode 1.0.0 (MIT) by scripts/vendor-codemode.mjs; do not edit.
 (function (bridge, toolsJson, globalsJson, storeJson) {
 	"use strict";
 	const stringify = JSON.stringify;
@@ -81,6 +81,34 @@
 	Object.freeze(tools);
 	Object.freeze(allTools);
 
+	// Reading a member that does not exist throws an error that names the close matches, instead of
+	// a later "not a function". `in` checks still work.
+	const comparable = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+	function guard(target, label, names, hint) {
+		return new Proxy(target, {
+			get(object, property, receiver) {
+				if (typeof property !== "string" || property in object || property in Object.prototype || property === "then" || property === "toJSON") {
+					return Reflect.get(object, property, receiver);
+				}
+				const wanted = comparable(property);
+				const exact = names.filter((name) => comparable(name) === wanted);
+				const close = exact.length > 0 ? exact : names.filter((name) => wanted && (comparable(name).includes(wanted) || wanted.includes(comparable(name))));
+				let message = label + "." + property + " does not exist.";
+				if (close.length > 0) message += " Did you mean " + close.slice(0, 5).map((name) => label + "." + name).join(", ") + "?";
+				else if (names.length <= 20) message += " Available: " + names.join(", ") + ".";
+				if (hint) message += " " + hint;
+				message += ' Check for a member with "' + property + '" in ' + label + ".";
+				throw new TypeErrorCtor(message);
+			},
+		});
+	}
+	const toolsProxy = guard(
+		tools,
+		"tools",
+		allTools.map((tool) => tool.name),
+		"ALL_TOOLS lists every tool; searchTools(query) finds tools by topic.",
+	);
+
 	const namespaces = new Map();
 	for (const { name, spread } of parse(globalsJson)) {
 		const fn = caller("global", name, spread);
@@ -94,7 +122,9 @@
 		namespaces.get(namespace)[name.slice(dot + 1)] = fn;
 	}
 	for (const [namespace, members] of namespaces) {
-		Object.defineProperty(globalThis, namespace, { value: Object.freeze(members), enumerable: true });
+		Object.freeze(members);
+		const value = guard(members, namespace, Object.keys(members));
+		Object.defineProperty(globalThis, namespace, { value, enumerable: true });
 	}
 
 	// key -> JSON text. Sizes count key and JSON characters.
@@ -102,6 +132,9 @@
 	const writes = new Map();
 	let storedChars = 0;
 	for (const [key, json] of stored) storedChars += key.length + json.length;
+
+	const STORE_HINT =
+		"store() is for small state such as IDs or summaries. Show images with image(), keep large data in variables, or write it to a file with a tool.";
 
 	function checkKey(name, key) {
 		if (typeof key !== "string") throw new TypeError(name + "() key must be a string");
@@ -126,11 +159,17 @@
 			throw new TypeError("store(" + stringify(key) + ") value is not JSON-serializable");
 		}
 		if (json.length > 262144) {
-			throw new RangeError("store(" + stringify(key) + ") value exceeds 262144 characters of JSON");
+			throw new RangeError(
+				"store(" + stringify(key) + ") value has " + json.length + " characters of JSON, more than the limit of 262144. " +
+					STORE_HINT,
+			);
 		}
 		const next = storedChars - previous + key.length + json.length;
 		if (next > 1048576) {
-			throw new RangeError("store is full: stored values would exceed 1048576 characters of JSON");
+			throw new RangeError(
+				"store is full: stored values would exceed 1048576 characters of JSON. Delete keys with store(key, undefined). " +
+					STORE_HINT,
+			);
 		}
 		stored.set(key, json);
 		storedChars = next;
@@ -246,7 +285,7 @@
 	}
 	Object.freeze(console);
 
-	Object.defineProperty(globalThis, "tools", { value: tools, enumerable: true });
+	Object.defineProperty(globalThis, "tools", { value: toolsProxy, enumerable: true });
 	Object.defineProperty(globalThis, "ALL_TOOLS", { value: allTools, enumerable: true });
 	Object.defineProperty(globalThis, "console", { value: console, enumerable: true });
 	Object.defineProperty(globalThis, "text", { value: text, enumerable: true });
@@ -274,7 +313,7 @@
 		run(fn) {
 			let promise;
 			try {
-				promise = fn(tools, console);
+				promise = fn(toolsProxy, console);
 			} catch (error) {
 				done(false, describeError(error));
 				return;

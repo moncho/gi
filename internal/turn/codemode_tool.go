@@ -28,21 +28,20 @@ import (
 // script's output reaches the model.
 
 const (
-	codemodeToolName           = "codemode"
-	codemodeOutputNamespace    = "codemode-output"
-	codemodeStoreStateKey      = "codemode_store"
-	codemodeModeStateKey       = "codemode_mode" // session toggle: on, off, only
-	codemodeMemoryLimit        = 256 * 1024 * 1024
-	codemodeDefaultMaxTokens   = 10_000
-	codemodeCharsPerToken      = 4
-	codemodeNoTimeout          = 24 * time.Hour // Pi: no deadline by default
-	codemodeErrorPreviewChars  = 500
-	codemodeCodeParameterText  = "Raw JavaScript source. Top-level await and return work. May start with a `// @options: {\"max_output_tokens\": 1000}` line."
-	codemodePromptSnippetGuide = "Use codemode to batch or chain several tool calls, or to filter large tool output down to what you need, instead of issuing many individual tool calls. Batch independent calls in one codemode call using await Promise.allSettled([...])."
+	codemodeToolName          = "codemode"
+	codemodeOutputNamespace   = "codemode-output"
+	codemodeStoreStateKey     = "codemode_store"
+	codemodeModeStateKey      = "codemode_mode" // session toggle: on, off, only
+	codemodeMemoryLimit       = 256 * 1024 * 1024
+	codemodeDefaultMaxTokens  = 10_000
+	codemodeCharsPerToken     = 4
+	codemodeNoTimeout         = 24 * time.Hour // Pi: no deadline by default
+	codemodeErrorPreviewChars = 500
 )
 
+// codemodeParameters is Pi's codemodeSchema.
 var codemodeParameters = json.RawMessage(`{"type":"object","properties":{"code":{"type":"string","description":` +
-	mustJSON(codemodeCodeParameterText) + `}},"required":["code"]}`)
+	mustJSON(codemode.Texts.CodeDescription) + `}},"required":["code"]}`)
 
 func mustJSON(v any) string {
 	b, _ := json.Marshal(v)
@@ -332,6 +331,10 @@ func (e *Engine) applyCodemodeLoadout(ctx context.Context, convCtx *goai.Context
 		budget = *b
 	}
 	convCtx.Tools[idx].Description = codemode.Description(listed, rendered, codemode.DescriptionOptions{Namespaces: namespaces, Deferred: deferred, InlineBudget: &budget})
+	declByName := map[string]codemode.Declaration{}
+	for _, d := range decls {
+		declByName[d.Name] = d
+	}
 	out := convCtx.Tools[:0]
 	for _, t := range convCtx.Tools {
 		if callableSet[t.Name] {
@@ -339,7 +342,8 @@ func (e *Engine) applyCodemodeLoadout(ctx context.Context, convCtx *goai.Context
 				continue // Pi: requests leave out declarations of direct tools
 			}
 			if mode == "on" {
-				t.Description = rendered.Samples[t.Name]
+				// Pi 1.0: one line on how scripts call it, not the declaration.
+				t.Description = codemode.ScriptCallDescription(declByName[t.Name], rendered)
 			}
 		}
 		out = append(out, t)

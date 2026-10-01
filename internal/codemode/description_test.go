@@ -9,9 +9,10 @@ import (
 )
 
 type piDescriptionGolden struct {
-	Tools  []Declaration `json:"tools"`
-	Full   string        `json:"full"`
-	Budget string        `json:"budget"`
+	Tools       []Declaration     `json:"tools"`
+	Full        string            `json:"full"`
+	Budget      string            `json:"budget"`
+	ScriptCalls map[string]string `json:"scriptCalls"`
 }
 
 // The description matches Pi's createCodemodeDescription byte for byte
@@ -41,6 +42,11 @@ func TestDescriptionMatchesPi(t *testing.T) {
 	got := Description(g.Tools, rendered, DescriptionOptions{Namespaces: namespaces, InlineBudget: &budget, Deferred: map[string]bool{"mcp__docs__lookup": true}})
 	if got != g.Budget {
 		t.Fatalf("budgeted description differs:\n%s", diffAt(got, g.Budget))
+	}
+	for _, d := range g.Tools {
+		if got := ScriptCallDescription(d, rendered); got != g.ScriptCalls[d.Name] {
+			t.Fatalf("%s: script call description %q, want %q", d.Name, got, g.ScriptCalls[d.Name])
+		}
 	}
 }
 

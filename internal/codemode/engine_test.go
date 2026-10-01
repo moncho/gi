@@ -192,3 +192,15 @@ func TestIdentifier(t *testing.T) {
 		}
 	}
 }
+
+// Pi 1.0's prelude names close matches for a missing tool, and `in` probes
+// still work.
+func TestMissingToolNamesCloseMatches(t *testing.T) {
+	tools := []Tool{{Name: "bash", Description: "Run", Execute: func(context.Context, json.RawMessage) (json.RawMessage, error) {
+		return json.RawMessage(`"ok"`), nil
+	}}}
+	res := testEngine(t).Execute(context.Background(), `if ("Bash" in tools) return "bad"; await tools.Bash({});`, Options{Tools: tools})
+	if res.OK || res.Error == nil || !strings.Contains(res.Error.Message, "tools.Bash does not exist. Did you mean tools.bash?") {
+		t.Fatalf("%+v %+v", res, res.Error)
+	}
+}

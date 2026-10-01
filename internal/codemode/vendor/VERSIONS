@@ -1,5 +1,5 @@
-pi-codemode 0.99.2 (MIT)
+pi-codemode 1.0.0 (MIT)
 quickjs-wasi 3.6.2 (MIT)
 MAX_STORE_VALUE_CHARS 262144
 MAX_STORE_TOTAL_CHARS 1048576
-pi-coding-agent 0.99.2 (codemode texts)
+pi-coding-agent 1.0.0 (codemode texts)

@@ -1,4 +1,4 @@
-// Vendored from @earendil-works/pi-codemode 0.99.2 (MIT): identifier.js + declarations.js
+// Vendored from @earendil-works/pi-codemode 1.0.0 (MIT): identifier.js + declarations.js
 // as a plain script, by scripts/vendor-codemode.mjs; do not edit.
 /**
  * The identifier a script uses for a tool: characters that are not valid in a JavaScript
@@ -141,7 +141,7 @@ function renderToolSignature(tool, options = {}) {
     const input = tool.inputSchema === undefined
         ? "unknown"
         : schemaToType(tool.inputSchema, { maxChars: options.inputMaxChars ?? DEFAULT_INPUT_SCHEMA_MAX_CHARS });
-    return `${toCodemodeIdentifier(tool.name)}(args: ${input}): Promise<${outputType(tool.outputSchema)}>;`;
+    return `${toCodemodeIdentifier(tool.name)}(args: ${input}): Promise<${renderToolOutputType(tool.outputSchema)}>;`;
 }
 /**
  * A tool's sample: the description followed by the tool's declaration. Used for tool
@@ -167,7 +167,11 @@ function mcpStructuredContentSchema(schema) {
         return undefined;
     return isObject(structuredContent) || typeof structuredContent === "boolean" ? structuredContent : true;
 }
-function outputType(schema) {
+/**
+ * The type a tool call resolves to: `CallToolResult<T>` for MCP output schemas (needs
+ * {@link MCP_TYPESCRIPT_PREAMBLE}), the schema's type otherwise, and `unknown` without a schema.
+ */
+function renderToolOutputType(schema) {
     const structured = mcpStructuredContentSchema(schema);
     if (structured !== undefined) {
         const type = schemaToType(structured);
@@ -343,4 +347,4 @@ function objectType(schema, context) {
     return lines.join("\n");
 }
 
-globalThis.__decl = { renderToolSample, renderDeclarations, mcpStructuredContentSchema, MCP_TYPESCRIPT_PREAMBLE, toCodemodeIdentifier };
+globalThis.__decl = { renderToolSample, renderDeclarations, renderToolOutputType, mcpStructuredContentSchema, MCP_TYPESCRIPT_PREAMBLE, toCodemodeIdentifier };

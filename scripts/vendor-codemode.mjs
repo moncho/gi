@@ -25,18 +25,18 @@ const strip = (src) => src
   .replace(/^\/\/# sourceMappingURL=.*$/gm, '');
 const identifierSrc = strip(readFileSync(`${nm}/@earendil-works/pi-codemode/dist/identifier.js`, 'utf8'));
 const declarationsSrc = strip(readFileSync(`${nm}/@earendil-works/pi-codemode/dist/declarations.js`, 'utf8'));
-writeFileSync(`${out}/declarations.js`, `// Vendored from @earendil-works/pi-codemode ${piPkg.version} (MIT): identifier.js + declarations.js\n// as a plain script, by scripts/vendor-codemode.mjs; do not edit.\n${identifierSrc}\n${declarationsSrc}\nglobalThis.__decl = { renderToolSample, renderDeclarations, mcpStructuredContentSchema, MCP_TYPESCRIPT_PREAMBLE, toCodemodeIdentifier };\n`);
-// Model-facing codemode tool texts, extracted verbatim from Pi's codemode
-// extension (template literals without interpolation).
+writeFileSync(`${out}/declarations.js`, `// Vendored from @earendil-works/pi-codemode ${piPkg.version} (MIT): identifier.js + declarations.js\n// as a plain script, by scripts/vendor-codemode.mjs; do not edit.\n${identifierSrc}\n${declarationsSrc}\nglobalThis.__decl = { renderToolSample, renderDeclarations, renderToolOutputType, mcpStructuredContentSchema, MCP_TYPESCRIPT_PREAMBLE, toCodemodeIdentifier };\n`);
+// Model-facing codemode tool texts, from Pi's codemode extension itself: the
+// base description (intro and globals, without the models API that gi does
+// not have), the code parameter text, and the system-prompt contribution.
 const piAgent = `${nm}/@earendil-works/pi-coding-agent`;
 const agentVersion = JSON.parse(readFileSync(`${piAgent}/package.json`, 'utf8')).version;
-const toolSrc = readFileSync(`${piAgent}/dist/extensions/codemode/tool.js`, 'utf8');
-const literal = (name) => {
-  const m = toolSrc.match(new RegExp(`const ${name} = \`([\\s\\S]*?)\`;`));
-  if (!m || m[1].includes('${')) throw new Error(`cannot extract ${name}`);
-  return m[1].replace(/\\`/g, '`').replace(/\\\\/g, '\\');
-};
-writeFileSync(`${out}/description-intro.txt`, literal('DESCRIPTION_INTRO'));
-writeFileSync(`${out}/deferred-guidance.txt`, literal('DEFERRED_TOOLS_GUIDANCE'));
+const tool = await import(`${piAgent}/dist/extensions/codemode/tool.js`);
+writeFileSync(`${out}/codemode-texts.json`, JSON.stringify({
+  baseDescription: tool.createCodemodeDescription([], { models: false }),
+  codeDescription: tool.codemodeSchema.properties.code.description,
+  promptSnippet: tool.codemodeToolSystemPromptContribution.snippet,
+  promptGuidelines: tool.codemodeToolSystemPromptContribution.guidelines,
+}, null, 2) + '\n');
 writeFileSync(`${out}/VERSIONS`, readFileSync(`${out}/VERSIONS`, 'utf8') + `pi-coding-agent ${agentVersion} (codemode texts)\n`);
 console.log(`vendored pi-codemode ${piPkg.version}, quickjs-wasi ${qjsPkg.version}`);

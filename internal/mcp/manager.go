@@ -571,7 +571,6 @@ func (l *rotatingLog) Close() {
 	}
 }
 
-
 // HasResources reports whether a connected server offers resources.
 func (m *Manager) HasResources(name string) bool {
 	s, err := m.server(name)

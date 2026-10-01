@@ -19,8 +19,8 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/rcarmo/gi/internal/config"
-	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/httpserver"
+	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/store"
 	storecache "github.com/rcarmo/gi/internal/store/cache"
 	gitui "github.com/rcarmo/gi/internal/tui"

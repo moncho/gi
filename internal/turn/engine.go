@@ -51,7 +51,7 @@ type Engine struct {
 	peering                           *peering.Manager
 	bgCtx                             context.Context
 	bgCancel                          context.CancelFunc
-	mcp                               *mcpState // nil unless EnableMCP was called
+	mcp                               *mcpState      // nil unless EnableMCP was called
 	codemode                          *codemodeState // nil when -builtin:codemode
 	closing                           atomic.Bool    // set by Close: no new launches
 	runs                              sync.WaitGroup // in-flight runTurn goroutines

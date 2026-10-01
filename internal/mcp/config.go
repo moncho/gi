@@ -102,7 +102,9 @@ func UserConfigPath() string { return config.UserConfigFile("mcp.json") }
 
 // ProjectConfigPath is the project MCP configuration: .gi/mcp.json if it
 // exists, else Pi's .pi/mcp.json.
-func ProjectConfigPath(workspace string) string { return config.ProjectConfigFile(workspace, "mcp.json") }
+func ProjectConfigPath(workspace string) string {
+	return config.ProjectConfigFile(workspace, "mcp.json")
+}
 
 // LoadConfig reads the user configuration and, only when projectTrusted, the
 // project one; a project entry replaces a user entry with the same name and a

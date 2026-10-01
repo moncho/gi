@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
+	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rcarmo/gi/internal/codemode"
 	"github.com/rcarmo/gi/internal/config"
 	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/tools"
 	goai "github.com/rcarmo/go-ai"
-	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // MCP integration (#25 phase 2). Servers come from Pi's mcp.json (.gi first,

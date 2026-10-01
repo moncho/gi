@@ -3,8 +3,8 @@ package turn
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"

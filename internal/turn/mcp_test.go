@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	gimcp "github.com/rcarmo/gi/internal/mcp"
-	"github.com/rcarmo/gi/internal/tools"
 	"github.com/rcarmo/gi/internal/inference"
+	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/mcp/mcptest"
+	"github.com/rcarmo/gi/internal/tools"
 	goai "github.com/rcarmo/go-ai"
 )
 
@@ -243,7 +243,6 @@ func TestMCPToolResultImagesReachModel(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 }
-
 
 func toolSearchEngine(t *testing.T) (*Engine, *mcptest.Server) {
 	t.Helper()

@@ -251,4 +251,3 @@ func blockText(server string, block mcp.Content, opts ConvertOptions) string {
 		return "[unsupported MCP content]"
 	}
 }
-

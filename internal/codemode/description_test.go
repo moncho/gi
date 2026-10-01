@@ -62,11 +62,11 @@ func TestParseSourceLikePi(t *testing.T) {
 		t.Fatalf("plain: %q %v", code, err)
 	}
 	for input, want := range map[string]string{
-		"   ":                                         "Expected JavaScript source text (non-empty).",
-		"// @options: {\"x\": 1}\nreturn 1":           "@options only supports `max_output_tokens` and `timeout_ms`; got `x`",
+		"   ":                               "Expected JavaScript source text (non-empty).",
+		"// @options: {\"x\": 1}\nreturn 1": "@options only supports `max_output_tokens` and `timeout_ms`; got `x`",
 		"// @options: {\"timeout_ms\": 0}\nreturn 1":  "@options field `timeout_ms` must be a positive integer up to 2147483647",
 		"// @options: {\"max_output_tokens\": 1}\n  ": "The @options line must be followed by JavaScript source on subsequent lines",
-		"// @options: [1]\nreturn 1":                 "@options must be a JSON object with supported fields",
+		"// @options: [1]\nreturn 1":                  "@options must be a JSON object with supported fields",
 	} {
 		if _, _, err := ParseSource(input); err == nil || !strings.HasPrefix(err.Error(), want) {
 			t.Fatalf("%q: %v (want %q)", input, err, want)

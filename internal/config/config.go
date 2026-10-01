@@ -32,7 +32,7 @@ type RuntimeConfig struct {
 	// fallback; Pi then has no "scoped" model list.
 	EnabledModelsConfigured bool `json:"-"`
 	// TUIWheelScrollLines is Pi's fullscreenWheelScrollLines; 0 means "auto".
-	TUIWheelScrollLines int                    `json:"tui_wheel_scroll_lines"`
+	TUIWheelScrollLines int `json:"tui_wheel_scroll_lines"`
 	// Theme is Pi's theme setting (project .pi/settings.json, else global).
 	Theme string `json:"theme,omitempty"`
 	// DefaultToolsLayers are Pi's defaultTools lists, user then project.
@@ -40,16 +40,16 @@ type RuntimeConfig struct {
 	// ExtensionsLayers are Pi's extensions lists, user then project.
 	ExtensionsLayers [][]string `json:"extensions_layers,omitempty"`
 	// Codemode is Pi's codemode settings (project values override user ones).
-	Codemode CodemodeSettings `json:"codemode"`
-	Compaction          CompactionSettings     `json:"compaction"`
-	Retry               ProviderRetrySettings  `json:"retry"`
-	Hooks               HookSettings           `json:"hooks"`
-	Peering             PeeringSettings        `json:"peering"`
-	Passkeys            PasskeySettings        `json:"passkeys"`
-	InboundWork         InboundWorkSettings    `json:"inbound_work"`
-	WorkspaceIndex      WorkspaceIndexSettings `json:"workspace_index"`
-	SystemPrompt        string                 `json:"-"`
-	Discovery           skills.Discovery       `json:"-"`
+	Codemode       CodemodeSettings       `json:"codemode"`
+	Compaction     CompactionSettings     `json:"compaction"`
+	Retry          ProviderRetrySettings  `json:"retry"`
+	Hooks          HookSettings           `json:"hooks"`
+	Peering        PeeringSettings        `json:"peering"`
+	Passkeys       PasskeySettings        `json:"passkeys"`
+	InboundWork    InboundWorkSettings    `json:"inbound_work"`
+	WorkspaceIndex WorkspaceIndexSettings `json:"workspace_index"`
+	SystemPrompt   string                 `json:"-"`
+	Discovery      skills.Discovery       `json:"-"`
 }
 
 type piclawConfig struct {

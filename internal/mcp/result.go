@@ -81,12 +81,22 @@ func FormatSize(bytes int) string {
 type ConvertOptions struct {
 	Save              SaveFunc
 	ReadableResources bool // the server's resources can be read with read_mcp_resource
+	// AttachImages returns images in Converted.Images (Pi) instead of
+	// describing them in the text.
+	AttachImages bool
+}
+
+// Image is an image block of a result.
+type Image struct {
+	MIMEType string
+	Data     []byte
 }
 
 // Converted is a model-facing tool result. gi tool results are text, so image
 // blocks are described in the text (a placeholder) rather than attached.
 type Converted struct {
 	Text           string
+	Images         []Image
 	IsError        bool
 	FullOutputPath string
 }
@@ -99,8 +109,13 @@ type Converted struct {
 // text saved.
 func ConvertResult(server, tool string, result *mcp.CallToolResult, opts ConvertOptions) Converted {
 	var parts []string
+	var images []Image
 	if result != nil {
 		for _, block := range result.Content {
+			if img, ok := imageOf(block); ok && opts.AttachImages {
+				images = append(images, img)
+				continue
+			}
 			parts = append(parts, blockText(server, block, opts))
 		}
 		if len(result.Content) == 0 && result.StructuredContent != nil {
@@ -110,7 +125,7 @@ func ConvertResult(server, tool string, result *mcp.CallToolResult, opts Convert
 		}
 	}
 	text := strings.Join(nonEmpty(parts), "\n")
-	out := Converted{IsError: result != nil && result.IsError}
+	out := Converted{IsError: result != nil && result.IsError, Images: images}
 	if out.IsError && strings.TrimSpace(text) == "" {
 		text = fmt.Sprintf("MCP tool %s/%s returned an error", server, tool)
 	}
@@ -131,6 +146,19 @@ func ConvertResult(server, tool string, result *mcp.CallToolResult, opts Convert
 	tokens := int(math.Ceil(float64(trunc.TotalBytes) / 4))
 	out.Text = fmt.Sprintf("Warning: truncated output (original token count: %d)\nTotal output lines: %d\n\n%s\n\n%s", tokens, trunc.TotalLines, trunc.Content, where)
 	return out
+}
+
+// imageOf returns the image of an image block or embedded image resource.
+func imageOf(block mcp.Content) (Image, bool) {
+	switch b := block.(type) {
+	case *mcp.ImageContent:
+		return Image{MIMEType: b.MIMEType, Data: b.Data}, true
+	case *mcp.EmbeddedResource:
+		if r := b.Resource; r != nil && r.Blob != nil && strings.HasPrefix(r.MIMEType, "image/") {
+			return Image{MIMEType: r.MIMEType, Data: r.Blob}, true
+		}
+	}
+	return Image{}, false
 }
 
 func nonEmpty(parts []string) []string {

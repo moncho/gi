@@ -2,6 +2,7 @@ package turn
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,7 +11,9 @@ import (
 	"time"
 
 	gimcp "github.com/rcarmo/gi/internal/mcp"
+	"github.com/rcarmo/gi/internal/inference"
 	"github.com/rcarmo/gi/internal/mcp/mcptest"
+	goai "github.com/rcarmo/go-ai"
 )
 
 func mcpTestEngine(t *testing.T) (*Engine, *mcptest.Server) {
@@ -167,5 +170,67 @@ func TestMCPOutputRetention(t *testing.T) {
 	rows.Close()
 	if strings.Join(paths, ",") != "mcp-output:s/new.txt,skills:keep.md" {
 		t.Fatalf("after prune: %v", paths)
+	}
+}
+
+// An image in an MCP result reaches the model as an image block of the tool
+// result (Pi); the stored transcript describes it.
+func TestMCPToolResultImagesReachModel(t *testing.T) {
+	e, fake := mcpTestEngine(t)
+	mcptest.AddPictureTool(fake)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, ok := e.tools.GetRegistered("mcp__fake_direct__picture"); ok {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("picture tool not registered")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	ctx := context.Background()
+	seen := make(chan []goai.ContentBlock, 1)
+	calls := 0
+	withStreamWithToolsStub(t, func(_ context.Context, _ string, conv *goai.Context, _ func(map[string]any)) (*inference.StreamResult, error) {
+		calls++
+		if calls == 1 {
+			return &inference.StreamResult{Message: &goai.Message{Role: goai.RoleAssistant, StopReason: goai.StopReasonToolUse,
+				Content: []goai.ContentBlock{{Type: "toolCall", ID: "tc_pic", Name: "mcp__fake_direct__picture", Arguments: map[string]any{}}}}}, nil
+		}
+		for _, m := range conv.Messages {
+			if m.Role == goai.RoleToolResult && m.ToolCallID == "tc_pic" {
+				seen <- m.Content
+			}
+		}
+		return &inference.StreamResult{Message: &goai.Message{Role: goai.RoleAssistant, StopReason: goai.StopReasonStop, Content: []goai.ContentBlock{{Type: "text", Text: "done"}}}}, nil
+	})
+	sess, err := e.store.CreateSession(ctx, "session_mcp_img", "MCP", map[string]any{"status": "idle", "model": "mock-img"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.SubmitPrompt(ctx, RunInput{SessionID: sess.ID, Prompt: "show me", Model: "mock-img"}); err != nil {
+		t.Fatal(err)
+	}
+	var content []goai.ContentBlock
+	select {
+	case content = <-seen:
+	case <-time.After(10 * time.Second):
+		t.Fatal("tool result never reached the model")
+	}
+	if len(content) != 2 || content[0].Text != "here it is" || content[1].Type != "image" || content[1].MimeType != "image/png" || content[1].Data != base64.StdEncoding.EncodeToString(mcptest.PNG) {
+		t.Fatalf("tool result content %+v", content)
+	}
+	deadline = time.Now().Add(5 * time.Second)
+	for {
+		msgs, _ := e.store.ListMessages(ctx, sess.ID)
+		for _, m := range msgs {
+			if m.Role == "tool_result" && m.Content == "here it is\n[image image/png, 12B]" {
+				return
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("stored transcript lacks the image note: %+v", msgs)
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 }

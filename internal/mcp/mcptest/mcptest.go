@@ -60,3 +60,13 @@ func AddTool(s *Server, name, reply string) {
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: reply}}}, nil, nil
 	})
 }
+
+// PNG is the 1x1 image returned by the "picture" tool.
+var PNG = []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d}
+
+// AddPictureTool adds a tool returning text plus an image block.
+func AddPictureTool(s *Server) {
+	mcp.AddTool(s.MCP, &mcp.Tool{Name: "picture", Description: "Returns an image"}, func(context.Context, *mcp.CallToolRequest, Args) (*mcp.CallToolResult, any, error) {
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "here it is"}, &mcp.ImageContent{MIMEType: "image/png", Data: PNG}}}, nil, nil
+	})
+}

@@ -4351,6 +4351,12 @@ func (r *sessionRunner) executeTool(ctx context.Context, call goai.ToolCall, ses
 	if len(output) > 0 {
 		onOutput = output[0]
 	}
+	return r.executeToolWithImages(ctx, call, sessionID, turnID, onOutput, nil)
+}
+
+// executeToolWithImages also collects images the tool attaches (nil: tools
+// describe images in text instead).
+func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.ToolCall, sessionID, turnID string, onOutput func(string) error, images *toolImages) (string, error) {
 	if strings.TrimSpace(turnID) != "" {
 		turnRec, err := r.store.GetTurn(ctx, turnID)
 		if err != nil {
@@ -4370,6 +4376,7 @@ func (r *sessionRunner) executeTool(ctx context.Context, call goai.ToolCall, ses
 		TurnID:        turnID,
 		WorkspaceRoot: r.engine.runtimeCfg.WorkspaceRoot,
 		OnOutput:      onOutput,
+		AttachImage:   images.attachFunc(),
 	}, call)
 }
 
@@ -5208,7 +5215,8 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 		})
 
 		reportOutput := r.toolOutputReporter(turnID, sessionID, call.ID, toolOccurrenceID)
-		toolResult, toolErr := r.executeTool(ctx, call, sessionID, turnID, func(text string) error { return reportOutput(text, false) })
+		images := &toolImages{}
+		toolResult, toolErr := r.executeToolWithImages(ctx, call, sessionID, turnID, func(text string) error { return reportOutput(text, false) }, images)
 		if outputErr := reportOutput(toolResult, true); outputErr != nil {
 			r.persistStoppedTool(s, sessionID, turnID, call, toolOccurrenceID, "aborted")
 			r.finishTurn(s, turnID, sessionID, agentID, model, "failed", "Persist tool output: "+outputErr.Error(), "persistence_error")
@@ -5231,8 +5239,8 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 				"tool_call_id": call.ID, "occurrence_id": toolOccurrenceID, "error": toolErr.Error(),
 			}))
 			r.engine.broadcast(sessionID, map[string]any{"type": "tool_activity_changed", "chat_jid": "gi:" + sessionID, "turn_id": turnID})
-			goai.AppendToolResult(convCtx, call.ID, call.Name, errText, true)
-			logutil.WarnIfErr("add errored tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", errText, map[string]any{
+			appendToolResultWithImages(convCtx, call, errText, true, images)
+			logutil.WarnIfErr("add errored tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", errText+images.transcriptSuffix(), map[string]any{
 				"kind": "tool_result", "tool_call_id": call.ID, "tool_name": call.Name, "is_error": true, "turn_id": turnID,
 			}))
 			outcome.lastToolFailureSig, outcome.repeatedToolFailureCount = nextRepeatedToolFailureCount(outcome.lastToolFailureSig, outcome.repeatedToolFailureCount, call, toolErr)
@@ -5271,8 +5279,8 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 				"tool_call_id": call.ID, "occurrence_id": toolOccurrenceID, "output_length": len(toolResult),
 			}))
 			r.engine.broadcast(sessionID, map[string]any{"type": "tool_activity_changed", "chat_jid": "gi:" + sessionID, "turn_id": turnID})
-			goai.AppendToolResult(convCtx, call.ID, call.Name, displayResult, false)
-			logutil.WarnIfErr("add successful tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", displayResult, map[string]any{
+			appendToolResultWithImages(convCtx, call, displayResult, false, images)
+			logutil.WarnIfErr("add successful tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", displayResult+images.transcriptSuffix(), map[string]any{
 				"kind": "tool_result", "tool_call_id": call.ID, "tool_name": call.Name, "is_error": false, "turn_id": turnID,
 			}))
 			outcome.lastToolFailureSig = ""

@@ -121,8 +121,11 @@ Rules, as in Pi:
       `vfs://mcp-output/<session>/<id><ext>`, where the `read` tool can open
       it. Pi uses temp files. Saved outputs are pruned after 7 days (checked at MCP
       start and every 6 hours); Pi leaves its temp files to the OS.
-    - gi tool results are text, so images are described (`[image <mime>,
-      <size>]`) rather than attached.
+  - **Images** (image blocks and embedded image resources) are attached to
+    the tool result as image blocks, as in Pi. go-ai replaces them with
+    placeholders for models without image input, and the stored transcript
+    adds an `[image <mime>, <size>]` line. Any tool can attach images through
+    `ToolRuntime.AttachImage`.
 - **Resource tools:** `list_mcp_resources`, `list_mcp_resource_templates` and
   `read_mcp_resource` are registered while an enabled, non-hidden server with
   resources has direct exposure.

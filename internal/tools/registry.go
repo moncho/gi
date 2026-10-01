@@ -30,6 +30,9 @@ type ToolRuntime struct {
 	WorkspaceRoot string
 	// OnOutput receives cumulative command output; errors fail execution closed.
 	OnOutput func(string) error
+	// AttachImage adds an image to the tool result sent to the model (nil
+	// when the caller cannot attach images; tools then describe them in text).
+	AttachImage func(mimeType string, data []byte)
 }
 
 type ToolExecutor func(context.Context, ToolRuntime, goai.ToolCall) (string, error)

@@ -224,7 +224,11 @@ func (e *Engine) mcpRegisteredTool(mt mcpTool) tools.RegisteredTool {
 			}
 			converted := gimcp.ConvertResult(server, toolName, result, gimcp.ConvertOptions{
 				Save: e.mcpSaver(ctx, rt.SessionID), ReadableResources: e.mcp.manager.HasResources(server),
+				AttachImages: rt.AttachImage != nil,
 			})
+			for _, img := range converted.Images {
+				rt.AttachImage(img.MIMEType, img.Data)
+			}
 			if converted.IsError {
 				return "", errors.New(converted.Text)
 			}
@@ -378,7 +382,10 @@ func (e *Engine) mcpResourceTools() []tools.RegisteredTool {
 				for _, c := range res.Contents {
 					blocks = append(blocks, &sdk.EmbeddedResource{Resource: c})
 				}
-				converted := gimcp.ConvertResult(server, gimcp.ReadResourceTool, &sdk.CallToolResult{Content: blocks}, gimcp.ConvertOptions{Save: e.mcpSaver(ctx, rt.SessionID)})
+				converted := gimcp.ConvertResult(server, gimcp.ReadResourceTool, &sdk.CallToolResult{Content: blocks}, gimcp.ConvertOptions{Save: e.mcpSaver(ctx, rt.SessionID), AttachImages: rt.AttachImage != nil})
+				for _, img := range converted.Images {
+					rt.AttachImage(img.MIMEType, img.Data)
+				}
 				return converted.Text, nil
 			}},
 	}

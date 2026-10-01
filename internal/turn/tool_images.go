@@ -1,0 +1,56 @@
+package turn
+
+import (
+	"encoding/base64"
+	"fmt"
+	"strings"
+
+	"github.com/rcarmo/gi/internal/mcp"
+	goai "github.com/rcarmo/go-ai"
+)
+
+// maxToolImageBytes bounds one attached image (larger ones are described).
+const maxToolImageBytes = 20 << 20
+
+// toolImages collects images a tool attaches to its result. Like Pi, they
+// reach the model as image blocks of the tool result; go-ai replaces them
+// with placeholders for models without image input.
+type toolImages struct {
+	blocks []goai.ContentBlock
+	notes  []string // transcript lines describing each image
+}
+
+func (t *toolImages) attachFunc() func(string, []byte) {
+	if t == nil {
+		return nil
+	}
+	return func(mimeType string, data []byte) {
+		note := fmt.Sprintf("[image %s, %s]", mimeType, mcp.FormatSize(len(data)))
+		t.notes = append(t.notes, note)
+		if len(data) > maxToolImageBytes || !strings.HasPrefix(mimeType, "image/") {
+			t.blocks = append(t.blocks, goai.ContentBlock{Type: "text", Text: note + " (not attached: too large or not an image)"})
+			return
+		}
+		t.blocks = append(t.blocks, goai.ContentBlock{Type: "image", Data: base64.StdEncoding.EncodeToString(data), MimeType: mimeType})
+	}
+}
+
+// transcriptSuffix describes attached images in the stored transcript text.
+func (t *toolImages) transcriptSuffix() string {
+	if t == nil || len(t.notes) == 0 {
+		return ""
+	}
+	return "\n" + strings.Join(t.notes, "\n")
+}
+
+// appendToolResultWithImages appends a tool result whose content is the text
+// followed by any attached images.
+func appendToolResultWithImages(ctx *goai.Context, call goai.ToolCall, text string, isError bool, images *toolImages) {
+	if images == nil || len(images.blocks) == 0 {
+		goai.AppendToolResult(ctx, call.ID, call.Name, text, isError)
+		return
+	}
+	content := []goai.ContentBlock{{Type: "text", Text: text}}
+	content = append(content, images.blocks...)
+	ctx.Messages = append(ctx.Messages, goai.Message{Role: goai.RoleToolResult, ToolCallID: call.ID, ToolName: call.Name, Content: content, IsError: isError})
+}

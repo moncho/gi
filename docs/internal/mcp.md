@@ -198,7 +198,7 @@ Rules, as in Pi:
 This is a port of Pi's MCP OAuth (pi-coding-agent `extensions/mcp/oauth.js`, pi-mcp `oauth/{flow,discovery,provider}.js`).
 
 - **Which servers:** HTTP servers without an `Authorization` header (`ServerConfig.UsesOAuth`).
-- **Credentials:** stored in Pi's `mcp-auth.json`, in Pi's per-URL format, so gi and Pi share sign-ins. Writes are guarded by a `<file>.lock` directory; refreshes use per-server `mcp-auth-refresh-<hash>.lock` locks, as in Pi.
+- **Credentials:** stored in Pi's `mcp-auth.json`, so gi and Pi share sign-ins. Entries are keyed per server as `<mcp namespace>|<url>` (Pi 1.0), so servers sharing a URL keep separate accounts; entries keyed by URL alone move to the first server that loads them. Writes are guarded by a `<file>.lock` directory; refreshes use per-server `mcp-auth-refresh-<hash>.lock` locks, as in Pi.
 - **Connecting:**
   - The stored access token is sent, refreshed first when it is within 30 s of expiry.
   - After a 401 (or a 403 `insufficient_scope`), one refresh is shared by concurrent requests, then the request is retried once.
@@ -206,5 +206,9 @@ This is a port of Pi's MCP OAuth (pi-coding-agent `extensions/mcp/oauth.js`, pi-
 - **Sign-in** (`gi mcp login`): discovery (protected resource metadata, authorization server metadata with issuer check), dynamic client registration, PKCE S256 and a loopback callback on `127.0.0.1/callback`.
   - In a terminal, the redirect URL can also be pasted.
   - `invalid_client` and `invalid_grant` errors reset credentials and retry, as in Pi.
+  - **Issuer check (RFC 9207):** an authorization response whose `iss` does not name the authorization server, or that lacks `iss` when the server advertises it, is rejected before the code exchange.
+  - **`oauth.authServerMetadataUrl`:** replaces discovery for servers that advertise a wrong authorization server or none. The document is trusted as configured and not cached.
+  - **Step-up sign-in** (`insufficient_scope`): requests the granted scopes plus the challenged ones. Saved tokens record their scope (the requested scope when the response omits it, the grant's scope after a refresh).
+  - **Empty or `null` optional token fields** count as absent, and `expires_in` may be a numeric string.
 - **Sign-out** (`gi mcp logout`) deletes the stored credentials.
 - **TUI:** `/mcp` shows `needs sign-in`; `/mcp login` currently points to `gi mcp login`, followed by `/mcp reconnect`.

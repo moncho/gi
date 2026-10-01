@@ -440,7 +440,7 @@ func (m *Manager) connectHTTP(ctx context.Context, s *server) (*mcp.ClientSessio
 	if s.cfg.UsesOAuth() && m.credentials != nil {
 		if s.auth == nil {
 			cfg := s.cfg
-			s.auth = &connectionAuth{serverURL: normalizeServerURL(cfg.URL), store: m.credentials,
+			s.auth = &connectionAuth{name: cfg.Name, serverURL: normalizeServerURL(cfg.URL), store: m.credentials,
 				settings: func() (OAuthSettings, error) { return m.oauthSettings(context.Background(), cfg) }}
 		}
 		rt = &oauthTransport{base: rt, auth: s.auth, onNeedsAuth: func() { s.needsAuth.Store(true) }}

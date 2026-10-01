@@ -307,7 +307,7 @@ func RunCommand(args []string, opts CLIOptions) int {
 			credentials = NewCredentialStore(opts.CredentialsPath)
 		}
 		if command == "logout" {
-			if credentials.Remove(entry.URL) {
+			if credentials.Remove(name, entry.URL) {
 				logf(fmt.Sprintf("Signed out of MCP server %q.", name))
 			} else {
 				logf(fmt.Sprintf("No stored credentials for MCP server %q.", name))

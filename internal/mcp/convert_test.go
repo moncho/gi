@@ -89,7 +89,7 @@ func TestServersSection(t *testing.T) {
 		{Config: cfg("direct-only", ExposureDirect, "x", nil)},
 		{Config: cfg("hidden-but-one", ExposureHidden, "", map[string]string{"get": "codemode"})},
 	})
-	want := serversSectionIntro + "\n- mcp__dev_radius (codemode): Radius tools\n- mcp__hidden_but_one (codemode)\n- mcp__zeta (tool_search): Zeta server."
+	want := "MCP servers whose tools are not declared to you. Call the tools of `codemode` servers from codemode scripts. Load the tools of `tool_search` servers with `tool_search`." + "\n- mcp__dev_radius (codemode): Radius tools\n- mcp__hidden_but_one (codemode)\n- mcp__zeta (tool_search): Zeta server."
 	if section != want {
 		t.Fatalf("section:\n%s\nwant\n%s", section, want)
 	}

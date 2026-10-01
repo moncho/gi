@@ -13,6 +13,7 @@ import (
 	"sync"
 	"testing"
 
+	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/mcp/mcptest"
 )
 
@@ -26,6 +27,8 @@ type fakeOAuth struct {
 	challenge string          // PKCE challenge of the pending code
 	issued    int
 	refreshes int
+	iss       string // iss parameter added to authorization responses
+	advertise string // authorization server named in the resource metadata
 }
 
 func newFakeOAuth(t *testing.T) *fakeOAuth {
@@ -50,7 +53,11 @@ func newFakeOAuth(t *testing.T) *fakeOAuth {
 		fake.HTTP.Config.Handler.ServeHTTP(w, r)
 	})
 	mux.HandleFunc("/.well-known/oauth-protected-resource/mcp", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, map[string]any{"resource": f.URL + "/mcp", "authorization_servers": []string{f.URL}})
+		as := f.URL
+		if f.advertise != "" {
+			as = f.advertise
+		}
+		writeJSON(w, map[string]any{"resource": f.URL + "/mcp", "authorization_servers": []string{as}})
 	})
 	mux.HandleFunc("/.well-known/oauth-authorization-server", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"issuer": f.URL, "authorization_endpoint": f.URL + "/authorize", "token_endpoint": f.URL + "/token",
@@ -72,7 +79,11 @@ func newFakeOAuth(t *testing.T) *fakeOAuth {
 		f.mu.Lock()
 		f.challenge = q.Get("code_challenge")
 		f.mu.Unlock()
-		http.Redirect(w, r, q.Get("redirect_uri")+"?code=code-1&state="+q.Get("state"), http.StatusFound)
+		target := q.Get("redirect_uri") + "?code=code-1&state=" + q.Get("state")
+		if f.iss != "" {
+			target += "&iss=" + f.iss
+		}
+		http.Redirect(w, r, target, http.StatusFound)
 	})
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
@@ -136,7 +147,8 @@ func TestCLIOAuthLoginRefreshLogout(t *testing.T) {
 		TokensExpireAt float64 `json:"tokensExpireAt"`
 	}
 	data, _ := os.ReadFile(opts.CredentialsPath)
-	if err := json.Unmarshal(data, &stored); err != nil || stored[f.URL+"/mcp"].Tokens.AccessToken != "token-1" || stored[f.URL+"/mcp"].TokensExpireAt == 0 {
+	key := "mcp__remote|" + f.URL + "/mcp" // per server name and URL (Pi 1.0)
+	if err := json.Unmarshal(data, &stored); err != nil || stored[key].Tokens.AccessToken != "token-1" || stored[key].TokensExpireAt == 0 {
 		t.Fatalf("stored credentials: %s", data)
 	}
 	if r := runCLI(t, opts, "login", "remote"); r.code != 0 || r.out != `Already signed in to MCP server "remote" (4 tools).` {
@@ -164,5 +176,48 @@ func TestCLIOAuthLoginRefreshLogout(t *testing.T) {
 	f.mu.Unlock()
 	if r := runCLI(t, opts, "list"); r.code != 1 || !strings.Contains(r.out, "needs sign-in") {
 		t.Fatalf("after logout: %+v", r)
+	}
+}
+
+func loginOptions(t *testing.T) gimcp.CLIOptions {
+	opts := cliOptions(t)
+	opts.OpenURL = func(u string) {
+		go func() {
+			if resp, err := http.Get(u); err == nil {
+				resp.Body.Close()
+			}
+		}()
+	}
+	return opts
+}
+
+// RFC 9207: an authorization response whose iss names another server is
+// rejected before the code is exchanged.
+func TestCLIOAuthRejectsWrongIssuer(t *testing.T) {
+	f := newFakeOAuth(t)
+	f.iss = "https://evil.example"
+	opts := loginOptions(t)
+	if r := runCLI(t, opts, "add", "remote", "--url", f.URL+"/mcp"); r.code != 0 {
+		t.Fatalf("%+v", r)
+	}
+	r := runCLI(t, opts, "login", "remote")
+	if r.code != 1 || !strings.Contains(r.err, `OAuth issuer mismatch: expected "`+f.URL+`", received "https://evil.example"`) || f.issued != 0 {
+		t.Fatalf("%+v issued=%d", r, f.issued)
+	}
+}
+
+// oauth.authServerMetadataUrl replaces discovery for servers that advertise
+// a wrong authorization server.
+func TestCLIOAuthConfiguredMetadataURL(t *testing.T) {
+	f := newFakeOAuth(t)
+	f.advertise = "https://wrong.example"
+	opts := loginOptions(t)
+	_ = os.MkdirAll(filepath.Dir(opts.UserPath), 0o755)
+	cfg := fmt.Sprintf(`{"mcpServers": {"remote": {"url": %q, "oauth": {"authServerMetadataUrl": %q}}}}`, f.URL+"/mcp", f.URL+"/.well-known/oauth-authorization-server")
+	if err := os.WriteFile(opts.UserPath, []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if r := runCLI(t, opts, "login", "remote"); r.code != 0 || !strings.HasSuffix(r.out, `Signed in to MCP server "remote" (4 tools).`) {
+		t.Fatalf("%+v", r)
 	}
 }

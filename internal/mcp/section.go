@@ -13,8 +13,20 @@ const ServersSection = "mcp_servers"
 const (
 	maxServerDescriptionChars = 250
 	maxServersSectionChars    = 4096
-	serversSectionIntro       = "MCP servers whose tools are not declared to you. Call the tools of `codemode` servers from codemode scripts: find them with `searchTools(query, { namespace })` and read a server's instructions and tool names with `describeNamespace(name)`. Load the tools of `tool_search` servers with `tool_search`."
 )
+
+// serversSectionIntro ports Pi's: the section's first line explains only the
+// ways of reaching tools that the listed servers use.
+func serversSectionIntro(reaches map[string]bool) string {
+	intro := "MCP servers whose tools are not declared to you."
+	if reaches["codemode"] {
+		intro += " Call the tools of `codemode` servers from codemode scripts."
+	}
+	if reaches["tool_search"] {
+		intro += " Load the tools of `tool_search` servers with `tool_search`."
+	}
+	return intro
+}
 
 // configuredExposures is the set of exposures a server's config can give its
 // tools: the server exposure plus every toolExposure value.
@@ -64,7 +76,7 @@ func truncateChars(text string, max int) string {
 }
 
 func serverSummary(s SectionServer) string {
-	text := s.Config.Description
+	text := strings.TrimSpace(s.Config.Description)
 	if text == "" {
 		text = s.Instructions
 	}
@@ -88,13 +100,16 @@ func RenderServersSection(servers []SectionServer) string {
 	}
 	sort.Slice(listed, func(i, j int) bool { return listed[i].Config.Name < listed[j].Config.Name })
 	heads := make([]string, len(listed))
+	reaches := map[string]bool{}
 	for i, s := range listed {
 		reach := "tool_search"
 		if s.Config.configuredExposures()[ExposureCodemode] {
 			reach = "codemode"
 		}
+		reaches[reach] = true
 		heads[i] = fmt.Sprintf("- %s (%s)", Namespace(s.Config.Name), reach)
 	}
+	intro := serversSectionIntro(reaches)
 	omitted := func(count int) []string {
 		if count <= 0 {
 			return nil
@@ -106,7 +121,7 @@ func RenderServersSection(servers []SectionServer) string {
 		return []string{fmt.Sprintf("- … %d more server%s; find their tools with searchTools()", count, plural)}
 	}
 	size := func(kept int) int {
-		lines := append([]string{serversSectionIntro}, heads[:kept]...)
+		lines := append([]string{intro}, heads[:kept]...)
 		lines = append(lines, omitted(len(listed)-kept)...)
 		return len([]rune(strings.Join(lines, "\n")))
 	}
@@ -118,7 +133,7 @@ func RenderServersSection(servers []SectionServer) string {
 	if kept > 0 {
 		perServer = min(maxServerDescriptionChars, (maxServersSectionChars-size(kept))/kept-2)
 	}
-	lines := []string{serversSectionIntro}
+	lines := []string{intro}
 	for i := 0; i < kept; i++ {
 		summary := ""
 		if perServer > 0 {

@@ -62,8 +62,19 @@ func (e *OAuthError) Error() string { return e.Description }
 type insecureEndpointError struct{ url string }
 
 func (e *insecureEndpointError) Error() string {
-	return "OAuth endpoint must use https (or http on loopback): " + e.url
+	return "Refusing to send OAuth credentials to non-HTTPS endpoint " + e.url
 }
+
+// issuerMismatchError ports Pi's OAuthIssuerMismatchError.
+func issuerMismatchError(expected string, received *string) error {
+	got := "none"
+	if received != nil {
+		got = strconvQuote(*received)
+	}
+	return fmt.Errorf("OAuth issuer mismatch: expected %s, received %s", strconvQuote(expected), got)
+}
+
+func strconvQuote(s string) string { b, _ := json.Marshal(s); return string(b) }
 
 // OAuthSettings are a server's "oauth" settings.
 type OAuthSettings struct {
@@ -73,6 +84,9 @@ type OAuthSettings struct {
 	CallbackURL  string `json:"callbackUrl,omitempty"`
 	Scope        string `json:"scope,omitempty"`
 	ClientName   string `json:"clientName,omitempty"`
+	// AuthServerMetadataURL is an authorization server metadata document
+	// used instead of discovery (servers that advertise a wrong one or none).
+	AuthServerMetadataURL string `json:"authServerMetadataUrl,omitempty"`
 }
 
 // UsesOAuth ports Pi's usesOAuth: HTTP servers without an Authorization
@@ -243,23 +257,44 @@ func (c *CredentialStore) withFile(update func(states *orderedObject) bool) erro
 	})
 }
 
-func (c *CredentialStore) load(serverURL string) *oauthState {
-	key := normalizeServerURL(serverURL)
+// storeKeys ports Pi's: credentials are keyed by server name and URL, so
+// servers sharing a URL keep separate accounts; older versions keyed them by
+// URL alone (the legacy key).
+func storeKeys(name, serverURL string) (key, legacy string) {
+	legacy = normalizeServerURL(serverURL)
+	return Namespace(name) + "|" + legacy, legacy
+}
+
+// load returns the server's state; the first server to load legacy state
+// takes it over (others with the same URL sign in again).
+func (c *CredentialStore) load(name, serverURL string) *oauthState {
+	key, legacy := storeKeys(name, serverURL)
 	var state *oauthState
 	_ = c.withFile(func(states *orderedObject) bool {
-		if raw, ok := states.values[key]; ok {
+		raw, ok := states.values[key]
+		migrate := false
+		if !ok {
+			if raw, ok = states.values[legacy]; ok {
+				migrate = true
+			}
+		}
+		if ok {
 			var s oauthState
 			if json.Unmarshal(raw, &s) == nil {
 				state = &s
 			}
 		}
-		return false
+		if migrate {
+			states.remove(legacy)
+			states.set(key, raw)
+		}
+		return migrate
 	})
 	return state
 }
 
-func (c *CredentialStore) save(serverURL string, state *oauthState) error {
-	key := normalizeServerURL(serverURL)
+func (c *CredentialStore) save(name, serverURL string, state *oauthState) error {
+	key, _ := storeKeys(name, serverURL)
 	raw, err := json.Marshal(state)
 	if err != nil {
 		return err
@@ -270,22 +305,24 @@ func (c *CredentialStore) save(serverURL string, state *oauthState) error {
 	})
 }
 
-// Remove deletes a server's credentials; it reports whether any were stored.
-func (c *CredentialStore) Remove(serverURL string) bool {
-	key := normalizeServerURL(serverURL)
+// Remove deletes a server's credentials (or the legacy state it would take
+// over); it reports whether any were stored.
+func (c *CredentialStore) Remove(name, serverURL string) bool {
+	key, legacy := storeKeys(name, serverURL)
 	removed := false
 	_ = c.withFile(func(states *orderedObject) bool {
-		removed = states.remove(key)
+		removed = states.remove(key) || states.remove(legacy)
 		return removed
 	})
 	return removed
 }
 
-func (c *CredentialStore) withRefreshLock(serverURL string, fn func() error) error {
+func (c *CredentialStore) withRefreshLock(name, serverURL string, fn func() error) error {
 	if c.LockDir == "" {
 		return fn()
 	}
-	sum := sha256.Sum256([]byte(normalizeServerURL(serverURL)))
+	key, _ := storeKeys(name, serverURL)
+	sum := sha256.Sum256([]byte(key))
 	lock := filepath.Join(c.LockDir, "mcp-auth-refresh-"+hex.EncodeToString(sum[:])[:16]) + ".lock"
 	return withLockDir(lock, oauthRefreshLockStale, oauthRefreshLockWait, fn)
 }
@@ -293,6 +330,7 @@ func (c *CredentialStore) withRefreshLock(serverURL string, fn func() error) err
 // --- provider (Pi's McpOAuthProvider) --------------------------------------
 
 type oauthProvider struct {
+	name           string
 	serverURL      string
 	redirectURL    string
 	clientMetadata *orderedObject
@@ -301,22 +339,22 @@ type oauthProvider struct {
 	onRedirect     func(*url.URL)
 }
 
-func newOAuthProvider(serverURL string, store *CredentialStore, settings OAuthSettings, redirectURL string, onRedirect func(*url.URL)) *oauthProvider {
-	name := settings.ClientName
-	if name == "" {
-		name = clientName
+func newOAuthProvider(name, serverURL string, store *CredentialStore, settings OAuthSettings, redirectURL string, onRedirect func(*url.URL)) *oauthProvider {
+	displayName := settings.ClientName
+	if displayName == "" {
+		displayName = clientName
 	}
 	method := "none"
 	if settings.ClientSecret != "" {
 		method = "client_secret_post"
 	}
 	meta := &orderedObject{values: map[string]json.RawMessage{}}
-	meta.set("client_name", jsonValue(name))
+	meta.set("client_name", jsonValue(displayName))
 	meta.set("redirect_uris", jsonValue([]string{redirectURL}))
 	meta.set("grant_types", jsonValue([]string{"authorization_code", "refresh_token"}))
 	meta.set("response_types", jsonValue([]string{"code"}))
 	meta.set("token_endpoint_auth_method", jsonValue(method))
-	p := &oauthProvider{serverURL: normalizeServerURL(serverURL), redirectURL: redirectURL, clientMetadata: meta, store: store, onRedirect: onRedirect}
+	p := &oauthProvider{name: name, serverURL: normalizeServerURL(serverURL), redirectURL: redirectURL, clientMetadata: meta, store: store, onRedirect: onRedirect}
 	if settings.ClientID != "" {
 		client := map[string]string{"client_id": settings.ClientID}
 		if settings.ClientSecret != "" {
@@ -328,7 +366,7 @@ func newOAuthProvider(serverURL string, store *CredentialStore, settings OAuthSe
 }
 
 func (p *oauthProvider) load() *oauthState {
-	if s := p.store.load(p.serverURL); s != nil && s.ServerURL == p.serverURL {
+	if s := p.store.load(p.name, p.serverURL); s != nil && s.ServerURL == p.serverURL {
 		return s
 	}
 	return &oauthState{ServerURL: p.serverURL}
@@ -337,7 +375,7 @@ func (p *oauthProvider) load() *oauthState {
 func (p *oauthProvider) update(fn func(*oauthState)) error {
 	s := p.load()
 	fn(s)
-	return p.store.save(p.serverURL, s)
+	return p.store.save(p.name, p.serverURL, s)
 }
 
 func (p *oauthProvider) state() (string, error) {
@@ -355,6 +393,48 @@ func (p *oauthProvider) clientInformation() json.RawMessage {
 		return p.configured
 	}
 	return p.load().ClientInformation
+}
+
+// withScope ports Pi's: a token response without scope grants the requested
+// scope (code exchange) or keeps the grant's (refresh), recorded so a
+// step-up sign-in can keep it.
+func withScope(tokens *oauthTokens, scope string) *oauthTokens {
+	if tokens.Scope == "" && scope != "" {
+		t := *tokens
+		t.Scope = scope
+		return &t
+	}
+	return tokens
+}
+
+// parseTokens ports Pi's parseOAuthTokens: null and "" are absent, and
+// expires_in may be a numeric string.
+func parseTokens(text []byte) (*oauthTokens, error) {
+	var raw map[string]any
+	if err := json.Unmarshal(text, &raw); err != nil {
+		return nil, errors.New("invalid OAuth token response")
+	}
+	str := func(k string) string { v, _ := raw[k].(string); return v }
+	t := &oauthTokens{AccessToken: str("access_token"), TokenType: str("token_type"), Scope: str("scope"), RefreshToken: str("refresh_token"), IDToken: str("id_token")}
+	if t.AccessToken == "" {
+		return nil, errors.New("OAuth token response: access_token must be a string")
+	}
+	if t.TokenType == "" {
+		return nil, errors.New("OAuth token response: token_type must be a string")
+	}
+	switch v := raw["expires_in"].(type) {
+	case float64:
+		t.ExpiresIn = &v
+	case string:
+		if v != "" {
+			n, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				return nil, errors.New("Invalid expires_in")
+			}
+			t.ExpiresIn = &n
+		}
+	}
+	return t, nil
 }
 
 func (p *oauthProvider) saveTokens(tokens *oauthTokens) error {
@@ -479,6 +559,29 @@ type authServerMeta struct {
 	ResponseTypesSupported            []string `json:"response_types_supported"`
 	CodeChallengeMethodsSupported     []string `json:"code_challenge_methods_supported"`
 	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
+	IssParameterSupported             bool     `json:"authorization_response_iss_parameter_supported"`
+}
+
+// fetchConfiguredAuthServerMetadata loads a configured metadata document
+// (trusted as configured: no issuer check).
+func fetchConfiguredAuthServerMetadata(ctx context.Context, client *http.Client, u string) (json.RawMessage, string, error) {
+	resp, err := fetchMetadata(ctx, client, u)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return nil, "", fmt.Errorf("HTTP %d loading authorization server metadata from %s", resp.StatusCode, u)
+	}
+	var raw json.RawMessage
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&raw); err != nil {
+		return nil, "", err
+	}
+	var meta authServerMeta
+	if json.Unmarshal(raw, &meta) != nil || meta.Issuer == "" {
+		return nil, "", errors.New("invalid authorization server metadata")
+	}
+	return raw, meta.Issuer, nil
 }
 
 func discoverAuthServerMetadata(ctx context.Context, client *http.Client, asURL string) (json.RawMessage, error) {
@@ -514,7 +617,7 @@ func discoverAuthServerMetadata(ctx context.Context, client *http.Client, asURL 
 			return nil, errors.New("invalid authorization server metadata")
 		}
 		if strings.TrimSuffix(meta.Issuer, "/") != strings.TrimSuffix(asURL, "/") {
-			return nil, fmt.Errorf("authorization server issuer mismatch: expected %s, got %s", asURL, meta.Issuer)
+			return nil, issuerMismatchError(asURL, &meta.Issuer)
 		}
 		return raw, nil
 	}
@@ -660,11 +763,7 @@ func tokenRequest(ctx context.Context, client *http.Client, asURL string, meta *
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, &OAuthError{Code: "server_error", Description: fmt.Sprintf("HTTP %d: %s", resp.StatusCode, text)}
 	}
-	var tokens oauthTokens
-	if err := json.Unmarshal(text, &tokens); err != nil || tokens.AccessToken == "" || tokens.TokenType == "" {
-		return nil, errors.New("invalid OAuth token response")
-	}
-	return &tokens, nil
+	return parseTokens(text)
 }
 
 func registerClient(ctx context.Context, client *http.Client, asURL string, meta *authServerMeta, clientMetadata *orderedObject, scope string) (json.RawMessage, error) {
@@ -696,7 +795,7 @@ func registerClient(ctx context.Context, client *http.Client, asURL string, meta
 	defer resp.Body.Close()
 	text, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, fmt.Errorf("OAuth client registration failed (HTTP %d): %s", resp.StatusCode, text)
+		return nil, fmt.Errorf("OAuth dynamic client registration failed with status %d: %s", resp.StatusCode, text)
 	}
 	var info clientInfo
 	if json.Unmarshal(text, &info) != nil || info.ClientID == "" {
@@ -710,6 +809,8 @@ func registerClient(ctx context.Context, client *http.Client, asURL string, meta
 type flowOptions struct {
 	serverURL           string
 	resourceMetadataURL string
+	metadataURL         string  // configured authorization server metadata
+	iss                 *string // RFC 9207 iss of the authorization response
 	scope               string
 	authorizationCode   string
 	skipRefresh         bool
@@ -719,9 +820,16 @@ type flowOptions struct {
 // runFlow returns true when authorized, false after redirecting the user.
 func runFlow(ctx context.Context, p *oauthProvider, opts flowOptions) (bool, error) {
 	client := opts.client
+	if opts.metadataURL != "" {
+		if _, err := secureEndpoint(opts.metadataURL); err != nil {
+			return false, err
+		}
+	}
 	state := p.load()
 	var disc discoveryState
-	if cached := state.Discovery; cached != nil && cached.AuthorizationServerURL != "" {
+	// With a configured metadata URL, discovery is not cached, so changing
+	// the URL applies at once.
+	if cached := state.Discovery; opts.metadataURL == "" && cached != nil && cached.AuthorizationServerURL != "" {
 		disc = *cached
 		if len(disc.AuthorizationServerMetadata) == 0 {
 			meta, err := discoverAuthServerMetadata(ctx, client, disc.AuthorizationServerURL)
@@ -736,27 +844,37 @@ func runFlow(ctx context.Context, p *oauthProvider, opts flowOptions) (bool, err
 			resourceMeta = nil // Pi: missing resource metadata falls back to the server origin
 		}
 		disc.ResourceMetadata = resourceMeta
-		var rm struct {
-			AuthorizationServers []string `json:"authorization_servers"`
-		}
-		_ = json.Unmarshal(resourceMeta, &rm)
-		if len(rm.AuthorizationServers) > 0 {
-			disc.AuthorizationServerURL = rm.AuthorizationServers[0]
+		if opts.metadataURL != "" {
+			meta, issuer, err := fetchConfiguredAuthServerMetadata(ctx, client, opts.metadataURL)
+			if err != nil {
+				return false, err
+			}
+			disc.AuthorizationServerURL, disc.AuthorizationServerMetadata = issuer, meta
 		} else {
-			u, _ := url.Parse(opts.serverURL)
-			disc.AuthorizationServerURL = origin(u) + "/"
+			var rm struct {
+				AuthorizationServers []string `json:"authorization_servers"`
+			}
+			_ = json.Unmarshal(resourceMeta, &rm)
+			if len(rm.AuthorizationServers) > 0 {
+				disc.AuthorizationServerURL = rm.AuthorizationServers[0]
+			} else {
+				u, _ := url.Parse(opts.serverURL)
+				disc.AuthorizationServerURL = origin(u) + "/"
+			}
+			meta, err := discoverAuthServerMetadata(ctx, client, disc.AuthorizationServerURL)
+			if err != nil {
+				return false, err
+			}
+			disc.AuthorizationServerMetadata = meta
 		}
-		meta, err := discoverAuthServerMetadata(ctx, client, disc.AuthorizationServerURL)
-		if err != nil {
+	}
+	if opts.metadataURL == "" {
+		if opts.resourceMetadataURL != "" {
+			disc.ResourceMetadataURL = opts.resourceMetadataURL
+		}
+		if err := p.update(func(s *oauthState) { d := disc; s.Discovery = &d }); err != nil {
 			return false, err
 		}
-		disc.AuthorizationServerMetadata = meta
-	}
-	if opts.resourceMetadataURL != "" {
-		disc.ResourceMetadataURL = opts.resourceMetadataURL
-	}
-	if err := p.update(func(s *oauthState) { d := disc; s.Discovery = &d }); err != nil {
-		return false, err
 	}
 	var meta *authServerMeta
 	if len(disc.AuthorizationServerMetadata) > 0 && string(disc.AuthorizationServerMetadata) != "null" {
@@ -792,6 +910,12 @@ func runFlow(ctx context.Context, p *oauthProvider, opts flowOptions) (bool, err
 	var info clientInfo
 	_ = json.Unmarshal(rawClient, &info)
 	if opts.authorizationCode != "" {
+		// RFC 9207: never send a code from another authorization server.
+		if meta != nil && (opts.iss != nil || meta.IssParameterSupported) {
+			if opts.iss == nil || *opts.iss != meta.Issuer {
+				return false, issuerMismatchError(meta.Issuer, opts.iss)
+			}
+		}
 		verifier := p.load().CodeVerifier
 		if verifier == "" {
 			return false, errors.New("No OAuth PKCE code verifier is stored")
@@ -802,7 +926,7 @@ func runFlow(ctx context.Context, p *oauthProvider, opts flowOptions) (bool, err
 		if err != nil {
 			return false, err
 		}
-		return true, p.saveTokens(tokens)
+		return true, p.saveTokens(withScope(tokens, scope))
 	}
 	if existing := p.load().Tokens; !opts.skipRefresh && existing != nil && existing.RefreshToken != "" {
 		tokens, err := tokenRequest(ctx, client, disc.AuthorizationServerURL, meta, info, resource, url.Values{
@@ -812,7 +936,7 @@ func runFlow(ctx context.Context, p *oauthProvider, opts flowOptions) (bool, err
 			if tokens.RefreshToken == "" {
 				tokens.RefreshToken = existing.RefreshToken
 			}
-			return true, p.saveTokens(tokens)
+			return true, p.saveTokens(withScope(tokens, existing.Scope))
 		}
 		var insecure *insecureEndpointError
 		var oauthErr *OAuthError
@@ -917,6 +1041,7 @@ func callbackSettingsFor(settings OAuthSettings) (host, redirectHost string, por
 }
 
 type connectionAuth struct {
+	name      string
 	serverURL string
 	store     *CredentialStore
 	settings  func() (OAuthSettings, error)
@@ -949,8 +1074,8 @@ func (a *connectionAuth) refresh(ctx context.Context, staleToken string, challen
 	ch := make(chan struct{})
 	a.refreshing = ch
 	a.mu.Unlock()
-	err := a.store.withRefreshLock(a.serverURL, func() error {
-		state := a.store.load(a.serverURL)
+	err := a.store.withRefreshLock(a.name, a.serverURL, func() error {
+		state := a.store.load(a.name, a.serverURL)
 		current := ""
 		if state != nil && state.Tokens != nil {
 			current = state.Tokens.AccessToken
@@ -976,8 +1101,8 @@ func (a *connectionAuth) refresh(ctx context.Context, staleToken string, challen
 				redirect = oauthFallbackRedirect
 			}
 		}
-		p := newOAuthProvider(a.serverURL, a.store, settings, redirect, func(*url.URL) {})
-		opts := flowOptions{serverURL: a.serverURL, client: &http.Client{Timeout: oauthRefreshTimeout}}
+		p := newOAuthProvider(a.name, a.serverURL, a.store, settings, redirect, func(*url.URL) {})
+		opts := flowOptions{serverURL: a.serverURL, metadataURL: settings.AuthServerMetadataURL, client: &http.Client{Timeout: oauthRefreshTimeout}}
 		if challenge != nil {
 			opts.resourceMetadataURL, opts.scope = challenge.ResourceMetadataURL, challenge.Scope
 		}
@@ -1005,7 +1130,7 @@ func (a *connectionAuth) token(ctx context.Context) string {
 	} else {
 		a.mu.Unlock()
 	}
-	state := a.store.load(a.serverURL)
+	state := a.store.load(a.name, a.serverURL)
 	if state == nil || state.Tokens == nil {
 		return ""
 	}
@@ -1016,7 +1141,7 @@ func (a *connectionAuth) token(ctx context.Context) string {
 	// Failures fall through: the request goes out with the old token and a
 	// 401 decides what happens.
 	_ = a.refresh(ctx, state.Tokens.AccessToken, nil)
-	if state = a.store.load(a.serverURL); state != nil && state.Tokens != nil {
+	if state = a.store.load(a.name, a.serverURL); state != nil && state.Tokens != nil {
 		return state.Tokens.AccessToken
 	}
 	return ""
@@ -1099,6 +1224,16 @@ type SignInPrompt struct {
 	PromptForRedirectURL func(ctx context.Context) string
 }
 
+// stepUpScope ports Pi's: the challenged scopes plus the granted ones, since
+// a challenge may list only the missing scopes (SEP-2350); "" without
+// challenged scopes.
+func stepUpScope(granted, challenged string) string {
+	if challenged == "" {
+		return ""
+	}
+	return mergeScopes(granted, challenged)
+}
+
 func mergeScopes(scopes ...string) string {
 	seen := map[string]bool{}
 	var out []string
@@ -1113,26 +1248,33 @@ func mergeScopes(scopes ...string) string {
 	return strings.Join(out, " ")
 }
 
-func codeFromRedirectURL(input, state string) (string, error) {
+func codeFromRedirectURL(input, state string) (string, *string, error) {
 	u, err := url.Parse(strings.TrimSpace(input))
 	if err != nil || u.Scheme == "" {
-		return "", errors.New("Expected the full redirect URL from the browser address bar")
+		return "", nil, errors.New("Expected the full redirect URL from the browser address bar")
 	}
 	q := u.Query()
 	if e := q.Get("error"); e != "" {
 		if d := q.Get("error_description"); d != "" {
-			return "", errors.New(d)
+			return "", nil, errors.New(d)
 		}
-		return "", errors.New(e)
+		return "", nil, errors.New(e)
 	}
 	if q.Get("state") != state {
-		return "", errors.New("The redirect URL belongs to a different sign-in")
+		return "", nil, errors.New("The redirect URL belongs to a different sign-in")
 	}
 	code := q.Get("code")
 	if code == "" {
-		return "", errors.New("The redirect URL does not contain an authorization code")
+		return "", nil, errors.New("The redirect URL does not contain an authorization code")
 	}
-	return code, nil
+	return code, issParam(q), nil
+}
+
+func issParam(q url.Values) *string {
+	if v := q.Get("iss"); v != "" {
+		return &v
+	}
+	return nil
 }
 
 type callbackServer struct {
@@ -1144,6 +1286,7 @@ type callbackServer struct {
 
 type callbackResult struct {
 	code, state string
+	iss         *string
 	err         error
 }
 
@@ -1174,7 +1317,7 @@ func listenForCallback(host, redirectHost, path string, port *int, required bool
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		res := callbackResult{code: q.Get("code"), state: q.Get("state")}
+		res := callbackResult{code: q.Get("code"), state: q.Get("state"), iss: issParam(q)}
 		if e := q.Get("error"); e != "" {
 			desc := q.Get("error_description")
 			if desc == "" {
@@ -1225,11 +1368,12 @@ func (m *Manager) SignIn(ctx context.Context, name string, prompt SignInPrompt) 
 	if s.auth != nil {
 		challenge = s.auth.lastChallenge()
 	}
-	return signIn(ctx, s.cfg.URL, m.credentials, settings, challenge, prompt)
+	return signIn(ctx, name, s.cfg.URL, m.credentials, settings, challenge, prompt)
 }
 
-func signIn(ctx context.Context, serverURL string, store *CredentialStore, settings OAuthSettings, challenge wwwAuthChallenge, prompt SignInPrompt) error {
-	stored := store.load(serverURL)
+func signIn(ctx context.Context, name, serverURL string, store *CredentialStore, settings OAuthSettings, challenge wwwAuthChallenge, prompt SignInPrompt) error {
+	stored := store.load(name, serverURL)
+	stepUp := challenge.Error == "insufficient_scope"
 	host, redirectHost, port, path, fixed := callbackSettingsFor(settings)
 	preferred := port
 	if preferred == nil && stored != nil {
@@ -1259,16 +1403,27 @@ func signIn(ctx context.Context, serverURL string, store *CredentialStore, setti
 		if settings.ClientID == "" && !contains(info.RedirectURIs, redirectURL) {
 			next.ClientInformation, next.Tokens, next.TokensExpireAt = nil, nil, nil
 		}
-		if err := store.save(serverURL, &next); err != nil {
+		if err := store.save(name, serverURL, &next); err != nil {
 			return err
 		}
 	}
 	var authorizationURL *url.URL
-	p := newOAuthProvider(serverURL, store, settings, redirectURL, func(u *url.URL) { authorizationURL = u })
+	p := newOAuthProvider(name, serverURL, store, settings, redirectURL, func(u *url.URL) { authorizationURL = u })
+	// A server asking for more scope gets it on top of the configured scope
+	// and, since the challenge may list only the missing scopes, on top of the
+	// scope granted so far.
+	requested := challenge.Scope
+	if stepUp {
+		granted := ""
+		if stored != nil && stored.Tokens != nil {
+			granted = stored.Tokens.Scope
+		}
+		requested = stepUpScope(granted, challenge.Scope)
+	}
 	flow := flowOptions{serverURL: normalizeServerURL(serverURL), resourceMetadataURL: challenge.ResourceMetadataURL,
-		scope: mergeScopes(settings.Scope, challenge.Scope), client: &http.Client{Timeout: 30 * time.Second}}
+		metadataURL: settings.AuthServerMetadataURL, scope: mergeScopes(settings.Scope, requested), client: &http.Client{Timeout: 30 * time.Second}}
 	skip := flow
-	skip.skipRefresh = challenge.Error == "insufficient_scope"
+	skip.skipRefresh = stepUp
 	ok, err := authorizeMCP(ctx, p, skip)
 	if err != nil || ok {
 		return err
@@ -1281,16 +1436,16 @@ func signIn(ctx context.Context, serverURL string, store *CredentialStore, setti
 		return err
 	}
 	prompt.ShowAuthorizationURL(authorizationURL.String())
-	code, err := waitForAuthorizationCode(ctx, callback, state, prompt)
+	code, iss, err := waitForAuthorizationCode(ctx, callback, state, prompt)
 	if err != nil {
 		return err
 	}
-	flow.authorizationCode = code
+	flow.authorizationCode, flow.iss = code, iss
 	_, err = authorizeMCP(ctx, p, flow)
 	return err
 }
 
-func waitForAuthorizationCode(ctx context.Context, callback *callbackServer, state string, prompt SignInPrompt) (string, error) {
+func waitForAuthorizationCode(ctx context.Context, callback *callbackServer, state string, prompt SignInPrompt) (string, *string, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	pasted := make(chan callbackResult, 1)
@@ -1303,24 +1458,24 @@ func waitForAuthorizationCode(ctx context.Context, callback *callbackServer, sta
 				}
 				return
 			}
-			code, err := codeFromRedirectURL(input, state)
-			pasted <- callbackResult{code: code, state: state, err: err}
+			code, iss, err := codeFromRedirectURL(input, state)
+			pasted <- callbackResult{code: code, state: state, iss: iss, err: err}
 		}()
 	}
 	for {
 		select {
 		case <-ctx.Done():
-			return "", ErrSignInCancelled
+			return "", nil, ErrSignInCancelled
 		case res := <-pasted:
-			return res.code, res.err
+			return res.code, res.iss, res.err
 		case res := <-callback.results:
 			if res.err != nil {
-				return "", res.err
+				return "", nil, res.err
 			}
 			if res.state != state {
 				continue // another sign-in's redirect
 			}
-			return res.code, nil
+			return res.code, res.iss, nil
 		}
 	}
 }

@@ -105,6 +105,9 @@ func (e *Engine) enableMCPWith(m *gimcp.Manager) {
 		st.ready[name] = make(chan struct{})
 	}
 	e.mcp = st
+	st.mu.Lock()
+	e.updateToolSearchLocked() // from config, before servers connect (Pi)
+	st.mu.Unlock()
 	go e.runMCPOutputPruner(e.backgroundContext())
 	m.SetOnToolsChanged(func(server string) { e.refreshMCPServer(e.backgroundContext(), server) })
 	for _, name := range m.Config().Names() {
@@ -182,15 +185,20 @@ func (e *Engine) registerMCPTools(server string, list []*sdk.Tool) {
 		mt := mcpTool{Name: assigned[t.Name], Server: server, Tool: t, Exposure: cfg.ToolExposureFor(t.Name)}
 		st.owners[mt.Name] = server
 		current = append(current, mt)
-		if mt.Exposure != gimcp.ExposureDirect {
-			continue // codemode/deferred: catalogued; hidden: unreachable
+		if mt.Exposure == gimcp.ExposureHidden {
+			continue // registered nowhere: unreachable
 		}
-		if err := e.tools.Register(e.mcpRegisteredTool(mt)); err != nil {
+		// codemode/deferred tools are registered deferred: executable, but
+		// declared only once loaded (tool_search) or called from codemode.
+		reg := e.mcpRegisteredTool(mt)
+		reg.Deferred = mt.Exposure != gimcp.ExposureDirect
+		if err := e.tools.Register(reg); err != nil {
 			log.Printf("mcp: register %s: %v", mt.Name, err)
 		}
 	}
 	st.byServer[server] = current
 	e.updateMCPResourceToolsLocked()
+	e.updateToolSearchLocked()
 }
 
 func (e *Engine) mcpRegisteredTool(mt mcpTool) tools.RegisteredTool {
@@ -456,4 +464,27 @@ func (e *Engine) listMCPResources(ctx context.Context, args map[string]any, temp
 	out[key] = items
 	b, err := json.MarshalIndent(out, "", "  ")
 	return string(b), err
+}
+
+// updateToolSearchLocked registers tool_search while any enabled server can
+// give its tools deferred exposure (Pi activates tool_search for them).
+func (e *Engine) updateToolSearchLocked() {
+	want := false
+	cfg := e.mcp.manager.Config()
+	for _, name := range cfg.Names() {
+		sc := cfg.Servers[name]
+		if sc.Enabled && sc.HasDeferredTools() {
+			want = true
+			break
+		}
+	}
+	_, have := e.tools.GetRegistered(tools.ToolSearchName)
+	switch {
+	case want && !have:
+		if err := e.tools.Register(e.toolSearchTool()); err != nil {
+			log.Printf("mcp: register tool_search: %v", err)
+		}
+	case !want && have:
+		e.tools.Unregister(tools.ToolSearchName)
+	}
 }

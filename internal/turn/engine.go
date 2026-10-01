@@ -4356,13 +4356,13 @@ func (r *sessionRunner) executeTool(ctx context.Context, call goai.ToolCall, ses
 
 // executeToolWithImages also collects images the tool attaches (nil: tools
 // describe images in text instead).
-func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.ToolCall, sessionID, turnID string, onOutput func(string) error, images *toolImages) (string, error) {
+func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.ToolCall, sessionID, turnID string, onOutput func(string) error, images *toolExtras) (string, error) {
 	if strings.TrimSpace(turnID) != "" {
 		turnRec, err := r.store.GetTurn(ctx, turnID)
 		if err != nil {
 			return "", err
 		}
-		if !toolAllowedByMetadata(turnRec.Metadata, call.Name) {
+		if !toolAllowedByMetadata(turnRec.Metadata, call.Name) && !r.engine.sessionLoadedTool(ctx, sessionID, call.Name) {
 			return "", fmt.Errorf("tool not allowed in this turn: %s", call.Name)
 		}
 	}
@@ -4377,6 +4377,7 @@ func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.Too
 		WorkspaceRoot: r.engine.runtimeCfg.WorkspaceRoot,
 		OnOutput:      onOutput,
 		AttachImage:   images.attachFunc(),
+		AddTools:      images.addToolsFunc(),
 	}, call)
 }
 
@@ -4891,6 +4892,8 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 		Tools:        r.engine.toolDefsForMetadata(turnMetadata),
 		Messages:     r.projectContextSnapshot(ctx, sessionID, snapshot),
 	}
+	// Tools loaded by tool_search earlier in the session stay declared.
+	r.engine.declareLoadedTools(convCtx, r.engine.sessionLoadedTools(ctx, sessionID))
 	ids, offset := snapshotMessageIDs(snapshot)
 	if plan := r.engine.planMCPSection(ctx, sessionID, ids, offset, convCtx.Messages); plan != nil {
 		mcpSectionPlans.Store(sessionID, plan)
@@ -5221,7 +5224,7 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 		})
 
 		reportOutput := r.toolOutputReporter(turnID, sessionID, call.ID, toolOccurrenceID)
-		images := &toolImages{}
+		images := &toolExtras{}
 		toolResult, toolErr := r.executeToolWithImages(ctx, call, sessionID, turnID, func(text string) error { return reportOutput(text, false) }, images)
 		if outputErr := reportOutput(toolResult, true); outputErr != nil {
 			r.persistStoppedTool(s, sessionID, turnID, call, toolOccurrenceID, "aborted")
@@ -5286,6 +5289,7 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 			}))
 			r.engine.broadcast(sessionID, map[string]any{"type": "tool_activity_changed", "chat_jid": "gi:" + sessionID, "turn_id": turnID})
 			appendToolResultWithImages(convCtx, call, displayResult, false, images)
+			r.engine.declareLoadedTools(convCtx, images.added)
 			logutil.WarnIfErr("add successful tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", displayResult+images.transcriptSuffix(), map[string]any{
 				"kind": "tool_result", "tool_call_id": call.ID, "tool_name": call.Name, "is_error": false, "turn_id": turnID,
 			}))

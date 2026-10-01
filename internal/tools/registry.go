@@ -33,6 +33,9 @@ type ToolRuntime struct {
 	// AttachImage adds an image to the tool result sent to the model (nil
 	// when the caller cannot attach images; tools then describe them in text).
 	AttachImage func(mimeType string, data []byte)
+	// AddTools reports tools this call loaded for the session (tool_search);
+	// they are declared from the next model call (nil outside turns).
+	AddTools func(names []string)
 }
 
 type ToolExecutor func(context.Context, ToolRuntime, goai.ToolCall) (string, error)
@@ -46,6 +49,10 @@ type RegisteredTool struct {
 	Weight      string
 	Activation  string
 	Executor    ToolExecutor
+	// Deferred tools are registered (executable) but not declared by default:
+	// they reach the model only when loaded (tool_search) or listed explicitly
+	// in the active set (Pi's deferred/codemode exposure).
+	Deferred bool
 }
 
 func (t RegisteredTool) Definition() goai.Tool {
@@ -187,7 +194,25 @@ func (r *ToolRegistry) ActiveNames() []string {
 	}
 	return names
 }
-func (r *ToolRegistry) isActiveLocked(name string) bool { return len(r.active) == 0 || r.active[name] }
+func (r *ToolRegistry) isActiveLocked(name string) bool {
+	if len(r.active) == 0 {
+		return !r.tools[name].Deferred
+	}
+	return r.active[name]
+}
+
+// DeferredEntries lists registered deferred tools in registration order.
+func (r *ToolRegistry) DeferredEntries() []RegisteredTool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var out []RegisteredTool
+	for _, name := range r.order {
+		if t := r.tools[name]; t.Deferred {
+			out = append(out, t)
+		}
+	}
+	return out
+}
 
 func ExecuteToolsTool(reg *ToolRegistry, args map[string]any, setActive func([]string) error, activeNames func() []string, reset func()) (string, error) {
 	name, _ := args["name"].(string)

@@ -35,6 +35,10 @@ func (s ServerConfig) HasIndirectTools() bool {
 	return e[ExposureCodemode] || e[ExposureDeferred]
 }
 
+// HasDeferredTools reports whether the config can give the server deferred
+// tools.
+func (s ServerConfig) HasDeferredTools() bool { return s.configuredExposures()[ExposureDeferred] }
+
 // HasDirectTools reports whether the config can give the server direct tools.
 func (s ServerConfig) HasDirectTools() bool { return s.configuredExposures()[ExposureDirect] }
 

@@ -12,15 +12,25 @@ import (
 // maxToolImageBytes bounds one attached image (larger ones are described).
 const maxToolImageBytes = 20 << 20
 
-// toolImages collects images a tool attaches to its result. Like Pi, they
-// reach the model as image blocks of the tool result; go-ai replaces them
-// with placeholders for models without image input.
-type toolImages struct {
+// toolExtras collects what a tool adds to its result beyond text: images
+// (Pi: image blocks of the tool result; go-ai replaces them with placeholders
+// for models without image input) and tools it loaded (tool_search), which
+// become the result's AddedToolNames marker and are declared from the next
+// model call.
+type toolExtras struct {
 	blocks []goai.ContentBlock
 	notes  []string // transcript lines describing each image
+	added  []string // tools loaded by this call
 }
 
-func (t *toolImages) attachFunc() func(string, []byte) {
+func (t *toolExtras) addToolsFunc() func([]string) {
+	if t == nil {
+		return nil
+	}
+	return func(names []string) { t.added = append(t.added, names...) }
+}
+
+func (t *toolExtras) attachFunc() func(string, []byte) {
 	if t == nil {
 		return nil
 	}
@@ -36,7 +46,7 @@ func (t *toolImages) attachFunc() func(string, []byte) {
 }
 
 // transcriptSuffix describes attached images in the stored transcript text.
-func (t *toolImages) transcriptSuffix() string {
+func (t *toolExtras) transcriptSuffix() string {
 	if t == nil || len(t.notes) == 0 {
 		return ""
 	}
@@ -45,12 +55,14 @@ func (t *toolImages) transcriptSuffix() string {
 
 // appendToolResultWithImages appends a tool result whose content is the text
 // followed by any attached images.
-func appendToolResultWithImages(ctx *goai.Context, call goai.ToolCall, text string, isError bool, images *toolImages) {
-	if images == nil || len(images.blocks) == 0 {
-		goai.AppendToolResult(ctx, call.ID, call.Name, text, isError)
-		return
-	}
+func appendToolResultWithImages(ctx *goai.Context, call goai.ToolCall, text string, isError bool, images *toolExtras) {
 	content := []goai.ContentBlock{{Type: "text", Text: text}}
-	content = append(content, images.blocks...)
-	ctx.Messages = append(ctx.Messages, goai.Message{Role: goai.RoleToolResult, ToolCallID: call.ID, ToolName: call.Name, Content: content, IsError: isError})
+	msg := goai.Message{Role: goai.RoleToolResult, ToolCallID: call.ID, ToolName: call.Name, Content: content, IsError: isError}
+	if images != nil {
+		msg.Content = append(msg.Content, images.blocks...)
+		if !isError && len(images.added) > 0 {
+			msg.AddedToolNames = append([]string(nil), images.added...)
+		}
+	}
+	ctx.Messages = append(ctx.Messages, msg)
 }

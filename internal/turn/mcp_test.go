@@ -11,6 +11,7 @@ import (
 	"time"
 
 	gimcp "github.com/rcarmo/gi/internal/mcp"
+	"github.com/rcarmo/gi/internal/tools"
 	"github.com/rcarmo/gi/internal/inference"
 	"github.com/rcarmo/gi/internal/mcp/mcptest"
 	goai "github.com/rcarmo/go-ai"
@@ -49,10 +50,18 @@ func TestMCPDirectToolsRegisterAndRun(t *testing.T) {
 			t.Fatalf("direct tool %s not registered", name)
 		}
 	}
-	for _, name := range []string{"mcp__fake__search_code", "mcp__fake__delete_all"} {
-		if _, ok := e.tools.GetRegistered(name); ok {
-			t.Fatalf("non-direct tool %s registered", name)
+	// codemode/deferred tools are registered deferred (not declared); hidden
+	// tools are not registered at all.
+	if tool, ok := e.tools.GetRegistered("mcp__fake__search_code"); !ok || !tool.Deferred {
+		t.Fatalf("codemode tool must be registered deferred: %+v %v", tool, ok)
+	}
+	for _, def := range e.tools.Definitions() {
+		if def.Name == "mcp__fake__search_code" {
+			t.Fatal("deferred tool declared by default")
 		}
+	}
+	if _, ok := e.tools.GetRegistered("mcp__fake__delete_all"); ok {
+		t.Fatal("hidden tool registered")
 	}
 	if tool, _ := e.tools.GetRegistered("mcp__fake__upper"); tool.Kind != "read" || tool.Source != "mcp:fake" || tool.Description != "Uppercase text" {
 		t.Fatalf("tool metadata %+v", tool)
@@ -232,5 +241,136 @@ func TestMCPToolResultImagesReachModel(t *testing.T) {
 			t.Fatalf("stored transcript lacks the image note: %+v", msgs)
 		}
 		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+
+func toolSearchEngine(t *testing.T) (*Engine, *mcptest.Server) {
+	t.Helper()
+	fake := mcptest.New("Code hosting tools.")
+	t.Cleanup(fake.Close)
+	path := filepath.Join(t.TempDir(), "mcp.json")
+	if err := os.WriteFile(path, []byte(fmt.Sprintf(`{"mcpServers": {"hub": {"url": %q, "exposure": "deferred", "description": "Code hosting"}}}`, fake.URL)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s := openTestStore(t)
+	e := New(s)
+	t.Cleanup(func() { e.Close(); s.Close() })
+	e.enableMCPWith(gimcp.NewManager(gimcp.LoadConfig(path, "", false), t.TempDir(), ""))
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, ok := e.tools.GetRegistered("mcp__hub__search_code"); ok {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("deferred tools not registered")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return e, fake
+}
+
+// tool_search ranks deferred tools, loads matches for the session (persisted)
+// and reports them like Pi; loaded tools are then allowed and declared.
+func TestToolSearchLoadsDeferredTools(t *testing.T) {
+	e, _ := toolSearchEngine(t)
+	ctx := context.Background()
+	if _, ok := e.tools.GetRegistered(tools.ToolSearchName); !ok {
+		t.Fatal("tool_search not registered for a deferred server")
+	}
+	sess, err := e.store.CreateSession(ctx, "session_ts", "TS", map[string]any{"status": "idle", "model": "bootstrap"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var added []string
+	rt := tools.ToolRuntime{Store: e.store, SessionID: sess.ID, AddTools: func(n []string) { added = append(added, n...) }}
+	search, _ := e.tools.GetRegistered(tools.ToolSearchName)
+	out, err := search.Executor(ctx, rt, goai.ToolCall{Name: tools.ToolSearchName, Arguments: map[string]any{"query": "search code", "limit": float64(1)}})
+	if err != nil || out != "Loaded 1 tool. They are available from your next call:\n- mcp__hub__search_code: Search code" {
+		t.Fatalf("tool_search: %q %v", out, err)
+	}
+	if strings.Join(added, ",") != "mcp__hub__search_code" || !e.sessionLoadedTool(ctx, sess.ID, "mcp__hub__search_code") {
+		t.Fatalf("not loaded: %v", added)
+	}
+	// Already-loaded tools are no longer candidates.
+	if again, _ := search.Executor(ctx, rt, goai.ToolCall{Arguments: map[string]any{"query": "search code"}}); strings.Contains(again, "mcp__hub__search_code") {
+		t.Fatalf("loaded tool offered again: %q", again)
+	}
+	if none, _ := search.Executor(ctx, rt, goai.ToolCall{Arguments: map[string]any{"query": "zzzz"}}); none != "No matching tools found." {
+		t.Fatalf("no match: %q", none)
+	}
+	if _, err := search.Executor(ctx, rt, goai.ToolCall{Arguments: map[string]any{"query": " "}}); err == nil || err.Error() != "query must not be empty" {
+		t.Fatalf("empty query: %v", err)
+	}
+	if _, err := search.Executor(ctx, rt, goai.ToolCall{Arguments: map[string]any{"query": "x", "limit": float64(0)}}); err == nil || err.Error() != "limit must be a positive integer" {
+		t.Fatalf("bad limit: %v", err)
+	}
+	conv := &goai.Context{}
+	e.declareLoadedTools(conv, e.sessionLoadedTools(ctx, sess.ID))
+	declared := map[string]bool{}
+	for _, tool := range conv.Tools {
+		declared[tool.Name] = true
+	}
+	if !declared["mcp__hub__search_code"] || len(conv.Tools) != len(e.sessionLoadedTools(ctx, sess.ID)) {
+		t.Fatalf("declared %v", conv.Tools)
+	}
+}
+
+// Through a real turn: the model calls tool_search, the result carries the
+// AddedToolNames marker, the next request declares the tool, and the model
+// can call it.
+func TestToolSearchInTurn(t *testing.T) {
+	e, _ := toolSearchEngine(t)
+	ctx := context.Background()
+	type seen struct {
+		marker   []string
+		declared bool
+		output   string
+	}
+	got := make(chan seen, 1)
+	calls := 0
+	withStreamWithToolsStub(t, func(_ context.Context, _ string, conv *goai.Context, _ func(map[string]any)) (*inference.StreamResult, error) {
+		calls++
+		toolUse := func(id, name string, args map[string]any) (*inference.StreamResult, error) {
+			return &inference.StreamResult{Message: &goai.Message{Role: goai.RoleAssistant, StopReason: goai.StopReasonToolUse,
+				Content: []goai.ContentBlock{{Type: "toolCall", ID: id, Name: name, Arguments: args}}}}, nil
+		}
+		switch calls {
+		case 1:
+			return toolUse("tc_search", tools.ToolSearchName, map[string]any{"query": "upper case text", "limit": float64(1)})
+		case 2:
+			return toolUse("tc_upper", "mcp__hub__upper", map[string]any{"text": "abc"})
+		}
+		var s seen
+		for _, m := range conv.Messages {
+			if m.Role == goai.RoleToolResult && m.ToolCallID == "tc_search" {
+				s.marker = m.AddedToolNames
+			}
+			if m.Role == goai.RoleToolResult && m.ToolCallID == "tc_upper" && len(m.Content) > 0 {
+				s.output = m.Content[0].Text
+			}
+		}
+		for _, tool := range conv.Tools {
+			if tool.Name == "mcp__hub__upper" {
+				s.declared = true
+			}
+		}
+		got <- s
+		return &inference.StreamResult{Message: &goai.Message{Role: goai.RoleAssistant, StopReason: goai.StopReasonStop, Content: []goai.ContentBlock{{Type: "text", Text: "done"}}}}, nil
+	})
+	sess, err := e.store.CreateSession(ctx, "session_ts_turn", "TS", map[string]any{"status": "idle", "model": "mock-ts"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.SubmitPrompt(ctx, RunInput{SessionID: sess.ID, Prompt: "uppercase abc", Model: "mock-ts"}); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case s := <-got:
+		if strings.Join(s.marker, ",") != "mcp__hub__upper" || !s.declared || s.output != "ABC" {
+			t.Fatalf("turn: %+v", s)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("turn did not reach the final call")
 	}
 }

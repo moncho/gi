@@ -1,7 +1,8 @@
 # MCP client (`internal/mcp`)
 
-Status: the client core (#25, phase 1) and tool exposure (phase 2) are in
-place. `tool_search`, codemode, `/mcp` and OAuth are later phases
+Status: the client core (#25, phase 1), tool exposure (phase 2) and
+`tool_search` (phase 3) are in place. Codemode, `/mcp` and OAuth are later
+phases
 ([plan](mcp-codemode-plan.md)). The TUI and web server call
 `Engine.EnableMCP()` at startup; engines built for tests never read the user's
 `mcp.json`.
@@ -100,8 +101,29 @@ Rules, as in Pi:
     the runner lock, for servers that can expose direct tools.
   - When a server announces a changed tool list, its tools are re-registered,
     and withdrawn tools are unregistered.
-- **`codemode` and `deferred` tools** are catalogued for codemode and
-  `tool_search` (phases 3–5), and are not declared to the model.
+- **`codemode` and `deferred` tools** are registered as *deferred*:
+  executable, but not declared to the model until loaded. Admission's default
+  tool set skips them.
+- **`tool_search`** (Pi's, #25 phase 3) is registered whenever an enabled
+  server can give tools `deferred` exposure. It is decided from the config,
+  before servers connect.
+  - **Ranking:** a port of Pi's BM25 ranker, using Pi's tokenizer, stop words
+    and naive stemming. The search text is the name, the description, schema
+    descriptions, property names, and the server namespace with its
+    description and instructions. It searches deferred tools the session has
+    not loaded yet.
+  - **Loading:** matches are recorded in the session state (`loaded_tools`),
+    so they survive restarts and resume, and are copied to forks and clones.
+  - **Result:** pi's text (`Loaded N tools. They are available from your next
+    call:` followed by `- name: first description line`). The tool-result
+    message carries `AddedToolNames`, and the definitions join the running
+    turn's tools, so the next model call declares them. go-ai uses the marker
+    to load them at that point on providers with deferred tools; others get
+    them in the normal tool list.
+  - **Later turns** declare and allow every tool the session has loaded.
+  - **Errors and defaults** are pi's: `query must not be empty`, `limit must
+    be a positive integer`, a default limit of 8, and `No matching tools
+    found.` when nothing matches.
 - **`hidden` tools** are unreachable.
 - **System prompt:** servers with codemode or deferred tools are listed in an
   `<mcp_servers>` section, using Pi's renderer (intro line, `- mcp__<server>

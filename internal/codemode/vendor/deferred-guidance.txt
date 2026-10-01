@@ -1,0 +1,2 @@
+Some nested tools may be omitted from this description, such as deferred tools and MCP tools. They are still available on the global `tools` object and listed in `ALL_TOOLS`.
+To find one, call `await searchTools(query)` (pass `{ namespace }` to search one namespace), or filter `ALL_TOOLS` by `name` and `description`. `await describeNamespace(name)` returns a namespace's usage instructions and the names of its tools.

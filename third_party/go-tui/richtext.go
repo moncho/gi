@@ -21,6 +21,7 @@ func WithRichText(spans ...TextSpan) Option {
 	return func(e *Element) {
 		e.richText = spans
 		e.text = ""
+		e.wrapCache = textWrapCache{}
 	}
 }
 
@@ -33,6 +34,7 @@ func (e *Element) RichText() []TextSpan {
 func (e *Element) SetRichText(spans ...TextSpan) {
 	e.richText = spans
 	e.text = ""
+	e.wrapCache = textWrapCache{}
 	e.MarkDirty()
 }
 

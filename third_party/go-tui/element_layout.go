@@ -281,7 +281,7 @@ func (e *Element) HeightForWidth(width int) int {
 			}
 			return h
 		}
-		lines := wrapText(e.text, contentWidth)
+		lines := e.wrappedText(contentWidth)
 		h := len(lines) + e.style.Padding.Vertical()
 		if e.border != BorderNone {
 			h += 2
@@ -302,7 +302,7 @@ func (e *Element) HeightForWidth(width int) int {
 			}
 			return h
 		}
-		lines := wrapSpans(e.richText, contentWidth)
+		lines := e.wrappedSpans(contentWidth)
 		h := len(lines) + e.style.Padding.Vertical()
 		if e.border != BorderNone {
 			h += 2

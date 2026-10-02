@@ -140,6 +140,7 @@ func (e *Element) Text() string {
 func (e *Element) SetText(content string) {
 	e.text = content
 	e.richText = nil
+	e.wrapCache = textWrapCache{}
 	e.MarkDirty()
 }
 
@@ -260,6 +261,17 @@ func (e *Element) Component() Component {
 func StringWidth(s string) int { return stringWidth(s) }
 
 func stringWidth(s string) int {
+	// All-ASCII strings: one column per byte (control bytes are narrow too).
+	ascii := true
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x80 || (s[i] == '\r' && i+1 < len(s) && s[i+1] == '\n') {
+			ascii = false
+			break
+		}
+	}
+	if ascii {
+		return len(s)
+	}
 	width := 0
 	for len(s) > 0 {
 		_, cw, size := nextCluster(s)

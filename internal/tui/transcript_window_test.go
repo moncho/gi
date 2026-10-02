@@ -24,6 +24,7 @@ func renderTranscriptRows(t *testing.T, c *chatTUI, windowed bool, width, height
 		gotui.WithScrollbarHidden(true), gotui.WithScrollOffset(0, offset), gotui.WithDirection(gotui.Column))
 	blocks := c.buildTranscriptRenderableBlocks(c.visibleTranscript())
 	if windowed {
+		blocks = c.transcriptBlocks()
 		c.addTranscriptWindow(transcript, blocks, width, height)
 	} else {
 		previous := ""
@@ -65,7 +66,7 @@ func TestTranscriptWindowMatchesFullLayout(t *testing.T) {
 	if strings.Join(full, "\n") != strings.Join(win, "\n") {
 		t.Fatalf("bottom differs:\nfull:\n%s\nwindowed:\n%s", strings.Join(full, "\n"), strings.Join(win, "\n"))
 	}
-	if len(c.blockHeights) == 0 {
+	if len(c.blockCache) == 0 {
 		t.Fatal("heights not cached")
 	}
 }
@@ -80,12 +81,48 @@ func BenchmarkTranscriptFrame(b *testing.B) {
 	for _, windowed := range []bool{false, true} {
 		b.Run(fmt.Sprintf("windowed=%v", windowed), func(b *testing.B) {
 			c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Gi"}, transcript: lines, transcriptExpanded: map[string]bool{}, stickToBottom: true}
-			t := &testing.T{}
-			renderTranscriptRows(t, c, windowed, 100, 40, 0) // warm caches
+			buf := gotui.NewBuffer(100, 40) // reused, as by the app
+			frame := func() {
+				transcript := gotui.New(gotui.WithWidth(100), gotui.WithHeight(40), gotui.WithScrollable(gotui.ScrollVertical),
+					gotui.WithScrollbarHidden(true), gotui.WithDirection(gotui.Column))
+				if windowed {
+					c.addTranscriptWindow(transcript, c.transcriptBlocks(), 100, 40)
+				} else {
+					previous := ""
+					for _, block := range c.buildTranscriptRenderableBlocks(c.visibleTranscript()) {
+						transcript.AddChild(c.renderTranscriptBlockAfter(block, previous))
+						previous = block.Kind
+					}
+				}
+				transcript.ScrollToBottom()
+				buf.Clear()
+				transcript.RenderTo(buf, 100, 40)
+			}
+			frame() // warm caches
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				renderTranscriptRows(t, c, windowed, 100, 40, 0)
+				frame()
 			}
 		})
+	}
+}
+
+// The block list is rebuilt when a line changes (lines are replaced, never
+// edited in place) and reused otherwise.
+func TestTranscriptBlocksMemo(t *testing.T) {
+	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Gi"}, transcript: windowTestTranscript(), transcriptExpanded: map[string]bool{}}
+	first := c.transcriptBlocks()
+	if again := c.transcriptBlocks(); &again[0] != &first[0] {
+		t.Fatal("unchanged transcript rebuilt")
+	}
+	c.transcript = append([]string(nil), c.transcript...)
+	c.transcript[3] = "Gi: replaced answer"
+	changed := c.transcriptBlocks()
+	if &changed[0] == &first[0] || !strings.Contains(strings.Join(changed[3].Body, "")+changed[3].Header+changed[3].MarkdownSource, "replaced answer") {
+		t.Fatalf("changed line not rebuilt: %+v", changed[3])
+	}
+	c.selectedTranscriptBlock = "x"
+	if sel := c.transcriptBlocks(); &sel[0] == &changed[0] {
+		t.Fatal("selection change not rebuilt")
 	}
 }

@@ -115,6 +115,11 @@ func (c Cell) IsEmpty() bool {
 // Runes that are logically zero-width (combining marks, variation selectors,
 // format controls) are explicitly recognized but still treated as width 1.
 func RuneWidth(r rune) int {
+	// Printable ASCII is by far the most common case (gi: background fills
+	// and text); skip the range tables.
+	if r >= 0x20 && r < 0x7F {
+		return 1
+	}
 	// Keep invalid/control runes narrow so they don't disrupt layout.
 	if r < 0 || r > unicode.MaxRune {
 		return 1

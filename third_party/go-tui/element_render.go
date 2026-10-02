@@ -305,11 +305,11 @@ func renderClippedElement(buf *Buffer, e *Element, clipRect Rect, scrollX, scrol
 
 		var spanLines [][]TextSpan
 		if !e.noWrap && availTextWidth > 0 {
-			spanLines = wrapSpans(e.richText, availTextWidth)
+			spanLines = e.wrappedSpans(availTextWidth)
 		} else {
 			spanLines = [][]TextSpan{e.richText}
 		}
-		drawSpanLines(buf, spanLines, textBaseX, textBaseY, availTextWidth, e.textAlign, ts, clipRect)
+		drawSpanLines(buf, spanLines, textBaseX, textBaseY, availTextWidth, e.textAlign, ts, clipRect, e.spanLinesCache(spanLines))
 	}
 
 	// Render text with clipping
@@ -328,7 +328,7 @@ func renderClippedElement(buf *Buffer, e *Element, clipRect Rect, scrollX, scrol
 
 		var lines []string
 		if !e.noWrap && availTextWidth > 0 {
-			lines = wrapText(e.text, availTextWidth)
+			lines = e.wrappedText(availTextWidth)
 		} else {
 			lines = []string{e.text}
 		}
@@ -533,18 +533,18 @@ func renderTextContent(buf *Buffer, e *Element, textStyle Style, bg *Style) {
 		}
 		var spanLines [][]TextSpan
 		if !e.noWrap && contentRect.Width > 0 {
-			spanLines = wrapSpans(e.richText, contentRect.Width)
+			spanLines = e.wrappedSpans(contentRect.Width)
 		} else {
 			spanLines = [][]TextSpan{e.richText}
 		}
-		drawSpanLines(buf, spanLines, contentRect.X, contentRect.Y, contentRect.Width, e.textAlign, ts, contentRect)
+		drawSpanLines(buf, spanLines, contentRect.X, contentRect.Y, contentRect.Width, e.textAlign, ts, contentRect, e.spanLinesCache(spanLines))
 		return
 	}
 
 	// Compute wrapped lines
 	var lines []string
 	if !e.noWrap && contentRect.Width > 0 {
-		lines = wrapText(e.text, contentRect.Width)
+		lines = e.wrappedText(contentRect.Width)
 	} else {
 		lines = []string{e.text}
 	}
@@ -661,7 +661,7 @@ func renderTextContent(buf *Buffer, e *Element, textStyle Style, bg *Style) {
 // for alignment, base is the element's resolved text style (with background
 // already merged), and clip bounds the drawable region. Cells outside clip are
 // skipped but still advance x (so horizontal scroll offsets line up).
-func drawSpanLines(buf *Buffer, lines [][]TextSpan, originX, originY, contentWidth int, align TextAlign, base Style, clip Rect) {
+func drawSpanLines(buf *Buffer, lines [][]TextSpan, originX, originY, contentWidth int, align TextAlign, base Style, clip Rect, cache *textWrapCache) {
 nextLine:
 	for li, line := range lines {
 		y := originY + li
@@ -680,7 +680,7 @@ nextLine:
 		// Flatten the line's spans into a styled-rune stream, then segment into
 		// clusters so a cluster whose base and combining mark fall in adjacent
 		// spans stays one cell. Each cluster takes its base rune's style/link.
-		clusters := segmentLineClusters(line, base)
+		clusters := cache.lineClusters(lines, li, base)
 		for _, cl := range clusters {
 			// Reached the right clip edge: clip this line and move to the next
 			// (matching the plain-text paths' per-line break), rather than

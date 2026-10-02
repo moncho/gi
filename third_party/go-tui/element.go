@@ -69,7 +69,8 @@ type Element struct {
 
 	// Text properties
 	text         string
-	richText     []TextSpan // when non-empty, takes precedence over text
+	richText     []TextSpan    // when non-empty, takes precedence over text
+	wrapCache    textWrapCache // last wrap of text/richText (gi: one wrap per width)
 	textStyle    Style
 	textStyleSet bool // true if textStyle was explicitly configured (false = inherit from parent)
 	textAlign    TextAlign

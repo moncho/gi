@@ -331,6 +331,24 @@ func (b *Buffer) Fill(rect Rect, r rune, style Style) {
 
 	width := RuneWidth(r)
 
+	if width == 1 {
+		// Narrow fills (gi: backgrounds) write cells directly unless a wide
+		// character is involved, which SetRune must clear correctly.
+		cell := NewCellWithWidth(r, style, 1)
+		for y := rect.Y; y < rect.Bottom(); y++ {
+			row := y * b.width
+			for x := rect.X; x < rect.Right(); x++ {
+				cur := b.back[row+x]
+				if cur.Width == 2 || cur.IsContinuation() {
+					b.SetRune(x, y, r, style)
+					continue
+				}
+				b.back[row+x] = cell
+			}
+		}
+		return
+	}
+
 	for y := rect.Y; y < rect.Bottom(); y++ {
 		for x := rect.X; x < rect.Right(); {
 			if width == 2 && x+1 >= rect.Right() {

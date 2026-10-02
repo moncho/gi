@@ -231,9 +231,13 @@ type chatTUI struct {
 	transcriptRef               *gotui.Ref
 	transcript                  []string
 	regularMode                 bool
-	lastFooterSignature         string // footer data at the last idle check
-	blockHeights                map[uint64]int // rendered block heights (transcript windowing)
-	jumpToLatest                jumpToLatestRect // where the cue was drawn (none: width 0)
+	lastFooterSignature         string    // footer data at the last idle check
+	lastFooterCheck             time.Time // when the idle check last read the session
+	runningCheckLines           []string  // transcript at the last running-block check
+	runningCheckResult          bool
+	blockCache                  map[uint64]*cachedTranscriptBlock // rendered blocks reused across frames (#34)
+	blocksMemo                  transcriptBlocksMemo              // block list and keys for unchanged transcripts (#34)
+	jumpToLatest                jumpToLatestRect                  // where the cue was drawn (none: width 0)
 	regularPrinted              int
 	regularSessionPending       bool
 	regularWidth, regularHeight int
@@ -657,9 +661,16 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 	if c.topicEventCh != nil {
 		watchers = append(watchers, gotui.NewChannelWatcher(c.topicEventCh, c.handleSessionTopicEvent))
 	}
-	watchers = append(watchers, gotui.OnTimer(80*time.Millisecond, c.tickTranscriptSelection))
-	watchers = append(watchers, gotui.OnTimer(120*time.Millisecond, func() { c.saveDurableDraft() }))
+	// One 80 ms tick (Pi's spinner cadence) drives selection auto-scroll,
+	// activity redraws and, every other tick, the durable draft save; three
+	// separate timers woke the process ~33 times a second when idle.
+	var ticks uint64
 	watchers = append(watchers, gotui.OnTimer(80*time.Millisecond, func() {
+		ticks++
+		c.tickTranscriptSelection()
+		if ticks%2 == 0 {
+			c.saveDurableDraft()
+		}
 		if (c.running || c.compaction.active || c.hasRunningTranscriptBlock()) && c.app != nil {
 			c.app.MarkDirty()
 		}
@@ -673,9 +684,14 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 		// footer data updated elsewhere (another frontend, a finished turn).
 		// An unconditional re-render rebuilt the whole transcript every second.
 		live := c.running || c.compaction.active || c.thinkingIndicatorKey != ""
-		if footer := fmt.Sprintf("%+v", c.footerData()); footer != c.lastFooterSignature {
-			c.lastFooterSignature = footer
-			live = true
+		// Footer data changes arrive as topic events (invalidateFooter); poll
+		// the session only then, or every few seconds as a fallback.
+		if c.footerCached == nil || time.Since(c.lastFooterCheck) >= footerIdlePoll {
+			c.lastFooterCheck = time.Now()
+			if footer := fmt.Sprintf("%+v", c.footerData()); footer != c.lastFooterSignature {
+				c.lastFooterSignature = footer
+				live = true
+			}
 		}
 		if live && c.app != nil {
 			c.app.MarkDirty()
@@ -684,14 +700,27 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 	return watchers
 }
 
+// footerIdlePoll is how often an idle TUI re-reads the footer's session
+// data without an invalidating event.
+const footerIdlePoll = 5 * time.Second
+
+// hasRunningTranscriptBlock reports a running block; the answer is reused
+// while the transcript lines are unchanged (lines are immutable strings).
 func (c *chatTUI) hasRunningTranscriptBlock() bool {
+	if c.runningCheckLines != nil && sameLines(c.runningCheckLines, c.transcript) {
+		return c.runningCheckResult
+	}
+	result := false
 	for _, line := range c.transcript {
 		meta, ok := parseTranscriptBlockMarker(line)
 		if ok && meta.Status == "running" {
-			return true
+			result = true
+			break
 		}
 	}
-	return false
+	c.runningCheckLines = append(c.runningCheckLines[:0], c.transcript...)
+	c.runningCheckResult = result
+	return result
 }
 
 func (c *chatTUI) handleTopicEvent(env topics.Envelope) {
@@ -4488,7 +4517,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	if c.transcriptExpanded == nil {
 		c.transcriptExpanded = map[string]bool{}
 	}
-	blocks := c.buildTranscriptRenderableBlocks(c.visibleTranscript())
+	blocks := c.transcriptBlocks()
 	if c.selectedTranscriptBlock == "" {
 		for i := len(blocks) - 1; i >= 0; i-- {
 			if blocks[i].Key != "" && (len(blocks[i].Body) > 0 || blocks[i].Subheader != "") {
@@ -4496,7 +4525,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 				break
 			}
 		}
-		blocks = c.buildTranscriptRenderableBlocks(c.visibleTranscript())
+		blocks = c.transcriptBlocks()
 	}
 	if c.textSelection.active {
 		c.renderTranscriptSelectionRows(transcript)

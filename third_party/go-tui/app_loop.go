@@ -107,6 +107,19 @@ func (a *App) Run() error {
 				return nil
 			}
 		}
+
+		// Idle: nothing to render and no queued events. Block until an event
+		// arrives or MarkDirty wakes the loop, instead of polling every frame
+		// (gi: an idle TUI woke 60 times a second).
+		if !a.dirty.Load() && len(a.merged) == 0 && a.wake != nil {
+			select {
+			case ev := <-a.merged:
+				a.Dispatch(ev)
+			case <-a.wake:
+			case <-a.stopCh:
+				return nil
+			}
+		}
 	}
 }
 

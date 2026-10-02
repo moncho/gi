@@ -31,6 +31,7 @@ type App struct {
 	rowRedraw       bool // Opt-in complete changed-row output (fullscreen only).
 	needsFullRedraw bool // Set after resize, cleared after RenderFull
 	dirty           atomic.Bool
+	wake            chan struct{} // signalled by MarkDirty so an idle Run loop renders
 	batch           batchContext
 
 	// Event loop fields
@@ -138,6 +139,7 @@ func NewApp(opts ...AppOption) (*App, error) {
 		reader:         reader,
 		focus:          focus,
 		stopCh:         make(chan struct{}),
+		wake:           make(chan struct{}, 1),
 		stopped:        false,
 		inputLatency:   InputLatencyBlocking,  // Default: block until input arrives
 		frameDuration:  16 * time.Millisecond, // Default ~60fps
@@ -239,6 +241,7 @@ func NewAppWithReader(reader EventReader, opts ...AppOption) (*App, error) {
 		reader:         reader,
 		focus:          focus,
 		stopCh:         make(chan struct{}),
+		wake:           make(chan struct{}, 1),
 		stopped:        false,
 		inputLatency:   InputLatencyBlocking,  // Default: block until input arrives
 		frameDuration:  16 * time.Millisecond, // Default ~60fps

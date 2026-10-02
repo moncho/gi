@@ -829,7 +829,7 @@ bench-tui-editor-layout:
 
 .PHONY: bench-tui-transcript-frame
 bench-tui-transcript-frame:
-	$(GO) test ./internal/tui -run '^$$' -bench '^BenchmarkTranscriptFrame$$' -benchmem -benchtime=1s
+	$(GO) test ./internal/tui -run '^$$' -bench '^BenchmarkTranscriptFrame$$' -benchmem -benchtime=1s $(BENCH_ARGS)
 
 .PHONY: test-tui-editor-viewport
 test-tui-editor-viewport: build

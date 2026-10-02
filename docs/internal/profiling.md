@@ -21,13 +21,32 @@ After the change, the same session idles at about 3%. What remains is go-tui's 6
 
 Rule: a timer must call `MarkDirty` only when its state changed, because a frame costs a full transcript layout.
 
-## Transcript windowing (#34)
+## Frame cost (#34)
 
-A fullscreen frame lays out only the transcript blocks that intersect the viewport, plus 8 rows of margin (`internal/tui/transcript_window.go`). Blocks off screen become fixed-height spacers, so the scroll container's content height, the scroll offsets and stick-to-bottom behave as if every block were laid out.
+These are measured with `make bench-tui-transcript-frame`: a 600-block session in a 100×40 window, one fullscreen frame of transcript layout and render into a reused buffer.
 
-- **Heights:** cached by a hash of the block's content, its spacing context, the width and the theme. Running blocks are not cached, because their spinner and elapsed time change.
-- **Equivalence:** `TestTranscriptWindowMatchesFullLayout` checks that windowed and full layouts render identical rows at several offsets and at the bottom.
-- **Cost** (`make bench-tui-transcript-frame`, 600 blocks, 100×40 window): one frame drops from about 94 ms and 81 MB allocated to about 3.9 ms and 3.3 MB.
-- **Redraw rate:** the 80 ms activity redraw is Pi's spinner cadence (pi-tui `Loader`, 80 ms). It is kept, now that a frame costs what the screen shows.
+| Step | Time per frame | Allocations |
+|---|---|---|
+| All blocks laid out (before) | ~94 ms | 81 MB |
+| Viewport window (spacers for blocks off screen) | ~3.9 ms | 3.3 MB |
+| + go-tui wrap cache per element (layout, height and draw shared one wrap) | ~2.1 ms | 1.6 MB |
+| + rendered block elements reused across frames (keyed by content hash) | ~1.8 ms | 1.3 MB |
+| + block list and keys memoized while transcript lines are unchanged | ~0.86 ms | 0.49 MB |
+| + ASCII fast paths (`RuneWidth`, `stringWidth`), direct narrow `Fill` | ~0.54 ms | 0.49 MB |
+| + cached cluster segmentation per wrapped line; blocks indexed, not copied | **~0.29 ms** | **41 KB** |
 
-Selection and search modes still render from their own flattened rows.
+Details:
+
+- **Windowing** (`internal/tui/transcript_window.go`): only blocks that intersect the viewport, plus 8 rows of margin, are laid out. Spacers keep the content height, scroll offsets and stick-to-bottom identical. `TestTranscriptWindowMatchesFullLayout` checks that the rows match a full layout.
+- **Block cache:** rendered elements, their click targets and heights are kept per hash of the block's content, its spacing context, the width and the theme. Running blocks are never cached.
+- **Block memo:** transcript lines are immutable strings, so pointer equality detects changes without hashing text.
+- **go-tui** (`third_party/go-tui`): `textWrapCache` (`text_wrap_cache.go`) keeps an element's last wrap and its clusters, reset when the text changes. Callers must not modify the returned lines.
+
+## Idle wake-ups
+
+- **go-tui's `Run` loop** blocks while nothing is dirty and no events are queued. `MarkDirty` signals a wake channel, so a frame is never missed.
+- **gi's 80 ms, 80 ms and 120 ms timers** are merged into one 80 ms tick (Pi's spinner cadence). The draft save runs every second tick.
+- **The 1 s check** reads the session for the footer only after a topic event invalidated it, or every 5 s as a fallback.
+- **The running-block answer** is reused while transcript lines are unchanged.
+
+On the long real session, idle CPU went from about 21% to about 1%.

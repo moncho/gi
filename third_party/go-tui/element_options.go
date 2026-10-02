@@ -243,6 +243,7 @@ func WithText(content string) Option {
 	return func(e *Element) {
 		e.text = content
 		e.richText = nil
+		e.wrapCache = textWrapCache{}
 	}
 }
 

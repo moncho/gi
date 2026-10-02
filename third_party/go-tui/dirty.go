@@ -6,6 +6,12 @@ func (a *App) MarkDirty() {
 		panic("tui: nil app in MarkDirty")
 	}
 	a.dirty.Store(true)
+	if a.wake != nil {
+		select {
+		case a.wake <- struct{}{}:
+		default: // a wake is already pending
+		}
+	}
 }
 
 func (a *App) checkAndClearDirty() bool {

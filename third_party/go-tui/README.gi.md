@@ -20,3 +20,4 @@ Maintenance: rebase the patch onto a newer runtime snapshot and run
 snapshot and `go.mod` replacement once upstream provides equivalent row redraws.
 The patch is suitable for upstream review; it has not been submitted upstream.
 - `WithPreFlushHook(func(*Buffer))`: called after the element tree and overlays render and before the frame is flushed, so gi can composite Pi's "Jump to latest message" indicator over the laid-out frame.
+- Performance (gi #34): per-element wrap and cluster caches (`text_wrap_cache.go`), ASCII fast paths in `RuneWidth` and `stringWidth`, direct narrow `Fill`, and a `Run` loop that blocks while nothing is dirty (`MarkDirty` wakes it).

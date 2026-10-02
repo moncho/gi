@@ -1,6 +1,7 @@
 package turn
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -37,4 +38,12 @@ func (r *sessionRunner) toolOutputReporter(turnID, sessionID, callID, occurrence
 		r.engine.broadcast(sessionID, map[string]any{"type": "tool_activity_changed", "chat_jid": "gi:" + sessionID, "turn_id": turnID})
 		return nil
 	}
+}
+
+// firstLine is the first line of s, for log lines about multi-line errors.
+func firstLine(s string) string {
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return s[:i] + " …"
+	}
+	return s
 }

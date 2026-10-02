@@ -1650,12 +1650,15 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 		if len(existingBody) > 0 {
 			body = append([]string(nil), existingBody...)
 		}
+		resultBody := c.toolResultBody(payload, turnID, toolCallID, toolName)
 		switch typ {
 		case "tool_finished":
 			meta.Status = "ok"
 		case "tool_failed":
 			meta.Status = "error"
-			if errText != "" {
+			// The result text already carries the error (e.g. shell output and
+			// "Command exited with code N"); show the bare error only without it.
+			if errText != "" && len(resultBody) == 0 {
 				body = append(body, "error="+truncate(errText, 160))
 			}
 		case "tool_skipped":
@@ -1664,9 +1667,7 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 				body = append(body, "reason="+truncate(reason, 160))
 			}
 		}
-		if resultBody := c.toolResultBody(payload, turnID, toolCallID, toolName); len(resultBody) > 0 {
-			body = append(body, resultBody...)
-		}
+		body = append(body, resultBody...)
 		if meta.Key == "" {
 			c.appendTranscriptBlock(meta, body)
 		} else {

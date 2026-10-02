@@ -2770,3 +2770,22 @@ func TestToolEndWithoutStartHasUnknownDurationAndLateStartCannotReopen(t *testin
 		t.Fatal("orphan terminal reopened")
 	}
 }
+
+// A failed tool shows its result once: shell output plus the exit status,
+// without a duplicate error line.
+func TestToolFailedShowsResultOnce(t *testing.T) {
+	c := &chatTUI{transcriptExpanded: map[string]bool{}}
+	start := map[string]any{"type": "tool_started", "tool": "shell", "tool_call_id": "c1", "arguments": map[string]any{"command": "make"}}
+	c.renderToolEvent(start, time.Now())
+	result := "out-line\n\nCommand exited with code 2"
+	c.renderToolEvent(map[string]any{"type": "tool_failed", "tool": "shell", "tool_call_id": "c1", "error": result, "output": result}, time.Now())
+	joined := strings.Join(c.transcript, "\n")
+	if strings.Count(joined, "out-line") != 1 || strings.Count(joined, "Command exited with code 2") != 1 || strings.Contains(joined, "error=") {
+		t.Fatalf("failed tool body:\n%s", joined)
+	}
+	c.renderToolEvent(map[string]any{"type": "tool_started", "tool": "shell", "tool_call_id": "c2"}, time.Now())
+	c.renderToolEvent(map[string]any{"type": "tool_failed", "tool": "shell", "tool_call_id": "c2", "error": "boom"}, time.Now())
+	if !strings.Contains(strings.Join(c.transcript, "\n"), "error=boom") {
+		t.Fatal("bare error not shown when there is no result text")
+	}
+}

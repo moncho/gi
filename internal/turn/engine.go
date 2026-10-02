@@ -5250,8 +5250,12 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 				outcome.terminated = true
 				return outcome
 			}
-			log.Printf("tool [%s] error: %v", call.Name, toolErr)
+			log.Printf("tool [%s] error: %v", call.Name, firstLine(toolErr.Error()))
 			errText := fmt.Sprintf("Error: %v", toolErr)
+			var resultErr *tools.ResultError
+			if errors.As(toolErr, &resultErr) {
+				errText = resultErr.Text // the complete result, e.g. shell output + exit status (Pi)
+			}
 			r.engine.broadcast(sessionID, map[string]any{"type": "tool_failed", "chat_jid": "gi:" + sessionID, "turn_id": turnID, "tool": call.Name, "error": toolErr.Error()})
 			r.engine.PublishRuntimeToolEvent("tool_failed", sessionID, turnID, agentID, call.Name, call.ID, iter, toolErr, map[string]any{"phase": "tool", "arguments": call.Arguments, "output": errText})
 			logutil.WarnIfErr("append tool.failed event", s.AppendTurnEvent(ctx, turnID, sessionID, "tool.failed", map[string]any{

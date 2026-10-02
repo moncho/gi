@@ -64,7 +64,7 @@ func ExecuteRTK(ctx context.Context, workspaceRoot string, call goai.ToolCall) (
 	res := rtk.Filter(command, output)
 	b, _ := json.MarshalIndent(res, "", "  ")
 	if err != nil {
-		return string(b), fmt.Errorf("exit: %w", err)
+		return string(b), shellExitError(ctx, string(b), err)
 	}
 	return string(b), nil
 }
@@ -83,7 +83,7 @@ func ExecuteShellOutput(ctx context.Context, workspaceRoot string, call goai.Too
 	if onOutput == nil {
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return string(out), fmt.Errorf("exit: %w", err)
+			return string(out), shellExitError(ctx, string(out), err)
 		}
 		return string(out), nil
 	}
@@ -96,7 +96,7 @@ func ExecuteShellOutput(ctx context.Context, workspaceRoot string, call goai.Too
 		return output.text.String(), output.err
 	}
 	if err != nil {
-		return output.text.String(), fmt.Errorf("exit: %w", err)
+		return output.text.String(), shellExitError(ctx, output.text.String(), err)
 	}
 	return output.text.String(), nil
 }

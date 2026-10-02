@@ -18,7 +18,6 @@ func TestEditorLayoutCacheReuseAndCompleteInvalidation(t *testing.T) {
 	if initial == nil {
 		t.Fatal("cache absent")
 	}
-	m.blink = !m.blink
 	m.textStyle = gotui.NewStyle().Bold()
 	m.maxLines = 2
 	m.scrollRow = 0

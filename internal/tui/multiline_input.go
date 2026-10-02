@@ -2,7 +2,6 @@ package tui
 
 import (
 	"strings"
-	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -44,7 +43,6 @@ type multilineInput struct {
 	hasUndo      bool
 	yankText     string
 	focused      bool
-	blink        bool
 }
 
 func newMultilineInput(width int, placeholder string, onSubmit func(string), onChange func(string)) *multilineInput {
@@ -57,7 +55,6 @@ func newMultilineInput(width int, placeholder string, onSubmit func(string), onC
 		autoFocus:        true,
 		onSubmit:         onSubmit,
 		onChange:         onChange,
-		blink:            true,
 	}
 }
 
@@ -74,23 +71,12 @@ func (m *multilineInput) IsTabStop() bool   { return !m.suspended }
 func (m *multilineInput) IsFocused() bool   { return m.focused }
 func (m *multilineInput) Focus() {
 	m.focused = true
-	m.blink = true
 }
 func (m *multilineInput) Blur() { m.focused = false }
 
-func (m *multilineInput) Watchers() []gotui.Watcher {
-	return []gotui.Watcher{
-		gotui.OnTimer(500*time.Millisecond, func() {
-			if !m.focused {
-				return
-			}
-			m.blink = !m.blink
-			if m.app != nil {
-				m.app.MarkDirty()
-			}
-		}),
-	}
-}
+// Watchers: none. The cursor is steady like Pi's (reverse video, no
+// blink); a blink timer re-rendered the whole UI twice a second when idle.
+func (m *multilineInput) Watchers() []gotui.Watcher { return nil }
 
 func (m *multilineInput) KeyMap() gotui.KeyMap {
 	if m.suspended {

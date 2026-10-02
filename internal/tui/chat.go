@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -230,6 +231,7 @@ type chatTUI struct {
 	transcriptRef               *gotui.Ref
 	transcript                  []string
 	regularMode                 bool
+	lastFooterSignature         string // footer data at the last idle check
 	jumpToLatest                jumpToLatestRect // where the cue was drawn (none: width 0)
 	regularPrinted              int
 	regularSessionPending       bool
@@ -350,7 +352,40 @@ func encodeTranscriptBlockMarker(meta transcriptBlockMeta) string {
 	return transcriptBlockMarkerPrefix + base64.RawURLEncoding.EncodeToString(payload) + "⟧"
 }
 
+// markerCache memoizes parsed block markers: marker lines are immutable (a
+// status change writes a new line), and every render and idle check parses
+// all of them.
+var markerCache = struct {
+	sync.Mutex
+	m map[string]transcriptBlockMeta
+}{m: map[string]transcriptBlockMeta{}}
+
+const markerCacheMax = 8192
+
 func parseTranscriptBlockMarker(line string) (transcriptBlockMeta, bool) {
+	// Markers start their line; avoid scanning long message text.
+	if !strings.HasPrefix(strings.TrimLeft(line, " \t"), transcriptBlockMarkerPrefix) {
+		return transcriptBlockMeta{}, false
+	}
+	markerCache.Lock()
+	meta, ok := markerCache.m[line]
+	markerCache.Unlock()
+	if ok {
+		return meta, true
+	}
+	meta, ok = decodeTranscriptBlockMarker(line)
+	if ok {
+		markerCache.Lock()
+		if len(markerCache.m) >= markerCacheMax {
+			markerCache.m = map[string]transcriptBlockMeta{}
+		}
+		markerCache.m[line] = meta
+		markerCache.Unlock()
+	}
+	return meta, ok
+}
+
+func decodeTranscriptBlockMarker(line string) (transcriptBlockMeta, bool) {
 	line = strings.TrimSpace(line)
 	if !strings.HasPrefix(line, transcriptBlockMarkerPrefix) || !strings.HasSuffix(line, "⟧") {
 		return transcriptBlockMeta{}, false
@@ -633,7 +668,15 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 		if c.compaction.active {
 			c.syncCompactionActivity()
 		}
-		if c.app != nil {
+		// Re-render only when something can have changed: live activity, or
+		// footer data updated elsewhere (another frontend, a finished turn).
+		// An unconditional re-render rebuilt the whole transcript every second.
+		live := c.running || c.compaction.active || c.thinkingIndicatorKey != ""
+		if footer := fmt.Sprintf("%+v", c.footerData()); footer != c.lastFooterSignature {
+			c.lastFooterSignature = footer
+			live = true
+		}
+		if live && c.app != nil {
 			c.app.MarkDirty()
 		}
 	}))

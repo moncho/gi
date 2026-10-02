@@ -9,9 +9,11 @@ import (
 	"log"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -58,6 +60,7 @@ func webOnlyFlagsSet() []string {
 }
 
 func main() {
+	startProfiling()
 	if len(os.Args) > 1 && os.Args[1] == "mcp" {
 		os.Exit(runMCPCommand(os.Args[2:]))
 	}
@@ -231,4 +234,21 @@ func runMCPCommand(args []string) int {
 		LogPath:         config.UserConfigCandidates("mcp.log")[0],
 		CredentialsPath: config.UserConfigFile("mcp-auth.json"),
 	})
+}
+
+// startProfiling serves net/http/pprof on GI_PPROF (e.g. 127.0.0.1:6060)
+// when set, for CPU, allocation and goroutine profiles of a running gi. It
+// listens on its own server, never on the web UI's handler.
+func startProfiling() {
+	addr := strings.TrimSpace(os.Getenv("GI_PPROF"))
+	if addr == "" {
+		return
+	}
+	runtime.SetMutexProfileFraction(5)
+	runtime.SetBlockProfileRate(100000) // sample blocking events of 100µs and longer
+	go func() {
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			log.Printf("pprof: %v", err)
+		}
+	}()
 }

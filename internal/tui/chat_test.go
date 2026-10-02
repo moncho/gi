@@ -2153,7 +2153,6 @@ func TestMultilineInputPlaceholderShowsFocusState(t *testing.T) {
 		t.Fatalf("blurred placeholder lines = %#v", lines)
 	}
 	inp.Focus()
-	inp.blink = false
 	lines = inp.renderLines()
 	if len(lines) != 1 || lines[0].text != "" || lines[0].cursor != 0 || lines[0].cursorEnd != 0 || !lines[0].placeholder {
 		t.Fatalf("focused placeholder lines = %#v", lines)
@@ -2239,7 +2238,6 @@ func TestMultilineInputCursorRenderingWithinText(t *testing.T) {
 	inp := newMultilineInput(40, "", nil, nil)
 	inp.SetText("abcd")
 	inp.Focus()
-	inp.blink = false
 	inp.cursorPos = 2
 	lines := inp.renderLines()
 	if len(lines) != 1 || lines[0].text != "abcd" || lines[0].cursor != 2 || lines[0].cursorEnd != 3 {

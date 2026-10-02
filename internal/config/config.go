@@ -54,7 +54,12 @@ type RuntimeConfig struct {
 	Passkeys       PasskeySettings        `json:"passkeys"`
 	InboundWork    InboundWorkSettings    `json:"inbound_work"`
 	WorkspaceIndex WorkspaceIndexSettings `json:"workspace_index"`
-	SystemPrompt   string                 `json:"-"`
+	// SystemPrompt, when set, replaces gi's default preamble, tools, rules
+	// and docs sections (Pi's customPrompt).
+	SystemPrompt string `json:"-"`
+	// ProjectInstructions is the workspace AGENTS.md (path and content).
+	ProjectInstructions     string `json:"-"`
+	ProjectInstructionsPath string `json:"-"`
 	Discovery      skills.Discovery       `json:"-"`
 }
 
@@ -250,13 +255,12 @@ func Load(workspaceRoot string) RuntimeConfig {
 	if len(cfg.Agents.List) == 0 {
 		cfg.Agents.List = []AgentConfig{{ID: "agent", Name: cfg.AssistantName, Default: true, Model: cfg.DefaultModel}}
 	}
-	// Load workspace instructions from AGENTS.md and wrap them in gi's runtime prompt.
-	workspaceInstructions := ""
+	// The workspace's AGENTS.md becomes the prompt's project_context section
+	// (internal/prompt); the engine builds the prompt per turn.
 	agentsPath := filepath.Join(workspaceRoot, "AGENTS.md")
 	if data, err := os.ReadFile(agentsPath); err == nil && len(data) > 0 {
-		workspaceInstructions = string(data)
+		cfg.ProjectInstructions, cfg.ProjectInstructionsPath = string(data), agentsPath
 	}
-	cfg.SystemPrompt = buildSystemPrompt(cfg, workspaceInstructions)
 	return cfg
 }
 

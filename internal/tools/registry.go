@@ -72,6 +72,11 @@ type RegisteredTool struct {
 	// receive (e.g. an MCP CallToolResult as JSON) and whether it reports an
 	// error; scripts still resolve to it, like Pi's structuredContent.
 	StructuredExecutor func(context.Context, ToolRuntime, goai.ToolCall) (json.RawMessage, bool, error)
+	// PromptSnippet and PromptGuidelines are the tool's contribution to the
+	// system prompt's tools and rules sections (Pi's promptSnippet and
+	// promptGuidelines), used while the tool is declared.
+	PromptSnippet    string
+	PromptGuidelines []string
 }
 
 func (t RegisteredTool) Definition() goai.Tool {

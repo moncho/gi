@@ -205,3 +205,26 @@ func IsModelType(typ string) bool {
 	}
 	return false
 }
+
+// SupportsMidConversationSystemMessages reports whether a model keeps system
+// messages after the first (go-ai/pi-ai compat supportsMidConvoSystemMessages);
+// otherwise their updates are folded into the leading prompt, as pi-ai's
+// resolveTranscript does.
+func SupportsMidConversationSystemMessages(modelID string) bool {
+	Init()
+	provider, name := splitModelID(modelID)
+	m := goai.GetModel(goai.Provider(provider), name)
+	if m == nil {
+		return false
+	}
+	yes := func(b *bool) bool { return b != nil && *b }
+	switch {
+	case m.AnthropicCompat != nil && yes(m.AnthropicCompat.SupportsMidConvoSystemMessages):
+		return true
+	case m.CompletionsCompat != nil && yes(m.CompletionsCompat.SupportsMidConvoSystemMessages):
+		return true
+	case m.ResponsesCompat != nil && yes(m.ResponsesCompat.SupportsMidConvoSystemMessages):
+		return true
+	}
+	return false
+}

@@ -847,29 +847,3 @@ func (l *codemodeCallLog) snapshot() []codemodeCallRecord {
 
 func decodeBase64(s string) ([]byte, error) { return base64.StdEncoding.DecodeString(s) }
 
-// codemodeGuidanceAnchor is the last line of gi's tool environment list.
-const codemodeGuidanceAnchor = "- Tool execution results should be treated as the source of truth.\n"
-
-// withCodemodeGuidance adds Pi's codemode prompt contribution (its tool
-// snippet and guideline) to gi's tool environment list when a request
-// declares codemode, as Pi does in its tools and rules sections.
-func withCodemodeGuidance(systemPrompt string, declared []goai.Tool) string {
-	found := false
-	for _, t := range declared {
-		if t.Name == codemodeToolName {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return systemPrompt
-	}
-	lines := "- `codemode`: " + codemode.Texts.PromptSnippet + "\n"
-	for _, g := range codemode.Texts.PromptGuidelines {
-		lines += "- " + g + "\n"
-	}
-	if i := strings.Index(systemPrompt, codemodeGuidanceAnchor); i >= 0 {
-		return systemPrompt[:i] + lines + systemPrompt[i:]
-	}
-	return strings.TrimRight(systemPrompt, "\n") + "\n\n## Codemode\n" + lines
-}

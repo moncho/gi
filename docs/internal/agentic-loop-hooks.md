@@ -371,7 +371,7 @@ The initial implementation now exists in the turn engine:
   - `gi.setModel(model)`
   - `gi.appendEntry(type, data)` / `gi.getEntries(type)`
 - `internal/tools/script.go` connects the script tool to the host engine through callbacks so scripts can register new tools and hooks at runtime.
-- `config.Load` builds a Pi-like gi runtime system prompt: operating model, built-in tools, skill-loading guidance, shared path policy, runtime hook/connectivity notes, workspace `AGENTS.md`, and a compact discovered-capabilities section.
+- The engine builds Pi's structured system prompt each turn ([system-prompt.md](system-prompt.md)). A hook that replaces the system prompt replaces it whole: section updates are then not added.
 
 ### JS examples
 

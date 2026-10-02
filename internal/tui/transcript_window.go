@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"encoding/json"
 	"hash/fnv"
 	"sort"
 	"strconv"
@@ -46,6 +47,11 @@ func blockHeightKey(block transcriptRenderableBlock, previousKind string, width 
 	if block.ToolContent != nil {
 		write(*block.ToolContent)
 	}
+	if len(block.Calls) > 0 {
+		raw, _ := json.Marshal(block.Calls)
+		write(string(raw))
+	}
+	write(block.FullOutputPath)
 	write(strconv.FormatBool(block.Expanded) + strconv.FormatBool(block.Expandable) + strconv.FormatBool(block.Selected) +
 		strconv.FormatBool(block.Static) + strconv.FormatBool(block.PreviewTail) + strconv.Itoa(block.PreviewLimit))
 	write(previousKind)

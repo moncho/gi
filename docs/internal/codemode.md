@@ -104,3 +104,15 @@ The tool the model calls is a port of Pi's codemode extension. Its input is
   - **Built-in:** codemode is registered unless `extensions` contains `-builtin:codemode`.
   - **Declared by default:** when `defaultTools` enables it (layered user→project: `+codemode`/`-codemode` edit the selection, plain names replace it), or when an enabled MCP server has codemode exposure and `autoEnableCodemode` is not false (an explicit `-codemode` wins).
   - **Session toggle:** `codemode_mode` (`on`/`off`/`only`, set by `Engine.SetSessionCodemode` and the TUI's `/codemode [on|off|only|default|status]`) overrides this at admission. `/tools activate codemode` is the same as `/codemode on`, and `/tools reset` also returns codemode to its settings default. When MCP servers have codemode tools but codemode is off, gi logs a warning at startup and `/codemode status` says so. `only` also forces the `only` presentation, as does `codemode.mode: "only"` in settings.
+
+## Rendering (TUI)
+
+Codemode calls render like Pi's codemode renderer (`internal/tui/codemode_render.go`):
+
+- **Call:** the `codemode` title and the script, highlighted as JavaScript. Collapsed, it shows the first 10 lines.
+- **Nested calls:** they are rows of the codemode block, never separate tool blocks. Each row shows a status icon (… ✓ ✗ ⊘), the name, an argument preview (80 characters collapsed), the duration and the cost. Collapsed, the block shows the last 8 rows; expanded, failed rows also show their error.
+  - **While running:** rows come from the nested calls' runtime events (`parent_tool_call_id`).
+  - **When done:** the tool's result details (`ToolRuntime.SetDetails`: `calls`, `fullOutputPath`) replace them. The details are also stored with the `tool_result` message, so reloaded sessions render the same.
+- **Output:** the script output without the `Script completed|failed / Wall time / Output:` header. Collapsed, it shows 5 lines, plus `Full output: vfs://…` when the output was truncated.
+
+The web UI shows tool calls only while they run (its status panel), so it has no codemode result view.

@@ -130,6 +130,10 @@ func (c *chatTUI) renderPiToolBlock(block transcriptRenderableBlock) *gotui.Elem
 	container := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
 	c.registerBlockTarget(block.Key, container)
 	container.AddChild(textRow(toolCallSpans(block)...))
+	if block.Header == "codemode" {
+		c.renderCodemodeBlock(block, container)
+		return container
+	}
 	body := block.Body
 	if len(body) == 1 && body[0] == "(empty)" {
 		body = nil

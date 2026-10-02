@@ -139,6 +139,9 @@ type transcriptBlockMeta struct {
 	MarkdownSource string  `json:"markdown_source,omitempty"`
 	ToolPath       string  `json:"tool_path,omitempty"`
 	ToolContent    *string `json:"tool_content,omitempty"`
+	// Codemode: nested call rows and the saved full output.
+	Calls          []codemodeCallRow `json:"calls,omitempty"`
+	FullOutputPath string            `json:"full_output_path,omitempty"`
 }
 
 type transcriptBlockSpan struct {
@@ -172,6 +175,8 @@ type transcriptRenderableBlock struct {
 	// Tool call rendering (Pi's renderCall): argument text and timing.
 	ToolPath           string
 	ToolContent        *string
+	Calls              []codemodeCallRow
+	FullOutputPath     string
 	ToolArg            string
 	StartedAt, EndedAt string
 }
@@ -1570,6 +1575,9 @@ func toolInvocationText(toolName string, args any) string {
 
 func (c *chatTUI) toolResultBody(payload map[string]any, turnID, toolCallID, toolName string) []string {
 	if output, _ := payload["output"].(string); strings.TrimSpace(output) != "" {
+		if toolName == "codemode" {
+			output = stripScriptHeader(output)
+		}
 		return toolOutputBodyLines(output)
 	}
 	return c.latestToolResultBody(turnID, toolCallID, toolName)
@@ -1599,6 +1607,11 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 	if strings.TrimSpace(toolName) == "" {
 		toolName = "tool"
 	}
+	// Codemode's nested calls are rows of its block, not tool blocks (Pi).
+	if parent, _ := payload["parent_tool_call_id"].(string); parent != "" {
+		c.updateCodemodeCall(parent, typ, payload, ts)
+		return
+	}
 	startedAt := normalizeBlockTimestamp(ts)
 	toolKey := c.toolRuntimeBlockKey(payload, toolName)
 	blockKey := c.transcriptToolBlocks[toolKey]
@@ -1613,11 +1626,15 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 	}
 	// Pi renders the call (e.g. "$ ls -la", "read path") as the tool header;
 	// the body holds only the result output.
-	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName, Detail: previous.Detail, ToolPath: previous.ToolPath, ToolContent: previous.ToolContent}
+	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName, Detail: previous.Detail, ToolPath: previous.ToolPath, ToolContent: previous.ToolContent, Calls: previous.Calls}
 	if invocation := c.toolInvocationBody(toolName, payload); len(invocation) > 0 {
 		meta.Detail = invocation[0]
 	}
 	setFileToolArguments(&meta, payload["arguments"])
+	setCodemodeArguments(&meta, payload["arguments"])
+	if calls, path := codemodeDetails(payload["details"]); calls != nil || path != "" {
+		meta.Calls, meta.FullOutputPath = calls, path
+	}
 	var body []string
 	switch typ {
 	case "tool_started":
@@ -5185,13 +5202,21 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 				if meta.Title == "write" && meta.ToolContent != nil {
 					expandable = c.extensionToolModes[meta.Title] == "" && len(strings.Split(*meta.ToolContent, "\n")) > previewLimit
 				}
+				if meta.Title == "codemode" {
+					// Pi's codemode previews: 10 script lines, 8 calls, 5 output lines.
+					code := 0
+					if meta.ToolContent != nil {
+						code = len(strings.Split(strings.TrimRight(*meta.ToolContent, "\n"), "\n"))
+					}
+					expandable = code > codemodeCodePreviewLines || len(meta.Calls) > codemodeCallPreviewCount || len(body) > codemodeOutputPreviewLines
+				}
 			}
 			if meta.Kind == "bash" {
 				previewLimit = bashPreviewLines
 				previewTail = true
 				expandable = len(body) > bashPreviewLines
 			}
-			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolPath: meta.ToolPath, ToolContent: meta.ToolContent, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
+			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolPath: meta.ToolPath, ToolContent: meta.ToolContent, Calls: meta.Calls, FullOutputPath: meta.FullOutputPath, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
 			i = j - 1
 			continue
 		}
@@ -5608,8 +5633,14 @@ func (c *chatTUI) renderToolResultWithArguments(m store.Message, arguments any) 
 	meta := transcriptBlockMeta{Key: "msg:" + m.ID, Kind: "tool", Title: toolName, Status: status, StartedAt: strings.TrimSpace(m.CreatedAt), EndedAt: strings.TrimSpace(m.CreatedAt)}
 	meta.Detail = toolInvocationText(toolName, arguments)
 	setFileToolArguments(&meta, arguments)
+	setCodemodeArguments(&meta, arguments)
+	content := m.Content
+	if toolName == "codemode" {
+		meta.Calls, meta.FullOutputPath = codemodeDetails(m.Payload["details"])
+		content = stripScriptHeader(content)
+	}
 	lines := []string{encodeTranscriptBlockMarker(meta)}
-	for _, line := range toolOutputBodyLines(m.Content) {
+	for _, line := range toolOutputBodyLines(content) {
 		if toolName != "read" {
 			line = truncate(line, 200)
 		}

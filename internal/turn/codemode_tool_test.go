@@ -182,3 +182,19 @@ func TestCodemodeGuidanceInSystemPrompt(t *testing.T) {
 		t.Fatalf("fallback: %q", got)
 	}
 }
+
+// Scripts report their nested calls as result details for renderers.
+func TestCodemodeCallDetails(t *testing.T) {
+	e := codemodeTestEngine(t)
+	var details map[string]any
+	rt := tools.ToolRuntime{Store: e.store, ToolCallID: "tc_cm", SetDetails: func(d map[string]any) { details = d }}
+	_, err := e.executeCodemode(context.Background(), rt, goai.ToolCall{ID: "tc_cm", Name: codemodeToolName,
+		Arguments: map[string]any{"code": `await tools.greet({ name: "a" }); await tools.mcp__fake__search_code({ text: "q" }); return 1;`}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls, _ := details["calls"].([]codemodeCallRecord)
+	if len(calls) != 2 || calls[0].Name != "greet" || calls[0].Status != "ok" || calls[0].Args != `{"name":"a"}` || calls[1].Name != "mcp__fake__search_code" || calls[1].Status != "ok" {
+		t.Fatalf("calls: %+v", calls)
+	}
+}

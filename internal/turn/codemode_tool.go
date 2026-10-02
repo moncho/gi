@@ -382,12 +382,17 @@ func (e *Engine) executeCodemode(ctx context.Context, rt tools.ToolRuntime, call
 		seq++
 		return fmt.Sprintf("%s/%d", rt.ToolCallID, seq)
 	}
+	calls := &codemodeCallLog{}
 	scriptTools := make([]codemode.Tool, len(callable))
 	for i, t := range callable {
 		t := t
 		scriptTools[i] = codemode.Tool{Name: t.Name, Description: rendered.Samples[t.Name],
 			Execute: func(callCtx context.Context, args json.RawMessage) (json.RawMessage, error) {
-				return e.runNestedTool(callCtx, rt, nextID(), t, args)
+				id := nextID()
+				rec := calls.start(id, t.Name, args)
+				value, err := e.runNestedTool(callCtx, rt, id, t, args)
+				calls.finish(rec, err, callCtx.Err() != nil)
+				return value, err
 			}}
 	}
 	store := e.codemodeStore(ctx, rt.SessionID)
@@ -425,7 +430,14 @@ func (e *Engine) executeCodemode(ctx context.Context, rt tools.ToolRuntime, call
 	if opts.MaxOutputTokens != nil {
 		maxTokens = *opts.MaxOutputTokens
 	}
-	body := e.truncateCodemodeOutput(ctx, rt.SessionID, texts, maxTokens)
+	body, fullOutputPath := e.truncateCodemodeOutput(ctx, rt.SessionID, texts, maxTokens)
+	if rt.SetDetails != nil {
+		details := map[string]any{"calls": calls.snapshot()}
+		if fullOutputPath != "" {
+			details["fullOutputPath"] = fullOutputPath
+		}
+		rt.SetDetails(details)
+	}
 	header := "Script failed"
 	if res.OK {
 		header = "Script completed"
@@ -727,12 +739,12 @@ func formatCodemodeError(err *codemode.Error, calls []codemode.Call) string {
 // truncateCodemodeOutput ports Pi's truncateOutput: past the token budget
 // (characters / 4) the text keeps its start and end and the full text is
 // saved for reading (vfs://codemode-output; Pi uses a temp file).
-func (e *Engine) truncateCodemodeOutput(ctx context.Context, sessionID string, texts []string, maxTokens int) string {
+func (e *Engine) truncateCodemodeOutput(ctx context.Context, sessionID string, texts []string, maxTokens int) (string, string) {
 	combined := strings.Join(texts, "\n")
 	budget := maxTokens * codemodeCharsPerToken
 	runes := []rune(combined)
 	if len(texts) == 0 || len(runes) <= budget {
-		return combined
+		return combined, ""
 	}
 	head := budget / 2
 	tail := budget - head
@@ -748,9 +760,78 @@ func (e *Engine) truncateCodemodeOutput(ctx context.Context, sessionID string, t
 	}
 	path := session + "/" + hex.EncodeToString(id[:]) + ".txt"
 	if _, err := e.store.SaveVFSFile(ctx, codemodeOutputNamespace, path, "text/plain; charset=utf-8", []byte(combined), map[string]any{"source": "codemode"}); err != nil {
-		return text + "\n\n[Could not save the full output: " + err.Error() + "]"
+		return text + "\n\n[Could not save the full output: " + err.Error() + "]", ""
 	}
-	return text + "\n\n[Full output: vfs://" + codemodeOutputNamespace + "/" + path + " (read with offset/limit)]"
+	full := "vfs://" + codemodeOutputNamespace + "/" + path
+	return text + "\n\n[Full output: " + full + " (read with offset/limit)]", full
+}
+
+// codemodeCallLog records a script's nested calls for the renderer (Pi's
+// call rows): name, argument preview, status, duration and error preview.
+type codemodeCallLog struct {
+	mu    sync.Mutex
+	calls []*codemodeCallRecord
+}
+
+type codemodeCallRecord struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Args       string  `json:"args"`
+	Status     string  `json:"status"` // running, ok, error, cancelled
+	DurationMs float64 `json:"durationMs,omitempty"`
+	Error      string  `json:"error,omitempty"`
+	started    time.Time
+}
+
+// truncatePreview is Pi's truncateText: "..." replaces the end.
+func truncatePreview(text string, maxChars int) string {
+	r := []rune(text)
+	if len(r) <= maxChars {
+		return text
+	}
+	return string(r[:maxChars-3]) + "..."
+}
+
+func (l *codemodeCallLog) start(id, name string, args json.RawMessage) *codemodeCallRecord {
+	preview := ""
+	if len(args) > 0 && string(args) != "null" {
+		preview = truncatePreview(string(args), 200)
+	}
+	rec := &codemodeCallRecord{ID: id, Name: name, Args: preview, Status: "running", started: time.Now()}
+	l.mu.Lock()
+	l.calls = append(l.calls, rec)
+	l.mu.Unlock()
+	return rec
+}
+
+func (l *codemodeCallLog) finish(rec *codemodeCallRecord, err error, cancelled bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	rec.DurationMs = float64(time.Since(rec.started).Microseconds()) / 1000
+	switch {
+	case err == nil:
+		rec.Status = "ok"
+	case cancelled:
+		rec.Status = "cancelled"
+	default:
+		rec.Status = "error"
+		rec.Error = truncatePreview(err.Error(), codemodeErrorPreviewChars)
+	}
+}
+
+// snapshot returns the calls; those still running were cut off by the
+// script ending, a timeout or an abort (Pi marks them cancelled).
+func (l *codemodeCallLog) snapshot() []codemodeCallRecord {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	out := make([]codemodeCallRecord, len(l.calls))
+	for i, c := range l.calls {
+		out[i] = *c
+		if out[i].Status == "running" {
+			out[i].Status = "cancelled"
+		}
+	}
+	return out
 }
 
 func decodeBase64(s string) ([]byte, error) { return base64.StdEncoding.DecodeString(s) }

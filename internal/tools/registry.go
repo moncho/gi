@@ -39,6 +39,9 @@ type ToolRuntime struct {
 	// ToolCallID is the model's ID for this call (the parent of codemode's
 	// nested calls).
 	ToolCallID string
+	// SetDetails attaches structured details to the result for renderers
+	// (nil outside turns), e.g. codemode's nested calls.
+	SetDetails func(map[string]any)
 }
 
 type ToolExecutor func(context.Context, ToolRuntime, goai.ToolCall) (string, error)

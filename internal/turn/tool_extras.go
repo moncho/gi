@@ -18,9 +18,25 @@ const maxToolImageBytes = 20 << 20
 // become the result's AddedToolNames marker and are declared from the next
 // model call.
 type toolExtras struct {
-	blocks []goai.ContentBlock
-	notes  []string // transcript lines describing each image
-	added  []string // tools loaded by this call
+	blocks  []goai.ContentBlock
+	notes   []string       // transcript lines describing each image
+	added   []string       // tools loaded by this call
+	details map[string]any // structured result details for renderers (codemode calls)
+}
+
+func (t *toolExtras) setDetailsFunc() func(map[string]any) {
+	if t == nil {
+		return nil
+	}
+	return func(d map[string]any) { t.details = d }
+}
+
+// withDetails adds the tool's details, if any, to an event or message payload.
+func (t *toolExtras) withDetails(payload map[string]any) map[string]any {
+	if t != nil && t.details != nil {
+		payload["details"] = t.details
+	}
+	return payload
 }
 
 func (t *toolExtras) addToolsFunc() func([]string) {

@@ -245,6 +245,7 @@ export function createDraftRepository(storage: DraftStorage, onError: (error: Er
                     throw new Error('Draft changed while returning the queued item. Nothing was removed; retry Return to replace the current draft.');
                 }
                 row.draft = copy(captured);
+                row.error = ''; // Returning a queued draft replaces the failed submission and its alert.
                 row.queueReturns[queueId] = { state: 'prepared', recoveredAt: Date.now() };
             }
             // Retry persists the prepared replacement and newer edits, not a

@@ -10,5 +10,6 @@ const conversationContentSQL = `case when role='assistant' and json_extract(payl
 
 const conversationVisibleSQL = `role in ('user','assistant','system')
  and (role='user' or coalesce(json_extract(payload_json,'$.kind'),'') != 'tool_result')
+ and not (role='system' and json_extract(payload_json,'$.kind') is 'queue')
  and not (role='assistant' and json_extract(payload_json,'$.kind') is 'tool_calls'
  and trim(` + conversationContentSQL + `)='')`

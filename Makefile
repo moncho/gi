@@ -454,6 +454,10 @@ bun-checks:
 
 check: test vet build-web bun-checks test-ux
 
+.PHONY: fixtures-vibes
+fixtures-vibes:
+	$(MAKE) -C references/fixtures-vibes deps compliance PROFILE=$(CURDIR)/tests/fixtures-vibes/profile.json
+
 # ── Isolated UX test instance ───────────────────────────────────────────
 
 test-instance-start: build

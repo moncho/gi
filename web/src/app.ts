@@ -3,7 +3,7 @@ import { randomClientId } from "./gi-random-id.js";
 import { staleTerminalEvent } from './gi-turn-event.js';
 import { speechPlayback } from './gi-post-speech.js';
 import { useGiNotifications } from './gi-notifications.js';
-import { projectConversationEvent, projectActivityStatus, SYSTEM_AGENT_ID, SYSTEM_AGENT } from './gi-conversation.js';
+import { projectConversationEvent, projectActivityStatus, projectResponsePhase, SYSTEM_AGENT_ID, SYSTEM_AGENT } from './gi-conversation.js';
 import { messageReferenceLabels } from './gi-message-reference-label.js';
 /**
  * app.ts — Gi entry point.
@@ -572,7 +572,18 @@ function GiApp() {
         if(typeof id!=='string'||!destination?.startsWith('gi:')||!deletions.begin(id))return;
         setDeleteError('');
         try {
-            await deletePost(id,false,destination);
+            try {
+                await deletePost(id,false,destination);
+            } catch (error) {
+                // A stale timeline may not show replies that the server knows about.
+                // Confirm only this specific conflict before retrying with cascade.
+                if (!String(error?.message || '').includes('Replies exist')) throw error;
+                if (!confirm('Delete this message and its replies?')) {
+                    deletions.finish(id,false);
+                    return;
+                }
+                await deletePost(id,true,destination);
+            }
             deletions.finish(id,true);
             const current=()=>selection.isCurrent(owner)&&searchView.isCurrent(view);
             if(!current())return;
@@ -651,8 +662,11 @@ function GiApp() {
             if (data?.id && data?.data && !searchView.capture().active) {
                 const root=timelineRef.current;
                 scrollRestore.current={scope:selection.capture(),view:searchView.capture(),connection:connectionRevision.current,anchor:captureTimelineAnchor(root,readingAnchor.current),bottom:!root||Math.abs(root.scrollTop)<80};
-                setPosts((prev: any[]) => mergeMessagePages(prev,[projectConversationEvent(data)]));
-                scrollToBottom();
+                const post = projectConversationEvent(data);
+                if (post) {
+                    setPosts((prev: any[]) => mergeMessagePages(prev,[post]));
+                    scrollToBottom();
+                }
             }
         }
 
@@ -964,7 +978,9 @@ function GiApp() {
             }
         } catch (error) {
             if (action === 'return') drafts.queueReturnFailed(scope.sessionId, itemOrIndex.id, error.message);
-            if (selection.isCurrent(scope)) { setFollowupQueueItems(before); setQueueError(`Queue action failed: ${error.message}`); }
+            if (selection.isCurrent(scope)) { setFollowupQueueItems(before); setQueueError(action === 'steer'
+                ? `Queued item could not be sent as steering: ${error.message} (Queue action failed)`
+                : `Queue action failed: ${error.message}`); }
         } finally {
             try {
                 const fresh = await getAgentQueueState(chat);
@@ -1136,7 +1152,7 @@ function GiApp() {
                 />
 
                 <${AgentStatus} key=${`${sessionId}:${currentTurnId || ''}`}
-                    status=${isCompactionStatus(agentStatus) ? null : agentStatus}
+                    status=${isCompactionStatus(agentStatus) ? null : projectResponsePhase(agentStatus, agentDraft)}
                     draft=${agentDraft}
                     plan=${agentPlan}
                     thought=${agentThought}
@@ -1322,12 +1338,12 @@ function ComposeTransfer({ sessionId, hidden }) {
     useLayoutEffect(() => {
         const root = ref.current?.parentElement;
         if (!root) return;
-        return bindComposeSending(root, !hidden && state.sending > 0);
-    }, [sessionId, hidden, state.sending]);
+        return bindComposeSending(root, !hidden && state.uploads > 0, !hidden && state.sending > 0);
+    }, [sessionId, hidden, state.uploads, state.sending]);
     const percent = state.computable && state.total > 0 ? Math.floor(state.loaded * 100 / state.total) : null;
     return html`<div ref=${ref} class="gi-compose-transfer" hidden=${hidden || (!state.uploads && !state.sending)}>
         ${state.uploads > 0 && html`<div class="gi-compose-upload" role="status" aria-live="polite">
-            <span>Uploading ${state.uploads === 1 ? 'attachment' : `${state.uploads} attachments`}${percent === null ? '…' : ` · ${percent}%${percent === 100 ? ' · awaiting server' : ''}`}</span>
+            <span>Uploading ${state.uploads === 1 ? 'attachment' : `${state.uploads} attachments`}${state.names.length ? `: ${state.names.join(', ')}` : ''}${percent === null ? '…' : ` · ${percent}%${percent === 100 ? ' · awaiting server' : ''}`}</span>
             <progress aria-label="Attachment upload progress" max="100" value=${percent === null ? undefined : percent}></progress>
             <button type="button" class="gi-upload-cancel" onClick=${() => composeTransfers.cancelUploads(sessionId)}>Cancel uploads</button>
         </div>`}

@@ -110,7 +110,10 @@ test('queue return replaces draft, gates deletion and retry preserves later edit
   const repo=createDraftRepository({load:disk.load,put:async (row,expected)=>{writes.push(structuredClone(row));if(fail)throw Error('quota');return disk.put(row,expected);}});
   repo.update('A',{text:'latest',fileRefs:['new']});
   const capture={...emptyDraft(),text:'queued',fileRefs:['old'],media:[new File(['bytes'],'queued.txt')]};
+  repo.failed('A', repo.begin('A', {...emptyDraft(), text: 'failed send'}).token, 'send failed');
+  expect(repo.error('A')).toBe('send failed');
   const first=repo.prepareQueueReturn('A','turn1',capture);
+  expect(repo.error('A')).toBe('');
   await expect(first.ready).rejects.toThrow('quota');
   expect(repo.get('A').text).toBe('queued');
   repo.update('A',{text:'queued\nconcurrent'});

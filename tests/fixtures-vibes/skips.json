@@ -1,0 +1,40 @@
+{
+  "runtime": "gi",
+  "fixturesVibes": "v0.1.0-rc.12",
+  "skips": [
+    { "id": "@ux-shared-009", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
+    { "id": "@ux-shared-010", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
+    { "id": "@ux-shared-011", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
+    { "id": "@ux-shared-012", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
+    { "id": "@ux-original-009", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
+    { "id": "@ux-original-010", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
+    { "id": "@ux-original-011", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
+    { "id": "@ux-original-012", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
+    { "id": "@ux-pwa-002", "reason": "capability-absent", "capability": "@cap-agent-avatar", "detail": "Gi's fixture runtime cannot set the agent avatar from the composer for manifest-icon testing." },
+    { "id": "@ux-pwa-006", "reason": "capability-absent", "capability": "@cap-agent-avatar", "detail": "Gi's fixture runtime cannot change the agent avatar from the composer for cache-version testing." },
+    {
+      "id": "@ux-timeline-019",
+      "reason": "known-defect",
+      "detail": "Gi prompts on a synthetic Replies exist conflict, but the confirmed cascade retry cannot remove the reply because cascade deletion is not supported.",
+      "issue": "https://github.com/rcarmo/gi/issues/35"
+    },
+    {
+      "id": "@ux-timeline-020",
+      "reason": "known-defect",
+      "detail": "Gi deletes a parent without asking for cascade confirmation when visible replies exist.",
+      "issue": "https://github.com/rcarmo/gi/issues/35"
+    },
+    {
+      "id": "@ux-timeline-021",
+      "reason": "known-defect",
+      "detail": "Gi deletes only the parent and leaves the visible reply rather than cascading atomically.",
+      "issue": "https://github.com/rcarmo/gi/issues/35"
+    },
+    {
+      "id": "@ux-timeline-022",
+      "reason": "known-defect",
+      "detail": "Gi offers no cascade confirmation to cancel; clicking Delete removes the parent immediately.",
+      "issue": "https://github.com/rcarmo/gi/issues/35"
+    }
+  ]
+}

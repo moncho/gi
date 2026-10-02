@@ -3,10 +3,10 @@ import {createComposeTransfers} from '../../../web/src/gi-compose-transfer';
 
 test('transport phases are independent per session and concurrent completion cannot clear peers',()=>{
  const s=createComposeTransfers();let changes=0;const unsubscribe=s.subscribe(()=>changes++);
- const a=s.begin('a','upload'),b=s.begin('b','upload'),peer=s.begin('a','upload');
+ const a=s.begin('a','upload','first.txt'),b=s.begin('b','upload'),peer=s.begin('a','upload','second.txt');
  a.progress(5,10,true);peer.progress(4,0,false);
- expect(s.snapshot('a')).toEqual({uploads:2,sending:0,loaded:9,total:10,computable:false});
- peer.end();a.progress(10,10,true);expect(s.snapshot('a')).toEqual({uploads:1,sending:0,loaded:10,total:10,computable:true});
+ expect(s.snapshot('a')).toEqual({uploads:2,sending:0,loaded:9,total:10,computable:false,names:['first.txt','second.txt']});
+ peer.end();a.progress(10,10,true);expect(s.snapshot('a')).toEqual({uploads:1,sending:0,loaded:10,total:10,computable:true,names:['first.txt']});
  a.end();const sending=s.begin('a','send');
  expect(s.snapshot('a').uploads).toBe(0);expect(s.snapshot('a').sending).toBe(1);expect(s.snapshot('b').uploads).toBe(1);
  a.progress(99,100,true);a.end();expect(s.snapshot('a').sending).toBe(1);

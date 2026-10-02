@@ -7,7 +7,8 @@ export const SYSTEM_AGENT = {id:SYSTEM_AGENT_ID,name:'System',avatar_url:null};
 // The wire/storage role is independent from the shared Post component's two
 // visual roles. Non-user notices use bot presentation with explicit identity.
 export function projectConversationMessage(m: any, fallbackSession?: string) {
-    if (!['user','assistant','system'].includes(m?.role) || (m.role !== 'user' && m.payload?.kind === 'tool_result')) return null;
+    if (!['user','assistant','system'].includes(m?.role) || (m.role !== 'user' && m.payload?.kind === 'tool_result')
+        || (m.role === 'system' && m.payload?.kind === 'queue')) return null;
     let content = typeof m.content === 'string' ? m.content : '';
     if (m.role === 'assistant' && m.payload?.kind === 'tool_calls') {
         if (typeof m.payload.display_text === 'string') content = m.payload.display_text;
@@ -29,12 +30,22 @@ export function projectConversationMessage(m: any, fallbackSession?: string) {
 
 // new_post system_message frames previously bypassed the history projection.
 export function projectConversationEvent(post: any) {
+    if (post?.data?.kind === 'queue' && (post?.sender === 'system' || post?.data?.type === 'system_message')) return null;
     if (post?.data?.type !== 'system_message' && post?.sender !== 'system') return post;
     return {...post,is_from_me:false,is_bot_message:true,sender:'system',
         data:{...post.data,type:'agent_response',agent_id:SYSTEM_AGENT_ID}};
 }
 
 // Activity snapshots still retain full native metadata for Stop/queue controls.
+// A response draft has its own visible phase; never overwrite tool, retry or
+// compaction activity with this label.
+export function projectResponsePhase(status: any, draft: any) {
+    const text = typeof draft === 'string' ? draft : draft?.fullText || draft?.text;
+    if (!text?.trim() || status?.status !== 'running' || status?.tool || status?.tool_name
+        || status?.phase === 'retry_wait' || status?.phase === 'compacting') return status;
+    return {...status, type: 'response', title: 'Writing response'};
+}
+
 // Only current running activity belongs in the transient status panel.
 export function projectActivityStatus(activity: any) {
     if (!activity || !['running','cancelling'].includes(activity.status)) return null;

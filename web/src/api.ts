@@ -503,7 +503,7 @@ export async function uploadMedia(file: File, chatJid: string | null = null, opt
     const sessionId = chatJid?.startsWith('gi:') ? chatJid.slice(3) : null;
     if (!sessionId) throw new Error('No attachment destination session');
     if (file.size > 10 * 1024 * 1024) throw new Error('Media exceeds 10 MiB limit');
-    const activity = composeTransfers.begin(sessionId, 'upload');
+    const activity = composeTransfers.begin(sessionId, 'upload', file.name);
     try {
         const form = new FormData();
         form.append('file', file, file.name);

@@ -39,6 +39,7 @@ func TestConversationPagesAndSearchDoNotExposeToolHistory(t *testing.T) {
 	add("082", "assistant", "stored opaque marker", map[string]any{"kind": "tool_calls", "display_text": "explicit assistant prose"})
 	add("083", "system", "provider failed", nil)
 	add("084", "alien", "unknown role", nil)
+	add("085", "system", "Queued prompt: private queue notice", map[string]any{"kind": "queue"})
 	page, err := s.PageConversationMessages(ctx, "A", "", "", 2)
 	if err != nil {
 		t.Fatal(err)
@@ -64,7 +65,7 @@ func TestConversationPagesAndSearchDoNotExposeToolHistory(t *testing.T) {
 	if _, err = s.PageConversationMessages(ctx, "B", page.Before, "", 2); err != ErrMessageCursor {
 		t.Fatal("cross-session cursor accepted", err)
 	}
-	for _, q := range []string{"private output", "shell", "opaque marker", "unknown role"} {
+	for _, q := range []string{"private output", "shell", "opaque marker", "unknown role", "private queue notice"} {
 		rows, err := s.SearchConversationMessages(ctx, "A", q, "current", 10, 0)
 		if err != nil || len(rows) != 0 {
 			t.Fatal(q, rows, err)
@@ -75,8 +76,11 @@ func TestConversationPagesAndSearchDoNotExposeToolHistory(t *testing.T) {
 		t.Fatal(rows, err)
 	}
 	raw, err := s.ListMessages(ctx, "A")
-	if err != nil || len(raw) != 85 {
+	if err != nil || len(raw) != 86 {
 		t.Fatal(len(raw), err)
+	}
+	if raw[len(raw)-1].Content != "Queued prompt: private queue notice" {
+		t.Fatal("queue notice missing from raw history")
 	}
 	if !strings.Contains(raw[1].Content, "[tool_call: shell]") {
 		t.Fatal("raw history modified")

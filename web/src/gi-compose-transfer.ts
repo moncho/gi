@@ -1,6 +1,6 @@
 // Transient transport state: never persisted or restored as work after reload.
-export type TransferSnapshot = { uploads: number; sending: number; loaded: number; total: number; computable: boolean };
-type Operation = { phase: 'upload' | 'send'; loaded: number; total: number; computable: boolean };
+export type TransferSnapshot = { uploads: number; sending: number; loaded: number; total: number; computable: boolean; names: string[] };
+type Operation = { phase: 'upload' | 'send'; loaded: number; total: number; computable: boolean; name: string };
 export function createComposeTransfers() {
     const uploadBatches = new Map<string, Set<AbortController>>();
     const sessions = new Map<string, Map<symbol, Operation>>();
@@ -24,16 +24,16 @@ export function createComposeTransfers() {
         },
         subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
         snapshot(session: string): TransferSnapshot {
-            const value = { uploads: 0, sending: 0, loaded: 0, total: 0, computable: true };
+            const value = { uploads: 0, sending: 0, loaded: 0, total: 0, computable: true, names: [] as string[] };
             for (const op of sessions.get(session)?.values() || []) {
                 if (op.phase === 'send') { value.sending++; continue; }
-                value.uploads++; value.loaded += op.loaded; value.total += op.total;
+                value.uploads++; if (op.name) value.names.push(op.name); value.loaded += op.loaded; value.total += op.total;
                 value.computable &&= op.computable;
             }
             return value;
         },
-        begin(session: string, phase: Operation['phase']) {
-            const token = Symbol(phase), op: Operation = { phase, loaded: 0, total: 0, computable: false };
+        begin(session: string, phase: Operation['phase'], name = '') {
+            const token = Symbol(phase), op: Operation = { phase, loaded: 0, total: 0, computable: false, name };
             let pending = sessions.get(session);
             if (!pending) { pending = new Map(); sessions.set(session, pending); }
             pending.set(token, op); emit();
@@ -59,19 +59,39 @@ export const composeTransfers = createComposeTransfers();
 
 // Decorate only host-owned attributes. The supplied composer retains its click,
 // disabled and Abort/Compact semantics, including newer-draft submission.
-export function bindComposeSending(root: HTMLElement, sending: boolean) {
-    const owned = new Set<HTMLElement>();
+export function bindComposeSending(root: HTMLElement, uploading: boolean, sending: boolean) {
+    const owned = new Map<HTMLElement, { label: string | null; title: string | null; disabled: boolean }>();
     const paint = () => {
-        const button = root.querySelector<HTMLElement>('.compose-send-stack .send-btn');
-        if (!button) return;
-        if (sending) { button.dataset.giSending = 'true'; button.setAttribute('aria-busy', 'true'); owned.add(button); }
-        else { delete button.dataset.giSending; button.removeAttribute('aria-busy'); }
+        const button = root.querySelector<HTMLButtonElement>('.compose-send-stack .send-btn');
+        // Never repurpose the active turn's Stop control as a transport status.
+        if (!button || button.classList.contains('abort-mode')) return;
+        if (!uploading && !sending) return;
+        if (!owned.has(button)) owned.set(button, {
+            label: button.getAttribute('aria-label'), title: button.getAttribute('title'), disabled: button.disabled,
+        });
+        const label = uploading ? 'Uploading attachment' : 'Sending message';
+        if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
+        if (button.getAttribute('title') !== label) button.setAttribute('title', label);
+        if (!button.disabled) button.disabled = true;
+        if (sending) {
+            if (button.dataset.giSending !== 'true') button.dataset.giSending = 'true';
+            if (button.getAttribute('aria-busy') !== 'true') button.setAttribute('aria-busy', 'true');
+        }
     };
     paint();
     const observer = new MutationObserver(paint);
     observer.observe(root, { childList: true, subtree: true });
     return () => {
         observer.disconnect();
-        for (const button of owned) { delete button.dataset.giSending; button.removeAttribute('aria-busy'); }
+        for (const [button, initial] of owned) {
+            delete button.dataset.giSending; button.removeAttribute('aria-busy');
+            if (initial.label === null) button.removeAttribute('aria-label');
+            else button.setAttribute('aria-label', initial.label);
+            if (initial.title === null) button.removeAttribute('title');
+            else button.setAttribute('title', initial.title);
+            // Draft edits may have enabled the button while transport was in flight.
+            const text = root.querySelector<HTMLTextAreaElement>('.compose-box textarea')?.value?.trim();
+            button.disabled = text ? false : initial.disabled;
+        }
     };
 }

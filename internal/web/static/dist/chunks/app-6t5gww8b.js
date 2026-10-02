@@ -1392,7 +1392,7 @@ function projectMessageMedia(payload, sessionId) {
 var SYSTEM_AGENT_ID = "__gi_system__";
 var SYSTEM_AGENT = { id: SYSTEM_AGENT_ID, name: "System", avatar_url: null };
 function projectConversationMessage(m, fallbackSession) {
-  if (!["user", "assistant", "system"].includes(m?.role) || m.role !== "user" && m.payload?.kind === "tool_result")
+  if (!["user", "assistant", "system"].includes(m?.role) || m.role !== "user" && m.payload?.kind === "tool_result" || m.role === "system" && m.payload?.kind === "queue")
     return null;
   let content = typeof m.content === "string" ? m.content : "";
   if (m.role === "assistant" && m.payload?.kind === "tool_calls") {
@@ -1429,6 +1429,8 @@ function projectConversationMessage(m, fallbackSession) {
   };
 }
 function projectConversationEvent(post) {
+  if (post?.data?.kind === "queue" && (post?.sender === "system" || post?.data?.type === "system_message"))
+    return null;
   if (post?.data?.type !== "system_message" && post?.sender !== "system")
     return post;
   return {
@@ -1438,6 +1440,12 @@ function projectConversationEvent(post) {
     sender: "system",
     data: { ...post.data, type: "agent_response", agent_id: SYSTEM_AGENT_ID }
   };
+}
+function projectResponsePhase(status, draft) {
+  const text = typeof draft === "string" ? draft : draft?.fullText || draft?.text;
+  if (!text?.trim() || status?.status !== "running" || status?.tool || status?.tool_name || status?.phase === "retry_wait" || status?.phase === "compacting")
+    return status;
+  return { ...status, type: "response", title: "Writing response" };
 }
 function projectActivityStatus(activity) {
   if (!activity || !["running", "cancelling"].includes(activity.status))
@@ -1708,21 +1716,23 @@ function createComposeTransfers() {
       };
     },
     snapshot(session) {
-      const value = { uploads: 0, sending: 0, loaded: 0, total: 0, computable: true };
+      const value = { uploads: 0, sending: 0, loaded: 0, total: 0, computable: true, names: [] };
       for (const op of sessions.get(session)?.values() || []) {
         if (op.phase === "send") {
           value.sending++;
           continue;
         }
         value.uploads++;
+        if (op.name)
+          value.names.push(op.name);
         value.loaded += op.loaded;
         value.total += op.total;
         value.computable &&= op.computable;
       }
       return value;
     },
-    begin(session, phase) {
-      const token = Symbol(phase), op = { phase, loaded: 0, total: 0, computable: false };
+    begin(session, phase, name = "") {
+      const token = Symbol(phase), op = { phase, loaded: 0, total: 0, computable: false, name };
       let pending = sessions.get(session);
       if (!pending) {
         pending = new Map;
@@ -1754,19 +1764,32 @@ function createComposeTransfers() {
   };
 }
 var composeTransfers = createComposeTransfers();
-function bindComposeSending(root, sending) {
-  const owned = new Set;
+function bindComposeSending(root, uploading, sending) {
+  const owned = new Map;
   const paint = () => {
     const button = root.querySelector(".compose-send-stack .send-btn");
-    if (!button)
+    if (!button || button.classList.contains("abort-mode"))
       return;
+    if (!uploading && !sending)
+      return;
+    if (!owned.has(button))
+      owned.set(button, {
+        label: button.getAttribute("aria-label"),
+        title: button.getAttribute("title"),
+        disabled: button.disabled
+      });
+    const label = uploading ? "Uploading attachment" : "Sending message";
+    if (button.getAttribute("aria-label") !== label)
+      button.setAttribute("aria-label", label);
+    if (button.getAttribute("title") !== label)
+      button.setAttribute("title", label);
+    if (!button.disabled)
+      button.disabled = true;
     if (sending) {
-      button.dataset.giSending = "true";
-      button.setAttribute("aria-busy", "true");
-      owned.add(button);
-    } else {
-      delete button.dataset.giSending;
-      button.removeAttribute("aria-busy");
+      if (button.dataset.giSending !== "true")
+        button.dataset.giSending = "true";
+      if (button.getAttribute("aria-busy") !== "true")
+        button.setAttribute("aria-busy", "true");
     }
   };
   paint();
@@ -1774,9 +1797,19 @@ function bindComposeSending(root, sending) {
   observer.observe(root, { childList: true, subtree: true });
   return () => {
     observer.disconnect();
-    for (const button of owned) {
+    for (const [button, initial] of owned) {
       delete button.dataset.giSending;
       button.removeAttribute("aria-busy");
+      if (initial.label === null)
+        button.removeAttribute("aria-label");
+      else
+        button.setAttribute("aria-label", initial.label);
+      if (initial.title === null)
+        button.removeAttribute("title");
+      else
+        button.setAttribute("title", initial.title);
+      const text = root.querySelector(".compose-box textarea")?.value?.trim();
+      button.disabled = text ? false : initial.disabled;
     }
   };
 }
@@ -2078,6 +2111,7 @@ function createDraftRepository(storage, onError = () => {}, recover, journal) {
           throw new Error("Draft changed while returning the queued item. Nothing was removed; retry Return to replace the current draft.");
         }
         row.draft = copy(captured);
+        row.error = "";
         row.queueReturns[queueId] = { state: "prepared", recoveredAt: Date.now() };
       }
       return { draft: copy(row.draft), ready: persist(id) };
@@ -2631,7 +2665,7 @@ async function uploadMedia(file, chatJid = null, options = {}) {
     throw new Error("No attachment destination session");
   if (file.size > 10 * 1024 * 1024)
     throw new Error("Media exceeds 10 MiB limit");
-  const activity = composeTransfers.begin(sessionId, "upload");
+  const activity = composeTransfers.begin(sessionId, "upload", file.name);
   try {
     const form = new FormData;
     form.append("file", file, file.name);
@@ -22823,11 +22857,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-0ewkwbjd.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-3mg8x10f.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-yf1jrbnp.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-b4estnen.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-wj9c1far.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-czwx62mx.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-sx19z14y.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-h5ckzjt0.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-bvc166dt.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-n3crd6hv.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -24656,7 +24690,17 @@ function GiApp() {
       return;
     setDeleteError("");
     try {
-      await deletePost(id, false, destination);
+      try {
+        await deletePost(id, false, destination);
+      } catch (error) {
+        if (!String(error?.message || "").includes("Replies exist"))
+          throw error;
+        if (!confirm("Delete this message and its replies?")) {
+          deletions.finish(id, false);
+          return;
+        }
+        await deletePost(id, true, destination);
+      }
       deletions.finish(id, true);
       const current = () => selection.isCurrent(owner) && searchView.isCurrent(view);
       if (!current())
@@ -24743,8 +24787,11 @@ function GiApp() {
       if (data?.id && data?.data && !searchView.capture().active) {
         const root = timelineRef.current;
         scrollRestore.current = { scope: selection.capture(), view: searchView.capture(), connection: connectionRevision.current, anchor: captureTimelineAnchor(root, readingAnchor.current), bottom: !root || Math.abs(root.scrollTop) < 80 };
-        setPosts((prev) => mergeMessagePages(prev, [projectConversationEvent(data)]));
-        scrollToBottom();
+        const post = projectConversationEvent(data);
+        if (post) {
+          setPosts((prev) => mergeMessagePages(prev, [post]));
+          scrollToBottom();
+        }
       }
     }
     if (staleTerminal)
@@ -25145,7 +25192,7 @@ function GiApp() {
         drafts.queueReturnFailed(scope.sessionId, itemOrIndex.id, error.message);
       if (selection.isCurrent(scope)) {
         setFollowupQueueItems(before);
-        setQueueError(`Queue action failed: ${error.message}`);
+        setQueueError(action === "steer" ? `Queued item could not be sent as steering: ${error.message} (Queue action failed)` : `Queue action failed: ${error.message}`);
       }
     } finally {
       try {
@@ -25336,7 +25383,7 @@ function GiApp() {
                 />
 
                 <${AgentStatus} key=${`${sessionId}:${currentTurnId || ""}`}
-                    status=${isCompactionStatus(agentStatus) ? null : agentStatus}
+                    status=${isCompactionStatus(agentStatus) ? null : projectResponsePhase(agentStatus, agentDraft)}
                     draft=${agentDraft}
                     plan=${agentPlan}
                     thought=${agentThought}
@@ -25550,12 +25597,12 @@ function ComposeTransfer({ sessionId, hidden }) {
     const root = ref.current?.parentElement;
     if (!root)
       return;
-    return bindComposeSending(root, !hidden && state.sending > 0);
-  }, [sessionId, hidden, state.sending]);
+    return bindComposeSending(root, !hidden && state.uploads > 0, !hidden && state.sending > 0);
+  }, [sessionId, hidden, state.uploads, state.sending]);
   const percent = state.computable && state.total > 0 ? Math.floor(state.loaded * 100 / state.total) : null;
   return fe`<div ref=${ref} class="gi-compose-transfer" hidden=${hidden || !state.uploads && !state.sending}>
         ${state.uploads > 0 && fe`<div class="gi-compose-upload" role="status" aria-live="polite">
-            <span>Uploading ${state.uploads === 1 ? "attachment" : `${state.uploads} attachments`}${percent === null ? "…" : ` · ${percent}%${percent === 100 ? " · awaiting server" : ""}`}</span>
+            <span>Uploading ${state.uploads === 1 ? "attachment" : `${state.uploads} attachments`}${state.names.length ? `: ${state.names.join(", ")}` : ""}${percent === null ? "…" : ` · ${percent}%${percent === 100 ? " · awaiting server" : ""}`}</span>
             <progress aria-label="Attachment upload progress" max="100" value=${percent === null ? undefined : percent}></progress>
             <button type="button" class="gi-upload-cancel" onClick=${() => composeTransfers.cancelUploads(sessionId)}>Cancel uploads</button>
         </div>`}
@@ -25599,5 +25646,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=B07CD9361AE70ABC64756E2164756E21
-//# sourceMappingURL=app-2d7xnjnw.js.map
+//# debugId=CDA2F52127DDBAC964756E2164756E21
+//# sourceMappingURL=app-6t5gww8b.js.map

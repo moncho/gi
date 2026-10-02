@@ -15,7 +15,7 @@ Write text content to a workspace file or managed VFS asset.
 ```
 
 ### Fields
-- `path` — workspace-relative destination path or `vfs://namespace/path`
+- `path` — workspace-relative destination path, an absolute destination inside the workspace, or `vfs://namespace/path`
 - `content` — full text content to write
 
 ## Behavior
@@ -33,6 +33,12 @@ For VFS writes, `write` persists into the managed namespace using metadata-safe 
 [ADR-0051](../../adr/0051-native-write-index-invalidation.md) defines the bounded notification protocol and crash limits. Caller cancellation does not skip post-notification after an attempted filesystem write. Index content and last-success metadata remain unchanged until explicit refresh. The filesystem/SQLite gap is not crash-atomic; shell/external edits and hard-link aliases still need reconciliation.
 
 ## Path semantics
-- workspace paths resolve against configured `workspace_root`
+- relative workspace paths resolve against configured `workspace_root`; absolute paths are preserved and must resolve inside its filesystem boundary
 - `vfs://skills/...`, `vfs://scripts/...`, etc. resolve into managed namespaces
 - `vfs://reference/...` is read-only and must fail on write
+
+The shared resolver rejects outside absolute paths with `path escapes workspace`
+before mutation or index invalidation. It does not turn an absolute destination
+into a new nested path under the workspace. The stricter native-write symlink
+policy above remains unchanged. See `make test-tool-paths` for native absolute-path
+write/read and rejection coverage.

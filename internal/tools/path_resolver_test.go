@@ -111,3 +111,74 @@ func TestResolveToolPathFTSReadOnlyNamespace(t *testing.T) {
 		t.Fatalf("unexpected fts write error: %v", err)
 	}
 }
+
+func TestResolveToolPathAbsoluteWorkspace(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	for _, raw := range []string{filepath.Join(root, "missing", "nested", "file.txt"), filepath.Join(outside, "file.txt"), root + "-other/file.txt"} {
+		for _, write := range []bool{false, true} {
+			got, err := ResolveToolPath(root, raw, write)
+			if strings.HasPrefix(raw, root+string(os.PathSeparator)) {
+				if err != nil || got.WorkspacePath != raw {
+					t.Fatalf("absolute in-workspace path: %v %v", got, err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), "path escapes workspace") {
+				t.Fatalf("outside absolute path %q: %v", raw, err)
+			}
+		}
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, err := filepath.Rel(cwd, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := ResolveToolPath(rel, "file.txt", false)
+	if err != nil || got.WorkspacePath != filepath.Join(root, "file.txt") {
+		t.Fatalf("relative root: %v %v", got, err)
+	}
+	if !pathWithinRoot(filepath.Join(string(os.PathSeparator), "file"), string(os.PathSeparator)) {
+		t.Fatal("filesystem root boundary broken")
+	}
+}
+func TestResolveToolPathAbsoluteSymlinks(t *testing.T) {
+	root, outside := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "secret"), []byte("secret"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "escape")); err != nil {
+		t.Skip(err)
+	}
+	if err := os.Symlink(filepath.Join(outside, "absent"), filepath.Join(root, "dangling")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(root, "inside"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(root, "inside"), filepath.Join(root, "safe")); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"escape/secret", "escape/new/deep/file", "dangling/file"} {
+		for _, write := range []bool{false, true} {
+			for _, raw := range []string{name, filepath.Join(root, name)} {
+				if _, err := ResolveToolPath(root, raw, write); err == nil {
+					t.Fatalf("symlink escape accepted: %q", raw)
+				}
+			}
+		}
+	}
+	for _, name := range []string{"inside/new/deep/file", "safe/new/deep/file"} {
+		if _, err := ResolveToolPath(root, filepath.Join(root, name), false); err != nil {
+			t.Fatalf("in-workspace symlink/absent parents: %v", err)
+		}
+	}
+	alias := filepath.Join(t.TempDir(), "workspace")
+	if err := os.Symlink(root, alias); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveToolPath(alias, filepath.Join(alias, "inside", "file"), false); err != nil {
+		t.Fatalf("symlinked workspace root: %v", err)
+	}
+}

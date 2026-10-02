@@ -99,3 +99,46 @@ func TestReadImagesAndVFSOversizedLine(t *testing.T) {
 		t.Fatalf("vfs oversized line: %q", got)
 	}
 }
+
+func TestReadAbsoluteWorkspacePaths(t *testing.T) {
+	rt, _ := readFixture(t)
+	relative, err := readWith(t, rt, map[string]any{"path": "lines.txt", "limit": 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	absolute, err := readWith(t, rt, map[string]any{"path": filepath.Join(rt.WorkspaceRoot, "lines.txt"), "limit": 3})
+	if err != nil || absolute != relative {
+		t.Fatalf("absolute read: %q %v", absolute, err)
+	}
+	outside := filepath.Join(t.TempDir(), "secret.txt")
+	if err := os.WriteFile(outside, []byte("outside secret"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := readWith(t, rt, map[string]any{"path": outside})
+	if err == nil || !strings.Contains(err.Error(), "path escapes workspace") || strings.Contains(got, "outside secret") {
+		t.Fatalf("outside read: %q %v", got, err)
+	}
+}
+
+func TestReadAbsoluteWorkspacePaginationAndMissingFile(t *testing.T) {
+	rt, _ := readFixture(t)
+	for _, args := range []map[string]any{
+		{"offset": float64(2001)},
+		{"offset": float64(5), "limit": float64(10)},
+	} {
+		args["path"] = "lines.txt"
+		relative, err := readWith(t, rt, args)
+		if err != nil {
+			t.Fatal(err)
+		}
+		args["path"] = filepath.Join(rt.WorkspaceRoot, "lines.txt")
+		absolute, err := readWith(t, rt, args)
+		if err != nil || absolute != relative {
+			t.Fatalf("absolute pagination %v: %q %v", args, absolute, err)
+		}
+	}
+	missing := filepath.Join(rt.WorkspaceRoot, "missing.txt")
+	if _, err := readWith(t, rt, map[string]any{"path": missing}); err == nil || !strings.Contains(err.Error(), missing) || strings.Contains(err.Error(), filepath.Join(rt.WorkspaceRoot, missing)) {
+		t.Fatalf("missing absolute path should retain original, not double root: %v", err)
+	}
+}

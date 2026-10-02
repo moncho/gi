@@ -295,3 +295,38 @@ func TestWriteNativePostNotificationFailurePreservesBytesAndPreRevision(t *testi
 		}
 	}
 }
+
+func TestNativeWriteAbsoluteWorkspacePaths(t *testing.T) {
+	db, cfg, scopes := producerFixture(t)
+	path := filepath.Join(cfg.WorkspaceRoot, "notes", "new", "deep", "absolute.md")
+	if _, err := ExecuteWrite(t.Context(), cfg, db, goai.ToolCall{
+		Arguments: map[string]any{"path": path, "content": "absoluteviolet"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ExecuteReadTool(t.Context(), ToolRuntime{WorkspaceRoot: cfg.WorkspaceRoot, Store: db}, goai.ToolCall{
+		Arguments: map[string]any{"path": path},
+	})
+	if err != nil || got != "absoluteviolet" {
+		t.Fatalf("absolute write/read round trip: %q %v", got, err)
+	}
+	for _, scope := range scopes[:2] {
+		if status := producerStatus(t, db, scope); status.RequestedRevision != 2 {
+			t.Fatalf("absolute write did not invalidate index: %+v", status)
+		}
+	}
+	outside := filepath.Join(t.TempDir(), "new", "outside.md")
+	if _, err := ExecuteWrite(t.Context(), cfg, db, goai.ToolCall{
+		Arguments: map[string]any{"path": outside, "content": "must not write"},
+	}); err == nil || !strings.Contains(err.Error(), "path escapes workspace") {
+		t.Fatalf("outside absolute write: %v", err)
+	}
+	if _, err := os.Stat(filepath.Dir(outside)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("rejected write created outside directories: %v", err)
+	}
+	for _, scope := range scopes[:2] {
+		if status := producerStatus(t, db, scope); status.RequestedRevision != 2 {
+			t.Fatalf("rejected write invalidated index: %+v", status)
+		}
+	}
+}

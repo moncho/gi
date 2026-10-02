@@ -1190,3 +1190,8 @@ fmt-unicode-perf:
 .PHONY: test-tui-complex-tables-pty
 test-tui-complex-tables-pty:
 	GI_COMPLEX_TABLE_PTY=1 $(GO) test ./internal/tui -count=1 -v -run '^TestComplexMarkdownTableTerminal$$'
+.PHONY: fmt-tool-paths test-tool-paths
+fmt-tool-paths:
+	$(GO) fmt ./internal/tools
+test-tool-paths:
+	$(GO) test $(RACE) ./internal/tools -count=1

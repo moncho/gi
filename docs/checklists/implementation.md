@@ -3,6 +3,10 @@
 - [x] Add reproducible Unicode/styled table projection, streaming, resize and scroll-frame benchmarks with CPU/allocation profiles.
 - [x] Optimize measured hotspots without changing grid geometry, inline styles or literal search/copy text; add functional coverage (including table-to-user message boundaries and full-width Pi user bands).
 - [x] Record baseline/optimized results and remaining costs in `docs/internal/tui-complex-table-performance.md`.
+### Workspace tool path resolution
+
+- [x] Preserve absolute tool paths inside the workspace rather than prefixing the root; reject outside paths with a confinement error.
+- [x] Cover relative paths/roots, traversal, sibling-prefix attacks, existing/dangling symlinks and multiple missing descendants, plus actual paginated read behavior and native write/read round trips with index invalidation. Update read/write contracts and read schema.
 
 ### Issue #12 — terminal-derived themes
 

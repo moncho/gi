@@ -253,7 +253,7 @@ type chatTUI struct {
 	lastFooterCheck             time.Time // when the idle check last read the session
 	runningCheckLines           []string  // transcript at the last running-block check
 	runningCheckResult          bool
-	blockCache                  map[uint64]*cachedTranscriptBlock // rendered blocks reused across frames (#34)
+	blockCache                  *transcriptBlockCache // block heights and recently rendered blocks (#34, #31)
 	blocksMemo                  transcriptBlocksMemo              // block list and keys for unchanged transcripts (#34)
 	jumpToLatest                jumpToLatestRect                  // where the cue was drawn (none: width 0)
 	regularPrinted              int

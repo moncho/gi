@@ -405,7 +405,11 @@ func (c *chatTUI) renderTranscriptSelectionRows(root *gotui.Element) {
 		for i := range spans {
 			width := gotui.StringWidth(spans[i].Text)
 			if c.textSelection.moved && col+width > start && col < end {
-				spans[i].Style = spans[i].Style.Background(piText).Foreground(piUserBg)
+				if piText.IsDefault() { // system theme: text is the terminal's own colour
+					spans[i].Style = spans[i].Style.Reverse()
+				} else {
+					spans[i].Style = spans[i].Style.Background(piText).Foreground(piUserBg)
+				}
 			}
 			col += width
 		}

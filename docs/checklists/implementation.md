@@ -14,7 +14,8 @@
 - [x] Apply independent Markdown, tool/diff, user and custom-message roles with built-in light/dark selection.
 - [x] Add Bun-only real-PTY acceptance for negotiation, fallback, explicit/auto settings and light/dark native UI.
 - [ ] Load Pi custom theme JSON with vars/OKHSL/OKLCH; add live switching.
-- [ ] Optionally derive Pi system theme from terminal palette; Windows console querying/input preservation remain open.
+- [x] Derive Pi's default `system` theme from the terminal's colours and OSC 4 palette (#31); golden-tested against Pi's generator, 13 real-PTY scenarios.
+- [ ] Windows console querying/input preservation remain open.
 - Contract and verification: [terminal themes](../internal/tui-terminal-theme.md). Issue #12 remains open.
 
 # gi implementation checklist

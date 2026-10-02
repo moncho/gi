@@ -66,7 +66,7 @@ func TestTranscriptWindowMatchesFullLayout(t *testing.T) {
 	if strings.Join(full, "\n") != strings.Join(win, "\n") {
 		t.Fatalf("bottom differs:\nfull:\n%s\nwindowed:\n%s", strings.Join(full, "\n"), strings.Join(win, "\n"))
 	}
-	if len(c.blockCache) == 0 {
+	if c.blockCache.heightCount() == 0 {
 		t.Fatal("heights not cached")
 	}
 }
@@ -124,5 +124,34 @@ func TestTranscriptBlocksMemo(t *testing.T) {
 	c.selectedTranscriptBlock = "x"
 	if sel := c.transcriptBlocks(); &sel[0] == &changed[0] {
 		t.Fatal("selection change not rebuilt")
+	}
+}
+
+// A long session keeps every block's height but rendered elements only up
+// to the LRU bound, and still renders the window exactly.
+func TestTranscriptBlockCacheIsBounded(t *testing.T) {
+	var lines []string
+	for i := 0; i < 40; i++ {
+		lines = append(lines, windowTestTranscript()...)
+	}
+	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Gi"}, transcript: lines, transcriptExpanded: map[string]bool{}}
+	const width, height = 60, 12
+	blocks := len(c.transcriptBlocks())
+	if blocks <= transcriptElementCacheMax {
+		t.Fatalf("fixture too small: %d blocks", blocks)
+	}
+	for _, offset := range []int{0, 400, 2000} {
+		c.transcriptScroll, c.stickToBottom = offset, false
+		full := renderTranscriptRows(t, c, false, width, height, offset)
+		win := renderTranscriptRows(t, c, true, width, height, offset)
+		if strings.Join(full, "\n") != strings.Join(win, "\n") {
+			t.Fatalf("offset %d differs", offset)
+		}
+	}
+	if n := c.blockCache.elementCount(); n > transcriptElementCacheMax {
+		t.Fatalf("%d rendered blocks kept, bound %d", n, transcriptElementCacheMax)
+	}
+	if n := c.blockCache.heightCount(); n < blocks-5 {
+		t.Fatalf("only %d of %d heights kept", n, blocks)
 	}
 }

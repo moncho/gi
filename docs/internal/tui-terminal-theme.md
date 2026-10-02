@@ -1,9 +1,11 @@
-# Terminal theme detection (issue #12)
+# Terminal theme detection (issues #12, #31)
 
 ## Current behavior
 
 Before go-tui owns input, Gi queries the controlling terminal for OSC 10/11
-foreground/background and CSI `?996n` colour scheme, followed by DA1. The
+foreground/background, OSC 4 palette colours 0–15 (Pi's
+`TERMINAL_COLOR_QUERY`) and CSI `?996n` colour scheme, followed by DA1. A
+palette is used only when all 16 colours were reported. The
 reported background and foreground determine light/dark using Pi's contrast
 and OKLab-lightness rules. Fallback order is the scheme reply, `COLORFGBG`,
 then dark. Background indices 0–6 and 8 are dark; 7 and 9–15 are light.
@@ -17,12 +19,42 @@ query early. Windows currently uses environment fallback without probing.
 The startup probe consumes incoming bytes, so type after the editor appears;
 this is not a general-purpose input/reply multiplexer.
 
-The Pi `theme` setting accepts `dark`, `light`, or a `light/dark` pair.
-Whitespace is trimmed. An unset, invalid, or unavailable name falls back to
-the detected scheme's built-in theme. `/settings` reports effective and
+The Pi `theme` setting accepts `system`, `dark`, `light`, or a `light/dark`
+pair. Whitespace is trimmed. As in Pi 1.0, an unset, invalid, or unavailable
+name selects the default `system` theme. `/settings` reports effective and
 configured theme values separately. Detection is startup-only.
 
-The built-in palettes are RGB goldens generated from Pi 0.99.2's own theme
+## System theme (#31)
+
+`system_theme.go` ports Pi's `generateSystemThemeColors`
+(`modes/interactive/theme/system-theme.js`) and `oklab.go` the OKLab, OKHSL
+and OKLCH conversions of pi-tui (`oklab.js`, `colors.js`). Every token
+belongs to a colour family and must reach a contrast level on the surfaces it
+is drawn on; hue and saturation come from the palette (or the family), the
+lightness from the levels. Palette colours never gain OKLCH chroma at another
+lightness, so pastel palettes (Catppuccin Frappe) stay pastel. Mid-grey
+backgrounds relax the levels as little as needed. Body text (`text`,
+`userMessageText`, `toolTitle`) uses the terminal's own foreground when it is
+clearly stronger than muted text, which gi draws as the terminal default
+colour.
+
+`TestSystemThemeMatchesPi` compares every token for eight terminals
+(Catppuccin Frappe and Latte palettes, xterm, background-only, light,
+mid-grey with and without a palette, a dim foreground) with colours from Pi's
+own code (`scripts/golden-system-theme.mjs`).
+
+Differences from Pi:
+
+- Without a reported background Pi renders ANSI palette indices and makes
+  neutral tokens faint (SGR 2). gi's palette is colours only, so it uses the
+  detected scheme's built-in `dark` or `light` theme there; `/settings` names
+  that theme.
+- Pi renders grayscale while its query is in flight; gi queries before the UI
+  starts, so there is no pending phase.
+- Text selection, which gi draws with the text colour as background, uses
+  inverse video when the text colour is the terminal default.
+
+The built-in palettes are RGB goldens generated from Pi 1.0.0's own theme
 conversion (`pi_themes_gen.go`); Gi retains Pi's truecolor detection and
 256-colour quantization. Markdown, tool output/title, diff, user text, and
 custom-message text/label roles are independent even when built-in colours
@@ -36,11 +68,12 @@ harness using util-linux `script` to obtain a real controlling PTY. No tmux,
 external provider, credentials, browser, Python harness, or JS packages are
 required. Artifacts live under `test-results/tui-theme/`.
 
-Twelve scenarios exercise light/dark OSC replies, fragmented replies,
-scheme-only detection, fallback precedence, silence, malformed replies,
-explicit selection, auto pairs, and query disabling. Light/dark scenarios
-also start the native fullscreen UI, inspect `/settings`, and check emitted
-text RGB values. This is protocol/rendering acceptance with simulated terminal
+Thirteen scenarios exercise light/dark OSC replies, a full OSC 4 palette,
+fragmented replies, scheme-only detection, fallback precedence, silence,
+malformed replies, explicit selection, auto pairs, and query disabling.
+Scenarios that report a background resolve to `system`; the harness computes
+Pi's generated colours for the reply and checks that they are emitted. An
+explicit `dark` scenario checks the built-in text RGB. This is protocol/rendering acceptance with simulated terminal
 replies, not visual verification in every emulator.
 
 The harness fails with the original blocking startup reader: the silent
@@ -54,11 +87,9 @@ Markdown/tool/diff tokens.
 - Pi custom theme JSON/resource loading, variable references and runtime
   OKHSL/OKLCH conversion. Unknown custom names currently fall back as above.
 - Live `/theme` switching and scheme-change notifications.
-- Optional Pi `system` theme derivation from OSC 4 palette and terminal colours.
 - Windows console probing and preservation of unrelated startup input.
 
-This slice establishes reliable built-in light/dark startup, not complete Pi
-custom-theme or system-palette parity.
+Built-in and system themes are in place; custom theme files are not.
 
 Final verification for this slice: full `make test`, `make vet`, all 12
 `make test-tui-theme-pty` scenarios, `make build-web`, and `make bun-checks`

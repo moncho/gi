@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"container/list"
 	"encoding/json"
 	"hash/fnv"
 	"sort"
@@ -67,14 +68,107 @@ func blockHeightKey(block transcriptRenderableBlock, previousKind string, width 
 }
 
 // cachedTranscriptBlock is a rendered block reused across frames: its
-// element (with go-tui's wrap caches), its click targets and its height.
+// element (with go-tui's wrap caches) and its click targets.
 type cachedTranscriptBlock struct {
-	el     *gotui.Element
-	refs   []transcriptBlockHitTarget
-	height int
+	el   *gotui.Element
+	refs []transcriptBlockHitTarget
 }
 
-const transcriptBlockCacheMax = 4096
+// Memory follows the screen, not the session (#31): every block's height is
+// kept (a few bytes each, so offscreen blocks are measured once), but
+// rendered elements only for the most recently shown blocks, which covers
+// the viewport and its margins on any terminal.
+const (
+	transcriptHeightCacheMax  = 65536
+	transcriptElementCacheMax = 256
+)
+
+// transcriptBlockCache holds block heights and an LRU of rendered blocks.
+// A nil cache is valid and empty.
+type transcriptBlockCache struct {
+	heights  map[uint64]int
+	elements map[uint64]*list.Element // of *elementCacheEntry
+	order    *list.List               // most recently used first
+}
+
+type elementCacheEntry struct {
+	key   uint64
+	block *cachedTranscriptBlock
+}
+
+func (b *transcriptBlockCache) height(key uint64) (int, bool) {
+	if b == nil {
+		return 0, false
+	}
+	h, ok := b.heights[key]
+	return h, ok
+}
+
+func (b *transcriptBlockCache) element(key uint64) (*cachedTranscriptBlock, bool) {
+	if b == nil {
+		return nil, false
+	}
+	e, ok := b.elements[key]
+	if !ok {
+		return nil, false
+	}
+	b.order.MoveToFront(e)
+	return e.Value.(*elementCacheEntry).block, true
+}
+
+func (b *transcriptBlockCache) putHeight(key uint64, h int) {
+	if len(b.heights) >= transcriptHeightCacheMax {
+		b.heights = map[uint64]int{}
+	}
+	b.heights[key] = h
+}
+
+func (b *transcriptBlockCache) putElement(key uint64, block *cachedTranscriptBlock) {
+	if e, ok := b.elements[key]; ok {
+		e.Value.(*elementCacheEntry).block = block
+		b.order.MoveToFront(e)
+		return
+	}
+	b.elements[key] = b.order.PushFront(&elementCacheEntry{key, block})
+	for b.order.Len() > transcriptElementCacheMax {
+		oldest := b.order.Back()
+		b.order.Remove(oldest)
+		delete(b.elements, oldest.Value.(*elementCacheEntry).key)
+	}
+}
+
+func (b *transcriptBlockCache) elementCount() int {
+	if b == nil {
+		return 0
+	}
+	return b.order.Len()
+}
+
+func (b *transcriptBlockCache) heightCount() int {
+	if b == nil {
+		return 0
+	}
+	return len(b.heights)
+}
+
+func (c *chatTUI) ensureBlockCache() *transcriptBlockCache {
+	if c.blockCache == nil {
+		c.blockCache = &transcriptBlockCache{heights: map[uint64]int{}, elements: map[uint64]*list.Element{}, order: list.New()}
+	}
+	return c.blockCache
+}
+
+// transcriptBlockHeight is a block's height, rendering it only when it was
+// never measured; the rendered element goes to the LRU, not a permanent map.
+func (c *chatTUI) transcriptBlockHeight(block *transcriptRenderableBlock, previousKind string, key uint64, width int) int {
+	if block.Status != "running" && block.Kind != "thinking_indicator" {
+		if h, ok := c.blockCache.height(key); ok {
+			return h
+		}
+	}
+	_, h := c.transcriptBlockElement(block, previousKind, key, width, false)
+	return h
+}
 
 // transcriptBlockElement renders a block, or reuses its element from an
 // earlier frame. Running blocks (spinner, elapsed time) are always
@@ -82,11 +176,12 @@ const transcriptBlockCacheMax = 4096
 func (c *chatTUI) transcriptBlockElement(block *transcriptRenderableBlock, previousKind string, key uint64, width int, register bool) (*gotui.Element, int) {
 	cacheable := block.Status != "running" && block.Kind != "thinking_indicator"
 	if cacheable {
-		if hit, ok := c.blockCache[key]; ok {
+		if hit, ok := c.blockCache.element(key); ok {
 			if register {
 				c.transcriptBlockRefs = append(c.transcriptBlockRefs, hit.refs...)
 			}
-			return hit.el, hit.height
+			h, _ := c.blockCache.height(key)
+			return hit.el, h
 		}
 	}
 	before := len(c.transcriptBlockRefs)
@@ -97,10 +192,9 @@ func (c *chatTUI) transcriptBlockElement(block *transcriptRenderableBlock, previ
 	}
 	h := el.HeightForWidth(width)
 	if cacheable {
-		if c.blockCache == nil || len(c.blockCache) > transcriptBlockCacheMax {
-			c.blockCache = map[uint64]*cachedTranscriptBlock{}
-		}
-		c.blockCache[key] = &cachedTranscriptBlock{el: el, refs: refs, height: h}
+		cache := c.ensureBlockCache()
+		cache.putHeight(key, h)
+		cache.putElement(key, &cachedTranscriptBlock{el: el, refs: refs})
 	}
 	return el, h
 }
@@ -119,7 +213,7 @@ func (c *chatTUI) addTranscriptWindow(transcript *gotui.Element, blocks []transc
 	previousKind := ""
 	for i := range blocks {
 		block := &blocks[i]
-		_, h := c.transcriptBlockElement(block, previousKind, keys[i], width, false)
+		h := c.transcriptBlockHeight(block, previousKind, keys[i], width)
 		items[i] = placed{previous: previousKind, top: total, h: h}
 		total += h
 		if block.Kind != "thinking_indicator" {

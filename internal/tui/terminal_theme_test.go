@@ -2,8 +2,10 @@ package tui
 
 import (
 	"fmt"
-	gotui "github.com/grindlemire/go-tui"
+	"strings"
 	"testing"
+
+	gotui "github.com/grindlemire/go-tui"
 )
 
 func TestParseTerminalThemeReplies(t *testing.T) {
@@ -22,6 +24,43 @@ func TestParseTerminalThemeReplies(t *testing.T) {
 }
 
 // Detection order is Pi's: reported background, scheme report, COLORFGBG, dark.
+// The query is Pi's (OSC 10, 11, OSC 4 for 0-15) plus the scheme report;
+// a complete palette is kept in index order.
+func TestTerminalPaletteReplies(t *testing.T) {
+	for i := 0; i < 16; i++ {
+		if !strings.Contains(terminalThemeQuery, fmt.Sprintf("\x1b]4;%d;?\x07", i)) {
+			t.Fatalf("query lacks OSC 4;%d", i)
+		}
+	}
+	var replies strings.Builder
+	for i := 15; i >= 0; i-- { // any order
+		fmt.Fprintf(&replies, "\x1b]4;%d;rgb:%02x%02x/0000/0000\x1b\\", i, i, i)
+	}
+	c := parseTerminalReplies(replies.String() + "\x1b]11;#000000\x07\x1b[?62c")
+	if len(c.palette) != 16 || c.palette[3] != (rgb{3, 0, 0}) || c.palette[15] != (rgb{15, 0, 0}) {
+		t.Fatalf("palette %v", c.palette)
+	}
+	if c := parseTerminalReplies("\x1b]4;1;#ff0000\x07\x1b]4;2;#00ff00\x07"); c.palette != nil {
+		t.Fatalf("partial palette kept: %v", c.palette)
+	}
+}
+
+// The system theme replaces the palette with Pi's generated colours; the
+// terminal's own foreground stays the terminal default.
+func TestApplySystemTheme(t *testing.T) {
+	t.Cleanup(func() { applyPiTheme("dark") })
+	bg, fg := rgb{0x30, 0x34, 0x46}, rgb{0xc6, 0xd0, 0xf5}
+	if !applySystemTheme(terminalColors{background: &bg, foreground: &fg}) || piActiveTheme != "system" {
+		t.Fatal("system theme not applied")
+	}
+	if !piText.IsDefault() || piAccent.IsDefault() || piUserBg.IsDefault() {
+		t.Fatalf("text %v accent %v userBg %v", piText, piAccent, piUserBg)
+	}
+	if applySystemTheme(terminalColors{}) {
+		t.Fatal("applied without a background")
+	}
+}
+
 func TestDetectTerminalThemeLikePi(t *testing.T) {
 	light, dark := rgb{250, 250, 250}, rgb{20, 20, 30}
 	fgDark := rgb{30, 30, 30}
@@ -49,10 +88,11 @@ func TestDetectTerminalThemeLikePi(t *testing.T) {
 
 func TestSelectPiThemeHonoursSetting(t *testing.T) {
 	for _, tc := range []struct{ setting, terminal, want string }{
-		{"", "light", "light"}, {"", "dark", "dark"},
+		{"", "light", "system"}, {"", "dark", "system"}, {"system", "light", "system"},
 		{"dark", "light", "dark"}, {"light", "dark", "light"},
 		{"light/dark", "light", "light"}, {"light/dark", "dark", "dark"},
-		{"my-custom", "light", "light"}, {"a/b/c", "dark", "dark"},
+		{"system/dark", "light", "system"},
+		{"my-custom", "light", "system"}, {"a/b/c", "dark", "system"},
 	} {
 		if got := selectPiTheme(tc.setting, tc.terminal); got != tc.want {
 			t.Fatalf("setting %q on %s = %s, want %s", tc.setting, tc.terminal, got, tc.want)

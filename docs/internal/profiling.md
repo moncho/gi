@@ -33,12 +33,13 @@ These are measured with `make bench-tui-transcript-frame`: a 600-block session i
 | + rendered block elements reused across frames (keyed by content hash) | ~1.8 ms | 1.3 MB |
 | + block list and keys memoized while transcript lines are unchanged | ~0.86 ms | 0.49 MB |
 | + ASCII fast paths (`RuneWidth`, `stringWidth`), direct narrow `Fill` | ~0.54 ms | 0.49 MB |
-| + cached cluster segmentation per wrapped line; blocks indexed, not copied | **~0.29 ms** | **41 KB** |
+| + cached cluster segmentation per wrapped line; blocks indexed, not copied | ~0.29 ms | 41 KB |
+| + heights kept apart from a bounded LRU of rendered blocks | **~0.25 ms** | **41 KB** |
 
 Details:
 
 - **Windowing** (`internal/tui/transcript_window.go`): only blocks that intersect the viewport, plus 8 rows of margin, are laid out. Spacers keep the content height, scroll offsets and stick-to-bottom identical. `TestTranscriptWindowMatchesFullLayout` checks that the rows match a full layout.
-- **Block cache:** rendered elements, their click targets and heights are kept per hash of the block's content, its spacing context, the width and the theme. Running blocks are never cached.
+- **Block cache:** keyed by a hash of the block's content, its spacing context, the width and the theme. Every block's height is kept (up to 65,536, a few bytes each), so offscreen blocks are measured once. Rendered elements and their click targets are kept only for the 256 most recently shown blocks (an LRU), which covers the viewport and its margins; memory follows the screen, not the session's length (`TestTranscriptBlockCacheIsBounded`). Running blocks are never cached.
 - **Block memo:** transcript lines are immutable strings, so pointer equality detects changes without hashing text.
 - **go-tui** (`third_party/go-tui`): `textWrapCache` (`text_wrap_cache.go`) keeps an element's last wrap and its clusters, reset when the text changes. Callers must not modify the returned lines.
 

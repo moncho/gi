@@ -1161,3 +1161,32 @@ test-tui-theme-pty:
 	mkdir -p $(BIN_DIR)
 	$(GO) test -c -o $(BIN_DIR)/gi-theme-test ./internal/tui
 	GI_THEME_TEST_BIN=$(abspath $(BIN_DIR)/gi-theme-test) $(BUN) scripts/test-tui-theme.mjs
+
+# Reproducible CPU/allocation profiles; artifacts stay on disk.
+TABLE_BENCH ?= BenchmarkComplexMarkdownTable
+TABLE_BENCH_TIME ?= 300ms
+.PHONY: bench-tui-complex-tables profile-tui-complex-tables profile-tui-complex-tables-report fmt-tui-complex-tables test-tui-complex-tables
+bench-tui-complex-tables:
+	$(GO) test ./internal/tui -run '^$$' -bench '$(TABLE_BENCH)' -benchmem -benchtime=$(TABLE_BENCH_TIME) $(BENCH_ARGS)
+profile-tui-complex-tables:
+	@mkdir -p $(TEST_RESULTS)/tui-table-perf
+	$(GO) test ./internal/tui -run '^$$' -bench '$(TABLE_BENCH)' -benchmem -benchtime=$(TABLE_BENCH_TIME) -o $(TEST_RESULTS)/tui-table-perf/tui.test -cpuprofile=$(TEST_RESULTS)/tui-table-perf/cpu.pprof -memprofile=$(TEST_RESULTS)/tui-table-perf/mem.pprof $(BENCH_ARGS)
+profile-tui-complex-tables-report:
+	$(GO) tool pprof -top $(TEST_RESULTS)/tui-table-perf/cpu.pprof
+	$(GO) tool pprof -top -alloc_space $(TEST_RESULTS)/tui-table-perf/mem.pprof
+fmt-tui-complex-tables:
+	$(GO) fmt ./internal/tui
+test-tui-complex-tables:
+	$(GO) test ./internal/tui -count=1 -run 'TestComplexMarkdownTable|TestMarkdownTable|TestTranscriptWindow|TestTranscriptBlocksMemo'
+
+.PHONY: test-unicode-perf bench-unicode-perf fmt-unicode-perf
+test-unicode-perf:
+	cd third_party/go-tui && $(GO) test . -run 'TestUnicodeFast|TestTextMeasurementCache|TestUnwrappedClusters' -count=1
+bench-unicode-perf:
+	cd third_party/go-tui && $(GO) test . -run '^$$' -bench '^BenchmarkUnicodeWidths$$' -benchmem -benchtime=$(TABLE_BENCH_TIME) $(BENCH_ARGS)
+fmt-unicode-perf:
+	cd third_party/go-tui && $(GO) fmt .
+
+.PHONY: test-tui-complex-tables-pty
+test-tui-complex-tables-pty:
+	GI_COMPLEX_TABLE_PTY=1 $(GO) test ./internal/tui -count=1 -v -run '^TestComplexMarkdownTableTerminal$$'

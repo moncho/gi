@@ -163,11 +163,9 @@ func clusterExtendUpdateWidth(extendRune, baseRune rune, currentWidth int) int {
 // baseRuneWidth returns the display width of a base rune ignoring the
 // zero-width override: 2 for East Asian wide / emoji-wide ranges, else 1.
 func baseRuneWidth(r rune) int {
-	if r < 0 || r > unicode.MaxRune {
-		return 1
-	}
-	// C0 and C1 controls render narrow.
-	if r < 0x20 || (r >= 0x7F && r < 0xA0) {
+	// All code points below the first wide range are narrow, including
+	// controls, Latin text and combining bases. Avoid scanning width tables.
+	if r < 0x1100 || r > unicode.MaxRune {
 		return 1
 	}
 	if inRuneRanges(r, eastAsianWideRanges) || inRuneRanges(r, emojiWideRanges) {
@@ -190,10 +188,16 @@ func baseRuneWidth(r rune) int {
 // broad unicode.Cf, fine for per-rune width). Do not unify the two predicates, or
 // format controls would wrongly glue into grapheme clusters.
 func graphemeExtend(r rune) bool {
-	if r >= 0x1F3FB && r <= 0x1F3FF {
+	// No marks or join controls below U+0300. In mixed Unicode/ASCII rows
+	// this is also the common lookahead, not just the cluster's base.
+	if r < 0x0300 {
+		return false
+	}
+	if r == 0x200C || r == 0x200D || r >= 0x1F3FB && r <= 0x1F3FF {
 		return true
 	}
-	return unicode.In(r, unicode.Mn, unicode.Me, unicode.Mc, unicode.Join_Control, unicode.Variation_Selector)
+	// M is Mn | Me | Mc; all variation selectors are already Mn.
+	return unicode.Is(unicode.M, r)
 }
 
 // isZWJ reports whether r is the ZERO WIDTH JOINER.

@@ -189,8 +189,8 @@ var emojiWideRanges = []runeRange{
 	{min: 0x26F5, max: 0x26F5}, // Sailboat
 	{min: 0x26FA, max: 0x26FA}, // Tent
 	{min: 0x26FD, max: 0x26FD}, // Fuel pump
-	{min: 0x270A, max: 0x270B}, // Raised fist, raised hand
 	{min: 0x2705, max: 0x2705}, // Check mark button
+	{min: 0x270A, max: 0x270B}, // Raised fist, raised hand
 	{min: 0x2728, max: 0x2728}, // Sparkles
 	{min: 0x274C, max: 0x274C}, // Cross mark
 	{min: 0x274E, max: 0x274E}, // Cross mark in box
@@ -221,12 +221,27 @@ var emojiWideRanges = []runeRange{
 }
 
 func isZeroWidthRune(r rune) bool {
-	return unicode.In(r, unicode.Mn, unicode.Me, unicode.Cf, unicode.Variation_Selector, unicode.Join_Control)
+	if r < 0xAD {
+		return false
+	}
+	// Variation_Selector is Mn and Join_Control is Cf.
+	return unicode.In(r, unicode.Mn, unicode.Me, unicode.Cf)
 }
 
+// Ranges must be sorted and disjoint (checked exhaustively in tests).
 func inRuneRanges(r rune, ranges []runeRange) bool {
-	for _, rr := range ranges {
-		if r >= rr.min && r <= rr.max {
+	if len(ranges) == 0 || r < ranges[0].min || r > ranges[len(ranges)-1].max {
+		return false
+	}
+	lo, hi := 0, len(ranges)
+	for lo < hi {
+		mid := lo + (hi-lo)/2
+		rr := ranges[mid]
+		if r < rr.min {
+			hi = mid
+		} else if r > rr.max {
+			lo = mid + 1
+		} else {
 			return true
 		}
 	}

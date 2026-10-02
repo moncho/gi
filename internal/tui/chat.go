@@ -5113,7 +5113,7 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 				}
 				block.HeaderStyle, block.BodyStyle, block.HintStyle, _, _ = transcriptBlockPalette(meta.Kind, "", false)
 				blocks = append(blocks, block)
-				i = j
+				i = j - 1
 				continue
 			}
 			expanded := c.transcriptExpanded[meta.Key]

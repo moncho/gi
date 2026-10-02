@@ -2,6 +2,7 @@ package tui
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	gotui "github.com/grindlemire/go-tui"
 )
@@ -86,8 +87,14 @@ type tableGlyph struct {
 }
 
 func wrapTableCell(text string, width int) []string {
-	var glyphs []tableGlyph
-	for _, segment := range parseTUIInlineSegments(text) {
+	segments := parseTUIInlineSegments(text)
+	count := 0
+	for _, segment := range segments {
+		count += utf8.RuneCountInString(segment.Text)
+	}
+	glyphs := make([]tableGlyph, 0, count)
+	for _, segment := range segments {
+		styles := strings.Join(segment.Styles, ",")
 		// Use the renderer's cluster boundaries as well as its cell widths.
 		// UAX #29 and go-tui disagree for some ZWJ sequences; measuring
 		// separately segmented glyphs can shift every following grid border.
@@ -96,7 +103,7 @@ func wrapTableCell(text string, width int) []string {
 			if size == 0 {
 				break
 			}
-			glyphs = append(glyphs, tableGlyph{g, width, segment.Code, strings.Join(segment.Styles, ",")})
+			glyphs = append(glyphs, tableGlyph{g, width, segment.Code, styles})
 			rest = rest[size:]
 		}
 	}
@@ -202,13 +209,14 @@ func (m *markdownProjector) renderTableGrid(headers []string, rows [][]string) [
 		}
 		return out
 	}
+	divider := border("├", "┼", "┤")
 	out := []string{border("┌", "┬", "┐")}
 	out = append(out, renderRow(headers)...)
-	out = append(out, border("├", "┼", "┤"))
+	out = append(out, divider)
 	for i, row := range rows {
 		out = append(out, renderRow(row)...)
 		if i < len(rows)-1 {
-			out = append(out, border("├", "┼", "┤"))
+			out = append(out, divider)
 		}
 	}
 	return append(out, border("└", "┴", "┘"))

@@ -15,13 +15,13 @@ for(const mode of ['fullscreen','regular'])for(const [width,height]of [[60,18],[
  const shot=name=>{writeFileSync(join(out,`${mode}-${width}-${name}.txt`),cap());writeFileSync(join(out,`${mode}-${width}-${name}.ansi`),tm('capture-pane','-p','-e','-t',pane))};
  try{
   tm('new-session','-d','-s','proof','-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' TERM=xterm-256color '${bin}' -tui -tui-mode ${mode} -workspace '${dir}' -db '${db}' -model test-model 2>'${dir}/runtime.log'`);tm('set-option','-t','proof','status','off');
-  await wait(()=>cap().includes('m0/t0'),'boot');assert(editorRows()===1,'idle rows');
+  await wait(()=>cap().includes('%/'),'boot');assert(editorRows()===1,'idle rows');
   const lines=Array.from({length:32},(_,i)=>`DRAFT-${String(i).padStart(2,'0')} 中文🙂 e\u0301 `+'x'.repeat(width+11)),draft=lines.join('\n');
   for(let i=0;i<lines.length;i++){if(i)keys('C-j');type(lines[i])}
   await wait(()=>cap().includes('DRAFT-31'),'tail visible');assert(editorRows()<=Math.max(5,Math.floor(height*.3)),'editor took transcript');assert(!cap().includes('DRAFT-00'),'unbounded long draft');shot('tail');
   keys('C-a');await wait(()=>cap().includes('DRAFT-00'),'home visible');type('X');await wait(()=>clean().includes('XDRAFT-00'),'home insertion');keys('BSpace');
   keys('C-e');await wait(()=>cap().includes('DRAFT-31'),'end visible');type('Y');keys('BSpace');
-  const beforeMenu=editorRows();keys('M-m');await wait(()=>cap().includes('Select model'),'picker');keys('Escape');await wait(()=>!cap().includes('Select model'),'picker close');await wait(()=>editorRows()===beforeMenu,'picker editor restored');
+  const beforeMenu=editorRows();keys('M-m');await wait(()=>cap().includes('Ctrl+S to set as default'),'picker');keys('Escape');await wait(()=>!cap().includes('Ctrl+S to set as default'),'picker close');await wait(()=>editorRows()===beforeMenu,'picker editor restored');
   tm('resize-window','-t','proof','-x','42','-y','14');await sleep(220);keys('C-a');await wait(()=>cap().includes('DRAFT-00'),'small home');assert(editorRows()<=5,'small editor overflow');keys('C-e');await wait(()=>cap().includes('DRAFT-31'),'small end');shot('small');
   tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await sleep(220);assert(editorRows()<=Math.max(5,Math.floor(height*.3)),'restored viewport');
   assert(sql('select count(*) from turns;')==='0','navigation submitted draft');keys('Enter');await wait(()=>sql("select count(*) from turns where status='completed';")==='1','submit once');

@@ -8,32 +8,55 @@ It intentionally does **not** require pixel-perfect cloning. Parity means the sa
 
 ## Current `gi -tui` command surface
 
-Implemented commands in `internal/tui/chat.go`:
+The slash catalogue (`piCommands` + `giCommands` in `internal/tui/chat.go`)
+lists Pi's built-ins first, in Pi's `BUILTIN_SLASH_COMMANDS` order with Pi's
+argument hints and descriptions where gi behaves the same, then gi's own
+commands (the way Pi lists extension commands after its built-ins). Aligned
+behaviour: `/resume` with no argument opens the session selector (`/sessions`
+remains as an alias), `/name` with no argument shows the current name,
+`/logout` with no argument lists stored providers, and `/quit` exits.
+
+`/export [path]` writes HTML or Pi session JSONL (loadable by Pi),
+`/compact [instructions]` passes the focus to the before-compact hook and the
+summary, and `/fork` opens Pi's "Fork from Message" selector (history before
+the chosen message goes to a new session; the message returns to the editor).
+gi's former `/fork @agentN` peer session is now `/spawn [@agentN]` (the old
+form still works).
+
+Pi built-ins not in gi yet (omitted, not approximated): `/import`, `/share`,
+`/bug`, `/changelog`, `/trust`. Pi built-ins whose gi behaviour still differs:
+`/tree`, `/settings`, `/scoped-models` and `/login` (Pi opens interactive UIs;
+gi prints or uses subcommands).
+
+Implemented commands:
 
 - `/help`
 - `/commands [query]` / `/palette [query]`
 - `/session`
 - `/new`
-- `/name <name>`
-- `/resume [index|session_id]`
+- `/name [name]`
+- `/resume [index|session_id]` (no argument: selector)
+- `/quit` / `/exit`
 - `/clone [@agentN]`
 - `/copy [--osc52|--native|--auto|--fallback]`
 - `/reload`
 - `/tools [query|active|activate|reset]`
 - `/skills [query]`
 - `/skill:name [args]`
-- `/model [name|index]`
+- `/model [provider/model]`
 - `/scoped-models [list|add|remove|set]`
 - `/thinking [level]`
 - `/compact`
 - `/scrollback [n]`
 - `/settings` / `/config`
 - `/approvals`
+- `/abort` — abort the running turn like Escape; also finalizes a turn left `running` by a crash or killed process (session looks busy, `/compact` unavailable) instead of replaying it on the next start
 - `/cancel`
 - `/agents`
 - `/plugins` / `/extensions`
 - `/tree`
-- `/fork [@agentN]`
+- `/fork` (Pi selector) · `/spawn [@agentN]` (peer session)
+- `/export [path]`
 - `/switch @agent|session_id`
 - `/send @agent message`
 - `/where`

@@ -9,12 +9,17 @@ DB="$TEST_DIR/gi.db"
 WORKSPACE="$TEST_DIR/workspace"
 OVERLAY_UPPER="$TEST_DIR/overlay-upper"
 OVERLAY_WORK="$TEST_DIR/overlay-work"
-MOUNTED=0
+MOUNTED=none
+# Read-only source the isolated workspace is layered over (never written).
+SMOKE_LOWER="${SMOKE_LOWER:-/workspace}"
 
 cleanup() {
   tmux kill-session -t "$SESSION" >/dev/null 2>&1 || true
-  if [[ "$MOUNTED" == "1" ]] && mountpoint -q "$WORKSPACE"; then
-    sudo umount "$WORKSPACE" >/dev/null 2>&1 || true
+  if mountpoint -q "$WORKSPACE" 2>/dev/null; then
+    case "$MOUNTED" in
+      kernel) sudo -n umount "$WORKSPACE" >/dev/null 2>&1 || true ;;
+      fuse) fusermount3 -u "$WORKSPACE" >/dev/null 2>&1 || fusermount -u "$WORKSPACE" >/dev/null 2>&1 || true ;;
+    esac
   fi
   rm -rf "$TEST_DIR"
 }
@@ -22,8 +27,33 @@ trap cleanup EXIT
 
 rm -rf "$ARTIFACT_DIR" "$TEST_DIR"
 mkdir -p "$ARTIFACT_DIR" "$WORKSPACE" "$OVERLAY_UPPER" "$OVERLAY_WORK"
-sudo mount -t overlay overlay -o lowerdir=/workspace,upperdir="$OVERLAY_UPPER",workdir="$OVERLAY_WORK" "$WORKSPACE"
-MOUNTED=1
+# Isolate the workspace from $SMOKE_LOWER. Prefer a kernel overlay; fall back
+# where overlayfs, root or the lower dir are unavailable (containers, VMs
+# without /workspace). The smoke only needs its seeded files, so every mode
+# is equivalent for the assertions below; the chosen mode is recorded.
+setup_workspace() {
+  local opts="lowerdir=$SMOKE_LOWER,upperdir=$OVERLAY_UPPER,workdir=$OVERLAY_WORK"
+  if [[ -d "$SMOKE_LOWER" ]]; then
+    if grep -qw overlay /proc/filesystems 2>/dev/null &&
+      sudo -n mount -t overlay overlay -o "$opts" "$WORKSPACE" 2>/dev/null; then
+      MOUNTED=kernel; echo "kernel-overlay lower=$SMOKE_LOWER"; return
+    fi
+    if command -v fuse-overlayfs >/dev/null 2>&1 && [[ -e /dev/fuse ]] &&
+      fuse-overlayfs -o "$opts" "$WORKSPACE" 2>/dev/null; then
+      MOUNTED=fuse; echo "fuse-overlay lower=$SMOKE_LOWER"; return
+    fi
+    if [[ -n "${SMOKE_COPY_LOWER:-}" ]]; then
+      cp -a --reflink=auto "$SMOKE_LOWER/." "$WORKSPACE/"
+      echo "copy lower=$SMOKE_LOWER"; return
+    fi
+  fi
+  echo "scratch (lower=$SMOKE_LOWER unavailable or not layerable)"
+}
+WORKSPACE_MODE=$(setup_workspace)
+# setup_workspace ran in a subshell; recover the mount kind for cleanup.
+case "$WORKSPACE_MODE" in kernel-overlay*) MOUNTED=kernel ;; fuse-overlay*) MOUNTED=fuse ;; esac
+echo "$WORKSPACE_MODE" > "$ARTIFACT_DIR/workspace-mode.txt"
+echo "smoke workspace: $WORKSPACE_MODE"
 mkdir -p "$WORKSPACE/.pi"
 
 cat > "$WORKSPACE/.pi/settings.json" <<'JSON'
@@ -40,20 +70,22 @@ if [[ ! -x bin/gi ]]; then
 fi
 
 # Start detached with a fixed terminal size for deterministic mouse coordinates.
-tmux new-session -d -x 100 -y 20 -s "$SESSION" "cd '$ROOT' && ./bin/gi -tui -db '$DB' -workspace '$WORKSPACE'"
+tmux new-session -d -x 100 -y 20 -s "$SESSION" "cd '$ROOT' && ./bin/gi -db '$DB' -workspace '$WORKSPACE'"
 for _ in 1 2 3 4 5; do
   sleep 1
   tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/01-start.txt"
-  if grep -q "m0/t0" "$ARTIFACT_DIR/01-start.txt"; then
+  if grep -q "%/" "$ARTIFACT_DIR/01-start.txt"; then
     break
   fi
 done
 
-if ! grep -q "m0/t0" "$ARTIFACT_DIR/01-start.txt"; then
+if ! grep -q "%/" "$ARTIFACT_DIR/01-start.txt"; then
   echo "TUI did not render bottom-band session counters" >&2
   exit 1
 fi
-if ! grep -q "(no messages yet)" "$ARTIFACT_DIR/01-start.txt"; then
+# An empty session shows gi's startup header (or, with quietStartup true,
+# the empty-transcript placeholder).
+if ! sed 's/\x1b\[[0-9;]*m//g' "$ARTIFACT_DIR/01-start.txt" | grep -Eq "\(no messages yet\)|Ctrl\+O to show full startup help"; then
   echo "TUI did not render the empty transcript" >&2
   exit 1
 fi
@@ -81,26 +113,34 @@ if ! grep -q 'assistant|Gi received: hello from tmux' "$ARTIFACT_DIR/02-messages
   exit 1
 fi
 
-# Blur the input and verify random typing is ignored until focus is restored by navigation.
+# Idle Escape keeps the editor focused (Pi): typing lands in the editor and
+# nothing is submitted until Enter.
 tmux send-keys -t "$SESSION":0 Escape
 sleep 1
 BEFORE_COUNT=$(sqlite3 "$DB" 'select count(*) from messages;')
-tmux send-keys -t "$SESSION":0 "ignored while blurred" Enter
+tmux send-keys -t "$SESSION":0 -l "still focused draft"
 sleep 1
-AFTER_BLUR_COUNT=$(sqlite3 "$DB" 'select count(*) from messages;')
-if [[ "$BEFORE_COUNT" != "$AFTER_BLUR_COUNT" ]]; then
-  echo "TUI accepted input even though the input should have been blurred" >&2
+tmux capture-pane -p -t "$SESSION":0 > "$ARTIFACT_DIR/03-after-escape.txt"
+AFTER_ESCAPE_COUNT=$(sqlite3 "$DB" 'select count(*) from messages;')
+if ! grep -q 'still focused draft' "$ARTIFACT_DIR/03-after-escape.txt"; then
+  echo "TUI editor lost focus after idle Escape" >&2
   exit 1
 fi
+if [[ "$BEFORE_COUNT" != "$AFTER_ESCAPE_COUNT" ]]; then
+  echo "TUI submitted input without Enter" >&2
+  exit 1
+fi
+tmux send-keys -t "$SESSION":0 C-u
+sleep 1
 
 # Exercise transcript scrolling keys before resizing.
 tmux send-keys -t "$SESSION":0 PageUp
 sleep 1
-tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/03-after-pageup.txt"
+tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/04-after-pageup.txt"
 tmux send-keys -t "$SESSION":0 End
 sleep 1
-tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/04-after-end.txt"
-if ! grep -q 'Gi received: hello from tmux' "$ARTIFACT_DIR/04-after-end.txt"; then
+tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/05-after-end.txt"
+if ! grep -q 'Gi received: hello from tmux' "$ARTIFACT_DIR/05-after-end.txt"; then
   echo "TUI did not restore transcript bottom after End" >&2
   exit 1
 fi
@@ -109,17 +149,17 @@ fi
 tmux resize-window -t "$SESSION":0 -x 120 -y 24
 sleep 1
 tmux has-session -t "$SESSION"
-tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/05-after-resize.txt"
-if ! grep -Eq 'm[0-9]+/t[0-9]+' "$ARTIFACT_DIR/05-after-resize.txt"; then
-  echo "TUI lost bottom-band session counters after resize" >&2
+tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/06-after-resize.txt"
+if ! grep -q '%/' "$ARTIFACT_DIR/06-after-resize.txt"; then
+  echo "TUI lost the footer context meter after resize" >&2
   exit 1
 fi
-if ! grep -q 'Gi received: hello from tmux' "$ARTIFACT_DIR/05-after-resize.txt"; then
+if ! grep -q 'Gi received: hello from tmux' "$ARTIFACT_DIR/06-after-resize.txt"; then
   echo "TUI did not render transcript content after resize" >&2
   exit 1
 fi
 
 # Persist final server-side state for inspection.
-sqlite3 "$DB" 'select id, title, state_json from sessions;' > "$ARTIFACT_DIR/06-session-state.txt" 2>/dev/null || true
+sqlite3 "$DB" 'select id, title, state_json from sessions;' > "$ARTIFACT_DIR/07-session-state.txt" 2>/dev/null || true
 
 echo "TUI smoke test passed. Artifacts: $ARTIFACT_DIR"

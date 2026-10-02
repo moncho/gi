@@ -1,5 +1,50 @@
-SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
+
+# ── CPU throttling ──────────────────────────────────────────────────────
+# Every recipe (builds, tests, the dev server) runs niced and pinned to a
+# CPU subset so the machine stays usable and runs are reproducible. Tune per
+# invocation, e.g. `make test CPU_SET=0-3 CPU_PROCS=4` or `CPU_NICE=0`.
+#   CPU_NICE   nice level for every recipe
+#   CPU_SET    taskset CPU list every recipe is pinned to
+#   CPU_PROCS  GOMAXPROCS and Go build parallelism (-p)
+# Make itself is .NOTPARALLEL, and test* targets run one Go package at a
+# time (-p=1), so test suites always execute sequentially.
+CPU_NICE ?= 10
+CPU_SET ?= 0-1
+CPU_PROCS ?= 2
+.NOTPARALLEL:
+SHELL := /usr/bin/nice
+.SHELLFLAGS := -n $(CPU_NICE) /usr/bin/taskset -c $(CPU_SET) /usr/bin/env bash -c
+export GOMAXPROCS := $(CPU_PROCS)
+export GOFLAGS += -p=$(CPU_PROCS)
+test%: export GOFLAGS := $(filter-out -p=%,$(GOFLAGS)) -p=1
+
+# ── Build cache ─────────────────────────────────────────────────────────
+# The Go build cache lives on disk, never on tmpfs: /tmp is RAM here, there
+# is no swap, and a pinned multi-GB cache starves the page cache (the VM's
+# memory balloon already takes a large share). It is trimmed back to empty
+# whenever it grows past GO_CACHE_MAX_MB; checked once per make invocation.
+GO_CACHE_MAX_MB ?= 1500
+export GOCACHE := $(or $(GI_GOCACHE),$(HOME)/.cache/go-build)
+# Go's per-build work directories (compile/link temporaries, often 0.5-1 GB
+# each) default to $TMPDIR, which is RAM here; keep them on disk too.
+export GOTMPDIR := $(or $(GI_GOTMPDIR),$(HOME)/.cache/go-tmp)
+$(shell mkdir -p "$(GOTMPDIR)")
+ifneq ($(filter-out help status logs stop,$(or $(MAKECMDGOALS),help)),)
+_GO_CACHE_MB := $(shell du -sm "$(GOCACHE)" 2>/dev/null | cut -f1)
+ifneq ($(_GO_CACHE_MB),)
+ifeq ($(shell [ $(_GO_CACHE_MB) -gt $(GO_CACHE_MAX_MB) ] && echo over),over)
+$(info Go build cache $(_GO_CACHE_MB) MB > $(GO_CACHE_MAX_MB) MB: trimming)
+_ := $(shell GOCACHE="$(GOCACHE)" $(or $(GO),go) clean -cache)
+endif
+endif
+endif
+
+# The race detector needs a ThreadSanitizer-compatible address layout; some
+# kernels (e.g. 39/42-bit arm64 VMs) lack it. Probe once and drop -race there.
+ifndef RACE
+RACE := $(shell f=/tmp/gi-race-probe; [ -f $$f.ok ] && cat $$f.ok || { printf 'package main\nfunc main(){}\n' > $$f.go; if timeout 60 $(GO) run -race $$f.go >/dev/null 2>&1; then echo -race; fi | tee $$f.ok; })
+endif
 
 # ── Tool commands ───────────────────────────────────────────────────────
 
@@ -35,11 +80,11 @@ TUI_TEST_DIR ?= .gi-tui-test
 
 # ── Derived arguments and data ──────────────────────────────────────────
 
-SERVER_LISTEN_ARGS = $(if $(LISTEN),-listen $(LISTEN),-bind $(BIND) -port $(PORT))
+SERVER_LISTEN_ARGS = -web $(if $(LISTEN),-listen $(LISTEN),-bind $(BIND) -port $(PORT))
 SERVER_RUN_ARGS = $(SERVER_LISTEN_ARGS) -model $(MODEL) -db $(DB) -workspace $(WORKSPACE)
 SERVER_DAEMON_ARGS = $(SERVER_LISTEN_ARGS) -model $(MODEL) -db $(abspath $(DB)) -workspace $(WORKSPACE) -log-file $(abspath $(LOG)) -pid-file $(abspath $(PID))
 SERVER_STATUS_ADDR = $(if $(LISTEN),$(LISTEN),$(BIND):$(PORT))
-TEST_SERVER_ARGS = -bind 127.0.0.1 -port $(TEST_PORT) -model test-model -db $(abspath $(TEST_DB)) -workspace $(abspath $(TEST_WORKSPACE)) -log-file $(abspath $(TEST_LOG)) -pid-file $(abspath $(TEST_PID))
+TEST_SERVER_ARGS = -web -bind 127.0.0.1 -port $(TEST_PORT) -model test-model -db $(abspath $(TEST_DB)) -workspace $(abspath $(TEST_WORKSPACE)) -log-file $(abspath $(TEST_LOG)) -pid-file $(abspath $(TEST_PID))
 TEST_PICLAW_CONFIG_JSON = {"assistant":{"assistantName":"Gi Test"},"user":{"userName":"Test User"}}
 TEST_ENABLED_MODELS ?= ["test-model"]
 TEST_PI_SETTINGS_JSON = {"defaultProvider":"test","defaultModel":"test-model","defaultThinkingLevel":"low","enabledModels":$(TEST_ENABLED_MODELS),"agents":{"list":[{"id":"web","name":"Gi Test","default":true,"model":"test-model"}]}}
@@ -57,7 +102,7 @@ endef
 	build-web build \
 	run start stop restart status logs \
 	test vet bun-checks check \
-	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-input-history test-tui-sessions test-tui-source-copy test-tui-markdown test-tui-scrollbar \
+	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-input-history test-tui-sessions test-tui-source-copy test-tui-markdown \
 	clean
 
 # ── Help and bootstrap ──────────────────────────────────────────────────
@@ -105,10 +150,15 @@ help:
 		"Common overrides" \
 		"  PORT=$(PORT) BIND=$(BIND) MODEL=$(MODEL) WORKSPACE=$(WORKSPACE) LISTEN=$(LISTEN)"
 
-bootstrap: deps
-	$(PLAYWRIGHT) install chromium
+bootstrap: deps playwright-browsers
 	$(MAKE) --no-print-directory build
 	@echo "Bootstrap complete. Run 'make start' or 'make run'."
+
+# Playwright browsers (idempotent; a no-op when already installed). Browsers
+# live in ~/.cache/ms-playwright, which cache cleanups may remove.
+.PHONY: playwright-browsers
+playwright-browsers:
+	$(PLAYWRIGHT) install chromium webkit
 
 deps:
 	$(call require-command,$(GO),Go is required but not installed or not on PATH)
@@ -185,7 +235,7 @@ test-shared-capability-evidence: test-ux-thinking
 
 .PHONY: test-message-retrieval
 test-message-retrieval:
-	$(GO) test -race ./internal/store ./internal/tools ./internal/turn -run 'TestMessageRows|TestMessageRetrieval' -count=3
+	$(GO) test $(RACE) ./internal/store ./internal/tools ./internal/turn -run 'TestMessageRows|TestMessageRetrieval' -count=3
 
 .PHONY: test-ux-message-retrieval
 test-ux-message-retrieval: build-web test-message-retrieval
@@ -198,7 +248,7 @@ test-shared-message-evidence: test-ux-message-retrieval
 	$(BUN) scripts/ux-parity-report.mjs test-results/ux-parity/message-retrieval-results.json
 
 test-session-thinking:
-	$(GO) test -race -count=3 ./internal/store ./internal/inference ./internal/turn ./internal/web -run SessionThinking
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/inference ./internal/turn ./internal/web -run SessionThinking
 
 test-ux-thinking: build-web test-session-thinking
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
@@ -206,11 +256,11 @@ test-ux-thinking: build-web test-session-thinking
 
 .PHONY: test-web-queue-hold
 test-web-queue-hold:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn ./internal/web -run WebQueueHold
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn ./internal/web -run WebQueueHold
 
 .PHONY: test-web-send-receipts
 test-web-send-receipts:
-	$(GO) test -race -count=3 ./internal/store ./internal/web -run WebSendReceipt
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/web -run WebSendReceipt
 
 .PHONY: test-web-http-helpers test-web-basic-send test-web-basic-controls
 
@@ -223,17 +273,20 @@ test-web-basic-send: test-instance-start
 	@GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/18-basic-http-send.spec.ts tests/functional/19-http-delivery.spec.ts --reporter=line --output=$(TEST_RESULTS)/basic-http-send; \
 	status=$$?; $(MAKE) test-instance-stop; exit $$status
 
+# Narrow with TEST_PKGS / TEST_RUN, e.g. make test TEST_PKGS=./internal/turn TEST_RUN=Abort
+TEST_PKGS ?= ./...
+TEST_RUN ?=
 test:
-	$(GO) test ./...
+	$(GO) test $(if $(TEST_RUN),-run '$(TEST_RUN)') $(TEST_PKGS)
 
 .PHONY: test-shell-runtime check-cross-build test-active-steering
 
 test-active-steering:
-	$(GO) test -race -count=50 ./internal/turn -run '^TestSubmitPromptSteersSecondPromptToActiveTurn$$'
+	$(GO) test $(RACE) -count=50 ./internal/turn -run '^TestSubmitPromptSteersSecondPromptToActiveTurn$$'
 
 test-shell-runtime:
-	$(GO) test -race -count=3 ./internal/tools -run 'RunShellPrompt|KillShellProcess'
-	$(GO) test -race -count=3 ./internal/turn -run 'CancelTurn|Cancelled|CancelQueuedTurn'
+	$(GO) test $(RACE) -count=3 ./internal/tools -run 'RunShellPrompt|KillShellProcess'
+	$(GO) test $(RACE) -count=3 ./internal/turn -run 'CancelTurn|Cancelled|CancelQueuedTurn'
 
 # Keep portable compilation reproducible outside GitHub Actions too.
 check-cross-build:
@@ -255,12 +308,12 @@ test-pi-table-oracle:
 
 .PHONY: test-tui-tables-unit
 test-tui-tables-unit: test-pi-table-oracle
-	PI_TABLE_ORACLE=$(abspath test-results/tui-tables/pi-oracle.json) $(GO) test -race -count=3 ./internal/tui -run 'TestMarkdownTable'
+	PI_TABLE_ORACLE=$(abspath test-results/tui-tables/pi-oracle.json) $(GO) test $(RACE) -count=3 ./internal/tui -run 'TestMarkdownTable'
 
 .PHONY: test-tool-input-contract
 test-tool-input-contract:
 	$(BUN) tests/ux/oracle/pi-tool-input-probe.mjs
-	$(GO) test -race -count=3 ./internal/inference -run 'ToolInput'
+	$(GO) test $(RACE) -count=3 ./internal/inference -run 'ToolInput'
 
 .PHONY: test-piclaw-stop-queue
 test-piclaw-stop-queue:
@@ -282,7 +335,7 @@ test-ux-ended-steer: build-web
 
 .PHONY: test-idle-queue-steer
 test-idle-queue-steer:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn ./internal/web -run 'IdleQueue|QueueSteer|WebQueueHold'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn ./internal/web -run 'IdleQueue|QueueSteer|WebQueueHold'
 
 .PHONY: test-ux-message-reference-labels
 test-ux-message-reference-labels: test-message-reference-labels
@@ -291,7 +344,7 @@ test-ux-message-reference-labels: test-message-reference-labels
 .PHONY: test-message-reference-labels
 test-message-reference-labels:
 	$(BUN) tests/ux/oracle/piclaw-reference-label-probe.mjs
-	$(GO) test -race -count=3 ./internal/store -run TestMessageDisplayRows
+	$(GO) test $(RACE) -count=3 ./internal/store -run TestMessageDisplayRows
 	$(BUN) test tests/ux/support/message-reference-label.test.ts
 
 .PHONY: test-piclaw-settings-title test-ux-settings-title
@@ -426,12 +479,12 @@ test-piclaw-tool-output-window:
 	$(BUN) tests/ux/oracle/piclaw-tool-output-window-probe.mjs
 
 test-piclaw-tool-output:
-	$(GO) test -race -count=3 ./internal/store ./internal/tools ./internal/turn -run 'TestToolOutput|TestShellToolOutput'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/tools ./internal/turn -run 'TestToolOutput|TestShellToolOutput'
 	$(BUN) test tests/ux/support/conversation.test.ts tests/ux/support/piclaw-status-adapter.test.ts
 
 .PHONY: test-conversation-projection
 test-conversation-projection:
-	$(GO) test -race -count=3 ./internal/store ./internal/web -run 'TestConversation|TestMessagePage'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/web -run 'TestConversation|TestMessagePage'
 	$(BUN) test tests/ux/support/conversation.test.ts
 
 .PHONY: test-provider-retry-oracle test-provider-retry
@@ -439,12 +492,12 @@ test-provider-retry-oracle:
 	$(BUN) tests/ux/oracle/provider-retry-probe.mjs
 
 test-provider-retry:
-	$(GO) test -race -count=3 ./internal/config ./internal/turn ./internal/tui -run 'TestProviderRetry|TestProviderHeaderTimeout|TestTransientProviderFailure'
+	$(GO) test $(RACE) -count=3 ./internal/config ./internal/turn ./internal/tui -run 'TestProviderRetry|TestProviderHeaderTimeout|TestTransientProviderFailure'
 
 .PHONY: test-codex-tui-regression
 test-codex-tui-regression:
-	$(GO) test -race -count=3 ./internal/inference -run 'TestCodex'
-	$(GO) test -race -count=3 ./internal/tui -run 'TestStreamedErrorAndDurableSystemPost|TestSystemPostDoesNotBecomeAssistant'
+	$(GO) test $(RACE) -count=3 ./internal/inference -run 'TestCodex'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'TestStreamedErrorAndDurableSystemPost|TestSystemPostDoesNotBecomeAssistant'
 
 vet:
 	$(GO) vet ./...
@@ -486,9 +539,9 @@ test-instance-stop:
 	fi
 	@rm -rf $(TEST_DIR)
 
-test-ux: test-instance-start
+test-ux: playwright-browsers test-instance-start
 	mkdir -p $(TEST_RESULTS)
-	GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/ --reporter=line --output=$(TEST_RESULTS)/playwright; \
+	GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/ --reporter=line --output=$(TEST_RESULTS)/playwright $(PLAYWRIGHT_ARGS); \
 	rc=$$?; \
 	$(MAKE) --no-print-directory test-instance-stop; \
 	exit $$rc
@@ -566,7 +619,7 @@ build-pane-host-fixture:
 .PHONY: test-web-skills test-ux-skills
 .PHONY: test-tool-activity
 test-tool-activity:
-	$(GO) test -race -count=3 ./internal/store ./internal/web ./internal/turn -run 'ToolActivity|ToolPreview|SessionActivity|ToolTerminal'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/web ./internal/turn -run 'ToolActivity|ToolPreview|SessionActivity|ToolTerminal'
 	$(BUN) test tests/ux/support/tool-activity.test.ts
 
 .PHONY: test-ux-tool-terminal
@@ -581,10 +634,10 @@ test-tui-session-actions: build
 
 .PHONY: test-session-actions
 test-session-actions:
-	$(GO) test -race -count=3 ./internal/tui ./internal/store -run 'SessionActions|SessionRename|SessionDisplayCapabilities|SessionPicker'
+	$(GO) test $(RACE) -count=3 ./internal/tui ./internal/store -run 'SessionActions|SessionRename|SessionDisplayCapabilities|SessionPicker'
 
 test-terminal-links:
-	$(GO) test -race -count=3 ./internal/tui -run 'TranscriptLink|TranscriptSelection|TranscriptSearch'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'TranscriptLink|TranscriptSelection|TranscriptSearch'
 
 .PHONY: test-tui-links
 test-tui-links: build
@@ -595,20 +648,20 @@ test-tui-selection-edge: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-selection-edge.mjs
 
 test-terminal-tool-identity:
-	$(GO) test -race -count=3 ./internal/tui -run 'ToolRuntime|ToolEndWithout|RenderToolEvent|BuildTranscriptRenderable'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'ToolRuntime|ToolEndWithout|RenderToolEvent|BuildTranscriptRenderable'
 
 test-tui-tool-timing: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-tool-timing.mjs
 
 test-web-skills:
-	$(GO) test -race -count=3 ./internal/web -run 'LoadedWebSkill|WebSkillOpen|QuickActions'
+	$(GO) test $(RACE) -count=3 ./internal/web -run 'LoadedWebSkill|WebSkillOpen|QuickActions'
 
 test-ux-skills:
 	GI_UX_SKILLS=1 $(MAKE) test-ux-parity TEST_FIXTURES_DIR=tests/ux/fixtures/skills UX_PARITY_ARGS='tests/ux/skills.spec.mjs'
 
 .PHONY: test-recovery-marker test-ux-outcomes
 test-recovery-marker:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn -run 'RecoveryMarker|StartupRecoveryRequeuesCompactingTurn'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn -run 'RecoveryMarker|StartupRecoveryRequeuesCompactingTurn'
 .PHONY: test-ux-card-rejection
 test-ux-card-rejection:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_REJECTION=1 GI_UX_RECOVERY_PLACEHOLDERS=1' UX_LOCAL_SPEC='tests/ux/card-rejection.spec.mjs tests/ux/recovery-placeholders.spec.mjs tests/ux/speech.spec.mjs' UX_LOCAL_FUNCTIONAL='tests/functional/16-card-rejection.spec.ts tests/functional/15-recovery-placeholders.spec.ts'
@@ -726,8 +779,6 @@ test-tui-compaction:
 	$(GO) test -c -o bin/gi-tui-compaction-test ./internal/tui
 	$(BUN) scripts/test-tui-compaction.mjs
 
-test-tui-scrollbar: build
-	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-scrollbar.mjs
 
 .PHONY: test-tui-queue-input test-tui-queue-input-core test-tui-queue-input-binary test-tui-queue-restore test-tui-queue-escape-restore test-tui-queue-display
 test-tui-queue-input: build
@@ -746,8 +797,8 @@ test-tui-queue-display: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-display.mjs
 
 test-tui-queue-input-core:
-	$(GO) test -race -count=3 ./internal/tui -run 'TestPiEnter|TestPiFollowUp'
-	$(GO) test -race -count=3 ./internal/turn -run 'TestTUIComposerFollowUp|TestTUIComposerRejectsUnknownDelivery|TestTUIComposerSubmit'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'TestPiEnter|TestPiFollowUp'
+	$(GO) test $(RACE) -count=3 ./internal/turn -run 'TestTUIComposerFollowUp|TestTUIComposerRejectsUnknownDelivery|TestTUIComposerSubmit'
 
 .PHONY: test-tui-inline-prose test-tui-inline-prose-binary
 test-tui-inline-prose: build
@@ -780,6 +831,10 @@ test-tui-selection: build
 bench-tui-editor-layout:
 	$(GO) test ./internal/tui -run '^$$' -bench '^BenchmarkEditorLayout$$' -benchmem -benchtime=100ms
 
+.PHONY: bench-tui-transcript-frame
+bench-tui-transcript-frame:
+	$(GO) test ./internal/tui -run '^$$' -bench '^BenchmarkTranscriptFrame$$' -benchmem -benchtime=1s $(BENCH_ARGS)
+
 .PHONY: test-tui-editor-viewport
 test-tui-editor-viewport: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-editor-viewport.mjs
@@ -808,26 +863,26 @@ test-tui-durable-draft-pty: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-durable-draft.mjs
 
 test-tui-durable-draft:
-	$(GO) test -race -count=3 ./internal/tui -run DurableDraft
+	$(GO) test $(RACE) -count=3 ./internal/tui -run DurableDraft
 
 .PHONY: test-tui-text-journal test-concurrent-session-submit
 test-concurrent-session-submit:
-	$(GO) test -race -count=10 ./internal/turn -run '^TestConcurrentSubmitDifferentSessionsRunsConcurrently$$'
+	$(GO) test $(RACE) -count=10 ./internal/turn -run '^TestConcurrentSubmitDifferentSessionsRunsConcurrently$$'
 
 test-tui-text-journal:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn -run 'TUITextDraft|TUIComposerDraft|TUIComposerSubmit'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn -run 'TUITextDraft|TUIComposerDraft|TUIComposerSubmit'
 
 .PHONY: test-tui-media-journal
 test-tui-media-journal:
-	$(GO) test -race -count=3 ./internal/store ./internal/tui -run 'TUIMediaDraft|PendingMedia|AttachCommand|PasteImage'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/tui -run 'TUIMediaDraft|PendingMedia|AttachCommand|PasteImage'
 
 .PHONY: test-held-retry
 test-held-retry:
-	$(GO) test -race -count=3 ./internal/store ./internal/turn ./internal/tui -run 'TUIRetry|RetryHeld|HeldRetry|HoldAndResolve|HoldResolution|SkipHeld'
+	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn ./internal/tui -run 'TUIRetry|RetryHeld|HeldRetry|HoldAndResolve|HoldResolution|SkipHeld'
 
 .PHONY: test-tui-unselected-model test-tui-submit-guards
 test-tui-submit-guards:
-	$(GO) test -race -count=3 ./internal/tui -run 'TUIUnselectedModel|PendingMediaCommandsLimitsAndNoModelDraft'
+	$(GO) test $(RACE) -count=3 ./internal/tui -run 'TUIUnselectedModel|PendingMediaCommandsLimitsAndNoModelDraft'
 
 test-tui-unselected-model: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-unselected-model.mjs
@@ -838,7 +893,7 @@ test-tui-retry-commands: build
 
 .PHONY: test-tui-queue-commands test-terminal-queue
 test-terminal-queue:
-	$(GO) test -race -count=3 ./internal/tui ./internal/store ./internal/turn -run 'TUIQueue|QueueSteer|QueuedTurn|QueueOrder'
+	$(GO) test $(RACE) -count=3 ./internal/tui ./internal/store ./internal/turn -run 'TUIQueue|QueueSteer|QueuedTurn|QueueOrder'
 
 test-tui-queue-commands: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-queue-commands.mjs
@@ -854,9 +909,14 @@ test-tui-smoke: build
 	chmod +x scripts/test-tui-smoke.sh
 	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
 
-test-tui-gherkin: build test-tui-markdown test-tui-inline-prose test-tui-scrollbar
+test-tui-gherkin: build test-tui-markdown test-tui-inline-prose test-tui-gherkin-features
+
+# Feature files only (no markdown/prose prerequisites). FEATURE_DIR narrows
+# the run, e.g. `make test-tui-gherkin-features FEATURE_DIR=/tmp/one-feature`.
+.PHONY: test-tui-gherkin-features
+test-tui-gherkin-features: build
 	chmod +x scripts/test-tui-gherkin.sh
-	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin scripts/test-tui-gherkin.sh
+	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin $(if $(FEATURE_DIR),FEATURE_DIR=$(abspath $(FEATURE_DIR))) scripts/test-tui-gherkin.sh
 
 # ── Cleanup ─────────────────────────────────────────────────────────────
 
@@ -1039,8 +1099,103 @@ test-ux-auth: build-web
 
 .PHONY: test-browser-auth-race
 test-browser-auth-race:
-	$(GO) test -race ./internal/web ./internal/auth -count=3
+	$(GO) test $(RACE) ./internal/web ./internal/auth -count=3
 
 .PHONY: test-auth-state
 test-auth-state:
-	$(GO) test -race ./internal/auth -count=10
+	$(GO) test $(RACE) ./internal/auth -count=10
+
+# Compare actual tmux cells against ANSI frame diffs while tables enter/leave
+# the viewport. No provider, sqlite3 CLI, Bun, or running Gi instance required.
+.PHONY: test-tui-table-scroll
+test-tui-table-scroll:
+	GI_TABLE_SCROLL_PTY=1 $(GO) test -count=1 ./internal/tui -run '^TestMarkdownTableScrollTerminal$$' -v
+
+# Run interactively in the affected Ghostty window, without tmux.
+.PHONY: probe-tui-ghostty
+probe-tui-ghostty:
+	$(GO) run ./tests/tui-ghostty-probe
+
+# Whole-interpreter WASI feasibility: not the production codemode sandbox.
+.PHONY: test-joker-wasi
+test-joker-wasi:
+	@mkdir -p $(BIN_DIR)
+	@rm -f $(BIN_DIR)/joker-wasi-bootstrap.go
+	@if [ -d $(BIN_DIR)/joker-wasi-module ]; then chmod -R u+w $(BIN_DIR)/joker-wasi-module; fi
+	@rm -rf $(BIN_DIR)/joker-wasi-module
+	@cp -a "$$($(GO) list -m -f '{{.Dir}}' github.com/rcarmo/go-joker)" $(BIN_DIR)/joker-wasi-module
+	@chmod -R u+w $(BIN_DIR)/joker-wasi-module
+	@cp go.mod $(BIN_DIR)/joker-wasi.mod; cp go.sum $(BIN_DIR)/joker-wasi.sum
+	$(GO) mod edit -modfile=$(BIN_DIR)/joker-wasi.mod -replace=github.com/rcarmo/go-joker=$(abspath $(BIN_DIR)/joker-wasi-module)
+	$(GO) run ./scripts/joker-wasi-overlay -source $(BIN_DIR)/joker-wasi-module/core/a_generated_bootstrap_payloads.go -output $(BIN_DIR)/joker-wasi-bootstrap.go.txt -overlay $(BIN_DIR)/joker-wasi-overlay.json
+	GOOS=wasip1 GOARCH=wasm $(GO) build -modfile=$(BIN_DIR)/joker-wasi.mod -overlay=$(abspath $(BIN_DIR)/joker-wasi-overlay.json) -o $(BIN_DIR)/joker-wasi-probe.wasm ./tests/joker-wasi/guest
+	GI_JOKER_WASI_GUEST=$(abspath $(BIN_DIR)/joker-wasi-probe.wasm) $(GO) test -count=1 -v ./tests/joker-wasi
+
+.PHONY: fmt-joker-wasi
+fmt-joker-wasi:
+	$(GO) fmt ./scripts/joker-wasi-overlay ./tests/joker-wasi/...
+
+.PHONY: fmt-tool-syntax test-tui-tool-syntax
+fmt-tool-syntax:
+	$(GO) fmt ./internal/tui
+
+test-tui-tool-syntax:
+	$(GO) test -run 'Test(FileTool|PiTool|ToolSyntax)' ./internal/tui
+
+.PHONY: test-tui-tool-syntax-pty
+test-tui-tool-syntax-pty:
+	@mkdir -p $(BIN_DIR)
+	$(GO) test -c -o $(BIN_DIR)/gi-tool-syntax-test ./internal/tui
+	$(BUN) scripts/test-tui-tool-syntax.mjs
+
+.PHONY: fmt-pi-scroll test-pi-scroll test-go-tui-runtime
+fmt-pi-scroll:
+	$(GO) fmt ./internal/tui
+	cd third_party/go-tui && $(GO) fmt .
+
+test-pi-scroll:
+	$(GO) test $(RACE) ./internal/tui -run 'Test(PiRow|Wheel|TerminalWheel|MarkdownTableScroll)' -count=1
+
+test-go-tui-runtime:
+	cd third_party/go-tui && $(GO) test $(RACE) . ./internal/... -count=1
+
+# Native controlling-terminal colour negotiation; Bun, no npm dependencies.
+.PHONY: test-tui-theme-pty
+test-tui-theme-pty:
+	mkdir -p $(BIN_DIR)
+	$(GO) test -c -o $(BIN_DIR)/gi-theme-test ./internal/tui
+	GI_THEME_TEST_BIN=$(abspath $(BIN_DIR)/gi-theme-test) $(BUN) scripts/test-tui-theme.mjs
+
+# Reproducible CPU/allocation profiles; artifacts stay on disk.
+TABLE_BENCH ?= BenchmarkComplexMarkdownTable
+TABLE_BENCH_TIME ?= 300ms
+.PHONY: bench-tui-complex-tables profile-tui-complex-tables profile-tui-complex-tables-report fmt-tui-complex-tables test-tui-complex-tables
+bench-tui-complex-tables:
+	$(GO) test ./internal/tui -run '^$$' -bench '$(TABLE_BENCH)' -benchmem -benchtime=$(TABLE_BENCH_TIME) $(BENCH_ARGS)
+profile-tui-complex-tables:
+	@mkdir -p $(TEST_RESULTS)/tui-table-perf
+	$(GO) test ./internal/tui -run '^$$' -bench '$(TABLE_BENCH)' -benchmem -benchtime=$(TABLE_BENCH_TIME) -o $(TEST_RESULTS)/tui-table-perf/tui.test -cpuprofile=$(TEST_RESULTS)/tui-table-perf/cpu.pprof -memprofile=$(TEST_RESULTS)/tui-table-perf/mem.pprof $(BENCH_ARGS)
+profile-tui-complex-tables-report:
+	$(GO) tool pprof -top $(TEST_RESULTS)/tui-table-perf/cpu.pprof
+	$(GO) tool pprof -top -alloc_space $(TEST_RESULTS)/tui-table-perf/mem.pprof
+fmt-tui-complex-tables:
+	$(GO) fmt ./internal/tui
+test-tui-complex-tables:
+	$(GO) test ./internal/tui -count=1 -run 'TestComplexMarkdownTable|TestMarkdownTable|TestTranscriptWindow|TestTranscriptBlocksMemo'
+
+.PHONY: test-unicode-perf bench-unicode-perf fmt-unicode-perf
+test-unicode-perf:
+	cd third_party/go-tui && $(GO) test . -run 'TestUnicodeFast|TestTextMeasurementCache|TestUnwrappedClusters' -count=1
+bench-unicode-perf:
+	cd third_party/go-tui && $(GO) test . -run '^$$' -bench '^BenchmarkUnicodeWidths$$' -benchmem -benchtime=$(TABLE_BENCH_TIME) $(BENCH_ARGS)
+fmt-unicode-perf:
+	cd third_party/go-tui && $(GO) fmt .
+
+.PHONY: test-tui-complex-tables-pty
+test-tui-complex-tables-pty:
+	GI_COMPLEX_TABLE_PTY=1 $(GO) test ./internal/tui -count=1 -v -run '^TestComplexMarkdownTableTerminal$$'
+.PHONY: fmt-tool-paths test-tool-paths
+fmt-tool-paths:
+	$(GO) fmt ./internal/tools
+test-tool-paths:
+	$(GO) test $(RACE) ./internal/tools -count=1

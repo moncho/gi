@@ -34,7 +34,8 @@ async function snapshot(name) {
   return screen;
 }
 function assert(condition, detail) { if (!condition) throw new Error(detail); }
-function selectorRows(screen) { return screen.split('\n').filter(line => /^\s*[›*×]?\s*\d+\. /.test(line)); }
+function modelRows(screen) { return screen.split("\n").filter(line => /^(?:→ |  )(?:✓ |  )\S+ \[/.test(line)); }
+function selectorRows(screen) { return screen.split("\n").filter(line => /^(?:› |  )\S.* @\S+ · /.test(line)); }
 function separators(screen) { return screen.split('\n').map((line,index)=>({line,index})).filter(({line})=>/^\s*[─━-]{10,}\s*$/.test(line)).map(({index})=>index); }
 function withoutCursor(screen) { return screen.replaceAll('▌',' ').split('\n').map(line=>line.trimEnd()).join('\n'); }
 
@@ -46,7 +47,7 @@ try {
   writeFileSync(join(temp,'.pi/settings.json'),settings);
   const quote = text => `'${text.replaceAll("'", "'\\''")}'`;
   tmux('new-session','-d','-x','100','-y','22','-s',session,`cd ${quote(root)} && ${quote(binary)} -tui -db ${quote(db)} -workspace ${quote(temp)}`);
-  await waitFor(()=>capture().includes('m0/t0'),'startup');
+  await waitFor(()=>capture().includes('%/'),'startup');
   await command('/fork @other');
   await waitFor(()=>sql('select count(*) from sessions;')==='2','native child fork');
   await command('/switch @agent');
@@ -62,40 +63,41 @@ try {
     await waitFor(()=>capture().includes(`A draft ${label}`),'A draft');
     const before=await snapshot(`${label}-idle-draft`);
     keys('M-s');
-    await waitFor(()=>capture().includes('Select session'),'open selector');
+    await waitFor(()=>capture().includes('Resume Session'),'open selector');
     const open=await snapshot(`${label}-picker`);
     assert(selectorRows(open).length>0 && selectorRows(open).length<=6,`${label}: unbounded results`);
-    assert(open.includes(`A draft ${label}`),`${label}: editor hidden by selector`);
+    // Pi's selector replaces the editor while open; the draft is restored on close.
+    assert(!open.includes(`A draft ${label}`),`${label}: selector did not replace the editor`);
     assert(separators(open).length===2,`${label}: selector added box/separator chrome`);
     type('no-matching-session-xyz');
-    await waitFor(()=>capture().includes('no matching sessions'),'empty-state noun');
+    await waitFor(()=>capture().includes('No sessions found'),'empty-state noun');
     keys('Escape');
-    await waitFor(()=>!capture().includes('Select session'),'close selector');
+    await waitFor(()=>!capture().includes('Resume Session'),'close selector');
     const after=await snapshot(`${label}-cancel`);
     assert(withoutCursor(before)===withoutCursor(after),`${label}: cancel changed layout/transcript/draft`);
-    keys('M-s'); await waitFor(()=>capture().includes('Select session'),'reopen');
+    keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'reopen');
     type('@other');
     await waitFor(()=>selectorRows(capture()).length===1,'filter other');
     keys('Enter');
-    await waitFor(()=>!capture().includes('Select session') && !capture().includes(`A draft ${label}`),'switch to B');
+    await waitFor(()=>!capture().includes('Resume Session') && !capture().includes(`A draft ${label}`),'switch to B');
     type(`B draft ${label}`);
-    keys('M-s'); await waitFor(()=>capture().includes('Select session'),'B picker');
+    keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'B picker');
     type('@agent'); await waitFor(()=>selectorRows(capture()).length===1,'filter main'); keys('Enter');
     await waitFor(()=>capture().includes(`A draft ${label}`),'restore A');
     await snapshot(`${label}-restored-A`);
-    keys('M-s'); await waitFor(()=>capture().includes('Select session'),'A picker');
+    keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'A picker');
     type('@other'); await waitFor(()=>selectorRows(capture()).length===1,'filter B'); keys('Enter');
     await waitFor(()=>capture().includes(`B draft ${label}`),'restore B');
     await snapshot(`${label}-restored-B`);
     keys('C-u'); // Clear B's unsent line, then return to A and clear it.
-    keys('M-s'); await waitFor(()=>capture().includes('Select session'),'return main picker');
+    keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'return main picker');
     type('@agent'); await waitFor(()=>selectorRows(capture()).length===1,'filter return'); keys('Enter');
     await waitFor(()=>capture().includes(`A draft ${label}`),'main restored'); keys('C-u');
     assert(sql('select count(*) from turns;')==='0',`${label}: picker submitted a prompt`);
     summaries.push(`${label}: <=6 results, exact cancel snapshot, A/B drafts, no submitted turns`);
   }
   // Resize while the popup is open: keep the selected tail row visible.
-  keys('M-s'); await waitFor(()=>capture().includes('Select session'),'resize picker'); keys('End');
+  keys('M-s'); await waitFor(()=>capture().includes('Resume Session'),'resize picker'); keys('End');
   for(const [width,height] of [[60,18],[100,22],[140,36]]) {
     tmux('resize-window','-t',target,'-x',String(width),'-y',String(height));
     const screen=await snapshot(`${width}x${height}-resize-open`);
@@ -105,8 +107,8 @@ try {
   const mainID=sql("select id from sessions where parent_session_id is null limit 1;");
   const selected=()=>sql(`select coalesce(json_extract(state_json,'$.selected_model'),json_extract(state_json,'$.model')) from sessions where id='${mainID}';`);
   const pickModel=async query=>{
-    keys('M-m');await waitFor(()=>capture().includes('Select model'),'Alt-M model picker');
-    type(query);await waitFor(()=>selectorRows(capture()).length===1,`model filter ${query}`);keys('Enter');
+    keys('M-m');await waitFor(()=>capture().includes('Ctrl+S to set as default'),'Alt-M model picker');
+    type(query);await waitFor(()=>modelRows(capture()).length>=1&&modelRows(capture())[0].includes(query.split("/").pop()),`model filter ${query}`);keys('Enter');
   };
   for(const [width,height] of [[60,18],[100,22],[140,36]]) {
     const label=`${width}x${height}`;
@@ -115,26 +117,26 @@ try {
     await waitFor(()=>selected()==='test-model','reset selected model');
     type(`model draft ${label}`);
     const before=await snapshot(`${label}-model-before`);
-    keys('M-m');await waitFor(()=>capture().includes('Select model'),'open model selector');
+    keys('M-m');await waitFor(()=>capture().includes('Ctrl+S to set as default'),'open model selector');
     const open=await snapshot(`${label}-model-open`);
-    assert(selectorRows(open).length>0&&selectorRows(open).length<=6,`${label}: model rows exceed bound`);
+    assert(modelRows(open).length>0&&modelRows(open).length<=10,`${label}: model rows exceed bound`);
     assert(separators(open).length===2,`${label}: model picker adds borders`);
-    keys('Escape');await waitFor(()=>!capture().includes('Select model'),'cancel model selector');
+    keys('Escape');await waitFor(()=>!capture().includes('Ctrl+S to set as default'),'cancel model selector');
     const cancelled=await snapshot(`${label}-model-cancel`);
     assert(withoutCursor(before)===withoutCursor(cancelled),`${label}: model cancel changed idle screen`);
-    await pickModel('test/unavailable');await waitFor(()=>capture().includes('error:'),'unavailable model feedback');
+    await pickModel('test/unavailable');await waitFor(()=>capture().includes('model unavailable'),'unavailable model feedback');
     assert(selected()==='test-model',`${label}: invalid model persisted`);
     const rejected=await snapshot(`${label}-model-rejected`);
-    assert(rejected.includes(`model draft ${label}`)&&selectorRows(rejected).length===1,`${label}: rejection lost draft/menu`);
-    keys('Escape');await waitFor(()=>!capture().includes('Select model'),'cancel rejection');
-    await pickModel('test/bootstrap');await waitFor(()=>selected()==='bootstrap'&&!capture().includes('Select model'),'accepted model');
+    assert(modelRows(rejected).length===1,`${label}: rejection lost menu`);
+    keys('Escape');await waitFor(()=>!capture().includes('Ctrl+S to set as default'),'cancel rejection');
+    await pickModel('test/bootstrap');await waitFor(()=>selected()==='bootstrap'&&!capture().includes('Ctrl+S to set as default'),'accepted model');
     const accepted=await snapshot(`${label}-model-accepted`);
     assert(accepted.includes(`model draft ${label}`),`${label}: model selection consumed draft`);
     assert(JSON.stringify(separators(before))===JSON.stringify(separators(accepted)),`${label}: idle rows moved`);
     assert(withoutCursor(before.split('\n').slice(0,separators(before)[0]).join('\n'))===withoutCursor(accepted.split('\n').slice(0,separators(accepted)[0]).join('\n')),`${label}: picker wrote transcript noise`);
-    keys('M-s');await waitFor(()=>capture().includes('Select session'),'switch for model isolation');type('@other');await waitFor(()=>selectorRows(capture()).length===1,'other only');keys('Enter');
-    await waitFor(()=>!capture().includes('Select session')&&capture().includes('test-model'),'other keeps its model');
-    keys('M-s');await waitFor(()=>capture().includes('Select session'),'return to model origin');type('@agent');await waitFor(()=>selectorRows(capture()).length===1,'main only');keys('Enter');
+    keys('M-s');await waitFor(()=>capture().includes('Resume Session'),'switch for model isolation');type('@other');await waitFor(()=>selectorRows(capture()).length===1,'other only');keys('Enter');
+    await waitFor(()=>!capture().includes('Resume Session')&&capture().includes('test-model'),'other keeps its model');
+    keys('M-s');await waitFor(()=>capture().includes('Resume Session'),'return to model origin');type('@agent');await waitFor(()=>selectorRows(capture()).length===1,'main only');keys('Enter');
     await waitFor(()=>capture().includes(`model draft ${label}`)&&capture().includes('bootstrap'),'model and draft restored');keys('C-u');
     assert(readFileSync(join(temp,'.pi/settings.json'),'utf8')===settings,`${label}: global model config changed`);
     assert(sql('select count(*) from turns;')==='0',`${label}: model picker submitted turn`);
@@ -143,7 +145,7 @@ try {
   // Clean restart restores the selected model of the native main session.
   keys('C-d');await waitFor(()=>{try{tmux('has-session','-t',session);return false;}catch{return true;}},'clean exit');
   tmux('new-session','-d','-x','100','-y','22','-s',session,`cd ${quote(root)} && ${quote(binary)} -tui -db ${quote(db)} -workspace ${quote(temp)}`);
-  await waitFor(()=>capture().includes('bootstrap')&&capture().includes('m0/t0'),'restart restores selected model');
+  await waitFor(()=>capture().includes('bootstrap')&&capture().includes('%/'),'restart restores selected model');
   await snapshot('model-after-restart');
   assert(readFileSync(join(temp,'.pi/settings.json'),'utf8')===settings,'restart altered global config');
   await command('/model not-a-model');

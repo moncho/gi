@@ -26,7 +26,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
  const idle=()=>sql('select count(*) from session_active_turns;')==='0';
  try{
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);
-  tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('m0/t0'),'startup');
+  tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   const wrapNeedle='WrapProbe'+ 'z'.repeat(width+12)+'EndProbe';
   for(let i=1;i<=24;i++){type(`Prompt ${String(i).padStart(2,'0')} nebula nebula${i===12?' '+wrapNeedle:''}`);keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='completed';")===String(i),'history turn');}
   type('unsent editor draft');keys('Left','Left','Left');keys('PageUp','PageUp');await sleep(180);
@@ -36,7 +36,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   type(wrapNeedle);await wait(()=>capture().includes('Search 1/2'),'two cross-soft-wrap occurrences');shot('cross-wrap');keys('Enter');await wait(()=>capture().includes('Search 2/2'),'next cross-wrap occurrence');keys('C-u');
   type('NEBULA');await wait(()=>capture().includes('Search 1/96'),'all rendered occurrences');
   const active=shot('matches');assert(active.split('\n').length<=height,'search grew terminal footprint');
-  assert(ansi().includes('48;2;212;212;212'),'current match not highlighted');
+  assert(ansi().includes('48;2;78;47;27')&&/\x1b\[(?:[0-9;]*;)?7(?:;[0-9;]*)?m/.test(ansi()),'current match not highlighted (Pi searchMatchBg, inverse)');
   const textOnly=s=>s.replace(/\x1b\[[0-9;]*m/g,'');
   const matchedRow=()=>ansi().split('\n').find(row=>textOnly(row).includes('Prompt 01'));
   const firstOccurrence=matchedRow();assert(firstOccurrence,'first prompt absent');
@@ -67,7 +67,7 @@ for(const [width,height] of [[60,18],[100,22],[140,36]]){
   assert(sql("select count(*) from messages where role='user';")==='25','search/navigation sent editor content');
   shot('completed');keys('C-a','C-k');type("!!for i in $(seq 1 24); do printf 'TOOL-LINE-%02d 中文🙂\\n' $i; done");keys('Enter');await wait(()=>capture().includes('TOOL-LINE-24'),'native tool output');
   type('tool reader draft');search();await wait(()=>capture().includes('Search 0/0'),'tool search');type('TOOL-LINE-01');await wait(()=>capture().includes('no matches'),'collapsed text excluded');keys('Escape');await wait(()=>!capture().includes('Search:')&&capture().includes('tool reader draft'),'close before expansion');
-  keys('C-o');await wait(()=>capture().includes('F8 collapse'),'tool expanded');search();await wait(()=>capture().includes('Search 0/0'),'expanded search');type('TOOL-LINE-01');await wait(()=>capture().includes('Search 1/1'),'expanded text found');
+  keys('C-o');await wait(()=>capture().includes('to collapse)'),'tool expanded');search();await wait(()=>capture().includes('Search 0/0'),'expanded search');type('TOOL-LINE-01');await wait(()=>capture().includes('Search 1/1'),'expanded text found');
   keys('C-a','C-k');type('中文🙂');await wait(()=>capture().includes('Search 1/25'),'unicode rendered matches');shot('unicode-tool');keys('Escape');
   await wait(()=>capture().includes('tool reader draft'),'tool editor restored');assert(sql('select count(*) from turns;')==='25','tool search submitted query');
   results.push(`${width}x${height}: per-occurrence literal/case-insensitive/Unicode and cross-soft-wrap search, same-row/multi-row precise highlight/next/previous/wrap/no-match, collapsed/expanded tools, live output/resize/reopen, draft/cursor/history restoration, marked-prompt jumps; no idle-row growth or query submissions`);

@@ -68,7 +68,7 @@ func TestMarkdownTableSourceReflowsActualRenderedGridOnResize(t *testing.T) {
 		root.AddChild(c.renderTranscriptBlock(blocks[0]))
 		root.Calculate(width, 80)
 		b := gotui.NewBuffer(width, 80)
-		root.Render(b, width, 80)
+		root.RenderTo(b, width, 80)
 		screen := strings.ReplaceAll(b.StringTrimmed(), "\u00a0", " ")
 		grid := 0
 		for _, line := range strings.Split(screen, "\n") {

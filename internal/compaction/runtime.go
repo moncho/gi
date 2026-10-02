@@ -22,6 +22,9 @@ type RuntimeRequest struct {
 	Model     string
 	Settings  config.CompactionSettings
 	Force     bool
+	// Instructions are Pi-style /compact custom instructions ("Additional
+	// focus"): passed to the before-compact hook and kept in the summary.
+	Instructions string
 }
 
 type RuntimeOps struct {
@@ -99,7 +102,10 @@ func MaybeCompactContext(ctx context.Context, req RuntimeRequest, convCtx *goai.
 		publish(accepted, published)
 		return accepted, nil
 	}
-	hookPayload := map[string]any{"reason": reason, "preparation": prep, "settings": map[string]any{"enabled": settings.Enabled, "context_window": settings.ContextWindow, "reserve_tokens": settings.ReserveTokens, "keep_recent_tokens": settings.KeepRecentTokens, "threshold_tokens": settings.ThresholdTokens, "strategy": settings.Strategy}}
+	if req.Instructions != "" {
+		payload["custom_instructions"] = req.Instructions
+	}
+	hookPayload := map[string]any{"reason": reason, "preparation": prep, "custom_instructions": req.Instructions, "settings": map[string]any{"enabled": settings.Enabled, "context_window": settings.ContextWindow, "reserve_tokens": settings.ReserveTokens, "keep_recent_tokens": settings.KeepRecentTokens, "threshold_tokens": settings.ThresholdTokens, "strategy": settings.Strategy}}
 	decision := HookDecision{}
 	var hookErr error
 	if ops.BeforeCompact != nil {
@@ -136,6 +142,9 @@ func MaybeCompactContext(ctx context.Context, req RuntimeRequest, convCtx *goai.
 	}
 	if summary == "" {
 		summary = DefaultSummary(prep)
+		if req.Instructions != "" {
+			summary += "\n\nAdditional focus: " + req.Instructions
+		}
 	}
 	if strings.TrimSpace(summary) == "" {
 		payload["detail"] = "Compaction produced an empty summary"

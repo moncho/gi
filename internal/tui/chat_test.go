@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -58,7 +59,7 @@ func TestFocusInputActivatesInput(t *testing.T) {
 func TestHandleMouseOnInputRegionFocusesInput(t *testing.T) {
 	el := gotui.New(gotui.WithWidth(20), gotui.WithHeight(1))
 	buf := gotui.NewBuffer(80, 25)
-	el.Render(buf, 80, 25)
+	el.RenderTo(buf, 80, 25)
 	c := &chatTUI{inputRegion: el}
 	c.inputActive = false
 	consumed := c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MousePress, X: 2, Y: 0})
@@ -94,7 +95,7 @@ func TestHandleMouseWheelUsesTranscriptRegionScrollEvent(t *testing.T) {
 		transcript.AddChild(gotui.New(gotui.WithWidth(20), gotui.WithHeight(1), gotui.WithText(line)))
 	}
 	buf := gotui.NewBuffer(20, 10)
-	transcript.Render(buf, 20, 10)
+	transcript.RenderTo(buf, 20, 10)
 
 	c := &chatTUI{
 		transcript:       []string{"1", "2", "3", "4", "5", "6"},
@@ -120,17 +121,32 @@ func TestVisibleTranscriptDoesNotMutateDraftLineIndex(t *testing.T) {
 	}
 }
 
-func TestInputChangeRespectsTranscriptFollowing(t *testing.T) {
+func TestInputChangeReturnsTranscriptToBottom(t *testing.T) {
 	c := &chatTUI{transcript: []string{"1", "2", "3", "4", "5", "6", "7", "8"}, transcriptScroll: 1}
 	c.ensureInput()
-	c.input.SetText("hello")
-	if c.stickToBottom || c.transcriptScroll != 1 {
-		t.Fatal("typing moved a history reader")
+	c.input.insertRune(gotui.KeyEvent{Rune: 'h'})
+	if !c.stickToBottom || c.transcriptScroll != c.transcriptMaxScroll() {
+		t.Fatal("typing did not return to the newest edge")
 	}
 	c.scrollTranscriptToBottom()
 	c.input.SetText("newer\ndraft")
 	if !c.stickToBottom || c.transcriptScroll != 4 {
 		t.Fatalf("newest-edge following lost: %d", c.transcriptScroll)
+	}
+}
+
+func TestInputRestorePreservesTranscriptPosition(t *testing.T) {
+	for _, restore := range []string{"history", "draft"} {
+		t.Run(restore, func(t *testing.T) {
+			c := &chatTUI{transcript: []string{"1", "2", "3", "4", "5", "6", "7", "8"}, transcriptScroll: 1}
+			c.ensureInput()
+			c.historyApplying = restore == "history"
+			c.draftApplying = restore == "draft"
+			c.input.SetText("restored text")
+			if c.stickToBottom || c.transcriptScroll != 1 {
+				t.Fatal("restoring input moved a history reader")
+			}
+		})
 	}
 }
 
@@ -1239,7 +1255,7 @@ func TestCommandPaletteLinesFilterCommands(t *testing.T) {
 		}
 	}
 	filtered := strings.Join(c.commandPaletteLines("model"), "\n")
-	if !strings.Contains(filtered, "/model [name|index]") || strings.Contains(filtered, "/session") {
+	if !strings.Contains(filtered, "/model <provider/model>") || strings.Contains(filtered, "/session") {
 		t.Fatalf("filtered palette mismatch:\n%s", filtered)
 	}
 }
@@ -1482,9 +1498,10 @@ func TestCopyLastAssistantLinesFallsBackToTranscript(t *testing.T) {
 	if err := s.AddMessage(ctx, "msg_assistant_copy", "session_copy", "assistant", "answer\nsecond line", nil); err != nil {
 		t.Fatalf("add assistant message: %v", err)
 	}
-	c := &chatTUI{store: s, sessionID: "session_copy"}
+	var clipboard bytes.Buffer
+	c := &chatTUI{store: s, sessionID: "session_copy", cfg: config.Load(t.TempDir()), osc52Writer: &clipboard}
 	joined := strings.Join(c.copyLastAssistantLines(), "\n")
-	if strings.Contains(joined, "\x1b]52") {
+	if clipboard.Len() != 0 || strings.Contains(joined, "\x1b]52") {
 		t.Fatalf("copy fallback should not emit OSC 52 escape sequences: %q", joined)
 	}
 	for _, want := range []string{"copy: clipboard unavailable; last assistant message follows", "copy: answer", "  second line"} {
@@ -1604,9 +1621,10 @@ func TestNameSessionCommandRenamesCurrentSession(t *testing.T) {
 	if reloaded.Title != "Project Alpha" {
 		t.Fatalf("unexpected title: %q", reloaded.Title)
 	}
-	usage := c.nameSessionLines("/name", []string{"/name"})
-	if len(usage) != 1 || usage[0] != "sys: usage /name <name>" {
-		t.Fatalf("unexpected usage output: %#v", usage)
+	// Pi: /name without an argument shows the current name.
+	shown := c.nameSessionLines("/name", []string{"/name"})
+	if len(shown) != 1 || shown[0] != "sys: session name: Project Alpha" {
+		t.Fatalf("unexpected /name output: %#v", shown)
 	}
 }
 
@@ -1837,10 +1855,60 @@ func TestSettingsLinesExposeRuntimeState(t *testing.T) {
 	}
 }
 
+func TestSettingsCommandReportsEffectiveValuesWithoutTruncation(t *testing.T) {
+	root := t.TempDir()
+	cfg := config.Load(root)
+	cfg.WorkspaceRoot = root + "/a-long-workspace-path-that-must-not-be-abbreviated"
+	cfg.DefaultProvider = "unknown-provider"
+	cfg.DefaultModel = "unknown-model"
+	cfg.DefaultThinkingLevel = ""
+	cfg.Theme = "light/dark"
+	cfg.TUIWheelScrollLines = 4
+	cfg.Peering.AuthKeyEnv = "GI_TEST_PEERING_SECRET"
+	t.Setenv("GI_TEST_PEERING_SECRET", "secret-value-must-not-appear")
+	c := &chatTUI{cfg: cfg}
+	for _, command := range []string{"/settings", "/config"} {
+		c.transcript = nil
+		c.handleCommand(command)
+		output := strings.Join(c.transcript, "\n")
+		for _, want := range []string{
+			"live runtime summary", "workspace: " + cfg.WorkspaceRoot,
+			"thinking: medium", "thinking_configured:",
+			"theme: " + piActiveTheme, "theme_configured: light/dark",
+			"fullscreen_wheel_scroll_lines: 4", "context_window: 128000",
+			"threshold_tokens: 108000", "reserve_tokens: 20000", "strategy: default",
+			"settings: provider retry", "max_retries: 3", "base_delay_ms: 2000",
+			"max_agent_delay_ms: 60000", "auth_key_env: GI_TEST_PEERING_SECRET",
+		} {
+			if !strings.Contains(output, want) {
+				t.Fatalf("%s missing %q:\n%s", command, want, output)
+			}
+		}
+		if strings.Contains(output, "secret-value-must-not-appear") {
+			t.Fatal("settings leaked a credential")
+		}
+	}
+}
+
+func TestSettingsLinesRetryAndEditorOverrides(t *testing.T) {
+	no := false
+	retries, delay, maximum := 100, 250, 500
+	c := &chatTUI{cfg: config.RuntimeConfig{
+		TUIClipboardMode: "off",
+		Retry:            config.ProviderRetrySettings{Enabled: &no, MaxRetries: &retries, BaseDelayMS: &delay, MaxAgentDelayMS: &maximum},
+	}}
+	output := strings.Join(c.settingsLines(), "\n")
+	for _, want := range []string{"theme_configured: (auto)", "fullscreen_wheel_scroll_lines: auto", "clipboard_mode: off", "max_retries: 10", "base_delay_ms: 250", "max_agent_delay_ms: 500", "settings: provider retry\n- enabled: false"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("settings missing %q:\n%s", want, output)
+		}
+	}
+}
+
 func TestRenderMessageLinesFormatsMarkdown(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: "# Title\n\n- first\n- second", Payload: map[string]any{"kind": "chat"}}, 80)
-	joined := strings.Join(lines, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
 	for _, want := range []string{"Neo: TITLE", "=====", "• first", "• second"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("markdown render missing %q:\n%s", want, joined)
@@ -1848,13 +1916,13 @@ func TestRenderMessageLinesFormatsMarkdown(t *testing.T) {
 	}
 }
 
-func TestRenderMessageLinesFormatsCodeBlocksWithLineCount(t *testing.T) {
+func TestRenderMessageLinesFormatsCodeBlocksLikePi(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: "```go\nfmt.Println(1)\nfmt.Println(2)\n```", Payload: map[string]any{"kind": "chat"}}, 80)
-	joined := strings.Join(lines, "\n")
-	for _, want := range []string{"Neo: [code:go] 2 lines", "fmt.Println(1)", "fmt.Println(2)"} {
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
+	for _, want := range []string{"Neo: ```go", "  fmt.Println(1)\n", "  fmt.Println(2)\n", "```"} {
 		if !strings.Contains(joined, want) {
-			t.Fatalf("code block render missing %q:\n%s", want, joined)
+			t.Fatalf("code block render missing %q:\n%q", want, joined)
 		}
 	}
 }
@@ -1863,7 +1931,7 @@ func TestRenderMessageLinesProjectsInlineMarkdownWithoutMarkers(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	content := "This is **bold**, *emph*, `code`, ~~gone~~, and [a link](https://example.com).\n- [x] done\n- [ ] todo"
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: content, Payload: map[string]any{"kind": "chat"}}, 80)
-	joined := strings.Join(lines, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
 	for _, bad := range []string{"**bold**", "*emph*", "`code`", "~~gone~~"} {
 		if strings.Contains(joined, bad) {
 			t.Fatalf("markdown marker %q leaked into render:\n%s", bad, joined)
@@ -1902,7 +1970,7 @@ func TestRenderMessageLinesPreservesInlineCodeLeadingSpaces(t *testing.T) {
 func TestRenderMessageLinesPreservesCodeBlockSpacing(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	lines := c.renderMessageLines(store.Message{Role: "assistant", Content: "```\nif  x  {\n    y :=  1\n}\n```", Payload: map[string]any{"kind": "chat"}}, 80)
-	joined := strings.Join(lines, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(lines, "\n"))
 	for _, want := range []string{"if  x  {", "    y :=  1"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("code block spacing not preserved for %q:\n%s", want, joined)
@@ -1959,12 +2027,13 @@ func TestRenderMessageLineFoldsToolAndCompaction(t *testing.T) {
 func TestBuildTranscriptRenderableBlocksCollapsesToolBlocks(t *testing.T) {
 	startedAt := time.Now().Add(-1500 * time.Millisecond).UTC().Format(time.RFC3339Nano)
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}, transcriptExpanded: map[string]bool{}}
-	lines := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "tool:test", Kind: "tool", Title: "shell", Status: "ok", StartedAt: startedAt, EndedAt: startedAt}), "│ first", "│ second", "│ third", "│ fourth"}
+	lines := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "tool:test", Kind: "tool", Title: "shell", Status: "ok", StartedAt: startedAt, EndedAt: startedAt}), "│ first", "│ second", "│ third", "│ fourth", "│ fifth", "│ sixth"}
 	blocks := c.buildTranscriptRenderableBlocks(lines)
 	if len(blocks) != 1 {
 		t.Fatalf("expected one block, got %#v", blocks)
 	}
-	if !blocks[0].Expandable || blocks[0].Expanded || blocks[0].Kind != "tool" || blocks[0].Subheader != "" || !strings.Contains(blocks[0].Header, "shell ·") {
+	// Pi: shell tools preview their last 5 lines; timing renders as "Took".
+	if !blocks[0].Expandable || blocks[0].Expanded || blocks[0].Kind != "tool" || blocks[0].Subheader != "" || blocks[0].Header != "shell" || blocks[0].PreviewLimit != 5 || !blocks[0].PreviewTail {
 		t.Fatalf("unexpected collapsed block state: %#v", blocks[0])
 	}
 }
@@ -2084,9 +2153,8 @@ func TestMultilineInputPlaceholderShowsFocusState(t *testing.T) {
 		t.Fatalf("blurred placeholder lines = %#v", lines)
 	}
 	inp.Focus()
-	inp.blink = false
 	lines = inp.renderLines()
-	if len(lines) != 1 || lines[0].text != "▌" || !lines[0].placeholder {
+	if len(lines) != 1 || lines[0].text != "" || lines[0].cursor != 0 || lines[0].cursorEnd != 0 || !lines[0].placeholder {
 		t.Fatalf("focused placeholder lines = %#v", lines)
 	}
 }
@@ -2170,10 +2238,9 @@ func TestMultilineInputCursorRenderingWithinText(t *testing.T) {
 	inp := newMultilineInput(40, "", nil, nil)
 	inp.SetText("abcd")
 	inp.Focus()
-	inp.blink = false
 	inp.cursorPos = 2
 	lines := inp.renderLines()
-	if len(lines) != 1 || lines[0].text != "ab▌cd" {
+	if len(lines) != 1 || lines[0].text != "abcd" || lines[0].cursor != 2 || lines[0].cursorEnd != 3 {
 		t.Fatalf("cursor render lines = %#v", lines)
 	}
 }
@@ -2387,8 +2454,8 @@ func TestExtensionToolRenderSlotControlsToolBody(t *testing.T) {
 		"│ match 2",
 		"│ match 3",
 	}
-	// default: full body, expandable
-	if blocks := c.buildTranscriptRenderableBlocks(lines); len(blocks) != 1 || len(blocks[0].Body) != 3 || !blocks[0].Expandable {
+	// default: full body; within Pi's 10-line preview, so not expandable
+	if blocks := c.buildTranscriptRenderableBlocks(lines); len(blocks) != 1 || len(blocks[0].Body) != 3 || blocks[0].Expandable {
 		t.Fatalf("default tool body unexpected: %#v", blocks)
 	}
 	// compact: first body line only
@@ -2440,19 +2507,19 @@ func TestExtensionStatusSlotAddsFooterRowsOnly(t *testing.T) {
 	c.setExtensionStatus("lint", "lint: 0 errors")
 	c.setExtensionStatus("build", "build ok")
 	lines := c.footerLines(100)
-	if len(lines) != base+2 {
-		t.Fatalf("expected %d footer lines, got %d: %#v", base+2, len(lines), lines)
+	if len(lines) != base+1 {
+		t.Fatalf("expected %d footer lines, got %d: %#v", base+1, len(lines), lines)
 	}
 	joined := strings.Join(lines, "\n")
 	if !strings.Contains(joined, "build ok") || !strings.Contains(joined, "lint: 0 errors") {
 		t.Fatalf("extension status missing from footer: %#v", lines)
 	}
-	// sorted by key: build before lint
-	if lines[base] != "build ok" {
+	// Pi joins statuses on one line, sorted by key: build before lint.
+	if lines[base] != "build ok lint: 0 errors" {
 		t.Fatalf("expected sorted extension statuses, got %#v", lines[base:])
 	}
 	c.handleTopicEvent(topics.Envelope{Topic: "extension.status", Payload: map[string]any{"key": "lint", "text": ""}})
-	if lines := c.footerLines(100); len(lines) != base+1 {
+	if lines := c.footerLines(100); len(lines) != base+1 || lines[base] != "build ok" {
 		t.Fatalf("clearing one status should leave %d lines, got %#v", base+1, lines)
 	}
 	// Slot output is footer-only: setting status must not add any transcript row.
@@ -2461,92 +2528,43 @@ func TestExtensionStatusSlotAddsFooterRowsOnly(t *testing.T) {
 	}
 }
 
-func TestFooterLinesExpandWithUsageAndNotice(t *testing.T) {
-	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo", DefaultModel: "provider/model", DefaultThinkingLevel: "low", WorkspaceRoot: t.TempDir()}, lastInputTokens: 1200, lastOutputTokens: 340, lastContextTokens: 5000, lastCacheRead: 2000, lastCacheWrite: 800, lastCostTotal: 0.0123}
+func TestFooterMatchesPiStatsLine(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo", DefaultModel: "model", DefaultProvider: "provider", DefaultThinkingLevel: "low", WorkspaceRoot: t.TempDir(), Compaction: config.CompactionSettings{Enabled: true, ContextWindow: 20000}}, lastInputTokens: 1200, lastOutputTokens: 340, lastContextTokens: 5000, lastCacheRead: 2000, lastCacheWrite: 800, lastCostTotal: 0.0123}
 	lines := c.footerLines(120)
-	if len(lines) < 2 {
-		t.Fatalf("expected at least path + stats lines, got %#v", lines)
+	if len(lines) != 2 {
+		t.Fatalf("expected Pi's pwd + stats lines, got %#v", lines)
 	}
 	stats := lines[1]
-	for _, want := range []string{"m0/t0", "↑1K", "↓340", "R2K", "W800", "$0.012", "ctx 5K", "provider/model", "low"} {
-		if !strings.Contains(stats, want) {
-			t.Fatalf("stats footer missing %q: %s", want, stats)
-		}
+	if !strings.HasPrefix(stats, "↑1.2k ↓340 R2.0k W800 $0.012 25.0%/20k (auto)") || !strings.HasSuffix(stats, "model • low") || utf8.RuneCountInString(stats) != 120 {
+		t.Fatalf("stats line differs from Pi: %q", stats)
 	}
 	c.status = "Running: read"
-	lines = c.footerLines(120)
-	if len(lines) != 3 || !strings.Contains(lines[2], "Running: read") {
-		t.Fatalf("expected transient notice line, got %#v", lines)
+	if got := c.footerLines(120); len(got) != 2 {
+		t.Fatalf("status must not add footer rows: %#v", got)
+	}
+	c.cfg.DefaultThinkingLevel = "off"
+	if got := c.footerLines(120)[1]; !strings.HasSuffix(got, "model • thinking off") {
+		t.Fatalf("thinking off label: %q", got)
+	}
+	c.lastContextTokens = 19000
+	if rows := c.footerRows(120); rows[1].accent != piError || rows[1].text[rows[1].accentStart:rows[1].accentEnd] != "95.0%/20k (auto)" {
+		t.Fatalf("context above 90%% should be error colored: %+v", rows[1])
 	}
 }
 
-func TestFooterNotificationTextClassifiesCommonStates(t *testing.T) {
-	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo", DefaultModel: "bootstrap", DefaultThinkingLevel: "low"}, status: "Neo · bootstrap"}
-	data := c.contextSummaryData()
-	if got := c.footerNotificationText(data); got != "m0/t0" {
-		t.Fatalf("idle footer notification = %q", got)
-	}
-	for _, status := range []string{"Running: read", "Queued follow-up", "Tool failed: shell", "Hook denied read", "Compacted context"} {
-		c.status = status
-		want := "m0/t0 · " + status
-		if got := c.footerNotificationText(data); got != want {
-			t.Fatalf("footerNotificationText(%q) = %q, want %q", status, got, want)
+func TestPiFormatTokens(t *testing.T) {
+	for n, want := range map[int]string{0: "0", 999: "999", 1200: "1.2k", 9999: "10.0k", 12345: "12k", 1500000: "1.5M", 12000000: "12M"} {
+		if got := piFormatTokens(n); got != want {
+			t.Fatalf("piFormatTokens(%d)=%q want %q", n, got, want)
 		}
 	}
 }
 
-func TestFooterContextFollowsThinkingLevel(t *testing.T) {
-	c := &chatTUI{cfg: config.RuntimeConfig{DefaultModel: "provider/model", DefaultThinkingLevel: "medium", Compaction: config.CompactionSettings{ContextWindow: 20000}}, lastContextTokens: 5000}
-	line := c.footerStatusLineForWidth(120)
-	want := "provider/model • medium • ctx 5K/20K 25%"
-	if !strings.Contains(line, want) {
-		t.Fatalf("footer context should follow thinking level: got %q, want substring %q", line, want)
-	}
-	if strings.Contains(c.footerCountsText(c.contextSummaryData()), "ctx") {
-		t.Fatalf("footer counts should not include context usage: %q", c.footerCountsText(c.contextSummaryData()))
-	}
-}
-
-func TestFooterContextWindowUsesSelectedModelMetadata(t *testing.T) {
-	c := &chatTUI{cfg: config.RuntimeConfig{DefaultProvider: "opencode-zen", DefaultModel: "minimax-m2.5-free", DefaultThinkingLevel: "low", Compaction: config.CompactionSettings{ContextWindow: 20000}}, lastContextTokens: 64000}
-	line := c.footerStatusLineForWidth(140)
-	want := "minimax-m2.5-free • low • ctx 64K/128K 50%"
-	if !strings.Contains(line, want) {
-		t.Fatalf("footer context should use selected model context window: got %q, want substring %q", line, want)
-	}
-}
-
-func TestFooterStatusLineRefreshesCountsFromStore(t *testing.T) {
-	s, err := store.Open("file::memory:?cache=shared")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer s.Close()
-	ctx := context.Background()
-	if _, err := s.CreateSession(ctx, "session_footer_counts", "@agent", map[string]any{"status": "idle", "model": "bootstrap"}); err != nil {
-		t.Fatalf("create session: %v", err)
-	}
-	c := &chatTUI{store: s, sessionID: "session_footer_counts", cfg: config.RuntimeConfig{DefaultModel: "bootstrap", DefaultThinkingLevel: "low"}}
-	if got := c.footerStatusLineForWidth(80); !strings.Contains(got, "m0/t0") {
-		t.Fatalf("initial footer missing m0/t0: %q", got)
-	}
-	if err := s.AddMessage(ctx, "msg_footer_counts", "session_footer_counts", "user", "hello", nil); err != nil {
-		t.Fatalf("add message: %v", err)
-	}
-	if _, err := s.CreateTurnWithStatus(ctx, "turn_footer_counts", "session_footer_counts", "completed", "hello", nil); err != nil {
-		t.Fatalf("create turn: %v", err)
-	}
-	if got := c.footerStatusLineForWidth(80); !strings.Contains(got, "m1/t1") {
-		t.Fatalf("updated footer missing m1/t1: %q", got)
-	}
-	c.status = "Running: shell"
-	if got := c.footerStatusLineForWidth(80); !strings.Contains(got, "m1/t1") || !strings.Contains(got, "Running: shell") {
-		t.Fatalf("status footer should include dynamic counts and activity: %q", got)
-	}
-}
-
-func TestFooterTextContainsStableHints(t *testing.T) {
-	root := t.TempDir()
+func TestFooterPathLineShowsHomeRelativeCwdAndBranch(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	root := filepath.Join(home, "proj")
 	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -2554,26 +2572,11 @@ func TestFooterTextContainsStableHints(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := &chatTUI{cfg: config.RuntimeConfig{WorkspaceRoot: root, DefaultModel: "provider/model", DefaultThinkingLevel: "low"}}
-	pathLine := c.footerPathLineForWidth(80)
-	if !strings.Contains(pathLine, filepath.Base(root)) || !strings.Contains(pathLine, "(main)") {
-		t.Fatalf("path footer missing workspace/branch: %s", pathLine)
+	if got := c.footerLines(80)[0]; got != "~/proj (main)" {
+		t.Fatalf("pwd line %q", got)
 	}
-	statusLine := c.footerStatusLineForWidth(80)
-	for _, want := range []string{"m0/t0", "provider/model", "low"} {
-		if !strings.Contains(statusLine, want) {
-			t.Fatalf("status footer missing %q: %s", want, statusLine)
-		}
-	}
-	if strings.Contains(statusLine, "enter send") || strings.Contains(statusLine, "/ commands") {
-		t.Fatalf("footer should be status-only: %s", statusLine)
-	}
-	c.status = "Running: read file with a very long path that must not wrap onto another physical footer row"
-	statusLine = c.footerStatusLineForWidth(48)
-	if strings.Contains(statusLine, "\n") || utf8.RuneCountInString(statusLine) > 48 {
-		t.Fatalf("status footer should stay one truncated line: len=%d %q", utf8.RuneCountInString(statusLine), statusLine)
-	}
-	if !strings.Contains(statusLine, "provider/model") && !strings.Contains(statusLine, "…") {
-		t.Fatalf("status footer should retain right-side model/truncation cue: %s", statusLine)
+	if got := c.footerLines(8)[0]; got != "~/pro..." {
+		t.Fatalf("pwd truncation %q", got)
 	}
 }
 
@@ -2632,7 +2635,7 @@ func TestExtensionCommandLinesDispatchesRegisteredCommand(t *testing.T) {
 func TestStreamingDraftRendersMarkdownDynamically(t *testing.T) {
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo", DefaultModel: "bootstrap"}, stickToBottom: true, draftLineIndex: -1}
 	c.handleTopicEvent(topics.Envelope{Topic: "turn.draft", Payload: map[string]any{"delta": "# Plan\n\n- one"}})
-	joined := strings.Join(c.transcript, "\n")
+	joined := stripMarkdownInlineStyleMarkers(strings.Join(c.transcript, "\n"))
 	if !strings.Contains(joined, "Neo: PLAN") || !strings.Contains(joined, "• one") {
 		t.Fatalf("streaming markdown was not rendered dynamically:\n%s", joined)
 	}
@@ -2640,12 +2643,12 @@ func TestStreamingDraftRendersMarkdownDynamically(t *testing.T) {
 		t.Fatalf("expected multi-line streaming draft span, got %d lines: %#v", c.draftLineCount, c.transcript)
 	}
 	c.handleTopicEvent(topics.Envelope{Topic: "turn.draft", Payload: map[string]any{"delta": "\n- two"}})
-	joined = strings.Join(c.transcript, "\n")
+	joined = stripMarkdownInlineStyleMarkers(strings.Join(c.transcript, "\n"))
 	if strings.Count(joined, "Neo: PLAN") != 1 || !strings.Contains(joined, "• two") {
 		t.Fatalf("streaming markdown replacement should update in place:\n%s", joined)
 	}
 	c.handleTopicEvent(topics.Envelope{Topic: "turn.response", Payload: map[string]any{"data": map[string]any{"content": "# Done\n\n- final"}}})
-	joined = strings.Join(c.transcript, "\n")
+	joined = stripMarkdownInlineStyleMarkers(strings.Join(c.transcript, "\n"))
 	if strings.Contains(joined, "• one") || !strings.Contains(joined, "Neo: DONE") || !strings.Contains(joined, "• final") {
 		t.Fatalf("final markdown should replace entire streaming span:\n%s", joined)
 	}
@@ -2681,25 +2684,6 @@ func TestModelCommandOpensCursorNavigableMenu(t *testing.T) {
 	}
 	if c.cfg.DefaultModel != "bootstrap" {
 		t.Fatalf("expected selected model bootstrap, got %q", c.cfg.DefaultModel)
-	}
-}
-
-func TestScrollbarCommandDefaultsOffAndPersists(t *testing.T) {
-	root := t.TempDir()
-	c := &chatTUI{cfg: config.RuntimeConfig{WorkspaceRoot: root}}
-	if c.cfg.TUIScrollbar {
-		t.Fatal("expected scrollbar to default off")
-	}
-	lines := c.scrollbarCommand([]string{"/scrollbar", "on"})
-	if !c.cfg.TUIScrollbar {
-		t.Fatal("expected scrollbar command to enable option")
-	}
-	if got := strings.Join(lines, "\n"); !strings.Contains(got, "scrollbar set to on") {
-		t.Fatalf("expected confirmation, got %q", got)
-	}
-	cfg := config.Load(root)
-	if !cfg.TUIScrollbar {
-		t.Fatal("expected scrollbar setting to persist")
 	}
 }
 
@@ -2784,5 +2768,24 @@ func TestToolEndWithoutStartHasUnknownDurationAndLateStartCannotReopen(t *testin
 	c.renderToolEvent(end, time.Now().Add(-time.Second))
 	if strings.Join(c.transcript, "\n") != before {
 		t.Fatal("orphan terminal reopened")
+	}
+}
+
+// A failed tool shows its result once: shell output plus the exit status,
+// without a duplicate error line.
+func TestToolFailedShowsResultOnce(t *testing.T) {
+	c := &chatTUI{transcriptExpanded: map[string]bool{}}
+	start := map[string]any{"type": "tool_started", "tool": "shell", "tool_call_id": "c1", "arguments": map[string]any{"command": "make"}}
+	c.renderToolEvent(start, time.Now())
+	result := "out-line\n\nCommand exited with code 2"
+	c.renderToolEvent(map[string]any{"type": "tool_failed", "tool": "shell", "tool_call_id": "c1", "error": result, "output": result}, time.Now())
+	joined := strings.Join(c.transcript, "\n")
+	if strings.Count(joined, "out-line") != 1 || strings.Count(joined, "Command exited with code 2") != 1 || strings.Contains(joined, "error=") {
+		t.Fatalf("failed tool body:\n%s", joined)
+	}
+	c.renderToolEvent(map[string]any{"type": "tool_started", "tool": "shell", "tool_call_id": "c2"}, time.Now())
+	c.renderToolEvent(map[string]any{"type": "tool_failed", "tool": "shell", "tool_call_id": "c2", "error": "boom"}, time.Now())
+	if !strings.Contains(strings.Join(c.transcript, "\n"), "error=boom") {
+		t.Fatal("bare error not shown when there is no result text")
 	}
 }

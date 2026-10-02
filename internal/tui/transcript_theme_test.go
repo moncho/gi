@@ -20,10 +20,14 @@ func TestTranscriptPlainOutputAndUserBackground(t *testing.T) {
 					buf := gotui.NewBuffer(size[0], size[1])
 					root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(size[0]), gotui.WithHeight(size[1]))
 					root.AddChild(el)
-					root.Render(buf, size[0], size[1])
+					root.RenderTo(buf, size[0], size[1])
 					wantBg := gotui.Color{}
-					if kind == "user" {
+					switch kind {
+					case "user":
 						wantBg = piUserBg
+					case "tool":
+						// Pi's ToolExecutionComponent success band.
+						wantBg = toolBandColor("ok")
 					}
 					separator, _, _ := transcriptSpacing(kind)
 					for y := 0; y < el.Rect().Height; y++ {
@@ -36,7 +40,8 @@ func TestTranscriptPlainOutputAndUserBackground(t *testing.T) {
 							if cell.Style.Bg != bg {
 								t.Fatalf("background at %d,%d: got %v, want %v", x, y, cell.Style.Bg, bg)
 							}
-							if strings.ContainsRune("╭╮╰╯│─", cell.Rune) {
+							// Pi's BashExecutionComponent draws horizontal rules; nothing is boxed.
+							if strings.ContainsRune("╭╮╰╯│", cell.Rune) || cell.Rune == '─' && kind != "bash" {
 								t.Fatalf("boxed transcript at %d,%d: %c", x, y, cell.Rune)
 							}
 						}
@@ -56,7 +61,7 @@ func TestPiTranscriptRenderedScrollBounds(t *testing.T) {
 		c := &chatTUI{transcript: []string{"user: " + strings.Repeat("wrapped output ", 100)}, transcriptRef: gotui.NewRef()}
 		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(10), gotui.WithScrollable(gotui.ScrollVertical))
 		root.AddChild(c.renderInlineStyledLine(c.transcript[0], gotui.NewStyle()))
-		root.Render(gotui.NewBuffer(width, 10), width, 10)
+		root.RenderTo(gotui.NewBuffer(width, 10), width, 10)
 		c.transcriptRef.Set(root)
 		if c.transcriptMaxScroll() <= 0 {
 			t.Fatal("wrapped text cannot scroll", width)
@@ -68,7 +73,7 @@ func TestPiTranscriptRenderedScrollBounds(t *testing.T) {
 		}
 		root.ScrollTo(0, maxY)
 		c.pageTranscript(-1)
-		if c.transcriptScroll != max(0, maxY-9) || c.stickToBottom {
+		if c.transcriptScroll != max(0, maxY-6) || c.stickToBottom {
 			t.Fatal("page lost rendered offset", c.transcriptScroll, maxY)
 		}
 		c.scrollTranscriptToTop()
@@ -83,7 +88,7 @@ func TestPiToolOutputToggleRetainsEditor(t *testing.T) {
 	c.ensureInput()
 	c.input.SetText("newer draft")
 	c.input.cursorPos = 3
-	c.appendTranscriptBlock(transcriptBlockMeta{Key: "tool", Kind: "tool", Title: "read", Status: "ok"}, []string{"one", "two", "three", "four"})
+	c.appendTranscriptBlock(transcriptBlockMeta{Key: "tool", Kind: "tool", Title: "read", Status: "ok"}, []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"})
 	c.toggleToolOutput()
 	if !c.transcriptExpanded["tool"] {
 		t.Fatal("tool not expanded")
@@ -106,12 +111,13 @@ func TestPiFullscreenWheelOverEditorScrollsTranscript(t *testing.T) {
 	for i := 0; i < 30; i++ {
 		el.AddChild(gotui.New(gotui.WithText(fmt.Sprint(i)), gotui.WithHeight(1)))
 	}
-	el.Render(gotui.NewBuffer(60, 18), 60, 10)
+	el.RenderTo(gotui.NewBuffer(60, 18), 60, 10)
 	el.ScrollTo(0, 20)
 	c.transcriptRef.Set(el)
 	c.transcriptRegion = el
 	c.stickToBottom = true
-	if !c.handleTranscriptScrollEvent(gotui.MouseEvent{Button: gotui.MouseWheelUp, X: 5, Y: 15}) || c.transcriptScroll != 17 || c.stickToBottom {
+	// Pi "auto" wheel: an isolated notch moves one line.
+	if !c.handleTranscriptScrollEvent(gotui.MouseEvent{Button: gotui.MouseWheelUp, X: 5, Y: 15}) || c.transcriptScroll != 19 || c.stickToBottom {
 		t.Fatal("editor wheel failed to scroll history", c.transcriptScroll)
 	}
 	if c.input.Text() != "draft" || c.input.cursorPos != 2 {
@@ -140,7 +146,7 @@ func TestPiMessageSpacingGroupsMarkdownContinuationRows(t *testing.T) {
 			root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(height))
 			root.AddChild(el)
 			buf := gotui.NewBuffer(width, height)
-			root.Render(buf, width, height)
+			root.RenderTo(buf, width, height)
 			text := strings.ReplaceAll(buf.StringTrimmed(), "\u00a0", " ")
 			if block.Kind == "user" && !strings.Contains(text, "list two") {
 				t.Fatal("lost user body", text)

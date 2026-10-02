@@ -41,7 +41,7 @@ for MODEL in "${MODELS[@]}"; do
   echo "=== Testing: $MODEL ==="
   
   # Start gi
-  "$GI_BIN" -bind 127.0.0.1 -port $PORT -model "$MODEL" -db "$DB" -workspace "$WORKSPACE" 2>/tmp/gi-matrix.log &
+  "$GI_BIN" -web -bind 127.0.0.1 -port $PORT -model "$MODEL" -db "$DB" -workspace "$WORKSPACE" 2>/tmp/gi-matrix.log &
   GIPID=$!
   sleep 2
   

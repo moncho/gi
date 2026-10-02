@@ -5,7 +5,7 @@ You are a coding agent working on the gi project — a Go-based coding agent wit
 ## Repository layout
 
 ```
-cmd/gi/              main binary entrypoint (web server or TUI via `-tui`)
+cmd/gi/              main binary entrypoint (TUI by default, web server via `-web`)
 cmd/gi-tui/          compatibility wrapper for TUI mode
 internal/
   tui/               terminal UI implementation (go-tui)
@@ -59,7 +59,7 @@ Makefile             canonical build/test/run interface
 - Bun is allowed **only at build time** for web asset bundling
 - Web assets are **embedded in the Go binary** via `embed.FS`
 - Use `go-ai` for model/provider abstraction, `go-tui` for the terminal UI
-- TUI mode should be reachable from the main `gi` binary rather than requiring a distinct primary binary
+- The main `gi` binary starts the TUI by default; `-web` runs the web UI server
 
 ### Configuration compatibility
 - Read existing Pi/Piclaw files without modification:
@@ -89,7 +89,11 @@ Makefile             canonical build/test/run interface
 
 ### 3. Test
 
+Run tests **one at a time, through the Makefile only** (see *CPU throttling* below). Never launch several test suites in one command, and never run `go test`, `bun`, or test scripts directly — that bypasses the throttle.
+
 **Every user-visible feature must have corresponding functional tests.**
+
+**For now, web (Playwright) tests are not run on the ChromeOS (Crostini) laptop** used for development: `make test-ux` and the other browser targets are skipped there. Verify web-facing changes on that laptop with Go tests (for example `internal/web` handler tests), and run browser acceptance on another host. This is temporary and specific to that laptop; other machines run the web suites as usual.
 
 Before committing:
 ```sh
@@ -153,6 +157,18 @@ make bun-checks     # Hook TDZ checker
 | Target | Description |
 |---|---|
 | `make clean` | Remove `.gi-run/`, `bin/`, `.gi-test/`, `.gi-tui-test/`, `test-results/` |
+
+### CPU throttling
+
+All CPU limiting lives in the Makefile, so every build, test and dev-server run is throttled the same way and throttling is reproducible:
+
+- every recipe runs under `nice -n $(CPU_NICE)` and `taskset -c $(CPU_SET)` (defaults: `10`, `0-1`)
+- `GOMAXPROCS` and Go build parallelism (`-p`) follow `CPU_PROCS` (default `2`)
+- make is `.NOTPARALLEL`; `test*` targets run one Go package at a time (`-p=1`)
+- the Go build cache and Go's per-build temporary work directories stay on disk (`~/.cache/go-build`, `~/.cache/go-tmp`; override with `GI_GOCACHE` / `GI_GOTMPDIR`) and is trimmed when it exceeds `GO_CACHE_MAX_MB` (default 1500); never put caches or large artifacts on `/tmp` — it is RAM (tmpfs) and there is no swap
+- `-race` is used only where the kernel supports ThreadSanitizer (probed once, cached in `/tmp/gi-race-probe.ok`)
+
+Tune per invocation instead of bypassing make, e.g. `make test CPU_SET=0-3 CPU_PROCS=4` or `make build CPU_NICE=0`.
 
 ### Overrides
 ```sh

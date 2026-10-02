@@ -53,7 +53,7 @@ func TestCompactionPolicyPersistenceDefaultsAndWriters(t *testing.T) {
 	calls := []func() error{
 		func() error { return PersistModelSelection(root, "test", "bootstrap", "high", []string{"test-model"}) },
 		func() error { return PersistClipboardMode(root, "native") }, func() error { return PersistScrollbackLimit(root, 231) },
-		func() error { return PersistTUIHistoryLimit(root, 444) }, func() error { return PersistTUIScrollbar(root, true) },
+		func() error { return PersistTUIHistoryLimit(root, 444) },
 	}
 	var wg sync.WaitGroup
 	for _, call := range calls {
@@ -67,7 +67,7 @@ func TestCompactionPolicyPersistenceDefaultsAndWriters(t *testing.T) {
 	}
 	wg.Wait()
 	cfg := Load(root)
-	if cfg.Compaction != saved.Policy || cfg.TUIClipboardMode != "native" || cfg.ScrollbackLimit != 231 || cfg.TUIHistoryLimit != 444 || !cfg.TUIScrollbar || cfg.DefaultModel != "bootstrap" {
+	if cfg.Compaction != saved.Policy || cfg.TUIClipboardMode != "native" || cfg.ScrollbackLimit != 231 || cfg.TUIHistoryLimit != 444 || cfg.DefaultModel != "bootstrap" {
 		t.Fatalf("writer lost fields: %+v", cfg)
 	}
 	if _, err = SaveCompactionPolicy(root, saved.Revision, validPolicy()); !errors.Is(err, ErrSettingsConflict) {

@@ -30,13 +30,13 @@ try{tmux('new-session','-d','-s','keeper','sleep 1200');for(const mode of ['full
  const launch=()=>tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && TERM=xterm-256color COLORTERM=truecolor '${binary}' -tui ${mode==='regular'?'-tui-mode regular ':''}-db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'; printf '\nCOPY EXITED\n'; sleep 60`);
  try{
   launch();tmux('set-option','-s','set-clipboard','on');tmux('set-option','-t',session,'status','off');
-  await wait(()=>capture().includes('m0/t0'),'first startup');
+  await wait(()=>capture().includes('%/'),'first startup');
   const sessionID=sql('select id from sessions limit 1;');assert(sessionID,'missing persisted session');
   keys('C-d');await wait(()=>capture().includes('COPY EXITED'),'first exit');tmux('kill-session','-t',session);
   // Seed through the actual SQLite store, preserving leading/trailing spaces and
   // the trailing newline. The latest assistant must win over an earlier reply.
   sql(`insert into messages(id,session_id,role,content,payload_json,created_at) values('source-older',${quote(sessionID)},'assistant','older','{}','2026-01-01'),('source-latest',${quote(sessionID)},'assistant',${quote(source)},'{}','2026-01-02');`);
-  launch();tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('m2/t0'),'reopen persisted messages');
+  launch();tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'reopen persisted messages');
   const idleBars=bars(capture());assert(idleBars.length===2,'idle separator count');
   if(mode==='regular')assert(tmux('display-message','-p','-t',pane,'#{alternate_on} #{mouse_any_flag} #{mouse_button_flag}').trim()==='0 0 0','regular captured terminal history');
   // tmux may not adopt application OSC 52 into its own paste buffer. Capture

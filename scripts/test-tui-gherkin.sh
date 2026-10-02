@@ -125,7 +125,7 @@ screen_should_contain() {
   for _ in 1 2 3 4 5; do
     sleep 0.5
     capture
-    if grep -Fq "$text" "$ARTIFACT_DIR/$(printf '%02d' "$STEP")-screen.txt"; then
+    if grep -Fq -- "$text" "$ARTIFACT_DIR/$(printf '%02d' "$STEP")-screen.txt"; then
       return 0
     fi
   done
@@ -139,7 +139,7 @@ db_should_contain() {
   for _ in 1 2 3 4 5 6 7 8; do
     sleep 0.5
     sqlite3 -separator '|' "$DB" 'select role, content from messages order by created_at asc, id asc;' > "$ARTIFACT_DIR/messages.txt" 2>/dev/null || true
-    if grep -Fq "$role|$text" "$ARTIFACT_DIR/messages.txt"; then
+    if grep -Fq -- "$role|$text" "$ARTIFACT_DIR/messages.txt"; then
       return 0
     fi
   done
@@ -196,7 +196,7 @@ MD
 wait_for_tui_ready() {
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     sleep 0.4
-    if capture_pane | grep -Eq "m[0-9]+/t[0-9]+"; then
+    if capture_pane | grep -Eq "[0-9.?]+%/"; then
       return 0
     fi
   done
@@ -221,7 +221,9 @@ editor_should_contain() {
   local expected="$1" line
   for _ in 1 2 3 4 5; do
     sleep 0.3
-    line=$(capture_pane | grep -F '▌' | tail -1 || true)
+    # The editor has no cursor glyph (Pi draws reverse video); its last row
+    # is the one directly above the bottom editor border.
+    line=$(capture_pane | awk '/^[[:space:]]*─/{if(prev!~/^[[:space:]]*─/&&seen)last=prev;seen=1}{prev=$0}END{print last}' || true)
     if [[ -n "$line" && "$line" == *"$expected"* ]]; then
       return 0
     fi
@@ -333,16 +335,6 @@ shopt -s nullglob
 features=("$FEATURE_DIR"/*.feature)
 if [[ -n "${FEATURE_FILE:-}" ]]; then
   features=("$FEATURE_FILE")
-else
-  # The scrollbar outline is executed by its dedicated tmux/PTY runner,
-  # which expands all three sizes. This line-by-line runner cannot drive
-  # mouse gestures or expand outline examples; make test-tui-gherkin runs
-  # test-tui-scrollbar as a prerequisite.
-  covered=()
-  for feature in "${features[@]}"; do
-    [[ "$(basename "$feature")" == scrollbar.feature ]] || covered+=("$feature")
-  done
-  features=("${covered[@]}")
 fi
 if [[ ${#features[@]} -eq 0 ]]; then
   echo "no feature files in $FEATURE_DIR" >&2

@@ -42,13 +42,7 @@ type transcriptSearch struct {
 // Index the same retained, wrapped and collapsed output the fullscreen renderer
 // displays. Tool metadata and hidden lines never become phantom search matches.
 func (c *chatTUI) renderedTranscriptRows(width int) []transcriptSearchRow {
-	rows := c.transcriptRowsAtWidth(width)
-	// go-tui reserves one column whenever vertical content overflows. Match
-	// that layout even when no custom scrollbar style was chosen.
-	if len(rows) > c.transcriptViewportHeight() && width > 1 {
-		return c.transcriptRowsAtWidth(width - 1)
-	}
-	return rows
+	return c.transcriptRowsAtWidth(width)
 }
 
 func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
@@ -58,19 +52,24 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 	var rows []transcriptSearchRow
 	previousKind := ""
 	for _, block := range c.buildTranscriptRenderableBlocks(c.visibleTranscript()) {
+		if block.Kind == "thinking_indicator" {
+			continue
+		}
 		gap := assistantGapBefore(previousKind, block.Kind)
 		previousWidth := c.outputWidth
-		if block.MarkdownSource != "" {
+		if block.MarkdownSource != "" || block.ToolPath != "" || block.ToolContent != nil {
 			c.outputWidth = width
 		}
 		el := c.renderTranscriptBlockAfter(block, previousKind)
 		c.outputWidth = previousWidth
-		previousKind = block.Kind
+		if block.Kind != "thinking_indicator" {
+			previousKind = block.Kind
+		}
 		height := max(1, el.HeightForWidth(width))
 		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(height))
 		root.AddChild(el)
 		buf := gotui.NewBuffer(width, height)
-		root.Render(buf, width, height)
+		root.RenderTo(buf, width, height)
 		baseRow := len(rows)
 		for y := 0; y < height; y++ {
 			var text strings.Builder
@@ -89,10 +88,10 @@ func (c *chatTUI) transcriptRowsAtWidth(width int) []transcriptSearchRow {
 			}
 			key := ""
 			separator, _, _ := transcriptSpacing(block.Kind)
-			if y >= separator+gap && (len(block.Body) > 0 || block.Subheader != "") && block.Kind != "user" && block.Kind != "assistant" {
+			if y >= separator+gap && (len(block.Body) > 0 || block.Subheader != "" || block.ToolContent != nil) && block.Kind != "user" && block.Kind != "assistant" {
 				key = block.Key
 			}
-			rows = append(rows, transcriptSearchRow{text: strings.TrimRight(text.String(), " "), spans: spans, prompt: block.Kind == "user" && y == 1+gap, blockKey: key})
+			rows = append(rows, transcriptSearchRow{text: strings.TrimRight(text.String(), " "), spans: spans, prompt: block.Kind == "user" && y == gap, blockKey: key}) // prompt = top of the padded user band
 		}
 		for _, run := range transcriptWrapRuns(el, rows[baseRow:]) {
 			for i := range run.cells {
@@ -294,13 +293,15 @@ func (c *chatTUI) renderTranscriptSearchRows(transcript *gotui.Element) {
 			end := col + gotui.StringWidth(spans[j].Text)
 			for _, match := range matches[i] {
 				if col < match.end && end > match.start {
-					spans[j].Style = spans[j].Style.Background(piUserBg).Underline()
+					// Pi: searchMatchBg + searchMatchText, underlined.
+					spans[j].Style = spans[j].Style.Background(piSearchMatchBg).Foreground(piMuted).Underline()
 					break
 				}
 			}
 			for _, part := range selectedParts {
 				if part.row == i && col < part.end && end > part.start {
-					spans[j].Style = spans[j].Style.Background(piText).Foreground(piUserBg).Bold()
+					// Pi: the current match is the match style, inverse and bold.
+					spans[j].Style = spans[j].Style.Background(piSearchMatchBg).Foreground(piMuted).Reverse().Bold()
 					break
 				}
 			}

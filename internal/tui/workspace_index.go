@@ -126,13 +126,7 @@ func (c *chatTUI) closeWorkspaceIndex() {
 	p.epoch++
 	if c.regularMode && c.app != nil {
 		c.app.Terminal().ExitAltScreen()
-		w, h := c.app.Size()
-		c.app.Dispatch(gotui.ResizeEvent{Width: w, Height: h})
-		// Width changes invalidate go-tui's inline history geometry. Establish
-		// it on the restored main screen before the editor can grow again.
-		if p.resized {
-			c.app.PrintAboveln("sys: terminal resized to %dx%d", w, h)
-		}
+		c.resetInlineHistoryModel()
 	}
 	c.transcriptScroll, c.stickToBottom = p.savedScroll, p.savedFollow
 	c.inputActive = p.savedInputActive
@@ -262,5 +256,5 @@ func (c *chatTUI) workspaceIndexHeight() int {
 	return 0
 }
 func (c *chatTUI) renderWorkspaceIndex(width int) *gotui.Element {
-	return c.renderLineBlock(c.workspaceIndexLines(width), gotui.NewStyle().Foreground(gotui.Cyan))
+	return c.renderLineBlock(c.workspaceIndexLines(width), gotui.NewStyle())
 }

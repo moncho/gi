@@ -426,3 +426,31 @@ func TestOptionalRootsAbsentAppearAndDisappear(t *testing.T) {
 		t.Fatal("symlink optional ancestor accepted")
 	}
 }
+
+// A plain code workspace has neither built-in Piclaw root. Scans must not fail
+// ("statat .pi: no such file or directory"); configured extra roots are still
+// indexed and a missing configured root still fails.
+func TestConfiguredScanWithoutBuiltinRoots(t *testing.T) {
+	root, write := scanFixture(t)
+	write("docs/guide.md", "hello index")
+	for _, scope := range []string{"all", "notes", "skills"} {
+		c, err := searchstore.ConfiguredScopeConfig(root, scope, []string{"docs"}, nil, nil, chunking.LineVersion)
+		if err != nil {
+			t.Fatalf("%s config: %v", scope, err)
+		}
+		snapshot, err := ScanScope(t.Context(), c)
+		if err != nil {
+			t.Fatalf("%s scan without notes/.pi/skills: %v", scope, err)
+		}
+		if scope == "all" && (len(snapshot.Documents) != 1 || snapshot.Documents[0].Path != "docs/guide.md") {
+			t.Fatalf("all scope documents: %#v", snapshot.Documents)
+		}
+	}
+	missing, err := searchstore.ConfiguredScopeConfig(root, "all", []string{"absent"}, nil, nil, chunking.LineVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ScanScope(t.Context(), missing); err == nil {
+		t.Fatal("a missing configured extra root must still fail")
+	}
+}

@@ -93,7 +93,7 @@ func TestMultilineEditorRendersSeparateRowsAndBindsNewline(t *testing.T) {
 	m.SetText("first line\nsecond line")
 	root := m.Render(nil)
 	buf := gotui.NewBuffer(60, 4)
-	root.Render(buf, 60, 2)
+	root.RenderTo(buf, 60, 2)
 	text := buf.StringTrimmed()
 	if !strings.Contains(text, "first line\nsecond line") {
 		t.Fatal("editor lines concatenated", text)
@@ -109,5 +109,19 @@ func TestMultilineEditorRendersSeparateRowsAndBindsNewline(t *testing.T) {
 	}
 	if !shift || !ctrl {
 		t.Fatal("missing explicit newline binding")
+	}
+}
+
+// Pi 1.0: --tui-mode wins, then the tuiMode setting, then fullscreen.
+func TestResolveTUIMode(t *testing.T) {
+	for _, c := range []struct{ flag, setting, want string }{
+		{"", "", "fullscreen"},
+		{"", "regular", "regular"},
+		{"fullscreen", "regular", "fullscreen"},
+		{"", "bogus", "fullscreen"},
+	} {
+		if got := resolveTUIMode(c.flag, c.setting); got != c.want {
+			t.Fatalf("resolveTUIMode(%q, %q) = %q, want %q", c.flag, c.setting, got, c.want)
+		}
 	}
 }

@@ -130,7 +130,7 @@ func (c *chatTUI) renderSessionRename(width int) *gotui.Element {
 		root.AddChild(gotui.New(gotui.WithHeight(1), gotui.WithWidthPercent(100), gotui.WithWrap(false), gotui.WithText(selectorText(text, width)), gotui.WithTextStyle(style)))
 	}
 	add("Rename session · Enter save · Esc cancel", gotui.NewStyle().Bold())
-	add("target: "+c.sessionActions.targetLabel, gotui.NewStyle().Dim())
+	add("target: "+c.sessionActions.targetLabel, piFg(piMuted))
 	if m := c.sessionActions.renameInput; m != nil {
 		add(sessionRenameLine(m, width), gotui.NewStyle())
 	}
@@ -138,6 +138,6 @@ func (c *chatTUI) renderSessionRename(width int) *gotui.Element {
 	if c.modelMenuError != "" {
 		notice = "error: " + c.modelMenuError
 	}
-	add(notice, gotui.NewStyle().Dim())
+	add(notice, piFg(piMuted))
 	return root
 }

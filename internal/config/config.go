@@ -11,33 +11,51 @@ import (
 )
 
 type RuntimeConfig struct {
-	WorkspaceRoot        string                 `json:"workspace_root"`
-	AssistantName        string                 `json:"assistant_name"`
-	AssistantAvatar      string                 `json:"assistant_avatar"`
-	UserName             string                 `json:"user_name"`
-	UserAvatar           string                 `json:"user_avatar"`
-	UserAvatarBackground string                 `json:"user_avatar_background"`
-	DefaultProvider      string                 `json:"default_provider"`
-	DefaultModel         string                 `json:"default_model"`
-	DefaultThinkingLevel string                 `json:"default_thinking_level"`
-	EnabledModels        []string               `json:"enabled_models"`
-	Agents               AgentsConfig           `json:"agents"`
-	Session              SessionConfig          `json:"session"`
-	Routing              ModelRoutingConfig     `json:"routing"`
-	MaxIterations        int                    `json:"max_iterations"`
-	ScrollbackLimit      int                    `json:"scrollback_limit"`
-	TUIHistoryLimit      int                    `json:"tui_history_limit"`
-	TUIClipboardMode     string                 `json:"tui_clipboard_mode"`
-	TUIScrollbar         bool                   `json:"tui_scrollbar"`
-	Compaction           CompactionSettings     `json:"compaction"`
-	Retry                ProviderRetrySettings  `json:"retry"`
-	Hooks                HookSettings           `json:"hooks"`
-	Peering              PeeringSettings        `json:"peering"`
-	Passkeys             PasskeySettings        `json:"passkeys"`
-	InboundWork          InboundWorkSettings    `json:"inbound_work"`
-	WorkspaceIndex       WorkspaceIndexSettings `json:"workspace_index"`
-	SystemPrompt         string                 `json:"-"`
-	Discovery            skills.Discovery       `json:"-"`
+	WorkspaceRoot        string             `json:"workspace_root"`
+	AssistantName        string             `json:"assistant_name"`
+	AssistantAvatar      string             `json:"assistant_avatar"`
+	UserName             string             `json:"user_name"`
+	UserAvatar           string             `json:"user_avatar"`
+	UserAvatarBackground string             `json:"user_avatar_background"`
+	DefaultProvider      string             `json:"default_provider"`
+	DefaultModel         string             `json:"default_model"`
+	DefaultThinkingLevel string             `json:"default_thinking_level"`
+	EnabledModels        []string           `json:"enabled_models"`
+	Agents               AgentsConfig       `json:"agents"`
+	Session              SessionConfig      `json:"session"`
+	Routing              ModelRoutingConfig `json:"routing"`
+	MaxIterations        int                `json:"max_iterations"`
+	ScrollbackLimit      int                `json:"scrollback_limit"`
+	TUIHistoryLimit      int                `json:"tui_history_limit"`
+	TUIClipboardMode     string             `json:"tui_clipboard_mode"`
+	// EnabledModelsConfigured is false when EnabledModels is gi's built-in
+	// fallback; Pi then has no "scoped" model list.
+	EnabledModelsConfigured bool `json:"-"`
+	// TUIWheelScrollLines is Pi's fullscreenWheelScrollLines; 0 means "auto".
+	TUIWheelScrollLines int `json:"tui_wheel_scroll_lines"`
+	// Theme is Pi's theme setting (project .pi/settings.json, else global).
+	Theme string `json:"theme,omitempty"`
+	// TUIMode is Pi's tuiMode setting (project, else global); the -tui-mode
+	// flag overrides it.
+	TUIMode string `json:"tui_mode,omitempty"`
+	// QuietStartup is Pi's quietStartup: "" (false: header and loaded
+	// resources), "true" (neither) or "header" (header only).
+	QuietStartup string `json:"quiet_startup,omitempty"`
+	// DefaultToolsLayers are Pi's defaultTools lists, user then project.
+	DefaultToolsLayers [][]string `json:"default_tools_layers,omitempty"`
+	// ExtensionsLayers are Pi's extensions lists, user then project.
+	ExtensionsLayers [][]string `json:"extensions_layers,omitempty"`
+	// Codemode is Pi's codemode settings (project values override user ones).
+	Codemode       CodemodeSettings       `json:"codemode"`
+	Compaction     CompactionSettings     `json:"compaction"`
+	Retry          ProviderRetrySettings  `json:"retry"`
+	Hooks          HookSettings           `json:"hooks"`
+	Peering        PeeringSettings        `json:"peering"`
+	Passkeys       PasskeySettings        `json:"passkeys"`
+	InboundWork    InboundWorkSettings    `json:"inbound_work"`
+	WorkspaceIndex WorkspaceIndexSettings `json:"workspace_index"`
+	SystemPrompt   string                 `json:"-"`
+	Discovery      skills.Discovery       `json:"-"`
 }
 
 type piclawConfig struct {
@@ -88,8 +106,9 @@ type InboundWorkSettings struct {
 	LeaseTTLMS int    `json:"lease_ttl_ms"`
 }
 
-// WorkspaceIndexSettings is startup-only. All roots are required unless listed
-// explicitly as optional; validation is performed when resolving an index scope.
+// WorkspaceIndexSettings is startup-only. Extra roots are required unless
+// listed explicitly as optional; the built-in notes and .pi/skills roots are
+// always optional. Validation is performed when resolving an index scope.
 type WorkspaceIndexSettings struct {
 	ExtraRoots      []string `json:"extraRoots"`
 	ExtraExtensions []string `json:"extraExtensions"`
@@ -97,25 +116,36 @@ type WorkspaceIndexSettings struct {
 }
 
 type piSettings struct {
-	DefaultProvider      string                 `json:"defaultProvider"`
-	DefaultModel         string                 `json:"defaultModel"`
-	DefaultThinkingLevel string                 `json:"defaultThinkingLevel"`
-	EnabledModels        []string               `json:"enabledModels"`
-	MaxIterations        int                    `json:"maxIterations"`
-	TUIScrollbackLimit   int                    `json:"tuiScrollbackLimit"`
-	TUIHistoryLimit      int                    `json:"tuiHistoryLimit"`
-	TUIClipboardMode     string                 `json:"tuiClipboardMode"`
-	TUIScrollbar         bool                   `json:"tuiScrollbar"`
-	Compaction           CompactionSettings     `json:"compaction"`
-	Retry                ProviderRetrySettings  `json:"retry"`
-	Hooks                HookSettings           `json:"hooks"`
-	Peering              PeeringSettings        `json:"peering"`
-	Passkeys             PasskeySettings        `json:"passkeys"`
-	InboundWork          *InboundWorkSettings   `json:"inboundWork"`
-	WorkspaceIndex       WorkspaceIndexSettings `json:"workspaceIndex"`
-	Agents               AgentsConfig           `json:"agents"`
-	Session              SessionConfig          `json:"session"`
-	Routing              ModelRoutingConfig     `json:"routing"`
+	DefaultTools []string          `json:"defaultTools"`
+	Extensions   []string          `json:"extensions"`
+	Codemode     *CodemodeSettings `json:"codemode"`
+	// Theme is Pi's theme setting: a theme name ("dark", "light", custom) or
+	// an auto pair "light/dark" resolved by the terminal's detected scheme.
+	Theme                string   `json:"theme"`
+	// TUIMode is Pi's tuiMode: "fullscreen" (default) or "regular".
+	TUIMode string `json:"tuiMode"`
+	// QuietStartup is Pi's quietStartup: false, true or "header".
+	QuietStartup json.RawMessage `json:"quietStartup"`
+	DefaultProvider      string   `json:"defaultProvider"`
+	DefaultModel         string   `json:"defaultModel"`
+	DefaultThinkingLevel string   `json:"defaultThinkingLevel"`
+	EnabledModels        []string `json:"enabledModels"`
+	MaxIterations        int      `json:"maxIterations"`
+	TUIScrollbackLimit   int      `json:"tuiScrollbackLimit"`
+	TUIHistoryLimit      int      `json:"tuiHistoryLimit"`
+	TUIClipboardMode     string   `json:"tuiClipboardMode"`
+	// Pi's fullscreenWheelScrollLines: a number of lines, or "auto".
+	FullscreenWheelScrollLines any                    `json:"fullscreenWheelScrollLines"`
+	Compaction                 CompactionSettings     `json:"compaction"`
+	Retry                      ProviderRetrySettings  `json:"retry"`
+	Hooks                      HookSettings           `json:"hooks"`
+	Peering                    PeeringSettings        `json:"peering"`
+	Passkeys                   PasskeySettings        `json:"passkeys"`
+	InboundWork                *InboundWorkSettings   `json:"inboundWork"`
+	WorkspaceIndex             WorkspaceIndexSettings `json:"workspaceIndex"`
+	Agents                     AgentsConfig           `json:"agents"`
+	Session                    SessionConfig          `json:"session"`
+	Routing                    ModelRoutingConfig     `json:"routing"`
 }
 
 func Load(workspaceRoot string) RuntimeConfig {
@@ -124,6 +154,8 @@ func Load(workspaceRoot string) RuntimeConfig {
 		workspaceRoot = DefaultWorkspaceRoot()
 	}
 	cfg := RuntimeConfig{WorkspaceRoot: workspaceRoot, Compaction: CompactionSettings{Enabled: true}, InboundWork: InboundWorkSettings{Enabled: true}}
+	var projectTools, projectExtensions []string
+	var projectCodemode *CodemodeSettings
 	var pc piclawConfig
 	if err := readJSON(filepath.Join(workspaceRoot, ".piclaw", "config.json"), &pc); err == nil {
 		cfg.AssistantName = pc.Assistant.AssistantName
@@ -142,7 +174,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.ScrollbackLimit = ps.TUIScrollbackLimit
 		cfg.TUIHistoryLimit = ps.TUIHistoryLimit
 		cfg.TUIClipboardMode = normalizeClipboardMode(ps.TUIClipboardMode)
-		cfg.TUIScrollbar = ps.TUIScrollbar
+		cfg.TUIWheelScrollLines = wheelScrollLines(ps.FullscreenWheelScrollLines)
 		cfg.Compaction = ps.Compaction
 		cfg.Retry = ps.Retry
 		cfg.Hooks = ps.Hooks
@@ -155,6 +187,26 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.Session = ps.Session
 		cfg.Routing = ps.Routing
 		cfg.WorkspaceIndex = ps.WorkspaceIndex
+		cfg.Theme = strings.TrimSpace(ps.Theme)
+		cfg.TUIMode = strings.TrimSpace(ps.TUIMode)
+		cfg.QuietStartup = parseQuietStartup(ps.QuietStartup)
+		projectTools, projectExtensions, projectCodemode = ps.DefaultTools, ps.Extensions, ps.Codemode
+	}
+	applyGlobalPiSettings(&cfg)
+	// Project settings apply on top of the user's (Pi).
+	if projectTools != nil {
+		cfg.DefaultToolsLayers = append(cfg.DefaultToolsLayers, projectTools)
+	}
+	if projectExtensions != nil {
+		cfg.ExtensionsLayers = append(cfg.ExtensionsLayers, projectExtensions)
+	}
+	if projectCodemode != nil {
+		if projectCodemode.Mode != "" {
+			cfg.Codemode.Mode = projectCodemode.Mode
+		}
+		if projectCodemode.InlineBudget != nil {
+			cfg.Codemode.InlineBudget = projectCodemode.InlineBudget
+		}
 	}
 	if discovery, err := skills.Discover(workspaceRoot); err == nil {
 		cfg.Discovery = discovery
@@ -168,6 +220,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 	if strings.TrimSpace(cfg.DefaultProvider) == "" {
 		cfg.DefaultProvider = "opencode-zen"
 	}
+	cfg.EnabledModelsConfigured = len(cfg.EnabledModels) > 0
 	if len(cfg.EnabledModels) == 0 {
 		cfg.EnabledModels = []string{"opencode-zen/minimax-m2.5-free"}
 	}
@@ -175,7 +228,8 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.DefaultModel = cfg.EnabledModels[0]
 	}
 	if strings.TrimSpace(cfg.DefaultThinkingLevel) == "" {
-		cfg.DefaultThinkingLevel = "low"
+		// Pi's DEFAULT_THINKING_LEVEL.
+		cfg.DefaultThinkingLevel = "medium"
 	}
 	if len(cfg.Session.Dimensions) == 0 {
 		cfg.Session.Dimensions = []string{"chat"}
@@ -233,7 +287,8 @@ func PersistClipboardMode(workspaceRoot, mode string) error {
 
 func normalizeClipboardMode(mode string) string {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case "osc52", "native", "auto":
+	// Preserve unset so interactive selection and /copy can have different defaults.
+	case "", "osc52", "native", "auto":
 		return strings.ToLower(strings.TrimSpace(mode))
 	default:
 		return "off"
@@ -245,10 +300,6 @@ func PersistScrollbackLimit(workspaceRoot string, limit int) error {
 		return errors.New("scrollback limit must be > 0")
 	}
 	return persistPiFields(workspaceRoot, map[string]any{"tuiScrollbackLimit": limit})
-}
-
-func PersistTUIScrollbar(workspaceRoot string, enabled bool) error {
-	return persistPiFields(workspaceRoot, map[string]any{"tuiScrollbar": enabled})
 }
 
 func PersistTUIHistoryLimit(workspaceRoot string, limit int) error {
@@ -291,4 +342,133 @@ func readJSON(path string, target any) error {
 		return errors.New("empty file")
 	}
 	return json.Unmarshal(data, target)
+}
+
+// piAgentDir is Pi's global config directory (PI_CODING_AGENT_DIR or
+// ~/.pi/agent).
+func piAgentDir() string {
+	if dir := strings.TrimSpace(os.Getenv("PI_CODING_AGENT_DIR")); dir != "" {
+		return dir
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || strings.TrimSpace(home) == "" {
+		return ""
+	}
+	return filepath.Join(home, ".pi", "agent")
+}
+
+// applyGlobalPiSettings merges Pi's global settings.json under the project
+// settings, as Pi does: project values win, global values fill the model,
+// provider, thinking level and scoped models when the project leaves them unset.
+func applyGlobalPiSettings(cfg *RuntimeConfig) {
+	dir := piAgentDir()
+	if dir == "" {
+		return
+	}
+	var global piSettings
+	if err := readJSON(filepath.Join(dir, "settings.json"), &global); err != nil {
+		return
+	}
+	if strings.TrimSpace(cfg.DefaultProvider) == "" && strings.TrimSpace(cfg.DefaultModel) == "" {
+		cfg.DefaultProvider = global.DefaultProvider
+		cfg.DefaultModel = global.DefaultModel
+	}
+	if strings.TrimSpace(cfg.DefaultThinkingLevel) == "" {
+		cfg.DefaultThinkingLevel = global.DefaultThinkingLevel
+	}
+	if cfg.TUIWheelScrollLines == 0 {
+		cfg.TUIWheelScrollLines = wheelScrollLines(global.FullscreenWheelScrollLines)
+	}
+	if cfg.Theme == "" {
+		cfg.Theme = strings.TrimSpace(global.Theme)
+	}
+	if cfg.TUIMode == "" {
+		cfg.TUIMode = strings.TrimSpace(global.TUIMode)
+	}
+	if cfg.QuietStartup == "" {
+		cfg.QuietStartup = parseQuietStartup(global.QuietStartup)
+	}
+	if global.DefaultTools != nil {
+		cfg.DefaultToolsLayers = append([][]string{global.DefaultTools}, cfg.DefaultToolsLayers...)
+	}
+	if global.Extensions != nil {
+		cfg.ExtensionsLayers = append([][]string{global.Extensions}, cfg.ExtensionsLayers...)
+	}
+	if global.Codemode != nil {
+		cfg.Codemode = *global.Codemode
+	}
+	if len(cfg.EnabledModels) == 0 && len(global.EnabledModels) > 0 {
+		cfg.EnabledModels = append([]string(nil), global.EnabledModels...)
+	}
+}
+
+// wheelScrollLines normalises Pi's fullscreenWheelScrollLines: a finite
+// number is clamped to 1..100; anything else ("auto", unset) is 0 (auto).
+func wheelScrollLines(v any) int {
+	n, ok := v.(float64)
+	if !ok || n != n {
+		return 0
+	}
+	return max(1, min(100, int(n)))
+}
+
+// CodemodeSettings are Pi's codemode settings.
+type CodemodeSettings struct {
+	Mode         string `json:"mode,omitempty"`         // "on" (default) or "only"
+	InlineBudget *int   `json:"inlineBudget,omitempty"` // description token budget
+}
+
+// ToolEnabledByDefault applies Pi's defaultTools layers to one tool: a list
+// with plain names replaces the selection, +name/-name edit it.
+func (c RuntimeConfig) ToolEnabledByDefault(name string, initial bool) bool {
+	enabled := initial
+	for _, layer := range c.DefaultToolsLayers {
+		plain := false
+		for _, entry := range layer {
+			if e := strings.TrimSpace(entry); e != "" && !strings.HasPrefix(e, "+") && !strings.HasPrefix(e, "-") {
+				plain = true
+			}
+		}
+		if plain {
+			enabled = false
+		}
+		for _, entry := range layer {
+			switch e := strings.TrimSpace(entry); {
+			case e == name, e == "+"+name:
+				enabled = true
+			case e == "-"+name:
+				enabled = false
+			}
+		}
+	}
+	return enabled
+}
+
+// BuiltinDisabled reports whether "-builtin:<name>" appears in Pi's
+// extensions setting (the last layer to mention it wins).
+func (c RuntimeConfig) BuiltinDisabled(name string) bool {
+	disabled := false
+	for _, layer := range c.ExtensionsLayers {
+		for _, entry := range layer {
+			switch strings.TrimSpace(entry) {
+			case "-builtin:" + name:
+				disabled = true
+			case "+builtin:" + name, "builtin:" + name:
+				disabled = false
+			}
+		}
+	}
+	return disabled
+}
+
+// parseQuietStartup reads Pi's quietStartup (true, false or "header"):
+// "true", "header" or "" for false and anything else.
+func parseQuietStartup(raw json.RawMessage) string {
+	switch strings.TrimSpace(string(raw)) {
+	case "true":
+		return "true"
+	case `"header"`:
+		return "header"
+	}
+	return ""
 }

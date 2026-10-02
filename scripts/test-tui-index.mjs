@@ -26,11 +26,11 @@ for(const mode of (process.env.GI_INDEX_TEST_MODE?[process.env.GI_INDEX_TEST_MOD
  const terminalHistory=()=>tmux('capture-pane','-p','-S','-','-t',pane);
  try{
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);
-  tmux('pipe-pane','-t',pane,'-o',`cat > '${join(artifacts,`${mode}-${width}x${height}-raw.ansi`)}'`);tmux('set-option','-s','exit-empty','off');tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('m0/t0'),'startup');
+  tmux('pipe-pane','-t',pane,'-o',`cat > '${join(artifacts,`${mode}-${width}x${height}-raw.ansi`)}'`);tmux('set-option','-s','exit-empty','off');tmux('set-option','-t',session,'status','off');await wait(()=>capture().includes('%/'),'startup');
   assert(sql('select count(*) from workspace_index_workspaces')==='0','startup scanned');
   for(let i=1;i<=12;i++){type(`Index-history-${String(i).padStart(2,'0')}`);keys('Enter');await wait(()=>sql("select count(*) from turns where status='completed'")===String(i)&&sql('select count(*) from session_active_turns')==='0','history');}
   type('unsent index draft');keys('Left','Left','Left');if(mode==='fullscreen')keys('PageUp','PageUp');await sleep(170);
-  if(mode==='regular'){const history=terminalHistory();writeFileSync(join(artifacts,`${mode}-${width}x${height}-history-before.txt`),history);for(let n=1;n<=12;n++)assert(history.includes(`Gi: Gi received: Index-history-${String(n).padStart(2,'0')}`),`regular initial history absent: ${n}`);}
+  if(mode==='regular'){const history=terminalHistory();writeFileSync(join(artifacts,`${mode}-${width}x${height}-history-before.txt`),history);for(let n=1;n<=12;n++)assert(history.includes(`Gi received: Index-history-${String(n).padStart(2,'0')}`),`regular initial history absent: ${n}`);}
   const before=shot('before'),idleBars=bars(before),anchor=before.split('\n').find(l=>l.includes('Index-history-'))?.replace(/[│█]\s*$/,'').trim();
   open();await wait(()=>capture().includes('State: never_indexed'),'status opens');
   type('ordinary typing must not edit');keys('Enter');await sleep(180);await wait(()=>capture().includes('State: never_indexed'),'Enter defaults to status');
@@ -44,7 +44,7 @@ for(const mode of (process.env.GI_INDEX_TEST_MODE?[process.env.GI_INDEX_TEST_MOD
   assert(capture().includes('State: ready'),'resize lost panel');keys('Escape');await wait(()=>!capture().includes('Index ·'),'closed');
   assert(JSON.stringify(bars(capture()))===JSON.stringify(idleBars),'idle row growth');
   if(mode==='fullscreen')assert(capture().split('\n').some(l=>l.replace(/[│█]\s*$/,'').trim()===anchor),'reader anchor lost');
-  else {const history=terminalHistory();writeFileSync(join(artifacts,`${mode}-${width}x${height}-history.txt`),history);for(let n=1;n<=12;n++)assert(history.includes(`Gi: Gi received: Index-history-${String(n).padStart(2,'0')}`),`regular history lost: ${n}`);assert(!history.includes('Index · all'),'temporary panel entered scrollback');}
+  else {const history=terminalHistory();writeFileSync(join(artifacts,`${mode}-${width}x${height}-history.txt`),history);for(let n=1;n<=12;n++)assert(history.includes(`Gi received: Index-history-${String(n).padStart(2,'0')}`),`regular history lost: ${n}`);assert(!history.includes('Index · all'),'temporary panel entered scrollback');}
   type('X');await sleep(150);assert(capture().replaceAll('▌','').includes('unsent index drXaft'),'draft/cursor changed');keys('BSpace');
   open();await wait(()=>capture().includes('State: ready'),'reopen');keys('Right');await wait(()=>capture().includes('Index · notes')&&capture().includes('never_indexed'),'scope select');
   keys('Left');await wait(()=>capture().includes('Index · all')&&capture().includes('State: ready'),'scope back');
@@ -60,7 +60,7 @@ for(const mode of (process.env.GI_INDEX_TEST_MODE?[process.env.GI_INDEX_TEST_MOD
   await sleep(2100);assert(!capture().includes('refresh remains pending'),'late error leaked');sql("delete from workspace_index_leases where owner_token='held-peer'");
   open();await wait(()=>capture().includes('State: ready'),'open after busy');keys('Escape');await sleep(100);
   assert(count()==='12','busy close sent draft');
-  keys('Escape','s');await wait(()=>capture().includes('Select session'),'session selector after panel');await sleep(180);keys('Escape');await wait(()=>!capture().includes('Select session'),'close session selector');await sleep(180);
+  keys('Escape','s');await wait(()=>capture().includes('Resume Session'),'session selector after panel');await sleep(180);keys('Escape');await wait(()=>!capture().includes('Resume Session'),'close session selector');await sleep(180);
   assert(capture().replaceAll('▌','').includes('unsent index draft'),'selector lost draft');
   if(mode==='regular')writeFileSync(join(artifacts,`${mode}-${width}-pre-multiline.txt`),terminalHistory());
   keys('C-e','C-j');type('second line');await sleep(150);
@@ -70,7 +70,7 @@ for(const mode of (process.env.GI_INDEX_TEST_MODE?[process.env.GI_INDEX_TEST_MOD
   keys('C-a','C-k','BSpace','C-a','C-k');type('Index-history-13');keys('Enter');
   await wait(()=>sql("select count(*) from turns where status='completed'")==='13'&&sql('select count(*) from session_active_turns')==='0','post-panel completion');await sleep(250);
   if(mode==='regular'){
-   const history=terminalHistory();writeFileSync(join(artifacts,`${mode}-${width}-post-submit.txt`),history);for(let n=1;n<=13;n++)assert(history.includes(`Gi: Gi received: Index-history-${String(n).padStart(2,'0')}`),`post-panel history missing ${n}`);
+   const history=terminalHistory();writeFileSync(join(artifacts,`${mode}-${width}-post-submit.txt`),history);for(let n=1;n<=13;n++)assert(history.includes(`Gi received: Index-history-${String(n).padStart(2,'0')}`),`post-panel history missing ${n}`);
    assert(!history.includes('Index · all'),'post-panel history contaminated');
    assert(tmux('display-message','-p','-t',pane,'#{alternate_on} #{mouse_any_flag}').trim()==='0 0','regular mode not restored');
    assert(!readFileSync(join(artifacts,`${mode}-${width}x${height}-raw.ansi`),'utf8').includes('\x1b[3J'),'scrollback clear emitted');

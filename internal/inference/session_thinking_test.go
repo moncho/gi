@@ -49,3 +49,22 @@ func TestSessionThinkingCatalogueValidationAndFailBeforeNetwork(t *testing.T) {
 		t.Fatal("legacy unvalidated captured")
 	}
 }
+
+func TestEffectiveThinkingFollowsPiDefaultAndClamp(t *testing.T) {
+	Init()
+	low, high := "low", "high"
+	goai.RegisterModel(&goai.Model{ID: "clamp", Provider: "thinking-effective", Api: goai.ApiOpenAICompletions, ContextWindow: 32000, Reasoning: true, ThinkingLevelMap: map[goai.ModelThinkingLevel]*string{"off": nil, "minimal": nil, "low": &low, "medium": nil, "high": &high}})
+	goai.RegisterModel(&goai.Model{ID: "plain", Provider: "thinking-effective", Api: goai.ApiOpenAICompletions, ContextWindow: 32000})
+	if got, known := EffectiveThinking("thinking-effective/clamp", ""); !known || got != "high" {
+		t.Fatalf("default medium should clamp up to a supported level, got %q", got)
+	}
+	if got, _ := EffectiveThinking("thinking-effective/clamp", "low"); got != "low" {
+		t.Fatalf("supported level kept, got %q", got)
+	}
+	if got, known := EffectiveThinking("thinking-effective/plain", "high"); !known || got != "" {
+		t.Fatalf("non-reasoning model gets no level, got %q", got)
+	}
+	if _, known := EffectiveThinking("nowhere/unknown", "high"); known {
+		t.Fatal("unknown model reported as known")
+	}
+}

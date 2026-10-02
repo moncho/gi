@@ -34,7 +34,7 @@ func TestStreamingMarkdownRerendersEachDeltaWithoutSpeakerLabels(t *testing.T) {
 			t.Fatalf("missing %q in streamed screen: %q", want, before)
 		}
 	}
-	if strings.Contains(before, "```go") || strings.Contains(before, "**bold**") || strings.Contains(before, "`code`") {
+	if !strings.Contains(before, "```go") || strings.Contains(before, "**bold**") || strings.Contains(before, "`code`") {
 		t.Fatalf("raw Markdown in streaming output: %q", before)
 	}
 	c.handleEvent(map[string]any{"type": "new_post", "data": map[string]any{"content": c.draft}})
@@ -90,7 +90,7 @@ func TestThinkingSpinnerStaysHiddenThroughParallelToolStatusEvents(t *testing.T)
 	if transcriptContainsBlockKind(c.transcript, "thinking_indicator") {
 		t.Fatalf("thinking indicator returned while tools run: %q", c.transcript)
 	}
-	if screen := renderMarkdownScreen(t, c); strings.Contains(screen, "Thinking...") || !strings.Contains(screen, "shell") {
+	if screen := renderMarkdownScreen(t, c); strings.Contains(screen, "Thinking...") || !strings.Contains(screen, "$ ...") {
 		t.Fatalf("tool-only progress not visible in timeline: %q", screen)
 	}
 	publish("runtime.tool", map[string]any{"type": "tool_finished", "tool": "shell", "turn_id": "turn_1", "tool_call_id": "a"})
@@ -112,6 +112,6 @@ func renderMarkdownScreen(t *testing.T, c *chatTUI) string {
 		root.AddChild(c.renderTranscriptBlock(block))
 	}
 	buf := gotui.NewBuffer(80, 35)
-	root.Render(buf, 80, 35)
+	root.RenderTo(buf, 80, 35)
 	return strings.ReplaceAll(buf.StringTrimmed(), "\u00a0", " ")
 }

@@ -16,11 +16,11 @@ const wait=async(fn,label)=>{const end=Date.now()+15000;while(Date.now()<end){if
 const assert=(ok,label)=>{if(!ok)throw Error(label);};
 const quote=s=>`'${s.replaceAll("'","''")}'`;
 const fixtures=[
- {name:'plain-output',source:'Plain assistant output',lines:['Plain assistant output','shell','  if ready { return 42 }'],absent:['last hidden line']},
+ {name:'plain-output',source:'Plain assistant output',lines:['Plain assistant output','$ ...','  if ready { return 42 }','last hidden line'],absent:[]},
  {name:'heading-list',source:'# Rendered heading\n\nA **bold** and *italic* phrase.\n\n- alpha item\n- beta item',
   lines:['RENDERED HEADING','================','A bold and italic phrase.','• alpha item','• beta item'],absent:['**bold**','*italic*','# Rendered heading']},
  {name:'code-quote',source:'> Quoted words\n\nUse `inline()` now.\n\n```js\nconst answer = 42;\n  return answer;\n```',
-  lines:['> Quoted words','Use inline() now.','[code:js] 2 lines','    const answer = 42;','      return answer;'],absent:['```js','`inline()`']},
+  lines:['> Quoted words','Use inline() now.','```js','  const answer = 42;','    return answer;','```'],absent:['`inline()`','[code:js]']},
  {name:'table-link',source:'| Name | Value |\n| --- | --- |\n| First | 世界 |\n\nVisit [docs](https://example.invalid/docs).',
   lines:['│ Name │ Value │','│ First │ 世界 │','docs (https://example.invalid/docs)'],absent:['[docs]','| --- |']},
 ];
@@ -56,12 +56,12 @@ for(const scenario of scenarios){
  const shot=label=>{writeFileSync(join(artifacts,`${mode}-${width}x${height}-${fixture.name}-${label}.txt`),cap());writeFileSync(join(artifacts,`${mode}-${width}x${height}-${fixture.name}-${label}.ansi`),ansi());};
  try{
   mkdirSync(join(dir,'.pi'));writeFileSync(join(dir,'.pi/settings.json'),JSON.stringify({model:'test-model',enabledModels:['test-model']}));
-  launch();await wait(()=>cap().includes('m0/t0'),'initial TUI');
+  launch();await wait(()=>cap().includes('%/'),'initial TUI');
   const id=sql('select id from sessions limit 1;');assert(id,'missing session');
   tm('send-keys','-t',pane,'C-d');await wait(()=>cap().includes('MARKDOWN_EXITED'),'close before seeding');tm('kill-session','-t','proof');
   // Seed the real store; reopening exercises transcript loading, layout and terminal ANSI output.
   sql(`insert into messages(id,session_id,role,content,payload_json,created_at) values('user',${quote(id)},'user','Markdown check','{}','2026-01-01'),('assistant',${quote(id)},'assistant',${quote(fixture.source)},'{}','2026-01-02')${fixture.name==='plain-output'?`,('tool-output',${quote(id)},'tool_result','  if ready { return 42 }\nsecond line\nlast hidden line','{"tool_name":"shell"}','2026-01-03')`:''};`);
-  launch();await wait(()=>cap().includes(fixture.name==='plain-output'?'m3/t0':'m2/t0'),'stored Markdown rendered');
+  launch();await wait(()=>cap().includes('%/'),'stored Markdown rendered');
   const check=label=>{
    const screen=cap(),rows=screen.split('\n');
    const problems=[];
@@ -79,15 +79,21 @@ for(const scenario of scenarios){
    if(fixture.name==='plain-output'){
     const transcript=screen.split(/^[ ─]{10,}$/m)[0];
     if(/[╭╮╰╯│]/.test(transcript))problems.push('old box border visible');
-    if(mode==='fullscreen'&&!transcript.includes('more line(s)'))problems.push('tool not collapsed');
+    if(mode==='fullscreen'&&!transcript.includes('last hidden line'))problems.push('short tool output hidden (Pi previews 5 shell lines)');
     if(mode==='regular'&&!transcript.includes('last hidden line'))problems.push('terminal scrollback lost full tool output');
    }
    if(fixture.name==='code-quote'){
-    const label=rows.find(row=>row.includes('[code:js]'));
+    // Pi: ```lang border, code indented two spaces, closing ``` border.
+    const label=rows.find(row=>row.includes('```js'));
     const code=rows.find(row=>row.includes('const answer = 42;'));
-    if(label&&code&&code.search(/\S/)<label.search(/\S/)+4)problems.push('fenced code lost four-space indentation');
+    if(!label||!code||code.search(/\S/)!==label.search(/\S/)+2)problems.push('fenced code lost Pi two-space indentation');
     const indented=rows.find(row=>row.includes('return answer;'));
-    if(label&&indented&&indented.search(/\S/)<label.search(/\S/)+6)problems.push('source indentation inside fenced code lost');
+    if(label&&indented&&indented.search(/\S/)<label.search(/\S/)+4)problems.push('source indentation inside fenced code lost');
+    // Known languages are highlighted with Pi's syntax colours (keyword blue, number green).
+    const ansiRows=ansi().split("\n");
+    const codeAnsi=ansiRows.find(row=>row.includes('answer')&&row.includes('42'))||'';
+    if(!codeAnsi.includes('38;2;105;173;208'))problems.push('js keyword not syntax highlighted');
+    if(!codeAnsi.includes('38;2;104;183;141'))problems.push('js number not syntax highlighted');
    }
    // These fixtures are deliberately short enough to be visible in a 60x18 viewport.
    const content=rows.slice(0,rows.findIndex(row=>/^\s*─{10,}\s*$/.test(row)));
@@ -100,14 +106,16 @@ for(const scenario of scenarios){
   // boundaries while comparing visible text, rather than requiring contiguous
   // bytes that cease to exist when a heading is styled span by span.
   const backgrounds=styled.replace(/\x1b\[(?!48;2;|49m)[0-9;]*m/g,'');
-  assert(/\x1b\[48;2;52;53;65m[\s\S]*Markdown[\s\S]*\x1b\[49m[\s\S]*(?:Plain assistant output|RENDERED HEADING|Use |Name)/.test(backgrounds),
+  assert(/\x1b\[48;2;33;59;73m[\s\S]*Markdown[\s\S]*\x1b\[49m[\s\S]*(?:Plain assistant output|RENDERED HEADING|Use |Name)/.test(backgrounds),
    'user background band or assistant terminal-background reset missing');
   if(fixture.name==='plain-output'){
+   // Pi: assistant text on the terminal background; the tool call on toolSuccessBg.
    const output=backgrounds.slice(backgrounds.indexOf('Plain assistant output'));
-   assert(!/\x1b\[48;2;/.test(output), 'assistant/tool output has a colored background');
+   assert(!/\x1b\[48;2;[0-9;]*m[^\x1b]*Plain assistant output/.test(backgrounds), 'assistant output has a colored background');
+   assert(/\x1b\[48;2;37;65;49m/.test(output), 'tool success band missing');
   }
   if(fixture.name==='code-quote'){
-   assert(/Use \x1b\[2m\x1b\[90minline\(\)\x1b\[0m now\./.test(styled),
+   assert(/Use (?:\x1b\[[0-9;]*m)*\x1b\[38;2;167;152;215minline\(\)(?:\x1b\[[0-9;]*m)* now\./.test(styled),
     'inline ANSI style split the sentence or leaked into following words');
   }
   if(fixture.name==='table-link'){
@@ -117,8 +125,10 @@ for(const scenario of scenarios){
   }
   shot('initial');
   tm('send-keys','-t',pane,'-l','unsent draft');await wait(()=>cap().includes('unsent draft'),'draft');
-  tm('resize-window','-t','proof','-x',String(width+8),'-y',String(height+3));await wait(()=>cap().includes(fixture.name==='plain-output'?'m3/t0':'m2/t0'),'resized Markdown');
-  tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent draft'),'resize round trip');
+  tm('resize-window','-t','proof','-x',String(width+8),'-y',String(height+3));await wait(()=>cap().includes('%/'),'resized Markdown');
+  tm('resize-window','-t','proof','-x',String(width),'-y',String(height));await wait(()=>cap().includes('unsent draft')&&cap().includes('test-model •'),'resize round trip');
+  // Like Pi, regular mode re-renders its retained transcript once resizing settles.
+  await sleep(600);
   check('resized');shot('resized');
   assert(sql('select count(*) from messages;')===(fixture.name==='plain-output'?'3':'2'),'rendering or draft submitted a message');
   results.push(`${scenario.name}: stored projection, ANSI, viewport, resize, draft`);

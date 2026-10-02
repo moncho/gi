@@ -7,12 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rcarmo/gi/internal/config"
+
 	gotui "github.com/grindlemire/go-tui"
 )
 
 func selectionFixture(t *testing.T, width, height int) *chatTUI {
 	t.Helper()
 	c := sessionTestChat(t)
+	c.cfg.TUIClipboardMode = "off" // Most geometry tests intentionally suppress clipboard writes.
 	c.outputWidth = width
 	c.cfg.AssistantName = "Gi"
 	c.transcript = nil
@@ -26,7 +29,7 @@ func selectionFixture(t *testing.T, width, height int) *chatTUI {
 	for _, b := range c.buildTranscriptRenderableBlocks(c.visibleTranscript()) {
 		root.AddChild(c.renderTranscriptBlock(b))
 	}
-	root.Render(gotui.NewBuffer(width, height), width, height)
+	root.RenderTo(gotui.NewBuffer(width, height), width, height)
 	c.input.SetText("newer draft")
 	c.input.cursorPos = 3
 	return c
@@ -71,7 +74,7 @@ func TestTranscriptSelectionWideCellsReverseDragAndCopyPolicy(t *testing.T) {
 			el := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(size[0]), gotui.WithHeight(size[1]))
 			c.renderTranscriptSelectionRows(el)
 			buf := gotui.NewBuffer(size[0], size[1])
-			el.Render(buf, size[0], size[1])
+			el.RenderTo(buf, size[0], size[1])
 			if buf.Cell(1, 1).Style.Bg != piText {
 				t.Fatal("selection highlight missing")
 			}
@@ -120,7 +123,7 @@ func TestTranscriptSelectionClickStillTogglesTool(t *testing.T) {
 	for _, b := range c.buildTranscriptRenderableBlocks(c.transcript) {
 		root.AddChild(c.renderTranscriptBlock(b))
 	}
-	root.Render(gotui.NewBuffer(60, 13), 60, 13)
+	root.RenderTo(gotui.NewBuffer(60, 13), 60, 13)
 	c.transcriptRegion = root
 	c.transcriptRef.Set(root)
 	c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MousePress, X: 3, Y: 1})
@@ -230,23 +233,21 @@ func TestTranscriptSelectionNativeCopyHasSinglePendingSlot(t *testing.T) {
 	}
 }
 
-func TestTranscriptSelectionIncludesFinalContentCellWithoutScrollbarPress(t *testing.T) {
+func TestTranscriptSelectionIncludesFinalContentCell(t *testing.T) {
 	for _, width := range []int{60, 100, 140} {
-		for _, scrollbar := range []bool{false, true} {
+		for _, overflow := range []bool{false, true} {
 			for _, suffix := range []string{"Z", "界", "e\u0301"} {
-				t.Run(fmt.Sprintf("%d-scroll%v-%s", width, scrollbar, suffix), func(t *testing.T) {
+				t.Run(fmt.Sprintf("%d-overflow%v-%s", width, overflow, suffix), func(t *testing.T) {
 					c := sessionTestChat(t)
 					c.outputWidth = width
 					c.cfg.TUIClipboardMode = "osc52"
 					var clipboard bytes.Buffer
 					c.osc52Writer = &clipboard
+					// No scrollbar gutter: overflowing transcripts keep full width.
 					contentWidth := width
-					if scrollbar {
-						contentWidth--
-					}
 					text := strings.Repeat("a", contentWidth-gotui.StringWidth(suffix)) + suffix
 					c.transcript = []string{text}
-					if scrollbar {
+					if overflow {
 						for i := 0; i < 20; i++ {
 							c.transcript = append(c.transcript, text)
 						}
@@ -254,18 +255,11 @@ func TestTranscriptSelectionIncludesFinalContentCellWithoutScrollbarPress(t *tes
 					layoutSearchChat(t, c, width, 6)
 					r := c.transcriptRegion.Rect()
 					view, _ := c.transcriptRegion.ViewportSize()
-					_, overflow := c.transcriptRegion.MaxScroll()
-					if overflow > 0 {
-						view--
-					}
 					if view != contentWidth {
 						t.Fatal(view, contentWidth)
 					}
-					send := func(action gotui.MouseAction, x int) bool {
-						return c.handleTranscriptSelection(gotui.MouseEvent{Action: action, Button: gotui.MouseLeft, X: r.X + x, Y: r.Y + 2})
-					}
 					y := r.Y
-					if scrollbar {
+					if overflow {
 						y = r.Y + 2
 					}
 					point := func(action gotui.MouseAction, x int) bool {
@@ -298,10 +292,6 @@ func TestTranscriptSelectionIncludesFinalContentCellWithoutScrollbarPress(t *tes
 					point(gotui.MouseRelease, contentWidth-1)
 					if c.textSelection.active || clipboard.Len() != 0 {
 						t.Fatal("stationary edge click selected or copied text")
-					}
-					// A new press in the actual scrollbar remains go-tui's responsibility.
-					if scrollbar && send(gotui.MousePress, contentWidth) {
-						t.Fatal("scrollbar press consumed")
 					}
 					c.clearTranscriptSelection()
 					point(gotui.MousePress, 0)
@@ -499,5 +489,43 @@ func TestTranscriptWordSelectionWideHalfAndEdgeDrag(t *testing.T) {
 	}
 	if c.textSelection.end.col < 1 {
 		t.Fatal("word edge lost range")
+	}
+}
+
+func TestTranscriptSelectionDefaultClipboardAndExplicitOff(t *testing.T) {
+	for _, mode := range []string{"", "osc52", "off", "bogus"} {
+		t.Run(mode, func(t *testing.T) {
+			root := t.TempDir()
+			if mode != "" {
+				if err := config.PersistClipboardMode(root, mode); err != nil {
+					t.Fatal(err)
+				}
+			}
+			c := selectionFixture(t, 60, 18)
+			c.cfg.TUIClipboardMode = config.Load(root).TUIClipboardMode
+			var clipboard bytes.Buffer
+			c.osc52Writer = &clipboard
+			c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MousePress, X: 1, Y: 1})
+			c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MouseDrag, X: 22, Y: 4})
+			c.HandleMouse(gotui.MouseEvent{Button: gotui.MouseLeft, Action: gotui.MouseRelease, X: 22, Y: 4})
+			if mode == "off" || mode == "bogus" {
+				if clipboard.Len() != 0 || !strings.Contains(c.textSelection.notice, "Clipboard off") {
+					t.Fatal("explicit opt-out ignored")
+				}
+				return
+			}
+			seq, err := osc52Sequence(c.textSelection.text())
+			if err != nil || clipboard.String() != seq {
+				t.Fatal("release did not send selected bytes")
+			}
+			if c.textSelection.notice != "Selection sent to terminal (OSC 52)" {
+				t.Fatal(c.textSelection.notice)
+			}
+			clipboard.Reset()
+			c.copyTranscriptSelection()
+			if clipboard.String() != seq {
+				t.Fatal("repeat copy changed policy")
+			}
+		})
 	}
 }

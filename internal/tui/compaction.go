@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 )
@@ -19,7 +18,10 @@ type terminalCompaction struct {
 
 // startCompaction does not touch editor, cursor, undo, history or queued drafts.
 // Only admission is synchronous; the shared engine owns asynchronous execution.
-func (c *chatTUI) startCompaction() {
+func (c *chatTUI) startCompaction() { c.startCompactionWithInstructions("") }
+
+// startCompactionWithInstructions is Pi's /compact [instructions].
+func (c *chatTUI) startCompactionWithInstructions(instructions string) {
 	if c.engine == nil || c.store == nil || c.sessionID == "" {
 		c.compactionFeedback("Compact unavailable")
 		return
@@ -37,7 +39,7 @@ func (c *chatTUI) startCompaction() {
 		return
 	}
 	token, _ := state["token"].(string)
-	_, err = c.engine.SubmitManualCompaction(ctx, c.sessionID, token)
+	_, err = c.engine.SubmitManualCompactionWithInstructions(ctx, c.sessionID, token, instructions)
 	if err != nil {
 		c.compactionFeedback("Compact failed: " + err.Error())
 		return
@@ -120,20 +122,6 @@ func (c *chatTUI) syncCompactionActivity() {
 		c.compaction.notice = label
 		c.compaction.noticeUntil = at.Add(4 * time.Second)
 	}
-}
-func (c *chatTUI) compactionInline() string {
-	if !c.compaction.active {
-		return ""
-	}
-	seconds := 0
-	if !c.compaction.started.IsZero() {
-		seconds = max(0, int(time.Since(c.compaction.started).Seconds()))
-	}
-	label := "Compacting"
-	if c.compaction.cancelling {
-		label = "Cancelling compact"
-	}
-	return fmt.Sprintf("%s %d:%02d", label, seconds/60, seconds%60)
 }
 func (c *chatTUI) handleCompactionEscape() bool {
 	if !c.compaction.active {

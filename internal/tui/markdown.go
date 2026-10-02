@@ -6,6 +6,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	gotui "github.com/grindlemire/go-tui"
+
 	"github.com/yuin/goldmark"
 	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -37,11 +39,11 @@ func looksLikeMarkdown(text string) bool {
 // Table-bearing messages retain source in an invisible transcript metadata row
 // so terminal resize can allocate columns again instead of wrapping old borders.
 func renderChatMarkdown(role, prefix, markdown string, width int) []string {
-	lines := renderMarkdownTranscript(prefix, markdown, width)
 	if (role != "user" && role != "assistant") || !strings.Contains(markdown, "|") {
-		return lines
+		return renderMarkdownTranscript(prefix, markdown, width)
 	}
-	root := tuiMarkdown.Parser().Parse(text.NewReader([]byte(markdown)))
+	source := []byte(markdown)
+	root := tuiMarkdown.Parser().Parse(text.NewReader(source))
 	hasTable := false
 	_ = gast.Walk(root, func(n gast.Node, entering bool) (gast.WalkStatus, error) {
 		if _, ok := n.(*extast.Table); ok && entering {
@@ -51,9 +53,9 @@ func renderChatMarkdown(role, prefix, markdown string, width int) []string {
 		return gast.WalkContinue, nil
 	})
 	if !hasTable {
-		return lines
+		return projectMarkdownTranscript(prefix, source, root, width)
 	}
-	body := renderMarkdownTranscript("", markdown, max(1, width-1))
+	body := projectMarkdownTranscript("", source, root, max(1, width-1))
 	out := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "markdown-table", Kind: role, MarkdownSource: markdown})}
 	for _, line := range body {
 		out = append(out, "│ "+line)
@@ -62,12 +64,13 @@ func renderChatMarkdown(role, prefix, markdown string, width int) []string {
 }
 
 func renderMarkdownTranscript(prefix, markdown string, width int) []string {
-	contentWidth := width - utf8.RuneCountInString(prefix)
-	if contentWidth < 1 {
-		contentWidth = 1
-	}
 	source := []byte(markdown)
 	root := tuiMarkdown.Parser().Parse(text.NewReader(source))
+	return projectMarkdownTranscript(prefix, source, root, width)
+}
+
+func projectMarkdownTranscript(prefix string, source []byte, root gast.Node, width int) []string {
+	contentWidth := max(1, width-utf8.RuneCountInString(prefix))
 	renderer := &markdownProjector{source: source, width: contentWidth}
 	body := renderer.renderBlocks(root, 0)
 	if len(body) == 0 {
@@ -99,12 +102,12 @@ func (m *markdownProjector) renderBlocks(node gast.Node, depth int) []string {
 			if text == "" {
 				continue
 			}
-			lines = append(lines, strings.ToUpper(text))
-			underline := strings.Repeat("=", min(max(utf8.RuneCountInString(text), 3), m.width))
+			lines = append(lines, mdStyled("heading", upperOutsideMarkers(text)))
+			underline := strings.Repeat("=", min(max(markdownRenderedWidth(text), 3), m.width))
 			if n.Level > 1 {
-				underline = strings.Repeat("-", min(max(utf8.RuneCountInString(text), 3), m.width))
+				underline = strings.Repeat("-", min(max(markdownRenderedWidth(text), 3), m.width))
 			}
-			lines = append(lines, underline, "")
+			lines = append(lines, mdStyled("heading", underline), "")
 		case *gast.Paragraph:
 			text := strings.TrimSpace(m.renderInlineChildren(n))
 			if text != "" {
@@ -118,36 +121,9 @@ func (m *markdownProjector) renderBlocks(node gast.Node, depth int) []string {
 			}
 		case *gast.FencedCodeBlock:
 			lang := strings.TrimSpace(string(n.Language(m.source)))
-			label := "[code]"
-			if lang != "" {
-				label = "[code:" + lang + "]"
-			}
-			if n.Lines().Len() > 0 {
-				label += " " + strconv.Itoa(n.Lines().Len()) + " lines"
-			}
-			lines = append(lines, label)
-			for i := 0; i < n.Lines().Len(); i++ {
-				segment := n.Lines().At(i)
-				codeLine := strings.TrimRight(string(segment.Value(m.source)), "\r\n")
-				if codeLine == "" {
-					lines = append(lines, "    ")
-					continue
-				}
-				lines = append(lines, wrapPreformattedWithPrefix(codeLine, m.width, "    ")...)
-			}
-			lines = append(lines, "")
+			lines = append(lines, m.renderCodeBlock(n.Lines(), lang)...)
 		case *gast.CodeBlock:
-			label := "[code]"
-			if n.Lines().Len() > 0 {
-				label += " " + strconv.Itoa(n.Lines().Len()) + " lines"
-			}
-			lines = append(lines, label)
-			for i := 0; i < n.Lines().Len(); i++ {
-				segment := n.Lines().At(i)
-				codeLine := strings.TrimRight(string(segment.Value(m.source)), "\r\n")
-				lines = append(lines, wrapPreformattedWithPrefix(codeLine, m.width, "    ")...)
-			}
-			lines = append(lines, "")
+			lines = append(lines, m.renderCodeBlock(n.Lines(), "")...)
 		case *gast.Blockquote:
 			quoted := m.renderBlocks(n, depth+1)
 			for _, line := range quoted {
@@ -155,7 +131,7 @@ func (m *markdownProjector) renderBlocks(node gast.Node, depth int) []string {
 					lines = append(lines, "")
 					continue
 				}
-				lines = append(lines, wrapWithPrefix(line, m.width, "> ")...)
+				lines = append(lines, styleLinePrefix(wrapWithPrefix(mdStyled("quote", line), m.width, "> "), "> ", "quoteborder")...)
 			}
 			lines = append(lines, "")
 		case *gast.List:
@@ -174,7 +150,7 @@ func (m *markdownProjector) renderBlocks(node gast.Node, depth int) []string {
 					prefix = strconv.Itoa(itemIndex) + ". "
 					itemIndex++
 				}
-				lines = append(lines, wrapWithPrefix(itemLines[0], m.width, prefix)...)
+				lines = append(lines, styleLinePrefix(wrapWithPrefix(itemLines[0], m.width, prefix), prefix, "bullet")...)
 				contPrefix := strings.Repeat(" ", utf8.RuneCountInString(prefix))
 				for _, extra := range itemLines[1:] {
 					if extra == "" {
@@ -188,7 +164,7 @@ func (m *markdownProjector) renderBlocks(node gast.Node, depth int) []string {
 			lines = append(lines, m.renderTable(n)...)
 			lines = append(lines, "")
 		case *gast.ThematicBreak:
-			lines = append(lines, strings.Repeat("-", min(max(10, m.width/2), m.width)), "")
+			lines = append(lines, mdStyled("hr", strings.Repeat("-", min(max(10, m.width/2), m.width))), "")
 		default:
 			if child.HasChildren() {
 				lines = append(lines, m.renderBlocks(child, depth+1)...)
@@ -248,9 +224,12 @@ func (m *markdownProjector) renderInline(node gast.Node) string {
 	case *gast.CodeSpan:
 		return markdownInlineCodeStart + m.renderInlineChildren(n) + markdownInlineCodeEnd
 	case *gast.Emphasis:
-		return m.renderInlineChildren(n)
+		if n.Level >= 2 {
+			return mdStyled("bold", m.renderInlineChildren(n))
+		}
+		return mdStyled("italic", m.renderInlineChildren(n))
 	case *extast.Strikethrough:
-		return m.renderInlineChildren(n)
+		return mdStyled("strike", m.renderInlineChildren(n))
 	case *extast.TaskCheckBox:
 		if n.IsChecked {
 			return "☑ "
@@ -260,11 +239,11 @@ func (m *markdownProjector) renderInline(node gast.Node) string {
 		label := strings.TrimSpace(m.renderInlineChildren(n))
 		dest := string(n.Destination)
 		if label == "" || label == dest {
-			return dest
+			return mdStyled("link", dest)
 		}
-		return label + " (" + dest + ")"
+		return mdStyled("link", label) + " " + mdStyled("url", "("+dest+")")
 	case *gast.AutoLink:
-		return string(n.URL(m.source))
+		return mdStyled("link", string(n.URL(m.source)))
 	default:
 		return m.renderInlineChildren(node)
 	}
@@ -299,7 +278,7 @@ func wrapParagraph(text string, width int) []string {
 		}
 		lines = append(lines, current)
 	}
-	return lines
+	return balanceStyleMarkers(lines)
 }
 
 // markdownParagraphTokens keeps inline-code spans and their adjacent punctuation
@@ -345,9 +324,34 @@ func markdownRenderedWidth(s string) int {
 }
 
 func stripMarkdownInlineStyleMarkers(s string) string {
-	s = strings.ReplaceAll(s, markdownInlineCodeStart, "")
-	s = strings.ReplaceAll(s, markdownInlineCodeEnd, "")
-	return s
+	if !strings.Contains(s, "\x00gi-") {
+		return s
+	}
+	return markdownMarkerPattern.ReplaceAllString(s, "")
+}
+
+// styleCodeLines marks fenced/indented code lines (after their indent).
+func styleCodeLines(lines []string) []string {
+	for i, line := range lines {
+		trimmed := strings.TrimLeft(line, " ")
+		if trimmed == "" {
+			continue
+		}
+		lines[i] = line[:len(line)-len(trimmed)] + mdStyled("codeblock", trimmed)
+	}
+	return lines
+}
+
+// styleLinePrefix colours the list bullet or quote marker on the first line
+// (or every line, for quotes) produced by wrapWithPrefix.
+func styleLinePrefix(lines []string, prefix, style string) []string {
+	for i, line := range lines {
+		if strings.HasPrefix(line, prefix) && (i == 0 || style == "quoteborder") {
+			mark := strings.TrimRight(prefix, " ")
+			lines[i] = mdStyled(style, mark) + line[len(mark):]
+		}
+	}
+	return lines
 }
 
 func wrapWithPrefix(text string, width int, prefix string) []string {
@@ -369,23 +373,30 @@ func wrapWithPrefix(text string, width int, prefix string) []string {
 }
 
 func wrapPreformattedWithPrefix(text string, width int, prefix string) []string {
-	prefixWidth := utf8.RuneCountInString(prefix)
-	contentWidth := width - prefixWidth
-	if contentWidth < 8 {
-		contentWidth = 8
-	}
-	runes := []rune(text)
-	if len(runes) == 0 {
+	prefixWidth := markdownRenderedWidth(prefix)
+	contentWidth := max(2, width-prefixWidth)
+	if text == "" {
 		return []string{prefix}
 	}
-	out := make([]string, 0, (len(runes)/contentWidth)+1)
-	for len(runes) > contentWidth {
-		out = append(out, prefix+string(runes[:contentWidth]))
-		runes = runes[contentWidth:]
-		prefix = strings.Repeat(" ", prefixWidth)
+	var out []string
+	var line strings.Builder
+	used := 0
+	for text != "" {
+		cluster, cells, size := gotui.NextCluster(text)
+		if size == 0 {
+			break
+		}
+		text = text[size:]
+		if used > 0 && used+cells > contentWidth {
+			out = append(out, prefix+line.String())
+			prefix = strings.Repeat(" ", prefixWidth)
+			line.Reset()
+			used = 0
+		}
+		line.WriteString(cluster)
+		used += cells
 	}
-	out = append(out, prefix+string(runes))
-	return out
+	return append(out, prefix+line.String())
 }
 
 func wrapLongRunes(word string, width int) []string {
@@ -449,4 +460,37 @@ func markdownToPlain(text string) string {
 		return text
 	}
 	return buf.String()
+}
+
+// piCodeBlockIndent is pi-tui Markdown's default codeBlockIndent.
+const piCodeBlockIndent = "  "
+
+// renderCodeBlock follows pi-tui Markdown: a ```lang border, the code
+// indented and syntax highlighted when the language is known (plain
+// mdCodeBlock otherwise), a closing ``` border, then a blank line.
+func (m *markdownProjector) renderCodeBlock(segments *text.Segments, lang string) []string {
+	var src strings.Builder
+	for i := 0; i < segments.Len(); i++ {
+		segment := segments.At(i)
+		src.WriteString(strings.TrimRight(string(segment.Value(m.source)), "\r\n"))
+		if i < segments.Len()-1 {
+			src.WriteByte('\n')
+		}
+	}
+	code := src.String()
+	lines := []string{mdStyled("codeborder", "```"+lang)}
+	if highlighted, ok := highlightCodeLines(code, lang); ok {
+		for _, segs := range highlighted {
+			lines = append(lines, wrapHighlightedLine(segs, m.width, piCodeBlockIndent)...)
+		}
+	} else {
+		for _, codeLine := range strings.Split(code, "\n") {
+			if codeLine == "" {
+				lines = append(lines, piCodeBlockIndent)
+				continue
+			}
+			lines = append(lines, styleCodeLines(wrapPreformattedWithPrefix(codeLine, m.width, piCodeBlockIndent))...)
+		}
+	}
+	return append(lines, mdStyled("codeborder", "```"), "")
 }

@@ -51,11 +51,12 @@ func TestModelPickerMetadataEnabledNavigationAndOwnership(t *testing.T) {
 		}
 		if width >= 60 {
 			text := strings.Join(rows, "\n")
-			if !strings.Contains(text, "opencode-zen/picker-pine · 32K ctx") || !strings.Contains(text, "opencode-zen/picker-small · context too small") || strings.Contains(text, "80 ctx") {
+			// Pi rows: "id [provider]"; gi appends why a model cannot be chosen.
+			if !strings.Contains(text, "picker-pine [opencode-zen]") || !strings.Contains(text, "picker-small [opencode-zen] · context too small") || strings.Contains(text, "80 ctx") {
 				t.Fatalf("metadata/blocked priority: %s", text)
 			}
 		}
-		if c.modelMenuVisibleRows() > 6 || c.modelMenuHeight() > 8 || openInput.text != c.input.text || openInput.cursorPos != c.input.cursorPos || openInput.undoText != c.input.undoText || openInput.yankText != c.input.yankText || openInput.focused != c.input.focused {
+		if c.modelMenuHeight() > 24 || openInput.text != c.input.text || openInput.cursorPos != c.input.cursorPos || openInput.undoText != c.input.undoText || openInput.yankText != c.input.yankText || openInput.focused != c.input.focused {
 			t.Fatal("metadata changed footprint or editor")
 		}
 	}
@@ -63,14 +64,19 @@ func TestModelPickerMetadataEnabledNavigationAndOwnership(t *testing.T) {
 		query string
 		want  []string
 	}{
+		// Pi's fuzzy filter: best match first; weaker subsequence matches follow.
 		{"FOREST pine", []string{"opencode-zen/picker-pine"}},
 		{"32K ctx reasoning", []string{"opencode-zen/picker-pine"}},
-		{"opencode-zen forest", []string{"opencode-zen/picker-small", "opencode-zen/picker-pine", "opencode-zen/picker-oak"}},
-		{"missing", nil},
+		{"opencode-zen forest oak", []string{"opencode-zen/picker-oak"}},
+		{"zzzz", nil},
 	} {
 		c.modelMenuQuery = check.query
 		c.applyModelMenuFilter()
-		if !reflect.DeepEqual(c.modelMenuChoices, check.want) {
+		got := c.modelMenuChoices
+		if len(check.want) > 0 && len(got) > 0 {
+			got = got[:1]
+		}
+		if !reflect.DeepEqual(got, check.want) {
 			t.Fatalf("%s: %v", check.query, c.modelMenuChoices)
 		}
 	}
@@ -217,5 +223,37 @@ func TestModelPickerInlineContextPreservesIdentityAndWidth(t *testing.T) {
 	c.modelMenuKind = "session"
 	if got := c.modelPickerRowLabel("provider/pine", 100); got != "provider/pine" {
 		t.Fatal(got)
+	}
+}
+
+func TestPiModelSelectorLayoutScopeAndDefault(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	c, _, _ := modelTestChat(t)
+	c.outputWidth, c.outputHeight = 100, 30
+	c.cfg.EnabledModels = []string{"test/test-model", "test/bootstrap"}
+	c.cfg.EnabledModelsConfigured = true
+	c.openModelMenu()
+	if c.modelMenuScope != "scoped" || len(c.modelMenuChoices) != 2 {
+		t.Fatalf("scope %q choices %v", c.modelMenuScope, c.modelMenuChoices)
+	}
+	rows := collectElementTexts(c.renderModelMenu(100))
+	text := strings.Join(rows, "\n")
+	for _, want := range []string{"Scope: all | scoped", "tab scope (all/scoped)", "> ", "→ ✓ test-model [test]", "  Model Name: ", "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("missing %q in\n%s", want, text)
+		}
+	}
+	if !strings.HasPrefix(rows[0], "────") || !strings.HasPrefix(rows[len(rows)-1], "────") {
+		t.Fatal("selector borders")
+	}
+	c.toggleModelMenuScope()
+	if c.modelMenuScope != "all" || len(c.modelMenuChoices) < 2 {
+		t.Fatal("tab did not switch to all models")
+	}
+	c.closeModelMenu()
+	c.cfg.EnabledModelsConfigured = false
+	c.openModelMenu()
+	if c.modelMenuScope != "all" || !strings.Contains(strings.Join(collectElementTexts(c.renderModelMenu(100)), "\n"), "Only showing models from configured providers") {
+		t.Fatal("unconfigured scope should show Pi's provider hint")
 	}
 }

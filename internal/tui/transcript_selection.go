@@ -185,17 +185,11 @@ func (c *chatTUI) handleTranscriptSelection(me gotui.MouseEvent) bool {
 		}
 		r := c.transcriptRegion.Rect()
 		viewWidth, _ := c.transcriptRegion.ViewportSize()
-		// go-tui's ViewportSize includes its visible scrollbar column even
-		// though child layout reserves that cell when vertical overflow exists.
-		_, maxScroll := c.transcriptRegion.MaxScroll()
-		if maxScroll > 0 {
-			viewWidth--
-		}
 		if viewWidth < 1 || me.X >= r.X+viewWidth {
 			c.selectionClicks = transcriptClickSequence{}
 			c.selectionClickSnapshot = transcriptSelection{}
 			return false
-		} // scrollbar retains its own hit region
+		}
 		clicks := c.selectionClicks
 		if !c.selectionSnapshotCurrent(&c.selectionClickSnapshot) || me.Mod != 0 {
 			clicks = transcriptClickSequence{}
@@ -352,6 +346,10 @@ func (c *chatTUI) copyTranscriptSelection() {
 		return
 	}
 	mode, _, _ := c.copyModeFromArgs(nil)
+	// Mouse selection is an explicit copy gesture; /copy keeps its transcript-only default.
+	if strings.TrimSpace(c.cfg.TUIClipboardMode) == "" {
+		mode = "osc52"
+	}
 	switch mode {
 	case "osc52":
 		if len(text) > osc52PayloadLimit {
@@ -361,7 +359,7 @@ func (c *chatTUI) copyTranscriptSelection() {
 		if err := c.writeOSC52(text); err != nil {
 			c.selectionNotice("Copy failed")
 		} else {
-			c.selectionNotice("Selection copied (OSC 52)")
+			c.selectionNotice("Selection sent to terminal (OSC 52)")
 		}
 	case "native", "auto":
 		if c.nativeSelectionCopyPending {
@@ -407,7 +405,11 @@ func (c *chatTUI) renderTranscriptSelectionRows(root *gotui.Element) {
 		for i := range spans {
 			width := gotui.StringWidth(spans[i].Text)
 			if c.textSelection.moved && col+width > start && col < end {
-				spans[i].Style = spans[i].Style.Background(piText).Foreground(piUserBg)
+				if piText.IsDefault() { // system theme: text is the terminal's own colour
+					spans[i].Style = spans[i].Style.Reverse()
+				} else {
+					spans[i].Style = spans[i].Style.Background(piText).Foreground(piUserBg)
+				}
 			}
 			col += width
 		}

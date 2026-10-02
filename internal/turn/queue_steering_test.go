@@ -5,12 +5,13 @@ import (
 	"encoding/base64"
 	"github.com/rcarmo/gi/internal/store"
 	goai "github.com/rcarmo/go-ai"
+	"path/filepath"
 	"testing"
 )
 
 func TestQueueSteerNativeCheckpointKeepsMediaAndAtMostOnce(t *testing.T) {
 	ctx := context.Background()
-	s, err := store.Open(":memory:")
+	s, err := store.Open(filepath.Join(t.TempDir(), "steer.db")) // :memory: is per connection
 	if err != nil {
 		t.Fatal(err)
 	}

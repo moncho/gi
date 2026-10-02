@@ -30,7 +30,23 @@ func (c *chatTUI) pendingQueueLines(width, height int) []string {
 	if remaining := len(items) - visible; remaining > 0 {
 		lines = append(lines, pendingRowText(fmt.Sprintf("↳ %d more · /queue to inspect", remaining), width))
 	} else {
-		lines = append(lines, pendingRowText("↳ /queue to inspect · Alt+Up restores text-only queue when safe", width))
+		// Pi's hint; Alt+Up restores text-only queued messages into the editor.
+		lines = append(lines, pendingRowText("↳ alt+up to edit all queued messages", width))
 	}
 	return lines
+}
+
+// pendingDockLines lays out queued messages as Pi's pending container: a
+// blank spacer row, then the dim rows padded one column from the edge.
+func (c *chatTUI) pendingDockLines(width, height int) []string {
+	lines := c.pendingQueueLines(max(1, width-1), height)
+	if len(lines) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(lines)+1)
+	out = append(out, "")
+	for _, line := range lines {
+		out = append(out, " "+line)
+	}
+	return out
 }

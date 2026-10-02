@@ -21,6 +21,8 @@ turn ownership and provider request evidence.
 [Context estimate provenance](context-estimate-provenance.md) separates native
 compaction history estimates from measured request usage and records Shared35 evidence.
 
+[Terminal-derived TUI themes](tui-terminal-theme.md) records detection, bounded startup probing, Pi's generated system theme, and the remaining custom-theme scope.
+
 For the current product comparison, see [features and Piclaw parity](../feature-parity.md).
 The [full web/TUI plan](full-web-tui-parity-plan.md) and
 [UX audit](ux-test-audit-2026-09-24.md) distinguish implemented slices from
@@ -72,6 +74,10 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 
 ## Current structure
 
+- [tui-complex-table-performance.md](tui-complex-table-performance.md) — Unicode width/layout optimizations, benchmarks, cache ownership and table-to-user message boundaries
+
+- [tui-tool-syntax.md](tui-tool-syntax.md) — file-extension highlighting, read/write previews, historical arguments and terminal acceptance
+
 - [local-notifications.md](local-notifications.md) — browser-scoped opt-in, cross-tab local delivery and logout cleanup; no Web Push
 
 - [voice-input.md](voice-input.md) — capability-gated browser recognition, draft ownership and explicit microphone/device acceptance limits
@@ -96,8 +102,16 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 - [passkey-login-cancellation.md](passkey-login-cancellation.md) — login start/prompt/finish ownership and bounded cancellation tests
 - [passkey-scenario-review.md](passkey-scenario-review.md) — compact 26-scenario evidence/gap review
 - [passkey-criteria.md](passkey-criteria.md) — validated per-step/example ledger and browser-only terminal adaptation
+- [TUI startup header](tui-startup-header.md) — gi's adaptation of Pi's header and loaded-resource listing, quietStartup, version
+- [Profiling](profiling.md) — GI_PPROF, idle CPU and frame-cost work
+- [Thinking transcript wrapping](tui-thinking-wrap.md) — padded width, retained source, resize and regression evidence
 - `tools/` — built-in tool contracts
 - `scripting/` — scripting runtimes and bridge docs
+- [Codemode scripts](codemode-scripts.md) — the script reference the model reads (vfs://reference/codemode-scripts.md): globals, tool calls, store, models API, limits
+- [Codemode engine](codemode.md) — QuickJS (WASI) on wazero with Pi's vendored prelude; script API, limits, error kinds
+- [MCP client](mcp.md) — mcp.json format and lookup (.gi then .pi), validation, transports, lifecycle and logging
+- [MCP and codemode plan](mcp-codemode-plan.md) — Pi-parity target, existing branches, engine decision (QuickJS vs Joker on wazero) and phases
+- [Joker WASI feasibility](scripting/joker-wasi.md) — dependency pins, whole-interpreter guest probe, ARM64 bootstrap fix and unimplemented sandbox boundaries
 - `hooks/` — hook and lifecycle docs
 - `vfs/` — managed VFS and `vfs://` URL docs (including `vfs://chat` projection)
 - `skills/` — skill/package structure docs

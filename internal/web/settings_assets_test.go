@@ -22,7 +22,7 @@ func TestSettingsModuleHTTPGraph(t *testing.T) {
 		srv.Handler().ServeHTTP(w, httptest.NewRequest(method, url, nil))
 		return w
 	}
-	for _, url := range []string{"/", "/index.html", "/dist/app.bundle.js", "/dist/app.bundle.js?v=old-version", "/dist/app.bundle.js.map"} {
+	for _, url := range []string{"/", "/index.html", "/dist/app.bundle.js", "/dist/app.bundle.js?v=old-version"} {
 		for _, method := range []string{http.MethodGet, http.MethodHead} {
 			w := fetch(method, url)
 			if w.Code != http.StatusOK || w.Header().Get("Cache-Control") != "no-cache, no-store, must-revalidate" {

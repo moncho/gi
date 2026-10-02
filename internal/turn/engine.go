@@ -51,6 +51,10 @@ type Engine struct {
 	peering                           *peering.Manager
 	bgCtx                             context.Context
 	bgCancel                          context.CancelFunc
+	mcp                               *mcpState      // nil unless EnableMCP was called
+	codemode                          *codemodeState // nil when -builtin:codemode
+	closing                           atomic.Bool    // set by Close: no new launches
+	runs                              sync.WaitGroup // in-flight runTurn goroutines
 	extensions                        []ExtensionInfo
 	extensionsMu                      sync.RWMutex
 	extensionCommands                 *ExtensionCommandRegistry
@@ -204,7 +208,11 @@ func NewWithRuntimeConfig(s *store.Store, cfg config.RuntimeConfig, systemPrompt
 		subs:              map[string]map[chan map[string]any]bool{},
 	}
 	e.registerDefaultTools()
+	e.registerCodemodeTool()
 	e.startTopicBridge()
+	if e.store != nil {
+		go e.runMCPOutputPruner(e.backgroundContext()) // mcp-output and codemode-output
+	}
 	if e.store != nil {
 		if _, err := e.recoverInterruptedTurns(e.backgroundContext(), ""); err != nil {
 			log.Printf("turn recovery: startup scan failed: %v", err)
@@ -298,9 +306,21 @@ func (e *Engine) toolDefsForMetadata(metadata map[string]any) []goai.Tool {
 	return tools.ToolDefsForMetadata(metadata, e.tools.AllEntries(), e.toolDefs())
 }
 
+// shutdownGrace bounds how long Close waits for aborted turns to finalize.
+const shutdownGrace = 5 * time.Second
+
+// Close aborts in-flight turns and waits (bounded) for them to finalize
+// before cancelling background work. A clean quit is therefore a deliberate
+// abort, not a crash: without this the store closed under the runner, the
+// turn stayed 'running', and stale-claim recovery replayed it on the next
+// start. Crashes still leave running claims for recovery to requeue.
 func (e *Engine) Close() error {
 	if e == nil {
 		return nil
+	}
+	if e.closing.CompareAndSwap(false, true) {
+		e.abortActiveTurns(shutdownGrace)
+		e.closeMCP()
 	}
 	if e.bgCancel != nil {
 		e.bgCancel()
@@ -309,6 +329,91 @@ func (e *Engine) Close() error {
 		return e.peering.Close()
 	}
 	return nil
+}
+
+// AbortActiveTurns cancels every running turn this engine owns and waits up
+// to grace for them to finalize. It returns the aborted turn IDs.
+func (e *Engine) abortActiveTurns(grace time.Duration) []string {
+	var ids []string
+	ctx, cancel := context.WithTimeout(context.Background(), grace)
+	defer cancel()
+	e.sessions.Range(func(key, value any) bool {
+		sessionID, runner := key.(string), value.(*sessionRunner)
+		runner.mu.Lock()
+		current := runner.current
+		runner.mu.Unlock()
+		if current == nil {
+			return true
+		}
+		if err := e.CancelActiveTurn(ctx, sessionID, current.turnID); err != nil {
+			log.Printf("shutdown: abort %s: %v", current.turnID, err)
+			current.cancel() // still stop the worker; recovery handles the claim
+		}
+		ids = append(ids, current.turnID)
+		return true
+	})
+	done := make(chan struct{})
+	go func() { e.runs.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-ctx.Done():
+		log.Printf("shutdown: turns still finalizing after %s", grace)
+	}
+	return ids
+}
+
+// ErrTurnOwnedElsewhere reports a fresh active-turn claim held by another
+// live gi process sharing this database.
+var ErrTurnOwnedElsewhere = errors.New("active turn is owned by another running gi process")
+
+// LiveActiveTurn returns the turn this engine is currently running for the
+// session, or "" when no worker in this process owns one.
+func (e *Engine) LiveActiveTurn(sessionID string) string {
+	v, ok := e.sessions.Load(sessionID)
+	if !ok {
+		return ""
+	}
+	runner := v.(*sessionRunner)
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	if runner.current == nil {
+		return ""
+	}
+	return runner.current.turnID
+}
+
+// AbortStaleActiveTurn finalizes a session's active turn that no worker in
+// this process is running (left behind by a crash or killed process) as
+// aborted, releases its claim and returns the session to idle, instead of
+// letting stale-claim recovery replay it. Claims with a fresh heartbeat
+// belong to another live process and are refused.
+func (e *Engine) AbortStaleActiveTurn(ctx context.Context, sessionID string) (string, error) {
+	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
+	activeID, _, err := e.store.GetSessionActiveTurn(opCtx, sessionID)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && activeID == "") {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	if live := e.LiveActiveTurn(sessionID); live == activeID {
+		return "", store.ErrQueueConflict // live: callers use the normal abort path
+	}
+	claims, err := e.store.ListStaleActiveTurnClaims(opCtx, time.Now().Add(-interruptedTurnStaleAfter), sessionID)
+	if err != nil {
+		return "", err
+	}
+	for _, claim := range claims {
+		if claim.TurnID != activeID {
+			continue
+		}
+		claim.Phase = "cancelling" // recovery finalizes cancelling claims as aborted
+		if err := e.recoverInterruptedTurn(opCtx, claim); err != nil {
+			return "", err
+		}
+		return activeID, nil
+	}
+	return "", ErrTurnOwnedElsewhere
 }
 
 func (e *Engine) backgroundContext() context.Context {
@@ -386,6 +491,9 @@ func (e *Engine) SubmitPrompt(ctx context.Context, in RunInput) (*SubmitResult, 
 
 func (e *Engine) submitPrompt(ctx context.Context, in RunInput, retry *store.HeldRetryAdmission, composerToken, mediaToken string) (*SubmitResult, error) {
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
+	// Direct MCP tools must be registered before the turn's tool set is
+	// admitted; wait (bounded) for their servers outside the runner lock.
+	e.awaitDirectMCPTools(opCtx)
 	if in.Intent == "" {
 		in.Intent = "prompt"
 	}
@@ -512,6 +620,9 @@ func (e *Engine) submitPrompt(ctx context.Context, in RunInput, retry *store.Hel
 	if err != nil {
 		return nil, err
 	}
+	if parentTurn == nil {
+		effectiveTools = e.applySessionCodemodeToggle(opCtx, in.SessionID, effectiveTools)
+	}
 	subTurnToolsRestricted = restrictedTools
 	for k, v := range in.Metadata {
 		// Admission receipts are engine-owned, not arbitrary caller metadata.
@@ -529,7 +640,7 @@ func (e *Engine) submitPrompt(ctx context.Context, in RunInput, retry *store.Hel
 	if err != nil {
 		return nil, err
 	}
-	if level := inference.CapturedSessionThinking(selectedSession, in.Model); level != "" {
+	if level := e.admissionThinking(selectedSession, in.Model); level != "" {
 		metadata["selected_thinking_level"] = level
 		metadata["selected_thinking_model"] = in.Model
 	}
@@ -882,6 +993,9 @@ func (e *Engine) launchTurnLocked(ctx context.Context, runner *sessionRunner, se
 }
 
 func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRunner, sessionID, turnID string, selectedSteer bool, endedID string) (bool, error) {
+	if e.closing.Load() {
+		return false, nil // shutting down: leave queued work for the next start
+	}
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
 	if hook := e.beforeLaunchClaimHook; hook != nil {
 		hook(opCtx, sessionID, turnID)
@@ -1001,7 +1115,9 @@ func (e *Engine) launchQueueActionLocked(ctx context.Context, runner *sessionRun
 		}
 	}
 	logutil.WarnIfErr("sync queue count after launch", e.store.SyncSessionQueueCount(opCtx, sessionID))
+	e.runs.Add(1)
 	go func() {
+		defer e.runs.Done()
 		// Submission and queued launch callers hold runner.mu until their
 		// durable admission events are written. Do not emit turn.started (or
 		// run tools) before turn.submitted has a sequence number.
@@ -2407,7 +2523,7 @@ func (e *Engine) submitSteeringPrompt(ctx context.Context, sessionID, activeTurn
 	if err != nil {
 		return nil, err
 	}
-	if level := inference.CapturedSessionThinking(selectedSession, in.Model); level != "" {
+	if level := e.admissionThinking(selectedSession, in.Model); level != "" {
 		payload["selected_thinking_level"] = level
 		payload["selected_thinking_model"] = in.Model
 	}
@@ -3920,14 +4036,14 @@ func (e *Engine) registerDefaultTools() {
 	must(tools.MessagesTool())
 	must(tools.RegisteredTool{
 		Name:        "read",
-		Description: "Read text content from a workspace file. Supports workspace-relative paths and vfs:// paths.",
-		Parameters:  json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"Workspace-relative path or vfs://namespace/path"}},"required":["path"]}`),
+		Description: tools.ReadToolDescription,
+		Parameters:  json.RawMessage(tools.ReadToolParameters),
 		Source:      "builtin",
 		Kind:        "read-only",
 		Weight:      "lightweight",
 		Activation:  "default",
 		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
-			return tools.ExecuteRead(ctx, rt.WorkspaceRoot, rt.Store, call)
+			return tools.ExecuteReadTool(ctx, rt, call)
 		},
 	})
 	must(tools.RegisteredTool{
@@ -3940,6 +4056,18 @@ func (e *Engine) registerDefaultTools() {
 		Activation:  "default",
 		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
 			return tools.ExecuteWrite(ctx, e.runtimeCfg, rt.Store, call)
+		},
+	})
+	must(tools.RegisteredTool{
+		Name:        "edit",
+		Description: tools.EditToolDescription,
+		Parameters:  json.RawMessage(tools.EditToolParameters),
+		Source:      "builtin",
+		Kind:        "mutating",
+		Weight:      "lightweight",
+		Activation:  "default",
+		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
+			return tools.ExecuteEditTool(ctx, e.runtimeCfg, rt, call)
 		},
 	})
 	if def := scriptTool.Definition(); def != nil {
@@ -4206,9 +4334,16 @@ func (r *sessionRunner) runAgentLoop(ctx context.Context, s *store.Store, turnID
 			}
 			toolCallSummary += fmt.Sprintf("[tool_call: %s]", tc.Name)
 		}
+		// Full calls (id, name, arguments) make the history exportable to Pi's
+		// session format; the summary content stays for display and context.
+		recordedCalls := make([]map[string]any, 0, len(toolCalls))
+		for _, tc := range toolCalls {
+			recordedCalls = append(recordedCalls, map[string]any{"id": tc.ID, "name": tc.Name, "arguments": tc.Arguments})
+		}
 		logutil.WarnIfErr("add assistant tool_calls summary", s.AddMessage(ctx, store.NowID("msg"), sessionID, "assistant", toolCallSummary, map[string]any{
 			"kind": "tool_calls", "source": "inference", "model": model,
 			"turn_id": turnID, "agent_id": agentID, "display_text": strings.TrimSpace(textContent),
+			"tool_calls": recordedCalls,
 		}))
 
 		outcome := r.executeToolCallsPhase(ctx, s, turnID, sessionID, model, agentID, iter, convCtx, toolCalls, pendingSteering, lastToolFailureSig, repeatedToolFailureCount, &totalUsage)
@@ -4236,12 +4371,18 @@ func (r *sessionRunner) executeTool(ctx context.Context, call goai.ToolCall, ses
 	if len(output) > 0 {
 		onOutput = output[0]
 	}
+	return r.executeToolWithImages(ctx, call, sessionID, turnID, onOutput, nil)
+}
+
+// executeToolWithImages also collects images the tool attaches (nil: tools
+// describe images in text instead).
+func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.ToolCall, sessionID, turnID string, onOutput func(string) error, images *toolExtras) (string, error) {
 	if strings.TrimSpace(turnID) != "" {
 		turnRec, err := r.store.GetTurn(ctx, turnID)
 		if err != nil {
 			return "", err
 		}
-		if !toolAllowedByMetadata(turnRec.Metadata, call.Name) {
+		if !toolAllowedByMetadata(turnRec.Metadata, call.Name) && !r.engine.sessionLoadedTool(ctx, sessionID, call.Name) {
 			return "", fmt.Errorf("tool not allowed in this turn: %s", call.Name)
 		}
 	}
@@ -4255,6 +4396,11 @@ func (r *sessionRunner) executeTool(ctx context.Context, call goai.ToolCall, ses
 		TurnID:        turnID,
 		WorkspaceRoot: r.engine.runtimeCfg.WorkspaceRoot,
 		OnOutput:      onOutput,
+		AttachImage:   images.attachFunc(),
+		AddTools:      images.addToolsFunc(),
+		ToolCallID:    call.ID,
+		SetDetails:    images.setDetailsFunc(),
+		AddUsage:      images.addUsageFunc(),
 	}, call)
 }
 
@@ -4769,6 +4915,15 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 		Tools:        r.engine.toolDefsForMetadata(turnMetadata),
 		Messages:     r.projectContextSnapshot(ctx, sessionID, snapshot),
 	}
+	// Tools loaded by tool_search earlier in the session stay declared.
+	r.engine.declareLoadedTools(convCtx, r.engine.sessionLoadedTools(ctx, sessionID))
+	r.engine.applyCodemodeLoadout(ctx, convCtx, sessionID, turnMetadata)
+	ids, offset := snapshotMessageIDs(snapshot)
+	if plan := r.engine.planMCPSection(ctx, sessionID, ids, offset, convCtx.Messages); plan != nil {
+		mcpSectionPlans.Store(sessionID, plan)
+	} else {
+		mcpSectionPlans.Delete(sessionID)
+	}
 
 	if resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeAgentStart, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, SystemPrompt: convCtx.SystemPrompt, Messages: convCtx.Messages, Tools: convCtx.Tools}); err != nil {
 		log.Printf("hook before_agent_start error: %v", err)
@@ -4831,6 +4986,10 @@ func (r *sessionRunner) prepareAgentIteration(ctx context.Context, sessionID, tu
 
 func (r *sessionRunner) runProviderIteration(ctx context.Context, s *store.Store, turnID, sessionID, model, agentID string, iter, maxIter int, convCtx *goai.Context) (*inference.StreamResult, error) {
 	requestCtx := &goai.Context{SystemPrompt: convCtx.SystemPrompt, Messages: append([]goai.Message(nil), convCtx.Messages...), Tools: append([]goai.Tool(nil), convCtx.Tools...)}
+	if plan, ok := mcpSectionPlans.Load(sessionID); ok {
+		requestCtx.SystemPrompt, requestCtx.Messages = plan.(*mcpSectionPlan).apply(requestCtx.SystemPrompt, requestCtx.Messages)
+	}
+	requestCtx.SystemPrompt = withCodemodeGuidance(requestCtx.SystemPrompt, requestCtx.Tools)
 	if resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeProviderRequest, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, SystemPrompt: convCtx.SystemPrompt, Messages: convCtx.Messages, Tools: convCtx.Tools, Payload: map[string]any{"model": model, "messages": len(convCtx.Messages), "tools": len(convCtx.Tools), "stage": "context"}}); err != nil {
 		log.Printf("hook before_provider_request error: %v", err)
 	} else {
@@ -5090,7 +5249,11 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 		})
 
 		reportOutput := r.toolOutputReporter(turnID, sessionID, call.ID, toolOccurrenceID)
-		toolResult, toolErr := r.executeTool(ctx, call, sessionID, turnID, func(text string) error { return reportOutput(text, false) })
+		images := &toolExtras{}
+		toolResult, toolErr := r.executeToolWithImages(ctx, call, sessionID, turnID, func(text string) error { return reportOutput(text, false) }, images)
+		if totalUsage != nil {
+			addUsage(totalUsage, images.usage) // model calls made by the tool (codemode models.*)
+		}
 		if outputErr := reportOutput(toolResult, true); outputErr != nil {
 			r.persistStoppedTool(s, sessionID, turnID, call, toolOccurrenceID, "aborted")
 			r.finishTurn(s, turnID, sessionID, agentID, model, "failed", "Persist tool output: "+outputErr.Error(), "persistence_error")
@@ -5104,19 +5267,23 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 				outcome.terminated = true
 				return outcome
 			}
-			log.Printf("tool [%s] error: %v", call.Name, toolErr)
-			errText := fmt.Sprintf("Error: %v", toolErr)
+			log.Printf("tool [%s] error: %v", call.Name, firstLine(toolErr.Error()))
+			errText := toolErr.Error() // Pi's createErrorToolResult: the bare message
+			var resultErr *tools.ResultError
+			if errors.As(toolErr, &resultErr) {
+				errText = resultErr.Text // the complete result, e.g. shell output + exit status (Pi)
+			}
 			r.engine.broadcast(sessionID, map[string]any{"type": "tool_failed", "chat_jid": "gi:" + sessionID, "turn_id": turnID, "tool": call.Name, "error": toolErr.Error()})
-			r.engine.PublishRuntimeToolEvent("tool_failed", sessionID, turnID, agentID, call.Name, call.ID, iter, toolErr, map[string]any{"phase": "tool", "arguments": call.Arguments, "output": errText})
+			r.engine.PublishRuntimeToolEvent("tool_failed", sessionID, turnID, agentID, call.Name, call.ID, iter, toolErr, images.withDetails(map[string]any{"phase": "tool", "arguments": call.Arguments, "output": errText}))
 			logutil.WarnIfErr("append tool.failed event", s.AppendTurnEvent(ctx, turnID, sessionID, "tool.failed", map[string]any{
 				"phase": "tool", "tool": call.Name, "checkpoint": true,
 				"tool_call_id": call.ID, "occurrence_id": toolOccurrenceID, "error": toolErr.Error(),
 			}))
 			r.engine.broadcast(sessionID, map[string]any{"type": "tool_activity_changed", "chat_jid": "gi:" + sessionID, "turn_id": turnID})
-			goai.AppendToolResult(convCtx, call.ID, call.Name, errText, true)
-			logutil.WarnIfErr("add errored tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", errText, map[string]any{
+			appendToolResultWithImages(convCtx, call, errText, true, images)
+			logutil.WarnIfErr("add errored tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", errText+images.transcriptSuffix(), images.withDetails(map[string]any{
 				"kind": "tool_result", "tool_call_id": call.ID, "tool_name": call.Name, "is_error": true, "turn_id": turnID,
-			}))
+			})))
 			outcome.lastToolFailureSig, outcome.repeatedToolFailureCount = nextRepeatedToolFailureCount(outcome.lastToolFailureSig, outcome.repeatedToolFailureCount, call, toolErr)
 			if outcome.repeatedToolFailureCount >= repeatedToolFailureLimit {
 				msg := fmt.Sprintf("Aborting after %d repeated identical tool failures: %v", outcome.repeatedToolFailureCount, toolErr)
@@ -5147,16 +5314,17 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 				displayResult = displayResult[:100000] + "\n... (truncated)"
 			}
 			r.engine.broadcast(sessionID, map[string]any{"type": "tool_finished", "chat_jid": "gi:" + sessionID, "turn_id": turnID, "tool": call.Name, "output_length": len(toolResult)})
-			r.engine.PublishRuntimeToolEvent("tool_finished", sessionID, turnID, agentID, call.Name, call.ID, iter, nil, map[string]any{"phase": "tool", "arguments": call.Arguments, "output_length": len(toolResult), "output": displayResult})
+			r.engine.PublishRuntimeToolEvent("tool_finished", sessionID, turnID, agentID, call.Name, call.ID, iter, nil, images.withDetails(map[string]any{"phase": "tool", "arguments": call.Arguments, "output_length": len(toolResult), "output": displayResult}))
 			logutil.WarnIfErr("append tool.finished event", s.AppendTurnEvent(ctx, turnID, sessionID, "tool.finished", map[string]any{
 				"phase": "tool", "tool": call.Name, "checkpoint": true,
 				"tool_call_id": call.ID, "occurrence_id": toolOccurrenceID, "output_length": len(toolResult),
 			}))
 			r.engine.broadcast(sessionID, map[string]any{"type": "tool_activity_changed", "chat_jid": "gi:" + sessionID, "turn_id": turnID})
-			goai.AppendToolResult(convCtx, call.ID, call.Name, displayResult, false)
-			logutil.WarnIfErr("add successful tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", displayResult, map[string]any{
+			appendToolResultWithImages(convCtx, call, displayResult, false, images)
+			r.engine.declareLoadedTools(convCtx, images.added)
+			logutil.WarnIfErr("add successful tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", displayResult+images.transcriptSuffix(), images.withDetails(map[string]any{
 				"kind": "tool_result", "tool_call_id": call.ID, "tool_name": call.Name, "is_error": false, "turn_id": turnID,
-			}))
+			})))
 			outcome.lastToolFailureSig = ""
 			outcome.repeatedToolFailureCount = 0
 		}
@@ -5377,7 +5545,14 @@ func (r *sessionRunner) runPreparedTurn(ctx context.Context, s *store.Store, run
 	r.runShellTurn(ctx, s, run)
 }
 
+// shellTurnStartHook is a test seam: tests that assert on a still-active
+// bootstrap turn hold it here instead of racing the shell's exit.
+var shellTurnStartHook atomic.Pointer[func(context.Context)]
+
 func (r *sessionRunner) runShellTurn(ctx context.Context, s *store.Store, run *preparedTurnRun) {
+	if hook := shellTurnStartHook.Load(); hook != nil {
+		(*hook)(ctx)
+	}
 	toolOccurrenceID := store.NowID("tool")
 	if len(run.initialSteering) > 0 {
 		r.persistSteeringMessages(ctx, run.sessionID, run.turnID, run.initialSteering)
@@ -5468,4 +5643,16 @@ func (r *sessionRunner) runShellTurn(ctx context.Context, s *store.Store, run *p
 	sessionCompletionPayload := map[string]any{"reason": "turn_completed", "active_turn_id": nil, "turn_id": run.turnID, "turn_status": "completed", "turn_phase": "completed", "failure_kind": "", "model": run.model, "completion_kind": "response"}
 	r.engine.PublishRuntimeSessionEvent("session_idle", run.sessionID, run.agentID, "idle", sessionCompletionPayload)
 	r.emitSessionStateHookOnly(bgCtx, run.sessionID, run.agentID, run.model, "idle", map[string]any{"reason": "turn_completed", "active_turn_id": nil, "turn_id": run.turnID, "turn_status": "completed", "turn_phase": "completed", "failure_kind": "", "completion_kind": "response"})
+}
+
+// admissionThinking is the thinking level captured for a turn: the session's
+// validated selection, else Pi's default (the configured default thinking
+// level, else "medium") clamped to what the model supports. Non-reasoning and
+// unknown models get none.
+func (e *Engine) admissionThinking(session *store.Session, model string) string {
+	if level := inference.CapturedSessionThinking(session, model); level != "" {
+		return level
+	}
+	level, _ := inference.EffectiveThinking(model, strings.TrimSpace(e.runtimeCfg.DefaultThinkingLevel))
+	return level
 }

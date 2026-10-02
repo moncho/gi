@@ -52,7 +52,7 @@ func TestPersistModelSelectionUpdatesPiSettings(t *testing.T) {
 func TestLoadFallsBackToGiDefaultsWhenNoPiSettingsExist(t *testing.T) {
 	root := t.TempDir()
 	cfg := Load(root)
-	if cfg.DefaultProvider != "opencode-zen" || cfg.DefaultModel != "opencode-zen/minimax-m2.5-free" || cfg.DefaultThinkingLevel != "low" {
+	if cfg.DefaultProvider != "opencode-zen" || cfg.DefaultModel != "opencode-zen/minimax-m2.5-free" || cfg.DefaultThinkingLevel != "medium" {
 		t.Fatalf("unexpected defaults: %#v", cfg)
 	}
 	if len(cfg.EnabledModels) != 1 || cfg.EnabledModels[0] != "opencode-zen/minimax-m2.5-free" {
@@ -195,5 +195,77 @@ func TestLoadPasskeyRelyingPartyConfiguration(t *testing.T) {
 	}
 	if empty := Load(t.TempDir()).Passkeys; empty.RPID != "" || len(empty.Origins) != 0 {
 		t.Fatal("passkeys enabled by default")
+	}
+}
+
+func TestLoadClipboardModePreservesUnsetAndExplicitPolicy(t *testing.T) {
+	for _, tc := range []struct{ value, want string }{
+		{"", ""}, {`"tuiClipboardMode":""`, ""},
+		{`"tuiClipboardMode":"off"`, "off"},
+		{`"tuiClipboardMode":" OSC52 "`, "osc52"},
+		{`"tuiClipboardMode":"native"`, "native"},
+		{`"tuiClipboardMode":"auto"`, "auto"},
+		{`"tuiClipboardMode":"bogus"`, "off"},
+	} {
+		t.Run(tc.value, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(root, ".pi"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(root, ".pi", "settings.json"), []byte("{"+tc.value+"}"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if got := Load(root).TUIClipboardMode; got != tc.want {
+				t.Fatalf("mode = %q, want %q", got, tc.want)
+			}
+		})
+	}
+	if got := Load(t.TempDir()).TUIClipboardMode; got != "" {
+		t.Fatalf("fresh workspace mode = %q", got)
+	}
+}
+
+func TestLoadMergesGlobalPiSettingsUnderProject(t *testing.T) {
+	agent := t.TempDir()
+	t.Setenv("PI_CODING_AGENT_DIR", agent)
+	if err := os.WriteFile(filepath.Join(agent, "settings.json"), []byte(`{"defaultProvider":"github-copilot","defaultModel":"gpt-5.4","defaultThinkingLevel":"high"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := Load(t.TempDir())
+	if cfg.DefaultProvider != "github-copilot" || cfg.DefaultModel != "gpt-5.4" || cfg.DefaultThinkingLevel != "high" {
+		t.Fatalf("global settings not applied: %q %q %q", cfg.DefaultProvider, cfg.DefaultModel, cfg.DefaultThinkingLevel)
+	}
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, ".pi"), 0o755)
+	os.WriteFile(filepath.Join(root, ".pi", "settings.json"), []byte(`{"defaultProvider":"test","defaultModel":"test-model"}`), 0o644)
+	cfg = Load(root)
+	if cfg.DefaultProvider != "test" || cfg.DefaultModel != "test-model" || cfg.DefaultThinkingLevel != "high" {
+		t.Fatalf("project must override global: %q %q %q", cfg.DefaultProvider, cfg.DefaultModel, cfg.DefaultThinkingLevel)
+	}
+}
+
+// Pi's tuiMode: project settings over global ones.
+func TestLoadTUIModeSetting(t *testing.T) {
+	agent := t.TempDir()
+	t.Setenv("PI_CODING_AGENT_DIR", agent)
+	if err := os.WriteFile(filepath.Join(agent, "settings.json"), []byte(`{"tuiMode":"regular"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if cfg := Load(t.TempDir()); cfg.TUIMode != "regular" {
+		t.Fatalf("global tuiMode: %q", cfg.TUIMode)
+	}
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, ".pi"), 0o755)
+	os.WriteFile(filepath.Join(root, ".pi", "settings.json"), []byte(`{"tuiMode":"fullscreen"}`), 0o644)
+	if cfg := Load(root); cfg.TUIMode != "fullscreen" {
+		t.Fatalf("project tuiMode: %q", cfg.TUIMode)
+	}
+}
+
+func TestQuietStartupSetting(t *testing.T) {
+	for raw, want := range map[string]string{"true": "true", `"header"`: "header", "false": "", "": "", `"x"`: ""} {
+		if got := parseQuietStartup([]byte(raw)); got != want {
+			t.Fatalf("%s: %q, want %q", raw, got, want)
+		}
 	}
 }

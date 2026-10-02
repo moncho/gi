@@ -3,6 +3,8 @@ package turn
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	goai "github.com/rcarmo/go-ai"
 
 	"github.com/rcarmo/gi/internal/compaction"
@@ -56,6 +58,19 @@ func (e *Engine) ManualCompactionState(ctx context.Context, sessionID string) (m
 }
 
 func (e *Engine) SubmitManualCompaction(ctx context.Context, sessionID, expected string) (*SubmitResult, error) {
+	return e.SubmitManualCompactionWithInstructions(ctx, sessionID, expected, "")
+}
+
+// MaxCompactionInstructions bounds /compact custom instructions.
+const MaxCompactionInstructions = 4000
+
+// SubmitManualCompactionWithInstructions is Pi's /compact [instructions]:
+// the instructions reach the before-compact hook and the stored summary.
+func (e *Engine) SubmitManualCompactionWithInstructions(ctx context.Context, sessionID, expected, instructions string) (*SubmitResult, error) {
+	instructions = strings.TrimSpace(instructions)
+	if len(instructions) > MaxCompactionInstructions {
+		return nil, fmt.Errorf("compaction instructions exceed %d bytes", MaxCompactionInstructions)
+	}
 	r := e.runner(sessionID)
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -79,14 +94,20 @@ func (e *Engine) SubmitManualCompaction(ctx context.Context, sessionID, expected
 	if err != nil {
 		return nil, err
 	}
-	if err = e.store.AdmitManualCompaction(ctx, sessionID, id, claimToken, expected, model); err != nil {
+	if err = e.store.AdmitManualCompactionWithInstructions(ctx, sessionID, id, claimToken, expected, model, instructions); err != nil {
 		return nil, err
 	}
 	// Admission already committed the claim and submitted checkpoint together.
 	runCtx, cancel := context.WithCancel(e.backgroundContext())
 	active := &runningTurn{turnID: id, claimToken: claimToken, cancel: cancel}
 	r.current = active
-	go func() { r.mu.Lock(); r.mu.Unlock(); r.runTurn(e.store, sessionID, id, runCtx, cancel, active) }()
+	e.runs.Add(1)
+	go func() {
+		defer e.runs.Done()
+		r.mu.Lock()
+		r.mu.Unlock()
+		r.runTurn(e.store, sessionID, id, runCtx, cancel, active)
+	}()
 	e.PublishRuntimeTurnEvent("turn_submitted", sessionID, id, "", "running", "setup", map[string]any{"operation": "manual_compaction"})
 	return &SubmitResult{TurnID: id, SessionID: sessionID, Status: "running"}, nil
 }
@@ -101,7 +122,8 @@ func (r *sessionRunner) runManualCompaction(ctx context.Context, run *preparedTu
 		if len(conv.Messages) < 2 {
 			err = store.ErrContextChanged
 		} else {
-			err = r.compactSnapshot(ctx, run.sessionID, run.turnID, run.model, run.agentID, conv, snapshot, true)
+			instructions, _ := run.turn.Metadata["custom_instructions"].(string)
+			err = r.compactSnapshotWithInstructions(ctx, run.sessionID, run.turnID, run.model, run.agentID, conv, snapshot, true, instructions)
 		}
 	}
 	if err != nil {

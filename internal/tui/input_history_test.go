@@ -149,8 +149,10 @@ func TestDurableHistoryDoesNotRecordRejectedRoute(t *testing.T) {
 	if !c.switchSession(child) {
 		t.Fatal("switch peer")
 	}
-	c.input.SetText("unroutable peer prompt")
-	c.onSubmit(c.input.Text()) // unsupported cross-session routing rejects the claim
+	// Plain text stays in the peer session; an @mention of another agent is
+	// rejected by the durable composer and must not enter history.
+	c.input.SetText("@agent unroutable peer prompt")
+	c.onSubmit(c.input.Text())
 	if len(c.history) != 0 {
 		t.Fatalf("rejected prompt entered history: %v", c.history)
 	}

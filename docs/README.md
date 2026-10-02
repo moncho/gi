@@ -45,6 +45,7 @@ token-saving MCP gateway are not implemented yet.
 - `internal/search/` -- implemented scoped lexical indexing/reindexing plus planned hybrid/vector work
 - `internal/tui-pi-fit-gap-roadmap.md` — closure status for the Pi-like TUI parity iteration
 - `internal/tui-pi-parity-plan.md` — maintained TUI parity plan and implemented slices
+- `internal/tui-pi-scrolling.md` — Pi-style changed-row redraws, wheel policy, paging and terminal verification limits
 - `internal/tui-clipboard-media.md` — TUI clipboard/media support boundaries
 - `internal/extension-command-semantics.md` — planned extension command registration contract
 

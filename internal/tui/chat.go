@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,6 +17,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -39,17 +42,21 @@ func initialSessionID(ctx context.Context, s *store.Store) (string, error) {
 }
 
 func Run(dbPath, workspace, model string) error {
-	return RunMode(dbPath, workspace, model, "fullscreen")
+	return RunMode(dbPath, workspace, model, "")
 }
 
 func RunMode(dbPath, workspace, model, mode string) error {
-	if mode != "regular" && mode != "fullscreen" {
+	if mode != "" && mode != "regular" && mode != "fullscreen" {
 		return fmt.Errorf("invalid tui mode %q: use regular or fullscreen", mode)
 	}
 	cfg := config.Load(workspace)
+	mode = resolveTUIMode(mode, cfg.TUIMode)
 	if model != "" {
 		cfg.DefaultModel = model
 	}
+	// Pick Pi's theme for this terminal before the UI owns input (issue #12).
+	themeName := initPiTheme(cfg.Theme)
+	log.Printf("tui theme: %s (setting %q)", themeName, cfg.Theme)
 
 	s, err := store.Open(dbPath)
 	if err != nil {
@@ -58,6 +65,7 @@ func RunMode(dbPath, workspace, model, mode string) error {
 	defer s.Close()
 
 	engine := turn.NewWithRuntimeConfig(s, cfg, cfg.SystemPrompt)
+	engine.EnableMCP() // Pi mcp.json servers (.gi first, then .pi); connects in the background
 	defer engine.Close()
 	return runWithEngineMode(s, engine, cfg, mode == "regular")
 }
@@ -91,14 +99,16 @@ func runWithEngineMode(s *store.Store, engine *turn.Engine, cfg config.RuntimeCo
 		stickToBottom: true,
 		durableDrafts: true,
 		regularMode:   regular,
+		startupHeader: true,
 	}
 
-	options := []gotui.AppOption{gotui.WithLegacyKeyboard()}
+	options := []gotui.AppOption{gotui.WithLegacyKeyboard(), gotui.WithRowRedraw()}
 	if regular {
 		options = append(options, gotui.WithInlineHeight(5), gotui.WithPostRenderHook(chat.flushRegularTranscript))
 	} else {
-		options = append(options, gotui.WithMouse())
+		options = append(options, gotui.WithMouse(), gotui.WithPreFlushHook(chat.compositeJumpToLatest))
 	}
+	enableGoTUIColorOutput()
 	app, err := gotui.NewApp(options...)
 	if err != nil {
 		return fmt.Errorf("create app: %w", err)
@@ -118,15 +128,26 @@ type transcriptBlockHitTarget struct {
 }
 
 type transcriptBlockMeta struct {
-	Key            string `json:"key"`
-	Kind           string `json:"kind"`
-	Title          string `json:"title"`
-	Status         string `json:"status,omitempty"`
-	StartedAt      string `json:"started_at,omitempty"`
-	EndedAt        string `json:"ended_at,omitempty"`
-	Detail         string `json:"detail,omitempty"`
-	Footer         string `json:"footer,omitempty"`
-	MarkdownSource string `json:"markdown_source,omitempty"`
+	Key            string  `json:"key"`
+	Kind           string  `json:"kind"`
+	Title          string  `json:"title"`
+	Status         string  `json:"status,omitempty"`
+	StartedAt      string  `json:"started_at,omitempty"`
+	EndedAt        string  `json:"ended_at,omitempty"`
+	Detail         string  `json:"detail,omitempty"`
+	Footer         string  `json:"footer,omitempty"`
+	MarkdownSource string  `json:"markdown_source,omitempty"`
+	ToolPath       string  `json:"tool_path,omitempty"`
+	ToolContent    *string `json:"tool_content,omitempty"`
+	// Pi's file tool renderers: read's line range and truncation notice,
+	// edit's diff or error preview.
+	ToolRange  string  `json:"tool_range,omitempty"`
+	ToolNotice string  `json:"tool_notice,omitempty"`
+	EditDiff   *string `json:"edit_diff,omitempty"`
+	EditError  string  `json:"edit_error,omitempty"`
+	// Codemode: nested call rows and the saved full output.
+	Calls          []codemodeCallRow `json:"calls,omitempty"`
+	FullOutputPath string            `json:"full_output_path,omitempty"`
 }
 
 type transcriptBlockSpan struct {
@@ -154,11 +175,31 @@ type transcriptRenderableBlock struct {
 	BodyStyle      gotui.Style
 	HintStyle      gotui.Style
 	SelectedHint   string
+	// Static blocks are printed to terminal-owned scrollback in full; they
+	// cannot be toggled, so no expand/collapse hints are shown.
+	Static bool
+	// Tool call rendering (Pi's renderCall): argument text and timing.
+	ToolPath           string
+	ToolContent        *string
+	ToolRange          string
+	ToolNotice         string
+	EditDiff           *string
+	EditError          string
+	Calls              []codemodeCallRow
+	FullOutputPath     string
+	ToolArg            string
+	StartedAt, EndedAt string
 }
 
-// bashPreviewLines mirrors PiSwift's bash output preview window: when collapsed,
-// only the trailing N lines of bash output are shown with a skipped-line hint.
-const bashPreviewLines = 10
+// bashPreviewLines mirrors Pi's BashExecutionComponent preview window: when
+// collapsed, only the trailing N lines of `!` output are shown.
+const bashPreviewLines = 20
+
+// Pi's tool previews: shell tools show the last 5 lines, others the first 10.
+const (
+	toolShellPreviewLines = 5
+	toolPreviewLines      = 10
+)
 
 type chatTUI struct {
 	app                         *gotui.App
@@ -193,8 +234,6 @@ type chatTUI struct {
 	input                       *multilineInput
 	search                      transcriptSearch
 	textSelection               transcriptSelection
-	scrollbarDragging           bool
-	scrollbarGrab               int
 	selectionClicks             transcriptClickSequence
 	selectionClickSnapshot      transcriptSelection
 	nativeSelectionCopyPending  bool
@@ -208,9 +247,32 @@ type chatTUI struct {
 	transcriptRef               *gotui.Ref
 	transcript                  []string
 	regularMode                 bool
+	regularHeaderPrinted        bool      // startup header printed to scrollback (regular mode)
+	startupHeader               bool      // show gi\'s startup header (set by the app, not by test fixtures)
+	lastFooterSignature         string    // footer data at the last idle check
+	lastFooterCheck             time.Time // when the idle check last read the session
+	runningCheckLines           []string  // transcript at the last running-block check
+	runningCheckResult          bool
+	blockCache                  *transcriptBlockCache // block heights and recently rendered blocks (#34, #31)
+	blocksMemo                  transcriptBlocksMemo              // block list and keys for unchanged transcripts (#34)
+	jumpToLatest                jumpToLatestRect                  // where the cue was drawn (none: width 0)
 	regularPrinted              int
 	regularSessionPending       bool
 	regularWidth, regularHeight int
+	regularReflowGen            int
+	regularResizeBase           int // height before the current resize burst
+	regularResizeBaseWidth      int
+	regularResizeWidthChanged   bool
+	regularResizePeak           int    // tallest height during the burst
+	modelMenuScope              string // Pi selector scope: "scoped" or "all"
+	modelMenuDefault            string // saved default model (Pi's "default" badge)
+	modelMenuSessionRows        map[string]sessionPickerRow
+	slash                       slashMenu
+	slashLastText               string
+	footerUsage                 *footerUsageCache
+	footerCached                *footerCache
+	wheel                       wheelAccelerator
+	footerAuth                  *footerAuthCache
 	transcriptScroll            int
 	stickToBottom               bool
 	draftLineIndex              int
@@ -257,6 +319,9 @@ type chatTUI struct {
 	extensionWidgets            map[string][]string
 	extensionToolModes          map[string]string
 	editorAskActive             bool
+	editorAskHandler            func(answer string, cancelled bool) // internal asks (e.g. /mcp login); nil: extension asks
+	mcpSignIn                   *mcpSignInState
+	uiQueue                     chan func() // background UI updates when there is no app (tests)
 	editorAskKey                string
 	editorAskPrompt             string
 	editorAskPrevPlaceholder    string
@@ -269,19 +334,25 @@ func (c *chatTUI) ensureInput() {
 		if c.input.onChange == nil {
 			c.input.onChange = c.onInputChanged
 		}
+		c.input.onEdit = c.scrollTranscriptToBottom
 		c.input.onEscape = c.handleTranscriptEscape
 		c.bindTranscriptNavigation()
 		return
 	}
 	c.input = newMultilineInput(80, "Send a message…", c.onSubmit, c.onInputChanged)
+	c.input.onEdit = c.scrollTranscriptToBottom
 	c.input.onRestoreQueued = c.restoreQueuedDraft
 	c.input.onFollowUp = c.onFollowUp
 	c.input.onComplete = c.completeInputPath
+	c.input.interceptKey = c.handleSlashKey
 	c.input.onEscape = c.handleTranscriptEscape
 	c.bindTranscriptNavigation()
 }
 
-func (c *chatTUI) onInputChanged(string) {
+func (c *chatTUI) onInputChanged(text string) {
+	previous := c.slashLastText
+	c.slashLastText = text
+	c.updateSlashMenu(previous)
 	if !c.historyApplying && !c.draftApplying {
 		c.histIdx = -1
 		c.historyDraft = ""
@@ -292,8 +363,8 @@ func (c *chatTUI) onInputChanged(string) {
 	if !c.historyApplying {
 		c.saveDurableDraft()
 	}
-	// Editing is independent of transcript navigation. Only readers already
-	// following the newest edge should move when the editor changes height.
+	// User edits resume following through onEdit. Programmatic restoration
+	// preserves the reader position unless already following the newest edge.
 	if c.stickToBottom {
 		c.scrollTranscriptToBottom()
 	}
@@ -307,7 +378,40 @@ func encodeTranscriptBlockMarker(meta transcriptBlockMeta) string {
 	return transcriptBlockMarkerPrefix + base64.RawURLEncoding.EncodeToString(payload) + "⟧"
 }
 
+// markerCache memoizes parsed block markers: marker lines are immutable (a
+// status change writes a new line), and every render and idle check parses
+// all of them.
+var markerCache = struct {
+	sync.Mutex
+	m map[string]transcriptBlockMeta
+}{m: map[string]transcriptBlockMeta{}}
+
+const markerCacheMax = 8192
+
 func parseTranscriptBlockMarker(line string) (transcriptBlockMeta, bool) {
+	// Markers start their line; avoid scanning long message text.
+	if !strings.HasPrefix(strings.TrimLeft(line, " \t"), transcriptBlockMarkerPrefix) {
+		return transcriptBlockMeta{}, false
+	}
+	markerCache.Lock()
+	meta, ok := markerCache.m[line]
+	markerCache.Unlock()
+	if ok {
+		return meta, true
+	}
+	meta, ok = decodeTranscriptBlockMarker(line)
+	if ok {
+		markerCache.Lock()
+		if len(markerCache.m) >= markerCacheMax {
+			markerCache.m = map[string]transcriptBlockMeta{}
+		}
+		markerCache.m[line] = meta
+		markerCache.Unlock()
+	}
+	return meta, ok
+}
+
+func decodeTranscriptBlockMarker(line string) (transcriptBlockMeta, bool) {
 	line = strings.TrimSpace(line)
 	if !strings.HasPrefix(line, transcriptBlockMarkerPrefix) || !strings.HasSuffix(line, "⟧") {
 		return transcriptBlockMeta{}, false
@@ -578,10 +682,17 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 	if c.topicEventCh != nil {
 		watchers = append(watchers, gotui.NewChannelWatcher(c.topicEventCh, c.handleSessionTopicEvent))
 	}
-	watchers = append(watchers, gotui.OnTimer(80*time.Millisecond, c.tickTranscriptSelection))
-	watchers = append(watchers, gotui.OnTimer(120*time.Millisecond, func() { c.saveDurableDraft() }))
-	watchers = append(watchers, gotui.OnTimer(120*time.Millisecond, func() {
-		if c.hasRunningTranscriptBlock() && c.app != nil {
+	// One 80 ms tick (Pi's spinner cadence) drives selection auto-scroll,
+	// activity redraws and, every other tick, the durable draft save; three
+	// separate timers woke the process ~33 times a second when idle.
+	var ticks uint64
+	watchers = append(watchers, gotui.OnTimer(80*time.Millisecond, func() {
+		ticks++
+		c.tickTranscriptSelection()
+		if ticks%2 == 0 {
+			c.saveDurableDraft()
+		}
+		if (c.running || c.compaction.active || c.hasRunningTranscriptBlock()) && c.app != nil {
 			c.app.MarkDirty()
 		}
 	}))
@@ -590,24 +701,51 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 		if c.compaction.active {
 			c.syncCompactionActivity()
 		}
-		if c.app != nil {
+		// Re-render only when something can have changed: live activity, or
+		// footer data updated elsewhere (another frontend, a finished turn).
+		// An unconditional re-render rebuilt the whole transcript every second.
+		live := c.running || c.compaction.active || c.thinkingIndicatorKey != ""
+		// Footer data changes arrive as topic events (invalidateFooter); poll
+		// the session only then, or every few seconds as a fallback.
+		if c.footerCached == nil || time.Since(c.lastFooterCheck) >= footerIdlePoll {
+			c.lastFooterCheck = time.Now()
+			if footer := fmt.Sprintf("%+v", c.footerData()); footer != c.lastFooterSignature {
+				c.lastFooterSignature = footer
+				live = true
+			}
+		}
+		if live && c.app != nil {
 			c.app.MarkDirty()
 		}
 	}))
 	return watchers
 }
 
+// footerIdlePoll is how often an idle TUI re-reads the footer's session
+// data without an invalidating event.
+const footerIdlePoll = 5 * time.Second
+
+// hasRunningTranscriptBlock reports a running block; the answer is reused
+// while the transcript lines are unchanged (lines are immutable strings).
 func (c *chatTUI) hasRunningTranscriptBlock() bool {
+	if c.runningCheckLines != nil && sameLines(c.runningCheckLines, c.transcript) {
+		return c.runningCheckResult
+	}
+	result := false
 	for _, line := range c.transcript {
 		meta, ok := parseTranscriptBlockMarker(line)
 		if ok && meta.Status == "running" {
-			return true
+			result = true
+			break
 		}
 	}
-	return false
+	c.runningCheckLines = append(c.runningCheckLines[:0], c.transcript...)
+	c.runningCheckResult = result
+	return result
 }
 
 func (c *chatTUI) handleTopicEvent(env topics.Envelope) {
+	c.invalidateFooter()
 	if env.SessionID != "" && env.SessionID != c.sessionID {
 		return
 	}
@@ -1034,8 +1172,8 @@ func (c *chatTUI) updateThinkingTranscript(delta string, ts time.Time) {
 	if strings.TrimSpace(c.thinkingStartedAt) == "" {
 		c.thinkingStartedAt = normalizeBlockTimestamp(ts).Format(time.RFC3339Nano)
 	}
-	body := renderMarkdownTranscript("", c.thinkingText, c.transcriptRenderWidth())
-	meta := transcriptBlockMeta{Key: c.thinkingBlockKey, Kind: "thought", Title: "", Status: "running", StartedAt: c.thinkingStartedAt}
+	body := renderMarkdownTranscript("", c.thinkingText, c.transcriptBlockContentWidth("thought"))
+	meta := transcriptBlockMeta{Key: c.thinkingBlockKey, Kind: "thought", Title: "", Status: "running", StartedAt: c.thinkingStartedAt, MarkdownSource: c.thinkingText}
 	c.replaceTranscriptBlock(meta, body)
 }
 
@@ -1447,6 +1585,9 @@ func toolInvocationText(toolName string, args any) string {
 
 func (c *chatTUI) toolResultBody(payload map[string]any, turnID, toolCallID, toolName string) []string {
 	if output, _ := payload["output"].(string); strings.TrimSpace(output) != "" {
+		if toolName == "codemode" {
+			output = stripScriptHeader(output)
+		}
 		return toolOutputBodyLines(output)
 	}
 	return c.latestToolResultBody(turnID, toolCallID, toolName)
@@ -1476,6 +1617,11 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 	if strings.TrimSpace(toolName) == "" {
 		toolName = "tool"
 	}
+	// Codemode's nested calls are rows of its block, not tool blocks (Pi).
+	if parent, _ := payload["parent_tool_call_id"].(string); parent != "" {
+		c.updateCodemodeCall(parent, typ, payload, ts)
+		return
+	}
 	startedAt := normalizeBlockTimestamp(ts)
 	toolKey := c.toolRuntimeBlockKey(payload, toolName)
 	blockKey := c.transcriptToolBlocks[toolKey]
@@ -1488,8 +1634,18 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 			return
 		}
 	}
-	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName}
-	body := c.toolInvocationBody(toolName, payload)
+	// Pi renders the call (e.g. "$ ls -la", "read path") as the tool header;
+	// the body holds only the result output.
+	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName, Detail: previous.Detail, ToolPath: previous.ToolPath, ToolContent: previous.ToolContent, ToolRange: previous.ToolRange, ToolNotice: previous.ToolNotice, EditDiff: previous.EditDiff, EditError: previous.EditError, Calls: previous.Calls}
+	if invocation := c.toolInvocationBody(toolName, payload); len(invocation) > 0 {
+		meta.Detail = invocation[0]
+	}
+	setFileToolArguments(&meta, payload["arguments"])
+	setCodemodeArguments(&meta, payload["arguments"])
+	if calls, path := codemodeDetails(payload["details"]); calls != nil || path != "" {
+		meta.Calls, meta.FullOutputPath = calls, path
+	}
+	var body []string
 	switch typ {
 	case "tool_started":
 		c.promoteDraftToThinking(startedAt)
@@ -1497,6 +1653,7 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 		c.markRunning()
 		meta.Status = "running"
 		meta.StartedAt = startedAt.Format(time.RFC3339Nano)
+		c.setEditPreview(&meta, payload["arguments"])
 		if meta.Key == "" {
 			meta.Key = fmt.Sprintf("tool:%d:%s", time.Now().UnixNano(), toolName)
 			c.transcriptToolBlocks[toolKey] = meta.Key
@@ -1524,12 +1681,15 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 		if len(existingBody) > 0 {
 			body = append([]string(nil), existingBody...)
 		}
+		resultBody := c.toolResultBody(payload, turnID, toolCallID, toolName)
 		switch typ {
 		case "tool_finished":
 			meta.Status = "ok"
 		case "tool_failed":
 			meta.Status = "error"
-			if errText != "" {
+			// The result text already carries the error (e.g. shell output and
+			// "Command exited with code N"); show the bare error only without it.
+			if errText != "" && len(resultBody) == 0 {
 				body = append(body, "error="+truncate(errText, 160))
 			}
 		case "tool_skipped":
@@ -1538,9 +1698,8 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 				body = append(body, "reason="+truncate(reason, 160))
 			}
 		}
-		if resultBody := c.toolResultBody(payload, turnID, toolCallID, toolName); len(resultBody) > 0 {
-			body = append(body, resultBody...)
-		}
+		body = append(body, resultBody...)
+		setFileToolDetails(&meta, payload["details"], strings.TrimSpace(strings.Join(resultBody, "\n")))
 		if meta.Key == "" {
 			c.appendTranscriptBlock(meta, body)
 		} else {
@@ -1633,7 +1792,40 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "session-rename" {
 		return c.sessionRenameKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "fork" {
+		return c.forkSelectorKeys()
+	}
 	if c.modelMenuOpen {
+		if c.modelMenuKind == "thinking" {
+			return gotui.KeyMap{
+				gotui.OnPreemptStop(gotui.KeyCtrlC, func(ke gotui.KeyEvent) { c.closeModelMenu() }),
+				gotui.OnPreemptStop(gotui.KeyEscape, func(ke gotui.KeyEvent) { c.closeModelMenu() }),
+				gotui.OnPreemptStop(gotui.Rune('s').Ctrl(), func(ke gotui.KeyEvent) { c.acceptThinkingMenuAsDefault() }),
+				gotui.OnPreemptStop(gotui.KeyUp, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(-1) }),
+				gotui.OnPreemptStop(gotui.KeyDown, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(1) }),
+				gotui.OnPreemptStop(gotui.KeyEnter, func(ke gotui.KeyEvent) { c.acceptModelMenuSelection() }),
+				gotui.OnPreemptStop(gotui.KeyBackspace, func(ke gotui.KeyEvent) { c.modelMenuBackspace() }),
+				gotui.OnFocused(gotui.AnyRune, func(ke gotui.KeyEvent) { c.modelMenuTypeRune(ke.Rune) }),
+			}
+		}
+		if c.modelMenuKind == "model" {
+			// Pi's selector: Escape/Ctrl+C cancel, Tab scope, Ctrl+S save default.
+			return gotui.KeyMap{
+				gotui.OnPreemptStop(gotui.KeyCtrlC, func(ke gotui.KeyEvent) { c.closeModelMenu() }),
+				gotui.OnPreemptStop(gotui.KeyEscape, func(ke gotui.KeyEvent) { c.closeModelMenu() }),
+				gotui.OnPreemptStop(gotui.KeyTab, func(ke gotui.KeyEvent) { c.toggleModelMenuScope() }),
+				gotui.OnPreemptStop(gotui.Rune('s').Ctrl(), func(ke gotui.KeyEvent) { c.acceptModelMenuAsDefault() }),
+				gotui.OnPreemptStop(gotui.KeyUp, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(-1) }),
+				gotui.OnPreemptStop(gotui.KeyDown, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(1) }),
+				gotui.OnPreemptStop(gotui.KeyPageUp, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(-5) }),
+				gotui.OnPreemptStop(gotui.KeyPageDown, func(ke gotui.KeyEvent) { c.moveModelMenuSelection(5) }),
+				gotui.OnPreemptStop(gotui.KeyHome, func(ke gotui.KeyEvent) { c.setModelMenuSelection(0) }),
+				gotui.OnPreemptStop(gotui.KeyEnd, func(ke gotui.KeyEvent) { c.setModelMenuSelection(len(c.modelMenuChoices) - 1) }),
+				gotui.OnPreemptStop(gotui.KeyEnter, func(ke gotui.KeyEvent) { c.acceptModelMenuSelection() }),
+				gotui.OnPreemptStop(gotui.KeyBackspace, func(ke gotui.KeyEvent) { c.modelMenuBackspace() }),
+				gotui.OnFocused(gotui.AnyRune, func(ke gotui.KeyEvent) { c.modelMenuTypeRune(ke.Rune) }),
+			}
+		}
 		return gotui.KeyMap{
 			gotui.OnStop(gotui.KeyCtrlC, func(ke gotui.KeyEvent) { c.app.Stop() }),
 			gotui.OnPreemptStop(gotui.KeyEscape, func(ke gotui.KeyEvent) { c.backFromSessionActions() }),
@@ -1722,6 +1914,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 			c.recallHistory(1)
 		}),
 	}
+	if slash := c.slashMenuKeys(); slash != nil {
+		bindings = append(slash, bindings...)
+	}
 	if c.regularMode {
 		return regularKeyMap(bindings)
 	}
@@ -1745,6 +1940,19 @@ func (c *chatTUI) openModelMenu() {
 	c.modelMenuError = ""
 	c.modelMenuOpen = true
 	c.modelMenuKind = "model"
+	c.modelMenuDefault = c.modelMenuDefaultLabel()
+	c.modelMenuScope = "all"
+	if scoped, _ := c.modelMenuScopes(); len(scoped) > 0 {
+		// Pi opens on the scoped (enabled) models when there are any.
+		c.modelMenuScope = "scoped"
+		choices = scoped
+		selected = 0
+		for i, model := range choices {
+			if canonicalModelRef(c.cfg.DefaultProvider, model) == current {
+				selected = i
+			}
+		}
+	}
 	c.captureModelPickerMetadata()
 	c.openModelPickerScreen()
 	c.modelMenuValues = nil
@@ -1773,12 +1981,14 @@ func (c *chatTUI) openSessionMenu() {
 	}
 	labels := make([]string, 0, len(sessions))
 	values := map[string]string{}
+	c.modelMenuSessionRows = map[string]sessionPickerRow{}
 	selected := 0
 	for i := range sessions {
 		sess := sessions[i]
 		label := c.sessionPickerLabel(&sess)
 		labels = append(labels, label)
 		values[label] = sess.ID
+		c.modelMenuSessionRows[label] = c.sessionPickerRowFor(&sess)
 		if sess.ID == c.sessionID {
 			selected = i
 		}
@@ -1835,11 +2045,15 @@ func filterModelMenuChoices(all []string, query string) []string {
 func (c *chatTUI) applyModelMenuFilter() {
 	c.modelMenuChoices = filterModelMenuChoices(c.modelMenuAll, c.modelMenuQuery)
 	if c.modelMenuKind == "model" {
+		// Pi's model selector: token fuzzy filter over id/provider/name
+		// (plus gi's context/reasoning metadata), best matches first.
+		items := make([]slashItem, len(c.modelMenuAll))
+		for i, label := range c.modelMenuAll {
+			items[i] = slashItem{name: label, description: label + " " + c.modelMenuMetadata[label].search}
+		}
 		c.modelMenuChoices = nil
-		for _, label := range c.modelMenuAll {
-			if fuzzyMatch(c.modelMenuQuery, label+" "+c.modelMenuMetadata[label].search) {
-				c.modelMenuChoices = append(c.modelMenuChoices, label)
-			}
+		for _, it := range piFuzzyFilter(items, c.modelMenuQuery, func(it slashItem) string { return it.description }) {
+			c.modelMenuChoices = append(c.modelMenuChoices, it.name)
 		}
 	}
 	c.modelMenuSelected = 0
@@ -1884,6 +2098,8 @@ func (c *chatTUI) closeModelMenu() {
 	c.resetModelMenuMetadata()
 	c.modelMenuError = ""
 	c.modelMenuKind = ""
+	c.modelMenuScope, c.modelMenuDefault = "", ""
+	c.modelMenuSessionRows = nil
 	c.modelMenuValues = nil
 	c.modelMenuChoices = nil
 	c.modelMenuAll = nil
@@ -1971,19 +2187,28 @@ func (c *chatTUI) modelMenuVisibleRows() int {
 	if width == 0 {
 		width = 80
 	}
-	padding := 2
-	if width < 80 || height < 20 {
-		padding = 0
+	// Pi's session selector and actions list replace the editor: their rows
+	// share the screen with the spacer and footer only.
+	if c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" {
+		chrome := 11
+		if c.modelMenuKind == "session-actions" {
+			chrome = 10
+		}
+		if !c.regularMode {
+			chrome += 1 + len(c.footerLines(width))
+		}
+		return max(1, min(6, height-chrome))
 	}
+	padding := 0 // Pi draws transcript, editor and footer edge to edge.
 	inputRows := 1
 	if c.input != nil {
 		input := *c.input
 		input.width = max(1, width-padding)
-		input.maxLines = editorViewportRows(height, height-padding-len(c.footerLines(width))-len(c.pendingQueueLines(width-padding, height))-len(c.extensionWidgetLines())-2-4-3)
+		input.maxLines = editorViewportRows(height, height-padding-len(c.footerLines(width))-len(c.pendingDockLines(width-padding, height))-len(c.extensionWidgetLines())-1-2-4-3)
 		inputRows = max(1, len(input.renderLines()))
 	}
 	// Leave transcript, editor/separators and the existing footer intact.
-	available := height - padding - len(c.footerLines(width)) - len(c.pendingQueueLines(width-padding, height)) - len(c.extensionWidgetLines()) - inputRows - 2 - 4 - 2
+	available := height - padding - len(c.footerLines(width)) - len(c.pendingDockLines(width-padding, height)) - len(c.extensionWidgetLines()) - 1 - inputRows - 2 - 4 - 2
 	return min(6, max(1, available))
 }
 
@@ -2015,6 +2240,10 @@ func (c *chatTUI) ensureModelMenuSelectionVisible() {
 }
 
 func (c *chatTUI) acceptModelMenuSelection() {
+	if c.modelMenuKind == "fork" {
+		c.acceptForkSelection()
+		return
+	}
 	if c.modelMenuKind == "session-actions" {
 		c.applySessionAction()
 		return
@@ -2100,6 +2329,17 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" {
+		width := c.currentContentWidth()
+		if c.app != nil {
+			width, _ = c.app.Size()
+		}
+		if c.modelMenuKind == "model" {
+			return len(c.piModelSelectorRows(width))
+		}
+		rows, _ := c.piMenuRows(width)
+		return len(rows)
+	}
 	rows := c.modelMenuVisibleRows()
 	if len(c.modelMenuChoices) < rows {
 		rows = len(c.modelMenuChoices)
@@ -2109,6 +2349,12 @@ func (c *chatTUI) modelMenuHeight() int {
 }
 
 func (c *chatTUI) renderModelMenu(width int) *gotui.Element {
+	if c.modelMenuKind == "model" {
+		return c.renderPiModelSelector(width)
+	}
+	if rows, ok := c.piMenuRows(width); ok {
+		return renderSpanRows(rows)
+	}
 	if c.modelMenuKind == "session-rename" {
 		return c.renderSessionRename(width)
 	}
@@ -2158,9 +2404,9 @@ func (c *chatTUI) renderModelMenu(width int) *gotui.Element {
 	if c.modelMenuError != "" {
 		search = "error: " + c.modelMenuError
 	}
-	menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText(search, width)), gotui.WithTextStyle(gotui.NewStyle().Dim())))
+	menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText(search, width)), gotui.WithTextStyle(piFg(piMuted))))
 	if len(c.modelMenuChoices) == 0 {
-		menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText("  no matching "+noun+"s", width)), gotui.WithTextStyle(gotui.NewStyle().Dim())))
+		menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText("  no matching "+noun+"s", width)), gotui.WithTextStyle(piFg(piMuted))))
 		return menu
 	}
 	for i := start; i < end; i++ {
@@ -2169,16 +2415,16 @@ func (c *chatTUI) renderModelMenu(width int) *gotui.Element {
 		style := gotui.NewStyle()
 		if i == c.modelMenuSelected {
 			prefix = "› "
-			style = style.Foreground(gotui.Cyan).Bold()
+			style = piFg(piAccent)
 		} else if canonicalModelRef(c.cfg.DefaultProvider, model) == canonicalModelRef(c.cfg.DefaultProvider, c.cfg.DefaultModel) {
 			prefix = "* "
-			style = style.Foreground(gotui.Cyan)
+			style = piFg(piSuccess)
 		}
 		prefix = fmt.Sprintf("%s%d. ", prefix, i+1)
 		label := prefix + c.modelPickerRowLabel(model, width-gotui.StringWidth(prefix))
 		if reason := c.modelPickerUnavailable(model); reason != "" {
 			label = fmt.Sprintf("× %d. %s · %s", i+1, model, reason)
-			style = gotui.NewStyle().Dim()
+			style = piFg(piDim)
 		}
 		menu.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(selectorText(label, width)), gotui.WithTextStyle(style)))
 	}
@@ -2210,7 +2456,15 @@ func (c *chatTUI) cycleModel(delta int) {
 }
 
 func (c *chatTUI) cycleThinking(delta int) {
-	levels := []string{"low", "medium", "high"}
+	// Pi cycles every level the model supports.
+	levels := inference.ThinkingLevels(c.sessionModelLabel())
+	if len(levels) == 0 {
+		if known, reasoning := inference.ModelReasoning(c.sessionModelLabel()); known && !reasoning {
+			c.appendTranscript("sys: current model does not support thinking")
+			return
+		}
+		levels = []string{"low", "medium", "high"}
+	}
 	current := strings.ToLower(strings.TrimSpace(c.cfg.DefaultThinkingLevel))
 	idx := 0
 	for i, level := range levels {
@@ -2354,7 +2608,7 @@ func (c *chatTUI) HandleMouse(me gotui.MouseEvent) bool {
 	if c.workspaceIndex.active {
 		return true
 	}
-	if c.handleTranscriptScrollbar(me) {
+	if c.handleJumpToLatestClick(me) {
 		return true
 	}
 	if c.handleTranscriptSelection(me) {
@@ -2399,32 +2653,22 @@ func (c *chatTUI) handleTranscriptScrollEvent(me gotui.MouseEvent) bool {
 	default:
 		return false
 	}
-	if c.transcriptRegion != nil && c.transcriptRegion.ContainsPoint(me.X, me.Y) {
-		if c.transcriptRegion.HandleEvent(me) {
-			_, y := c.transcriptRegion.ScrollOffset()
-			c.transcriptScroll = y
-			maxScroll := c.transcriptMaxScroll()
-			c.stickToBottom = c.transcriptScroll >= maxScroll
-			if c.app != nil {
-				c.app.MarkDirty()
-			}
-			return true
-		}
+	// Pi fullscreen scrolls the transcript for wheel input over it and over
+	// the editor/footer (selectors keep their own input), with Pi's
+	// velocity-based line count (fullscreenWheelScrollLines "auto") rather
+	// than go-tui's fixed single line per event.
+	over := c.transcriptRegion != nil && c.transcriptRegion.ContainsPoint(me.X, me.Y)
+	below := c.transcriptRegion == nil || (!c.modelMenuOpen && me.Y >= c.transcriptRegion.Rect().Y+c.transcriptRegion.Rect().Height)
+	if !over && !below {
 		return false
 	}
-	// Pi fullscreen forwards wheel input over the editor/footer to the main
-	// transcript. Selectors retain their own input ownership.
-	if c.transcriptRegion == nil || (!c.modelMenuOpen && me.Y >= c.transcriptRegion.Rect().Y+c.transcriptRegion.Rect().Height) {
-		switch me.Button {
-		case gotui.MouseWheelUp:
-			c.scrollTranscript(-3)
-			return true
-		case gotui.MouseWheelDown:
-			c.scrollTranscript(3)
-			return true
-		}
+	direction := 1
+	if me.Button == gotui.MouseWheelUp {
+		direction = -1
 	}
-	return false
+	c.wheel.configure(c.cfg.TUIWheelScrollLines)
+	c.scrollTranscript(direction * c.wheel.next(direction, time.Now()))
+	return true
 }
 
 func (c *chatTUI) focusInput() {
@@ -2713,6 +2957,10 @@ func (c *chatTUI) handleCommand(text string) {
 	case "/name":
 		c.appendTranscript(c.nameSessionLines(text, fields)...)
 	case "/resume":
+		if len(fields) == 1 { // Pi: /resume opens the session selector
+			c.openSessionMenu()
+			return
+		}
 		c.appendTranscript(c.resumeLines(fields)...)
 	case "/sessions":
 		c.openSessionMenu()
@@ -2763,31 +3011,48 @@ func (c *chatTUI) handleCommand(text string) {
 	case "/compact":
 		if len(fields) == 2 && fields[1] == "info" {
 			c.appendTranscript(c.compactLines()...)
-		} else if len(fields) == 1 {
-			c.startCompaction()
-			return
 		} else {
-			c.compactionFeedback("Usage: /compact [info]")
+			// Pi: /compact [instructions] focuses the summary.
+			c.startCompactionWithInstructions(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(text), fields[0])))
+			return
 		}
 	case "/scrollback":
 		c.appendTranscript(c.scrollbackCommand(fields)...)
 	case "/history-limit":
 		c.appendTranscript(c.historyLimitCommand(fields)...)
-	case "/scrollbar":
-		c.appendTranscript(c.scrollbarCommand(fields)...)
 	case "/settings", "/config":
 		c.appendTranscript(c.settingsLines()...)
 	case "/approvals":
 		c.appendTranscript("approvals: no approval gates are configured in gi yet")
 	case "/cancel":
 		c.appendTranscript(c.cancelCommand())
+	case "/export":
+		c.appendTranscript(c.exportCommand(text))
+	case "/quit", "/exit":
+		if c.app != nil {
+			c.app.Stop()
+		}
+		return
+	case "/mcp":
+		c.appendTranscript(c.mcpCommand(fields)...)
+	case "/codemode":
+		c.appendTranscript(c.codemodeCommand(fields)...)
+	case "/abort":
+		if line := c.abortCommand(); line != "" {
+			c.appendTranscript(line)
+		}
 	case "/agents":
 		c.transcript = append(c.transcript, c.listAgentLines()...)
 	case "/plugins", "/extensions":
 		c.transcript = append(c.transcript, c.pluginLines()...)
 	case "/tree":
 		c.transcript = append(c.transcript, c.treeLines()...)
-	case "/fork":
+	case "/fork", "/spawn":
+		if fields[0] == "/fork" && len(fields) == 1 {
+			c.openForkSelector() // Pi: fork from an earlier user message
+			return
+		}
+		// /spawn [@agentN] (and the legacy /fork @agentN) opens a peer session.
 		target := ""
 		if len(fields) > 1 {
 			target = strings.TrimPrefix(fields[1], "@")
@@ -2901,49 +3166,70 @@ func (c *chatTUI) extensionCommandLines(text string, fields []string) ([]string,
 	}
 }
 
+// tuiCommands is gi's slash command catalogue, used by /commands and by the
+// Pi-style slash autocomplete below the editor.
+// piCommands mirrors Pi's BUILTIN_SLASH_COMMANDS: same order, names and
+// argument hints, with Pi's descriptions where gi behaves the same. Pi
+// built-ins gi does not implement yet (/import, /share, /bug,
+// /changelog, /trust) are omitted rather than approximated.
+var piCommands = []struct{ name, hint string }{
+	{"/settings", "Show settings"},
+	{"/model <provider/model>", "Select model (opens selector UI)"},
+	{"/tree", "Show session tree"},
+	{"/thinking <level>", "Set thinking level"},
+	{"/scoped-models [list|add|remove|set]", "Enable/disable models for model cycling"},
+	{"/export [path]", "Export session (HTML default, or specify path: .html/.jsonl)"},
+	{"/copy [--osc52|--native|--auto|--fallback]", "Copy last agent message to clipboard"},
+	{"/name <name>", "Set session display name"},
+	{"/session", "Show session info and stats"},
+	{"/hotkeys", "Show all keyboard shortcuts"},
+	{"/fork", "Create a new fork from a previous user message"},
+	{"/clone [@agentN]", "Duplicate the current session at the current position"},
+	{"/login <provider>", "Show provider authentication status"},
+	{"/logout <provider>", "Remove provider authentication"},
+	{"/new", "Start a new session"},
+	{"/compact [instructions]", "Manually compact the session context"},
+	{"/resume [index|session_id]", "Resume a different session"},
+	{"/reload", "Reload config, skills and context files"},
+	{"/quit", "Quit gi"},
+}
+
+// giCommands are gi's own commands, listed after Pi's built-ins the way Pi
+// lists extension commands after its own.
+var giCommands = []struct{ name, hint string }{
+	{"/abort", "Abort the running turn (also clears one left by a crash)"},
+	{"/queue [page|remove|steer|move]", "Inspect the durable queue; mutate by full turn IDs"},
+	{"/retry [page|check|run|release]", "Inspect held failures; guarded retry actions"},
+	{"/draft [reload|check|release|restore|discard]", "Inspect or recover durable drafts"},
+	{"/attach <path> [prompt]", "Stage up to six media refs for the next prompt"},
+	{"/attachments", "List pending media refs and held admissions"},
+	{"/detach <media:id|all|unresolved>", "Remove pending media refs"},
+	{"/paste-image [prompt]", "Paste a clipboard image, optionally with a prompt"},
+	{"/tools [query|active|activate|reset]", "Inspect or change active tools"},
+	{"/mcp [login|logout|reconnect [server]]", "MCP servers: status, sign in or out, reconnect"},
+	{"/codemode [on|off|only|default|status]", "Toggle the codemode tool for this session"},
+	{"/skills [query]", "List discovered skills"},
+	{"/skill:name [args]", "Load a discovered SKILL.md"},
+	{"/agents", "List configured agents"},
+	{"/spawn [@agentN]", "Open a peer agent session"},
+	{"/switch @agent|session_id", "Switch the active session"},
+	{"/send @agent message", "Send a peer message"},
+	{"/where", "Show a context summary"},
+	{"/plugins", "Show loaded extensions"},
+	{"/scrollback [n]", "Show or set the transcript scrollback limit"},
+	{"/history-limit [n]", "Show or set the per-session prompt history limit"},
+	{"/cancel", "Cancel the latest active or queued turn"},
+	{"/help", "Show grouped help"},
+	{"/commands [query]", "Filter the command palette"},
+	{"!cmd", "Ask the model to run a shell command"},
+	{"!!cmd", "Run a local shell command"},
+}
+
+// tuiCommands is the palette/autocomplete catalogue: Pi's built-ins first.
+var tuiCommands = append(append([]struct{ name, hint string }{}, piCommands...), giCommands...)
+
 func (c *chatTUI) commandPaletteLines(query string) []string {
-	commands := []struct{ name, hint string }{
-		{"/help", "show grouped help"},
-		{"/commands [query]", "filter command palette textually"},
-		{"/hotkeys", "show keyboard shortcuts"},
-		{"/session", "show current session details"},
-		{"/new", "create and switch to a new main session"},
-		{"/name <name>", "rename current session"},
-		{"/resume [index|session_id]", "list or switch recent sessions"},
-		{"/sessions", "searchable session resume selector"},
-		{"/clone [@agentN]", "clone active branch/session"},
-		{"/copy [--osc52|--native|--auto|--fallback]", "copy last assistant message with opt-in target"},
-		{"/attach <path> [prompt]", "stage up to six session media refs for next prompt"},
-		{"/draft [reload|check|release|restore|discard]", "inspect/recover durable drafts; never auto resend"},
-		{"/retry [page|check|run|release]", "inspect held failures; full ID/token guarded actions"},
-		{"/queue [page|remove|steer|move]", "inspect durable queue; mutate by full turn IDs"},
-		{"/attachments", "list durable refs / held admissions"},
-		{"/detach <media:id|all|unresolved>", "remove pending refs; keep stored files"},
-		{"/paste-image [prompt]", "paste a clipboard image and optionally submit a prompt"},
-		{"/login [provider]", "show OAuth/credential auth status"},
-		{"/logout <provider>", "remove stored provider credentials"},
-		{"/reload", "refresh config and discovery safely"},
-		{"/tools [query|active|activate|reset]", "inspect or change active tools"},
-		{"/skills [query]", "list discovered skills"},
-		{"/skill:name [args]", "load a discovered SKILL.md"},
-		{"/model [name|index]", "list or select model"},
-		{"/scoped-models [list|add|remove|set]", "manage enabled models"},
-		{"/thinking [level]", "show or set thinking level"},
-		{"/compact", "request context compaction"},
-		{"/scrollback [n]", "show or set transcript scrollback limit"},
-		{"/history-limit [n]", "show or set per-session prompt history limit"},
-		{"/settings", "show grouped runtime settings"},
-		{"/cancel", "cancel latest active/queued turn"},
-		{"/agents", "list configured agents"},
-		{"/tree", "show session tree"},
-		{"/plugins", "show loaded extensions"},
-		{"/fork [@agentN]", "create peer/fork session"},
-		{"/switch @agent|session_id", "switch active session"},
-		{"/send @agent message", "send peer message"},
-		{"/where", "show context summary"},
-		{"!cmd", "ask model to run/summarize shell command"},
-		{"!!cmd", "run local shell command"},
-	}
+	commands := tuiCommands
 	q := strings.ToLower(strings.TrimSpace(query))
 	lines := []string{"commands: palette"}
 	for _, cmd := range commands {
@@ -3037,7 +3323,16 @@ func (c *chatTUI) loginLines(fields []string) []string {
 
 func (c *chatTUI) logoutLines(fields []string) []string {
 	if len(fields) < 2 {
-		return []string{"sys: usage /logout <provider>"}
+		var stored []string
+		for _, status := range inference.ListAuthStatus() {
+			if status.Authenticated {
+				stored = append(stored, status.ID)
+			}
+		}
+		if len(stored) == 0 {
+			return []string{"logout: no stored provider credentials"}
+		}
+		return []string{"logout: /logout <provider> · stored: " + strings.Join(stored, ", ")}
 	}
 	provider := strings.TrimSpace(fields[1])
 	removed, err := inference.RemoveAuthEntry(provider)
@@ -3074,7 +3369,7 @@ func (c *chatTUI) hotkeyLines() []string {
 		"  Drag select · hold edges to scroll · release/Ctrl+C/X copy (clipboard setting) · Esc clear",
 		"session:",
 		"  Esc blur input · Tab focus input · F2/F3 (or Ctrl+P/Ctrl+N) history",
-		"  Ctrl+C interrupt · Ctrl+D exit (empty input)",
+		"  Esc interrupt · Ctrl+C quit · Ctrl+D exit (empty input)",
 		"shell:",
 		"  !cmd ask model to run · !!cmd run locally",
 	}
@@ -3448,12 +3743,12 @@ func (c *chatTUI) newSessionLines() []string {
 }
 
 func (c *chatTUI) nameSessionLines(text string, fields []string) []string {
-	if len(fields) < 2 {
-		return []string{"sys: usage /name <name>"}
-	}
 	name := strings.TrimSpace(strings.TrimPrefix(text, fields[0]))
-	if name == "" {
-		return []string{"sys: usage /name <name>"}
+	if name == "" { // Pi: /name without an argument shows the current name
+		if sess, err := c.store.GetSession(context.Background(), c.sessionID); err == nil && strings.TrimSpace(sess.Title) != "" {
+			return []string{fmt.Sprintf("sys: session name: %s", sess.Title)}
+		}
+		return []string{"sys: session has no name; /name <name> sets one"}
 	}
 	if err := c.store.UpdateSessionTitle(context.Background(), c.sessionID, name); err != nil {
 		return []string{fmt.Sprintf("error: rename session: %v", err)}
@@ -3752,9 +4047,9 @@ func containsString(values []string, needle string) bool {
 }
 
 func (c *chatTUI) openThinkingMenu() {
-	choices := []string{"low", "medium", "high"}
+	choices := c.thinkingMenuLevels()
 	selected := 0
-	current := strings.ToLower(strings.TrimSpace(c.cfg.DefaultThinkingLevel))
+	current := c.effectiveThinking(c.cfg.DefaultProvider, c.cfg.DefaultModel, c.cfg.DefaultThinkingLevel)
 	for i, level := range choices {
 		if level == current {
 			selected = i
@@ -3781,13 +4076,32 @@ func (c *chatTUI) thinkingCommand(fields []string) []string {
 	if len(fields) == 1 {
 		return []string{fmt.Sprintf("sys: thinking: %s", c.cfg.DefaultThinkingLevel)}
 	}
-	level := strings.TrimSpace(fields[1])
+	level := strings.ToLower(strings.TrimSpace(fields[1]))
 	if level == "" {
-		return []string{"sys: usage /thinking <low|medium|high>"}
+		return []string{"sys: usage /thinking <off|minimal|low|medium|high|xhigh|max>"}
+	}
+	// Like Pi, clamp to what the model supports and bind the level to the
+	// session's model so inference applies it (not just the footer).
+	model := c.sessionModelLabel()
+	if effective, known := inference.EffectiveThinking(model, level); known {
+		if effective == "" {
+			return []string{fmt.Sprintf("sys: %s does not support thinking", model)}
+		}
+		level = effective
 	}
 	c.cfg.DefaultThinkingLevel = level
 	lines := []string{fmt.Sprintf("sys: thinking set to %s", level)}
-	if err := c.store.TouchSessionState(context.Background(), c.sessionID, map[string]any{"thinking_level": level}); err != nil {
+	if c.store == nil || c.sessionID == "" {
+		return lines
+	}
+	ctx := context.Background()
+	if session, err := c.store.GetSession(ctx, c.sessionID); err == nil && inference.ValidateThinking(model, level) == nil {
+		if err := c.store.SelectSessionThinking(ctx, c.sessionID, store.SessionThinkingToken(c.sessionID, session.State), model, level); err != nil {
+			lines = append(lines, fmt.Sprintf("warn: failed to select session thinking level: %v", err))
+		}
+		return lines
+	}
+	if err := c.store.TouchSessionState(ctx, c.sessionID, map[string]any{"thinking_level": level}); err != nil {
 		lines = append(lines, fmt.Sprintf("warn: failed to persist thinking level in session state: %v", err))
 	}
 	return lines
@@ -3856,21 +4170,42 @@ func (c *chatTUI) settingsLines() []string {
 	if len(c.cfg.EnabledModels) > 0 {
 		enabledModels = strings.Join(c.cfg.EnabledModels, ", ")
 	}
+	clipboardMode := c.cfg.TUIClipboardMode
+	if clipboardMode == "" {
+		clipboardMode = "default (selection: osc52; /copy: off)"
+	}
+	themeSetting := c.cfg.Theme
+	if themeSetting == "" {
+		themeSetting = "(auto)"
+	}
+	wheel := "auto"
+	if c.cfg.TUIWheelScrollLines > 0 {
+		wheel = strconv.Itoa(c.cfg.TUIWheelScrollLines)
+	}
+	thinking := c.effectiveThinking(c.cfg.DefaultProvider, c.cfg.DefaultModel, c.cfg.DefaultThinkingLevel)
+	if thinking == "" {
+		thinking = "off (model does not support reasoning)"
+	}
+	retry := c.cfg.Retry.Policy()
 	return []string{
+		"settings: live runtime summary (not a settings-file dump; secrets omitted)",
 		"settings: runtime",
-		fmt.Sprintf("- workspace: %s", compactMaybe(c.cfg.WorkspaceRoot, c.compactOutput(), 48)),
+		fmt.Sprintf("- workspace: %s", c.cfg.WorkspaceRoot),
 		fmt.Sprintf("- max_iterations: %d", c.cfg.MaxIterations),
 		fmt.Sprintf("- active_tools: %s", activeTools),
 		"settings: model",
 		fmt.Sprintf("- provider: %s", c.cfg.DefaultProvider),
 		fmt.Sprintf("- model: %s", c.cfg.DefaultModel),
-		fmt.Sprintf("- thinking: %s", c.cfg.DefaultThinkingLevel),
+		fmt.Sprintf("- thinking: %s", thinking),
+		fmt.Sprintf("- thinking_configured: %s", c.cfg.DefaultThinkingLevel),
 		fmt.Sprintf("- enabled_models: %s", enabledModels),
 		"settings: editor",
+		fmt.Sprintf("- theme: %s", piActiveTheme),
+		fmt.Sprintf("- theme_configured: %s", themeSetting),
+		fmt.Sprintf("- fullscreen_wheel_scroll_lines: %s", wheel),
 		fmt.Sprintf("- scrollback_limit: %d", c.currentScrollbackLimit()),
-		fmt.Sprintf("- clipboard_mode: %s", c.cfg.TUIClipboardMode),
+		fmt.Sprintf("- clipboard_mode: %s", clipboardMode),
 		fmt.Sprintf("- history_limit: %d", c.currentHistoryLimit()),
-		fmt.Sprintf("- scrollbar: %v", c.cfg.TUIScrollbar),
 		"- shortcuts: Ctrl+L/Alt+L model cycle, Ctrl+T/Alt+T thinking cycle, Ctrl+R history search, Tab path completion, @path completion, F6/F7 transcript block select, F8 expand/collapse",
 		"settings: session",
 		fmt.Sprintf("- session_id: %s", c.sessionID),
@@ -3880,10 +4215,22 @@ func (c *chatTUI) settingsLines() []string {
 		fmt.Sprintf("- skills_discovery: %d", len(c.cfg.Discovery.Skills)),
 		"settings: compaction",
 		fmt.Sprintf("- enabled: %v", c.cfg.Compaction.Enabled),
-		fmt.Sprintf("- threshold_tokens: %d keep_recent_tokens: %d reserve_tokens: %d", c.cfg.Compaction.ThresholdTokens, c.cfg.Compaction.KeepRecentTokens, c.cfg.Compaction.ReserveTokens),
+		fmt.Sprintf("- context_window: %d", c.cfg.Compaction.ContextWindow),
+		fmt.Sprintf("- threshold_tokens: %d", c.cfg.Compaction.ThresholdTokens),
+		fmt.Sprintf("- keep_recent_tokens: %d", c.cfg.Compaction.KeepRecentTokens),
+		fmt.Sprintf("- reserve_tokens: %d", c.cfg.Compaction.ReserveTokens),
+		fmt.Sprintf("- strategy: %s", c.cfg.Compaction.Strategy),
+		"settings: provider retry",
+		fmt.Sprintf("- enabled: %v", retry.Enabled),
+		fmt.Sprintf("- max_retries: %d", retry.MaxRetries),
+		fmt.Sprintf("- base_delay_ms: %d", retry.BaseDelayMS),
+		fmt.Sprintf("- max_agent_delay_ms: %d", retry.MaxDelayMS),
 		"settings: peering",
 		fmt.Sprintf("- enabled: %v", c.cfg.Peering.Enabled),
-		fmt.Sprintf("- hostname: %s auth_key_env: %s auth_key_keychain: %s", c.cfg.Peering.Hostname, c.cfg.Peering.AuthKeyEnv, c.cfg.Peering.AuthKeyKeychain),
+		fmt.Sprintf("- hostname: %s", c.cfg.Peering.Hostname),
+		fmt.Sprintf("- state_dir: %s", c.cfg.Peering.StateDir),
+		fmt.Sprintf("- auth_key_env: %s", c.cfg.Peering.AuthKeyEnv),
+		fmt.Sprintf("- auth_key_keychain: %s", c.cfg.Peering.AuthKeyKeychain),
 	}
 }
 
@@ -3904,36 +4251,6 @@ func (c *chatTUI) scrollbackCommand(fields []string) []string {
 	return lines
 }
 
-func (c *chatTUI) scrollbarCommand(fields []string) []string {
-	if len(fields) == 1 {
-		state := "off"
-		if c.cfg.TUIScrollbar {
-			state = "on"
-		}
-		return []string{fmt.Sprintf("sys: scrollbar: %s", state)}
-	}
-	value := strings.ToLower(strings.TrimSpace(fields[1]))
-	enabled := false
-	switch value {
-	case "on", "true", "1", "yes", "enabled":
-		enabled = true
-	case "off", "false", "0", "no", "disabled":
-		enabled = false
-	default:
-		return []string{"sys: usage /scrollbar <on|off>"}
-	}
-	c.cfg.TUIScrollbar = enabled
-	state := "off"
-	if enabled {
-		state = "on"
-	}
-	lines := []string{fmt.Sprintf("sys: scrollbar set to %s", state)}
-	if err := config.PersistTUIScrollbar(c.cfg.WorkspaceRoot, enabled); err != nil {
-		lines = append(lines, fmt.Sprintf("warn: failed to persist scrollbar setting: %v", err))
-	}
-	return lines
-}
-
 func (c *chatTUI) historyLimitCommand(fields []string) []string {
 	if len(fields) == 1 {
 		return []string{fmt.Sprintf("sys: history limit: %d", c.currentHistoryLimit())}
@@ -3949,6 +4266,47 @@ func (c *chatTUI) historyLimitCommand(fields []string) []string {
 		lines = append(lines, fmt.Sprintf("warn: failed to persist history limit: %v", err))
 	}
 	return lines
+}
+
+// abortCommand stops the session's active work. A live run is aborted like
+// Escape (queued text returns to the editor). An active turn no worker is
+// running — left 'running' by a crash or killed process, which makes the
+// session look busy (e.g. /compact unavailable) while the TUI is idle — is
+// finalized as aborted instead of being replayed on the next start.
+func (c *chatTUI) abortCommand() string {
+	if c.compaction.active {
+		c.stopCompaction()
+		return "sys: compaction cancellation requested"
+	}
+	if c.engine == nil || c.store == nil || c.sessionID == "" {
+		return "sys: nothing to abort"
+	}
+	ctx, cancel := c.draftContext()
+	activeID, _, err := c.store.GetSessionActiveTurn(ctx, c.sessionID)
+	cancel()
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && activeID == "") {
+		return "sys: nothing to abort"
+	}
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+	if c.engine.LiveActiveTurn(c.sessionID) == activeID {
+		c.restoreQueuedDraftForActive(activeID)
+		return ""
+	}
+	ctx, cancel = c.draftContext()
+	aborted, err := c.engine.AbortStaleActiveTurn(ctx, c.sessionID)
+	cancel()
+	switch {
+	case errors.Is(err, turn.ErrTurnOwnedElsewhere):
+		return fmt.Sprintf("sys: %s is running in another gi process; abort it there", activeID)
+	case err != nil:
+		return fmt.Sprintf("error: abort %s: %v", activeID, err)
+	case aborted == "":
+		return "sys: nothing to abort"
+	}
+	c.running = false
+	return fmt.Sprintf("sys: aborted interrupted turn %s (no worker was running it)", aborted)
 }
 
 func (c *chatTUI) cancelCommand() string {
@@ -3987,22 +4345,36 @@ func (c *chatTUI) toolCommand(fields []string) []string {
 				return []string{"tools: usage /tools activate <tool> [tool...]"}
 			}
 			names := make([]any, 0, len(fields)-2)
+			var lines []string
 			for _, name := range fields[2:] {
-				if strings.TrimSpace(name) != "" {
-					names = append(names, strings.TrimSpace(name))
+				name = strings.TrimSpace(name)
+				if name == "codemode" {
+					// Codemode is a per-session toggle (#25), not part of the
+					// engine-wide active set.
+					lines = append(lines, c.codemodeCommand([]string{"/codemode", "on"})...)
+				} else if name != "" {
+					names = append(names, name)
 				}
+			}
+			if len(names) == 0 {
+				return lines
 			}
 			out, err := c.engine.ExecuteToolsMeta(map[string]any{"activate": names})
 			if err != nil {
-				return []string{fmt.Sprintf("error: %v", err)}
+				return append(lines, fmt.Sprintf("error: %v", err))
 			}
-			return prefixMultiline("tools", out)
+			return append(lines, prefixMultiline("tools", out)...)
 		case "reset":
 			out, err := c.engine.ExecuteToolsMeta(map[string]any{"reset_active": true})
 			if err != nil {
 				return []string{fmt.Sprintf("error: %v", err)}
 			}
-			return prefixMultiline("tools", out)
+			lines := prefixMultiline("tools", out)
+			if c.engine != nil && c.sessionID != "" {
+				// Codemode returns to its settings default too.
+				lines = append(lines, c.codemodeCommand([]string{"/codemode", "default"})...)
+			}
+			return lines
 		}
 	}
 	query := ""
@@ -4112,10 +4484,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 		return c.renderRegular(app)
 	}
 	w, h := app.Size()
-	padding := 1
-	if w < 80 || h < 20 {
-		padding = 0
-	}
+	padding := 0 // Pi draws transcript, editor and footer edge to edge.
 	contentWidth := w - (padding * 2)
 	if contentWidth < 20 {
 		contentWidth = 20
@@ -4133,12 +4502,14 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	c.input.width = contentWidth
 	c.input.suspended = c.workspaceIndex.active || c.modelMenuOpen
 	footerLines := c.footerLines(contentWidth)
-	pendingLines := c.pendingQueueLines(contentWidth, h)
-	widgetLines := c.extensionWidgetLines()
+	pendingLines := c.pendingDockLines(contentWidth, h)
+	// Pi's widget container above the editor always starts with Spacer(1),
+	// leaving one blank row between the transcript and the input.
+	widgetLines := append([]string{""}, c.extensionWidgetLines()...)
 	if c.editorAskActive {
 		widgetLines = append(widgetLines, "? "+c.editorAskPrompt+"  (Enter submit · Esc cancel)")
 	}
-	menuHeight := c.modelMenuHeight() + c.workspaceIndexHeight()
+	menuHeight := c.modelMenuHeight() + c.workspaceIndexHeight() + c.slashMenuHeight()
 	c.boundEditor(h, padding, len(footerLines), len(widgetLines)+len(pendingLines), menuHeight, false)
 	activeInput := c.input
 	inputSlot := 0
@@ -4153,20 +4524,26 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	if inputHeight < 1 {
 		inputHeight = 1
 	}
-	reservedHeight := (padding * 2) + len(footerLines) + len(pendingLines) + len(widgetLines) + inputHeight + 2 + menuHeight
+	// Pi's model selector replaces the editor (and its borders) while open.
+	piSelector := c.modelMenuOpen && c.modelMenuKind != "session-rename"
+	editorRows := inputHeight + 2
+	if piSelector {
+		editorRows = 0
+	}
+	reservedHeight := (padding * 2) + len(footerLines) + len(pendingLines) + len(widgetLines) + editorRows + menuHeight
 	transcriptHeight := h - reservedHeight
-	if transcriptHeight < 4 {
+	if transcriptHeight < 4 && !piSelector {
 		transcriptHeight = 4
 	}
+	transcriptHeight = max(0, transcriptHeight)
 	transcriptOptions := []gotui.Option{
 		gotui.WithWidthPercent(100),
 		gotui.WithHeight(transcriptHeight),
 		gotui.WithScrollable(gotui.ScrollVertical),
+		// Pi has no transcript scrollbar; the full width belongs to content.
+		gotui.WithScrollbarHidden(true),
 		gotui.WithScrollOffset(0, c.transcriptScroll),
 		gotui.WithDirection(gotui.Column),
-	}
-	if c.cfg.TUIScrollbar {
-		transcriptOptions = append(transcriptOptions, gotui.WithScrollbarStyle(gotui.NewStyle().Dim()))
 	}
 	c.validateTranscriptSelection(contentWidth, transcriptHeight)
 	transcript := gotui.New(transcriptOptions...)
@@ -4176,7 +4553,7 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	if c.transcriptExpanded == nil {
 		c.transcriptExpanded = map[string]bool{}
 	}
-	blocks := c.buildTranscriptRenderableBlocks(c.visibleTranscript())
+	blocks := c.transcriptBlocks()
 	if c.selectedTranscriptBlock == "" {
 		for i := len(blocks) - 1; i >= 0; i-- {
 			if blocks[i].Key != "" && (len(blocks[i].Body) > 0 || blocks[i].Subheader != "") {
@@ -4184,18 +4561,16 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 				break
 			}
 		}
-		blocks = c.buildTranscriptRenderableBlocks(c.visibleTranscript())
+		blocks = c.transcriptBlocks()
 	}
 	if c.textSelection.active {
 		c.renderTranscriptSelectionRows(transcript)
 	} else if c.search.active {
 		c.renderTranscriptSearchRows(transcript)
 	} else {
-		previousKind := ""
-		for _, block := range blocks {
-			transcript.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
-			previousKind = block.Kind
-		}
+		// Only blocks on screen are laid out; spacers keep the scroll
+		// geometry (#34).
+		c.addTranscriptWindow(transcript, blocks, contentWidth, transcriptHeight)
 	}
 	if c.stickToBottom {
 		// Resolve the bottom after layout, when wrapping/expansion is known.
@@ -4203,9 +4578,9 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	}
 	root.AddChild(transcript)
 	if len(pendingLines) > 0 {
-		root.AddChild(c.renderLineBlock(pendingLines, gotui.NewStyle().Dim()))
+		root.AddChild(c.renderLineBlock(pendingLines, piFg(piDim)))
 	}
-	if c.modelMenuOpen {
+	if c.modelMenuOpen && !piSelector {
 		root.AddChild(c.renderModelMenu(contentWidth))
 	}
 	if c.workspaceIndex.active {
@@ -4213,35 +4588,31 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	}
 
 	if len(widgetLines) > 0 {
-		root.AddChild(c.renderLineBlock(widgetLines, gotui.NewStyle().Foreground(gotui.Blue)))
+		root.AddChild(c.renderLineBlock(widgetLines, gotui.NewStyle()))
 	}
 
-	separatorText := c.horizontalRule(contentWidth)
-	if c.search.active {
-		separatorText = c.transcriptSearchLabel(contentWidth)
-	}
-	if c.textSelection.active {
-		separatorText = c.selectionSeparator(contentWidth)
-	}
-	inputTopSep := gotui.New(
-		gotui.WithWidthPercent(100),
-		gotui.WithText(separatorText),
-		gotui.WithTextStyle(gotui.NewStyle().Dim()),
-	)
-	root.AddChild(inputTopSep)
-
+	// The editor must lay out before its borders so overflow counts are current.
 	inputEl := app.MountPersistent(c, inputSlot, func() gotui.Component { return activeInput })
 	c.inputRegion = inputEl
+	switch {
+	case piSelector:
+		root.AddChild(c.renderModelMenu(contentWidth))
+		root.AddChild(c.renderFooter(contentWidth))
+		return root
+	case c.textSelection.active:
+		root.AddChild(borderElement([]gotui.TextSpan{{Text: c.selectionSeparator(contentWidth), Style: piFg(c.editorBorderColor())}}))
+	case c.search.active:
+		root.AddChild(borderElement([]gotui.TextSpan{{Text: c.transcriptSearchLabel(contentWidth), Style: piFg(c.editorBorderColor())}}))
+	default:
+		root.AddChild(c.renderEditorTopBorder(activeInput, contentWidth))
+	}
 	root.AddChild(inputEl)
+	root.AddChild(c.renderEditorBottomBorder(activeInput, contentWidth))
+	if c.slash.active && !c.search.active {
+		root.AddChild(c.renderSlashMenu(contentWidth))
+	}
 
-	inputBottomSep := gotui.New(
-		gotui.WithWidthPercent(100),
-		gotui.WithText(c.horizontalRule(contentWidth)),
-		gotui.WithTextStyle(gotui.NewStyle().Dim()),
-	)
-	root.AddChild(inputBottomSep)
-
-	root.AddChild(c.renderLineBlock(footerLines, gotui.NewStyle().Dim()))
+	root.AddChild(c.renderFooter(contentWidth))
 
 	return root
 }
@@ -4282,69 +4653,6 @@ func (c *chatTUI) footerPathLineForWidth(width int) string {
 		return compactMaybe(workspace, true, width)
 	}
 	return workspace
-}
-
-func (c *chatTUI) footerModelText(data tuiContextSummary) string {
-	model := strings.TrimSpace(data.model)
-	if model == "" {
-		model = strings.TrimSpace(c.cfg.DefaultModel)
-	}
-	if model == "" {
-		model = "model unset"
-	}
-	if thinking := strings.TrimSpace(data.thinking); thinking != "" {
-		model += " • " + thinking
-	}
-	return model
-}
-
-// footerLines builds a PiSwift-style multi-line footer: a path/branch line, a
-// stats line (counts + token usage on the left, model/thinking/context on the
-// right), and an optional transient notification line. The bottom band may grow
-// to several lines but never adds top chrome.
-func (c *chatTUI) footerLines(width int) []string {
-	data := c.contextSummaryData()
-	lines := []string{c.footerPathLineForWidth(width)}
-
-	statsParts := []string{c.footerCountsText(data)}
-	if compact := c.compactionInline(); compact != "" {
-		statsParts = append(statsParts, compact)
-	}
-	if data.inputTokens > 0 {
-		statsParts = append(statsParts, "↑"+formatTokenCount(data.inputTokens))
-	}
-	if data.outputTokens > 0 {
-		statsParts = append(statsParts, "↓"+formatTokenCount(data.outputTokens))
-	}
-	if data.cacheRead > 0 {
-		statsParts = append(statsParts, "R"+formatTokenCount(data.cacheRead))
-	}
-	if data.cacheWrite > 0 {
-		statsParts = append(statsParts, "W"+formatTokenCount(data.cacheWrite))
-	}
-	if data.costTotal > 0 {
-		statsParts = append(statsParts, fmt.Sprintf("$%.3f", data.costTotal))
-	}
-	if data.contextTokens > 0 {
-		statsParts = append(statsParts, formatContextUsage(data.contextTokens, data.contextWindow))
-	}
-	statsLeft := strings.Join(statsParts, " · ")
-	model := c.footerModelText(data)
-	lines = append(lines, joinFooterRow(statsLeft, model, width))
-
-	if note := c.footerTransientNotice(data); note != "" {
-		if width > 0 {
-			note = compactMaybe(note, true, width)
-		}
-		lines = append(lines, note)
-	}
-	for _, status := range c.extensionStatusLines() {
-		if width > 0 {
-			status = compactMaybe(status, true, width)
-		}
-		lines = append(lines, status)
-	}
-	return lines
 }
 
 // setExtensionStatus is a backend-safe TUI extension slot: extensions can set a
@@ -4463,7 +4771,7 @@ func (c *chatTUI) applyToolRenderMode(tool string, body []string) ([]string, boo
 		}
 		return body, false
 	}
-	return body, len(body) > 2
+	return body, true
 }
 
 // setEditorAsk is the editor-replacement extension slot (PiSwift setEditorComponent
@@ -4495,6 +4803,12 @@ func (c *chatTUI) setEditorAsk(key, prompt, prefill string) {
 }
 
 func (c *chatTUI) completeEditorAsk(answer string) {
+	if h := c.editorAskHandler; h != nil {
+		c.editorAskHandler = nil
+		c.exitEditorAsk()
+		h(answer, false)
+		return
+	}
 	key := c.editorAskKey
 	c.exitEditorAsk()
 	label := key
@@ -4509,6 +4823,12 @@ func (c *chatTUI) completeEditorAsk(answer string) {
 
 func (c *chatTUI) cancelEditorAsk() {
 	if !c.editorAskActive {
+		return
+	}
+	if h := c.editorAskHandler; h != nil {
+		c.editorAskHandler = nil
+		c.exitEditorAsk()
+		h("", true)
 		return
 	}
 	c.exitEditorAsk()
@@ -4552,64 +4872,6 @@ func widgetPayloadLines(payload map[string]any) []string {
 	return nil
 }
 
-func (c *chatTUI) footerTransientNotice(data tuiContextSummary) string {
-	if time.Now().Before(c.compaction.noticeUntil) {
-		return "» " + sanitizeStatusText(c.compaction.notice)
-	}
-	if c.compaction.active {
-		return ""
-	}
-	status := strings.TrimSpace(c.status)
-	if status == "" {
-		return ""
-	}
-	if strings.Contains(status, c.cfg.DefaultModel) || strings.Contains(status, data.model) {
-		return ""
-	}
-	return "» " + status
-}
-
-func joinFooterRow(left, right string, width int) string {
-	if width <= 0 {
-		return compactMaybe(left, true, 24) + "  " + compactMaybe(right, true, 36)
-	}
-	if len(left)+len(right)+2 >= width {
-		rightWidth := 36
-		if rightWidth > width/2 {
-			rightWidth = width / 2
-		}
-		if rightWidth < 12 {
-			rightWidth = 12
-		}
-		leftWidth := width - rightWidth - 2
-		if leftWidth < 8 {
-			leftWidth = 8
-		}
-		return compactMaybe(left, true, leftWidth) + "  " + compactMaybe(right, true, rightWidth)
-	}
-	return left + strings.Repeat(" ", width-len(left)-len(right)) + right
-}
-
-func (c *chatTUI) footerStatusLineForWidth(width int) string {
-	data := c.contextSummaryData()
-	left := c.footerNotificationText(data)
-	model := strings.TrimSpace(data.model)
-	if model == "" {
-		model = strings.TrimSpace(c.cfg.DefaultModel)
-	}
-	if model == "" {
-		model = "model unset"
-	}
-	thinking := strings.TrimSpace(data.thinking)
-	if thinking != "" {
-		model += " • " + thinking
-	}
-	if data.contextTokens > 0 {
-		model += " • " + formatContextUsage(data.contextTokens, data.contextWindow)
-	}
-	return joinFooterRow(left, model, width)
-}
-
 func formatTokenCount(n int) string {
 	if n >= 1000000 {
 		return fmt.Sprintf("%.1fM", float64(n)/1000000)
@@ -4634,60 +4896,58 @@ func formatContextUsage(tokens, window int) string {
 	return fmt.Sprintf("ctx %s", formatTokenCount(tokens))
 }
 
-func (c *chatTUI) footerCountsText(data tuiContextSummary) string {
-	left := fmt.Sprintf("m%d/t%d", data.messageCount, data.turnCount)
-	if data.queuedTurns > 0 || data.steeringDepth > 0 {
-		left += fmt.Sprintf(" q%d/s%d", data.queuedTurns, data.steeringDepth)
-	}
-	return left
-}
-
-func (c *chatTUI) footerNotificationText(data tuiContextSummary) string {
-	counts := c.footerCountsText(data)
-	status := strings.TrimSpace(c.status)
-	if status != "" && !strings.Contains(status, c.cfg.DefaultModel) && !strings.Contains(status, data.model) {
-		return counts + " · " + status
-	}
-	return counts
-}
-
-func (c *chatTUI) footerTextForWidth(width int) string {
-	return c.footerStatusLineForWidth(width)
-}
-
-func (c *chatTUI) footerText() string {
-	return c.footerTextForWidth(c.currentContentWidth())
-}
-
+// gitBranchName finds the repository containing workspace, as Pi's footer
+// does from its cwd: walk up to the nearest .git (directory, or a worktree/
+// submodule file pointing at the real git dir) and read HEAD.
 func (c *chatTUI) gitBranchName(workspace string) string {
 	if workspace == "" {
 		return ""
 	}
-	headPath := filepath.Join(workspace, ".git", "HEAD")
-	raw, err := os.ReadFile(headPath)
+	dir, err := filepath.Abs(workspace)
 	if err != nil {
 		return ""
 	}
-	head := strings.TrimSpace(string(raw))
-	const prefix = "ref: refs/heads/"
-	if strings.HasPrefix(head, prefix) {
-		return strings.TrimPrefix(head, prefix)
+	for {
+		gitPath := filepath.Join(dir, ".git")
+		if info, err := os.Stat(gitPath); err == nil {
+			gitDir := gitPath
+			if !info.IsDir() {
+				raw, err := os.ReadFile(gitPath)
+				if err != nil {
+					return ""
+				}
+				ref := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(raw)), "gitdir:"))
+				if ref == "" {
+					return ""
+				}
+				if !filepath.IsAbs(ref) {
+					ref = filepath.Join(dir, ref)
+				}
+				gitDir = ref
+			}
+			raw, err := os.ReadFile(filepath.Join(gitDir, "HEAD"))
+			if err != nil {
+				return ""
+			}
+			head := strings.TrimSpace(string(raw))
+			const prefix = "ref: refs/heads/"
+			if strings.HasPrefix(head, prefix) {
+				return strings.TrimPrefix(head, prefix)
+			}
+			// Pi reports "detached" for a detached HEAD.
+			return "detached"
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
 	}
-	if len(head) >= 7 {
-		return head[:7]
-	}
-	return head
 }
 
-func (c *chatTUI) currentPadding() int {
-	if c.app != nil {
-		w, h := c.app.Size()
-		if w < 80 || h < 20 {
-			return 0
-		}
-	}
-	return 1
-}
+// Pi has no outer frame padding: rows run edge to edge and components pad
+// themselves (messages and tool bands by one column).
+func (c *chatTUI) currentPadding() int { return 0 }
 
 func (c *chatTUI) compactOutput() bool { return c.currentContentWidth() < 72 }
 
@@ -4721,11 +4981,8 @@ func (c *chatTUI) currentContentWidth() int {
 	if c.app == nil {
 		return 78
 	}
-	w, h := c.app.Size()
-	padding := 1
-	if w < 80 || h < 20 {
-		padding = 0
-	}
+	w, _ := c.app.Size()
+	padding := 0 // Pi draws transcript, editor and footer edge to edge.
 	contentWidth := w - (padding * 2)
 	if contentWidth < 20 {
 		contentWidth = 20
@@ -4776,35 +5033,50 @@ func (c *chatTUI) renderLineBlock(lines []string, style gotui.Style) *gotui.Elem
 }
 
 type tuiInlineSegment struct {
-	Text string
-	Code bool
+	Text   string
+	Code   bool
+	Styles []string // Markdown element styles, outermost first
 }
 
+// parseTUIInlineSegments splits a projected line at its (possibly nested)
+// inline-code and Markdown style markers.
 func parseTUIInlineSegments(line string) []tuiInlineSegment {
-	if !strings.Contains(line, markdownInlineCodeStart) {
-		return []tuiInlineSegment{{Text: stripMarkdownInlineStyleMarkers(line)}}
+	if !strings.Contains(line, "\x00gi-") {
+		return []tuiInlineSegment{{Text: line}}
 	}
-	segments := []tuiInlineSegment{}
-	for len(line) > 0 {
-		start := strings.Index(line, markdownInlineCodeStart)
-		if start < 0 {
-			if line != "" {
-				segments = append(segments, tuiInlineSegment{Text: stripMarkdownInlineStyleMarkers(line)})
+	var segments []tuiInlineSegment
+	var stack []string
+	var text strings.Builder
+	flush := func() {
+		if text.Len() == 0 {
+			return
+		}
+		seg := tuiInlineSegment{Text: text.String()}
+		for _, name := range stack {
+			if name == "code" {
+				seg.Code = true
+			} else {
+				seg.Styles = append(seg.Styles, name)
 			}
-			break
 		}
-		if start > 0 {
-			segments = append(segments, tuiInlineSegment{Text: stripMarkdownInlineStyleMarkers(line[:start])})
-		}
-		line = line[start+len(markdownInlineCodeStart):]
-		end := strings.Index(line, markdownInlineCodeEnd)
-		if end < 0 {
-			segments = append(segments, tuiInlineSegment{Text: stripMarkdownInlineStyleMarkers(line)})
-			break
-		}
-		segments = append(segments, tuiInlineSegment{Text: line[:end], Code: true})
-		line = line[end+len(markdownInlineCodeEnd):]
+		segments = append(segments, seg)
+		text.Reset()
 	}
+	for i := 0; i < len(line); {
+		if marker, open, name, ok := markerToken(line[i:]); ok {
+			flush()
+			if open {
+				stack = append(stack, name)
+			} else if len(stack) > 0 {
+				stack = stack[:len(stack)-1]
+			}
+			i += len(marker)
+			continue
+		}
+		text.WriteByte(line[i])
+		i++
+	}
+	flush()
 	if len(segments) == 0 {
 		return []tuiInlineSegment{{Text: ""}}
 	}
@@ -4815,22 +5087,22 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 	// go-tui word wrapping discards leading whitespace in rich text. Keep it
 	// as element padding so fenced code indentation survives the PTY renderer.
 	leading := len(line) - len(strings.TrimLeft(line, " "))
-	// Table cells and preformatted code require literal padding. go-tui's
-	// rich-text word wrapper otherwise folds their ASCII spaces.
+	// Table rows are already wrapped by the Markdown renderer. Preserve their
+	// literal ASCII padding by disabling a second rich-text word-wrap pass.
+	// Replacing it with NBSP breaks terminal grapheme handling (notably flags
+	// in tmux), so frame diffs can leave stale border cells while scrolling.
 	preformatted := leading > 0 || strings.HasPrefix(line, "|") || strings.HasPrefix(line, "+") || strings.HasPrefix(line, "│") || strings.HasPrefix(line, "┌") || strings.HasPrefix(line, "├") || strings.HasPrefix(line, "└")
 	line = line[leading:]
 	segments := parseTUIInlineSegments(line)
 	options := []gotui.Option{gotui.WithWidthPercent(100)}
+	if preformatted {
+		options = append(options, gotui.WithWrap(false))
+	}
 	if leading > 0 {
 		options = append(options, gotui.WithPaddingTRBL(0, 0, 0, leading))
 	}
-	if len(segments) == 1 && !segments[0].Code {
+	if len(segments) == 1 && !segments[0].Code && len(segments[0].Styles) == 0 {
 		spans := transcriptLinkSpans(segments[0].Text, style)
-		if preformatted {
-			for i := range spans {
-				spans[i].Text = strings.ReplaceAll(spans[i].Text, " ", "\u00a0")
-			}
-		}
 		return gotui.New(append(options, gotui.WithRichText(spans...))...)
 	}
 	// A row of child Elements lays each styled fragment out independently. At
@@ -4842,20 +5114,22 @@ func (c *chatTUI) renderInlineStyledLine(line string, style gotui.Style) *gotui.
 			continue
 		}
 		segStyle := style
+		for _, name := range seg.Styles {
+			segStyle = piMarkdownStyle(segStyle, name)
+		}
 		if seg.Code {
-			segStyle = gotui.NewStyle().Foreground(gotui.BrightBlack).Dim()
+			segStyle = style.Foreground(piMdCode)
 			// go-tui's rich-text word wrapper collapses ASCII spaces in
 			// spans, including the space following an ANSI style change.
 			// Non-breaking spaces keep code's exact visual width and prevent
 			// the following word from being pulled into the code span.
-			spans = append(spans, gotui.TextSpan{Text: strings.ReplaceAll(seg.Text, " ", "\u00a0"), Style: segStyle})
+			text := seg.Text
+			if !preformatted {
+				text = strings.ReplaceAll(text, " ", "\u00a0")
+			}
+			spans = append(spans, gotui.TextSpan{Text: text, Style: segStyle})
 		} else {
 			parts := transcriptLinkSpans(seg.Text, segStyle)
-			if preformatted {
-				for i := range parts {
-					parts[i].Text = strings.ReplaceAll(parts[i].Text, " ", "\u00a0")
-				}
-			}
 			spans = append(spans, parts...)
 		}
 	}
@@ -4869,6 +5143,12 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
 		if meta, ok := parseTranscriptBlockMarker(line); ok {
+			if meta.Kind == startupHeaderKind {
+				// gi's startup header; Body carries its content signature so
+				// cached renders follow MCP/extension/skill changes.
+				blocks = append(blocks, transcriptRenderableBlock{Kind: startupHeaderKind, Key: meta.Key, Expanded: c.transcriptExpanded[meta.Key], Expandable: true, Body: c.startupSignature()})
+				continue
+			}
 			body := make([]string, 0, 4)
 			j := i + 1
 			for j < len(lines) && strings.HasPrefix(lines[j], "│ ") {
@@ -4887,7 +5167,7 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 				}
 				block.HeaderStyle, block.BodyStyle, block.HintStyle, _, _ = transcriptBlockPalette(meta.Kind, "", false)
 				blocks = append(blocks, block)
-				i = j
+				i = j - 1
 				continue
 			}
 			expanded := c.transcriptExpanded[meta.Key]
@@ -4895,12 +5175,7 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 			header := plainTerminalOutput(meta.Title)
 			subheader := ""
 			if meta.Kind == "tool" {
-				if elapsed := formatBlockElapsed(meta.StartedAt, meta.EndedAt); elapsed != "" {
-					header += " · " + elapsed
-				}
-				if detail := strings.TrimSpace(meta.Detail); detail != "" {
-					header += " · " + detail
-				}
+				// Header is Pi's call line; timing/args are rendered by the tool shell.
 			} else if meta.Kind == "thinking" || meta.Kind == "thinking_indicator" {
 				subheader = ""
 			} else {
@@ -4928,13 +5203,35 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 			}
 			if meta.Kind == "tool" {
 				body, expandable = c.applyToolRenderMode(meta.Title, body)
+				previewLimit = toolPreviewLines
+				if isShellTool(meta.Title) {
+					previewLimit, previewTail = toolShellPreviewLines, true
+				}
+				expandable = expandable && len(body) > previewLimit
+				if meta.Title == "read" && meta.ToolPath != "" && meta.Status == "ok" {
+					expandable = len(body) > 0 && c.extensionToolModes[meta.Title] == ""
+				}
+				if meta.Title == "edit" && (meta.EditDiff != nil || meta.EditError != "") {
+					expandable = false
+				}
+				if meta.Title == "write" && meta.ToolContent != nil {
+					expandable = c.extensionToolModes[meta.Title] == "" && len(strings.Split(*meta.ToolContent, "\n")) > previewLimit
+				}
+				if meta.Title == "codemode" {
+					// Pi's codemode previews: 10 script lines, 8 calls, 5 output lines.
+					code := 0
+					if meta.ToolContent != nil {
+						code = len(strings.Split(strings.TrimRight(*meta.ToolContent, "\n"), "\n"))
+					}
+					expandable = code > codemodeCodePreviewLines || len(meta.Calls) > codemodeCallPreviewCount || len(body) > codemodeOutputPreviewLines
+				}
 			}
 			if meta.Kind == "bash" {
 				previewLimit = bashPreviewLines
 				previewTail = true
 				expandable = len(body) > bashPreviewLines
 			}
-			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint})
+			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolPath: meta.ToolPath, ToolContent: meta.ToolContent, ToolRange: meta.ToolRange, ToolNotice: meta.ToolNotice, EditDiff: meta.EditDiff, EditError: meta.EditError, Calls: meta.Calls, FullOutputPath: meta.FullOutputPath, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
 			i = j - 1
 			continue
 		}
@@ -5057,85 +5354,57 @@ func tuiErrorDedupKey(line string) string {
 	return msg
 }
 
-// diffLineStyle returns a PiSwift-style color for unified-diff lines in tool/bash
+// diffLineStyle returns Pi's toolDiff* color for unified-diff lines in tool/bash
 // output: green for additions, red for removals, dim for hunk/diff headers.
 func diffLineStyle(line string) (gotui.Style, bool) {
 	trimmed := strings.TrimLeft(line, " ")
 	switch {
-	case strings.HasPrefix(trimmed, "+++") || strings.HasPrefix(trimmed, "---"):
-		return gotui.NewStyle().Dim(), true
-	case strings.HasPrefix(trimmed, "@@"):
-		return gotui.NewStyle().Foreground(gotui.Cyan), true
+	case strings.HasPrefix(trimmed, "+++") || strings.HasPrefix(trimmed, "---") || strings.HasPrefix(trimmed, "@@"):
+		return piFg(piDiffContext), true
 	case strings.HasPrefix(trimmed, "+"):
-		return gotui.NewStyle().Foreground(gotui.Green), true
+		return piFg(piDiffAdded), true
 	case strings.HasPrefix(trimmed, "-"):
-		return gotui.NewStyle().Foreground(gotui.Red), true
+		return piFg(piDiffRemoved), true
 	}
 	return gotui.Style{}, false
 }
 
+// transcriptBlockPalette maps transcript blocks to Pi's dark theme roles:
+// tool titles use toolTitle (bold), output toolOutput, bash commands bashMode,
+// thinking thinkingText (italic), custom/hook messages customMessageLabel and
+// customMessageText, status lines dim, errors error. Assistant Markdown uses
+// the terminal's default foreground, as Pi's Markdown component does.
 func transcriptBlockPalette(kind, status string, selected bool) (gotui.Style, gotui.Style, gotui.Style, string, gotui.Style) {
-	fg := gotui.White
-	switch kind {
-	case "tool":
-		fg = gotui.Cyan
-	case "thought":
-		fg = gotui.Magenta
-	case "hook", "route", "dispatcher", "subturn":
-		fg = gotui.Blue
-	case "local":
-		fg = gotui.Magenta
-	case "bash":
-		fg = gotui.Cyan
-	case "compact":
-		fg = gotui.Yellow
-	case "error":
-		fg = gotui.Red
-	case "user":
-		fg = gotui.Green
-	}
-	switch status {
-	case "error":
-		fg = gotui.Red
-	case "ok":
-		fg = gotui.Green
-	case "running":
-		fg = gotui.Cyan
-	case "skipped":
-		fg = gotui.Yellow
-	}
-	head := gotui.NewStyle().Foreground(fg).Bold()
-	body := gotui.NewStyle().Foreground(fg)
-	hint := gotui.NewStyle().Dim()
-	border := gotui.NewStyle().Foreground(fg)
+	head := gotui.NewStyle()
+	body := gotui.NewStyle()
+	hint := piFg(piMuted)
+	border := piFg(piBorderMuted)
 	selectedHint := "F6/F7 select · F8 toggle · click to expand"
 	if selected {
 		border = border.Bold()
 		selectedHint = "selected · F6/F7 move · F8 toggle · click to expand"
 	}
-	if kind == "system" || kind == "plain" || kind == "assistant" {
-		head = gotui.NewStyle()
-		body = gotui.NewStyle()
-		hint = gotui.NewStyle().Dim()
-		border = gotui.NewStyle().Foreground(gotui.BrightBlack)
-		if kind == "assistant" {
-			head = gotui.NewStyle().Bold()
-		}
-		if kind == "system" {
-			head = gotui.NewStyle().Dim()
-			body = gotui.NewStyle().Dim()
-		}
+	failed := status == "error" || status == "failed"
+	switch kind {
+	case "user":
+		head, body = piFg(piUserText), piFg(piUserText)
+	case "tool":
+		head, body = piFg(piToolTitle).Bold(), piFg(piToolOutput)
+	case "bash", "local":
+		head, body = piFg(piBashMode).Bold(), piFg(piMuted)
+	case "thought", "thinking", "thinking_indicator":
+		head, body = piFg(piThinkingText).Italic(), piFg(piThinkingText).Italic()
+	case "hook", "route", "dispatcher", "subturn", "compact":
+		head, body = piFg(piCustomLabel).Bold(), piFg(piCustomText)
+	case "error":
+		head, body = piFg(piError).Bold(), piFg(piError)
+	case "system":
+		head, body = piFg(piDim), piFg(piDim)
 	}
-	if kind == "user" || kind == "tool" || kind == "bash" || kind == "local" || kind == "error" {
-		// Output stays neutral on the terminal background; errors use text color.
-		head = gotui.NewStyle().Foreground(piText).Bold()
-		body = gotui.NewStyle().Foreground(piText)
-		if kind == "error" || status == "error" || status == "failed" {
-			head = head.Foreground(piError)
-		}
-		if kind == "user" {
-			head = gotui.NewStyle().Foreground(piText)
-		}
+	if failed && kind != "user" {
+		head = piFg(piError).Bold()
+	} else if status == "skipped" {
+		head = piFg(piWarning).Bold()
 	}
 	return head, body, hint, selectedHint, border
 }
@@ -5145,7 +5414,7 @@ func brailleSpinnerFrame(t time.Time) string {
 	if t.IsZero() {
 		t = time.Now()
 	}
-	idx := int((t.UnixMilli() / 120) % int64(len(frames)))
+	idx := int((t.UnixMilli() / 80) % int64(len(frames)))
 	if idx < 0 {
 		idx = 0
 	}
@@ -5153,16 +5422,42 @@ func brailleSpinnerFrame(t time.Time) string {
 }
 
 func (c *chatTUI) renderTranscriptBlock(block transcriptRenderableBlock) *gotui.Element {
+	if block.Kind == "thinking_indicator" {
+		// Pi shows turn activity in the editor's top border, not the transcript.
+		return gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(0))
+	}
+	if block.Kind == "tool" && block.Header == "edit" {
+		// Pi's edit box takes its colour from the preview; a result error the
+		// preview did not show sits below it.
+		banded := block
+		banded.Status = editBandStatus(block)
+		box := padTranscriptBlock(c.renderTranscriptBlockContent(block), banded)
+		below := c.editResultBelow(block)
+		if below == nil {
+			return box
+		}
+		wrapper := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
+		wrapper.AddChild(box)
+		wrapper.AddChild(below)
+		return wrapper
+	}
 	return padTranscriptBlock(c.renderTranscriptBlockContent(block), block)
 }
 
 func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) *gotui.Element {
+	switch block.Kind {
+	case startupHeaderKind:
+		return c.renderStartupHeader(block.Expanded)
+	case "tool":
+		return c.renderPiToolBlock(block)
+	case "bash":
+		return c.renderPiBashBlock(block)
+	}
 	if block.Kind == "user" || block.Kind == "assistant" {
 		if block.MarkdownSource != "" {
 			message := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
-			// Account for message-band padding and the potential scrollbar.
-			_, _, horizontal := transcriptSpacing(block.Kind)
-			for _, line := range renderMarkdownTranscript("", block.MarkdownSource, max(1, c.currentContentWidth()-2*horizontal-1)) {
+			// Account for message-band padding.
+			for _, line := range renderMarkdownTranscript("", block.MarkdownSource, c.transcriptBlockContentWidth(block.Kind)) {
 				message.AddChild(c.renderInlineStyledLine(line, block.BodyStyle))
 			}
 			return message
@@ -5196,11 +5491,17 @@ func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) 
 		ref := gotui.NewRef()
 		ref.Set(container)
 		c.transcriptBlockRefs = append(c.transcriptBlockRefs, transcriptBlockHitTarget{Key: block.Key, Ref: ref})
-		if len(block.Body) == 0 {
+		body := block.Body
+		if block.MarkdownSource != "" {
+			// Reproject source at the padded inner width. Wrapping at the outer
+			// width first leaves orphan words when rich text wraps a second time.
+			body = renderMarkdownTranscript("", block.MarkdownSource, c.transcriptBlockContentWidth(block.Kind))
+		}
+		if len(body) == 0 {
 			container.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(fmt.Sprintf("%s Thinking...", brailleSpinnerFrame(time.Now()))), gotui.WithTextStyle(block.BodyStyle)))
 			return container
 		}
-		for _, line := range block.Body {
+		for _, line := range body {
 			container.AddChild(c.renderInlineStyledLine(line, block.BodyStyle))
 		}
 		return container
@@ -5286,8 +5587,33 @@ func (c *chatTUI) loadTranscript() []string {
 		return nil
 	}
 	out := make([]string, 0, len(msgs))
+	// Calls precede results. Scope IDs to their turn because providers can reuse them.
+	calls := map[string]any{}
 	for _, m := range msgs {
-		out = append(out, c.renderMessageLines(m, c.transcriptRenderWidth())...)
+		if kind, _ := m.Payload["kind"].(string); kind == "tool_calls" {
+			turnID, _ := m.Payload["turn_id"].(string)
+			raw, _ := json.Marshal(m.Payload["tool_calls"])
+			var entries []struct {
+				ID        string         `json:"id"`
+				Arguments map[string]any `json:"arguments"`
+			}
+			if json.Unmarshal(raw, &entries) == nil {
+				for _, call := range entries {
+					calls[turnID+"\x00"+call.ID] = call.Arguments
+				}
+			}
+		}
+		if m.Role == "tool_result" {
+			turnID, _ := m.Payload["turn_id"].(string)
+			callID, _ := m.Payload["tool_call_id"].(string)
+			arguments := calls[turnID+"\x00"+callID]
+			if arguments == nil {
+				arguments = m.Payload["arguments"]
+			}
+			out = append(out, c.renderToolResultWithArguments(m, arguments)...)
+		} else {
+			out = append(out, c.renderMessageLines(m, c.transcriptRenderWidth())...)
+		}
 	}
 	return c.pruneTranscript(out)
 }
@@ -5321,6 +5647,10 @@ func (c *chatTUI) renderMessageLines(m store.Message, width int) []string {
 }
 
 func (c *chatTUI) renderToolResultLines(m store.Message) []string {
+	return c.renderToolResultWithArguments(m, m.Payload["arguments"])
+}
+
+func (c *chatTUI) renderToolResultWithArguments(m store.Message, arguments any) []string {
 	toolName, _ := m.Payload["tool_name"].(string)
 	if toolName == "" {
 		toolName = "tool"
@@ -5330,19 +5660,22 @@ func (c *chatTUI) renderToolResultLines(m store.Message) []string {
 	if isErr {
 		status = "error"
 	}
-	trimmed := strings.TrimRight(plainTerminalOutput(m.Content), "\r\n")
 	meta := transcriptBlockMeta{Key: "msg:" + m.ID, Kind: "tool", Title: toolName, Status: status, StartedAt: strings.TrimSpace(m.CreatedAt), EndedAt: strings.TrimSpace(m.CreatedAt)}
-	if strings.TrimSpace(trimmed) == "" {
-		return []string{encodeTranscriptBlockMarker(meta), "│ (empty)"}
+	meta.Detail = toolInvocationText(toolName, arguments)
+	setFileToolArguments(&meta, arguments)
+	setCodemodeArguments(&meta, arguments)
+	content := m.Content
+	if toolName == "codemode" {
+		meta.Calls, meta.FullOutputPath = codemodeDetails(m.Payload["details"])
+		content = stripScriptHeader(content)
 	}
-	parts := strings.Split(trimmed, "\n")
+	setFileToolDetails(&meta, m.Payload["details"], strings.TrimSpace(plainTerminalOutput(content)))
 	lines := []string{encodeTranscriptBlockMarker(meta)}
-	if len(parts) == 1 {
-		lines = append(lines, "│ "+truncate(parts[0], 200))
-		return lines
-	}
-	for _, part := range parts {
-		lines = append(lines, "│ "+truncate(strings.TrimRight(part, "\r"), 200))
+	for _, line := range toolOutputBodyLines(content) {
+		if toolName != "read" {
+			line = truncate(line, 200)
+		}
+		lines = append(lines, "│ "+line)
 	}
 	return lines
 }
@@ -5446,7 +5779,8 @@ func (c *chatTUI) scrollTranscript(delta int) {
 }
 
 func (c *chatTUI) pageTranscript(delta int) {
-	step := c.transcriptViewportHeight() - 1
+	// Pi keeps four rows of context when paging.
+	step := c.transcriptViewportHeight() - 4
 	if step < 1 {
 		step = 1
 	}
@@ -5471,6 +5805,11 @@ func (c *chatTUI) scrollTranscriptToBottom() {
 
 func (c *chatTUI) visibleTranscript() []string {
 	lines := c.pruneTranscript(append([]string(nil), c.transcript...))
+	// Fullscreen shows gi's startup header first (Pi's header container);
+	// regular mode prints it once to scrollback instead.
+	if !c.regularMode && c.startupHeaderShown() {
+		return append([]string{startupHeaderMarker()}, lines...)
+	}
 	if len(lines) == 0 {
 		return []string{"(no messages yet)"}
 	}
@@ -5602,10 +5941,26 @@ func Main() {
 	dbPath := flag.String("db", config.DefaultTUIDBPath(), "SQLite database path")
 	workspace := flag.String("workspace", config.DefaultWorkspaceRoot(), "Workspace root")
 	model := flag.String("model", "", "Override default model")
-	mode := flag.String("tui-mode", "fullscreen", "Terminal rendering: fullscreen or regular (native scrollback)")
+	mode := flag.String("tui-mode", "", "Terminal rendering: fullscreen or regular (native scrollback); default: tuiMode setting, else fullscreen")
 	flag.Parse()
 	if err := RunMode(*dbPath, *workspace, *model, *mode); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// resolveTUIMode picks the terminal mode like Pi: the --tui-mode flag, else
+// the tuiMode setting, else fullscreen (Pi 1.0's default).
+func resolveTUIMode(flagValue, setting string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	switch setting {
+	case "regular", "fullscreen":
+		return setting
+	case "":
+	default:
+		log.Printf("tuiMode %q is not regular or fullscreen; using fullscreen", setting)
+	}
+	return "fullscreen"
 }

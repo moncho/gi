@@ -30,6 +30,21 @@ type ToolRuntime struct {
 	WorkspaceRoot string
 	// OnOutput receives cumulative command output; errors fail execution closed.
 	OnOutput func(string) error
+	// AttachImage adds an image to the tool result sent to the model (nil
+	// when the caller cannot attach images; tools then describe them in text).
+	AttachImage func(mimeType string, data []byte)
+	// AddTools reports tools this call loaded for the session (tool_search);
+	// they are declared from the next model call (nil outside turns).
+	AddTools func(names []string)
+	// ToolCallID is the model's ID for this call (the parent of codemode's
+	// nested calls).
+	ToolCallID string
+	// SetDetails attaches structured details to the result for renderers
+	// (nil outside turns), e.g. codemode's nested calls.
+	SetDetails func(map[string]any)
+	// AddUsage adds model usage made by the tool (codemode's models.*) to
+	// the turn's usage and cost (nil outside turns).
+	AddUsage func(goai.Usage)
 }
 
 type ToolExecutor func(context.Context, ToolRuntime, goai.ToolCall) (string, error)
@@ -43,6 +58,20 @@ type RegisteredTool struct {
 	Weight      string
 	Activation  string
 	Executor    ToolExecutor
+	// Deferred tools are registered (executable) but not declared by default:
+	// they reach the model only when loaded (tool_search) or listed explicitly
+	// in the active set (Pi's deferred/codemode exposure).
+	Deferred bool
+	// ModelOnly tools (codemode, tool_search) cannot be called from codemode
+	// scripts.
+	ModelOnly bool
+	// OutputSchema is the JSON Schema of the value codemode scripts receive;
+	// empty means text (Pi's default). MCP tools declare a CallToolResult.
+	OutputSchema json.RawMessage
+	// StructuredExecutor, when set, returns the value codemode scripts
+	// receive (e.g. an MCP CallToolResult as JSON) and whether it reports an
+	// error; scripts still resolve to it, like Pi's structuredContent.
+	StructuredExecutor func(context.Context, ToolRuntime, goai.ToolCall) (json.RawMessage, bool, error)
 }
 
 func (t RegisteredTool) Definition() goai.Tool {
@@ -87,6 +116,23 @@ func (r *ToolRegistry) Register(tool RegisteredTool) error {
 	}
 	r.tools[tool.Name] = tool
 	return nil
+}
+
+// Unregister removes a tool (e.g. an MCP tool its server withdrew).
+func (r *ToolRegistry) Unregister(name string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.tools[name]; !ok {
+		return
+	}
+	delete(r.tools, name)
+	delete(r.active, name)
+	for i, n := range r.order {
+		if n == name {
+			r.order = append(r.order[:i], r.order[i+1:]...)
+			break
+		}
+	}
 }
 
 func (r *ToolRegistry) Get(name string) (RegisteredTool, bool) {
@@ -167,7 +213,25 @@ func (r *ToolRegistry) ActiveNames() []string {
 	}
 	return names
 }
-func (r *ToolRegistry) isActiveLocked(name string) bool { return len(r.active) == 0 || r.active[name] }
+func (r *ToolRegistry) isActiveLocked(name string) bool {
+	if len(r.active) == 0 {
+		return !r.tools[name].Deferred
+	}
+	return r.active[name]
+}
+
+// DeferredEntries lists registered deferred tools in registration order.
+func (r *ToolRegistry) DeferredEntries() []RegisteredTool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var out []RegisteredTool
+	for _, name := range r.order {
+		if t := r.tools[name]; t.Deferred {
+			out = append(out, t)
+		}
+	}
+	return out
+}
 
 func ExecuteToolsTool(reg *ToolRegistry, args map[string]any, setActive func([]string) error, activeNames func() []string, reset func()) (string, error) {
 	name, _ := args["name"].(string)

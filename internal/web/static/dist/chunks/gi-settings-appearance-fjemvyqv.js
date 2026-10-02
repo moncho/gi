@@ -66,6 +66,3 @@ function Appearance() {
 export {
   Appearance
 };
-
-//# debugId=458DF4723E18513B64756E2164756E21
-//# sourceMappingURL=gi-settings-appearance-fjemvyqv.js.map

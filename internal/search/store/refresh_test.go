@@ -3,6 +3,7 @@ package store_test
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -424,13 +425,26 @@ func TestRefreshHandleCommitsAtMostOnce(t *testing.T) {
 
 func TestConfiguredOptionalRootsFingerprintAndMissingPublication(t *testing.T) {
 	db, s, root, _ := dbFixture(t)
+	// Existing Piclaw workspaces (both built-in roots present) keep the legacy
+	// fingerprint, so their committed indexes stay valid.
+	piclaw := t.TempDir()
+	for _, dir := range []string{"notes", ".pi/skills"} {
+		if err := os.MkdirAll(filepath.Join(piclaw, dir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if legacy, err := search.ConfiguredScopeConfig(piclaw, "all", nil, nil, nil, "lines-v1"); err != nil {
+		t.Fatal(err)
+	} else if legacy.Fingerprint() != config(t, piclaw, "all").Fingerprint() || len(legacy.OptionalRoots()) != 0 {
+		t.Fatal("strict fingerprint changed")
+	}
+	// Absent built-in roots are optional instead of failing every scan.
 	strict, err := search.ConfiguredScopeConfig(root, "all", nil, nil, nil, "lines-v1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	old := config(t, root, "all")
-	if strict.Fingerprint() != old.Fingerprint() {
-		t.Fatal("strict fingerprint changed")
+	if got := strict.OptionalRoots(); !reflect.DeepEqual(got, []string{".pi/skills", "notes"}) {
+		t.Fatalf("absent built-in roots not optional: %v", got)
 	}
 	optional, err := search.ConfiguredScopeConfig(root, "all", []string{"docs"}, []string{"nim"}, []string{"notes", ".pi/skills"}, "lines-v1")
 	if err != nil {

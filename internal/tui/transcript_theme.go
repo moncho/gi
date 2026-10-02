@@ -1,18 +1,88 @@
 package tui
 
-import gotui "github.com/grindlemire/go-tui"
+import (
+	"strings"
 
-// The user message alone gets a background; transcript output stays on the
-// terminal background. Keep the user color independent of the ANSI palette.
-var (
-	piUserBg = gotui.RGBColor(0x34, 0x35, 0x41)
-	piText   = gotui.RGBColor(0xd4, 0xd4, 0xd4)
-	piError  = gotui.RGBColor(0xf4, 0x87, 0x71)
+	gotui "github.com/grindlemire/go-tui"
 )
 
+// Pi's built-in dark theme (theme/dark.json), resolved to truecolor by Pi's
+// own okhsl conversion. Keep these values in sync with Pi, not the ANSI
+// palette, so gi and Pi render the same colors in the same terminal.
+// The user message alone gets a background; transcript output stays on the
+// terminal background.
+var (
+	piText            = piRGB(222, 224, 225)
+	piMuted           = piRGB(157, 165, 169)
+	piDim             = piRGB(126, 136, 142)
+	piAccent          = piRGB(167, 152, 215)
+	piError           = piRGB(234, 127, 129)
+	piWarning         = piRGB(205, 154, 34)
+	piSuccess         = piRGB(104, 183, 141)
+	piThinkingText    = piRGB(150, 160, 164)
+	piUserBg          = piRGB(33, 59, 73)
+	piSelectedBg      = piRGB(33, 59, 73)
+	piSearchMatchBg   = piRGB(78, 47, 27)
+	piMdCode          = piAccent
+	piBashMode        = piRGB(94, 178, 134)
+	piBorderMuted     = piRGB(118, 129, 134)
+	piThinkingOff     = piRGB(108, 118, 123)
+	piThinkingMinimal = piRGB(104, 128, 141)
+	piThinkingLow     = piRGB(84, 137, 164)
+	piThinkingMedium  = piRGB(97, 133, 204)
+	piThinkingHigh    = piRGB(151, 118, 229)
+	piThinkingXhigh   = piRGB(222, 84, 193)
+	piThinkingMax     = piRGB(254, 84, 98)
+)
+
+// Keep distinct Pi roles independent even when the built-ins share RGB values.
+var (
+	piMdHeading     = piWarning
+	piMdCodeBlock   = piSuccess
+	piMdCodeBorder  = piMuted
+	piMdQuote       = piMuted
+	piMdQuoteBorder = piMuted
+	piMdHr          = piMuted
+	piMdLinkUrl     = piMuted
+	piMdListBullet  = piAccent
+	piToolTitle     = piText
+	piToolOutput    = piMuted
+	piDiffAdded     = piSuccess
+	piDiffRemoved   = piError
+	piDiffContext   = piMuted
+	piUserText      = piText
+	piCustomLabel   = piAccent
+	piCustomText    = piMuted
+)
+
+func piFg(c gotui.Color) gotui.Style { return gotui.NewStyle().Foreground(c) }
+
+// Pi colors the editor border (and the embedded working status) by thinking
+// level, or with bashMode while the draft is a `!` shell command.
+func piThinkingBorderColor(level string) gotui.Color {
+	switch strings.ToLower(strings.TrimSpace(level)) {
+	case "minimal":
+		return piThinkingMinimal
+	case "low":
+		return piThinkingLow
+	case "medium":
+		return piThinkingMedium
+	case "high":
+		return piThinkingHigh
+	case "xhigh":
+		return piThinkingXhigh
+	case "max":
+		return piThinkingMax
+	}
+	return piThinkingOff
+}
+
 func transcriptBand(kind, status string) (gotui.Color, bool) {
-	if kind == "user" {
+	switch kind {
+	case "user":
 		return piUserBg, true
+	case "tool":
+		return toolBandColor(status), true
 	}
 	return gotui.Color{}, false
 }
@@ -37,14 +107,18 @@ func (c *chatTUI) transcriptMaxScroll() int {
 func (c *chatTUI) toggleToolOutput() {
 	blocks := c.buildTranscriptRenderableBlocks(c.visibleTranscript())
 	expand := false
+	// Ctrl+O also expands the startup header, as Pi's app.tools.expand does.
+	toggles := func(b transcriptRenderableBlock) bool {
+		return (b.Kind == "tool" || b.Kind == "bash" || b.Kind == "local" || b.Kind == startupHeaderKind) && b.Expandable
+	}
 	for _, b := range blocks {
-		if (b.Kind == "tool" || b.Kind == "bash" || b.Kind == "local") && b.Expandable && !b.Expanded {
+		if toggles(b) && !b.Expanded {
 			expand = true
 			break
 		}
 	}
 	for _, b := range blocks {
-		if (b.Kind == "tool" || b.Kind == "bash" || b.Kind == "local") && b.Expandable {
+		if toggles(b) {
 			c.transcriptExpanded[b.Key] = expand
 		}
 	}
@@ -60,15 +134,21 @@ func (c *chatTUI) setTranscriptPosition(row int) {
 	}
 }
 
-// Only user messages have a padded background. All other transcript content
-// has a separating blank row, but no boxed padding or background.
+// User messages and tool calls have padded backgrounds, as in Pi. Other
+// transcript content has a separating blank row, but no boxed padding.
 func transcriptSpacing(kind string) (separator, vertical, horizontal int) {
 	switch kind {
 	case "user":
 		return 0, 1, 1
 	case "assistant":
 		return 1, 0, 1
-	case "tool", "bash", "local", "error", "thought", "thinking", "thinking_indicator", "hook", "route", "dispatcher", "subturn", "compact":
+	case "tool":
+		// Pi's ToolExecutionComponent: Spacer(1) + Box(paddingX 1, paddingY 1).
+		return 1, 1, 1
+	case "bash":
+		// BashExecutionComponent: Spacer(1) + full-width borders.
+		return 1, 0, 0
+	case "local", "error", "thought", "thinking", "hook", "route", "dispatcher", "subturn", "compact":
 		return 1, 0, 1
 	default:
 		return 0, 0, 0
@@ -104,6 +184,9 @@ func assistantGapBefore(previousKind, nextKind string) int {
 }
 
 func (c *chatTUI) renderTranscriptBlockAfter(block transcriptRenderableBlock, previousKind string) *gotui.Element {
+	if block.Kind == "thinking_indicator" {
+		return c.renderTranscriptBlock(block)
+	}
 	content := c.renderTranscriptBlock(block)
 	if assistantGapBefore(previousKind, block.Kind) == 0 {
 		return content
@@ -112,4 +195,10 @@ func (c *chatTUI) renderTranscriptBlockAfter(block transcriptRenderableBlock, pr
 	wrapper.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(1)))
 	wrapper.AddChild(content)
 	return wrapper
+}
+
+// Projection and layout must agree on the width inside the message band.
+func (c *chatTUI) transcriptBlockContentWidth(kind string) int {
+	_, _, horizontal := transcriptSpacing(kind)
+	return max(1, c.currentContentWidth()-2*horizontal)
 }

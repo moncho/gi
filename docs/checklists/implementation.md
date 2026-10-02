@@ -1,4 +1,35 @@
+### Complex Markdown table rendering performance
+
+- [x] Add reproducible Unicode/styled table projection, streaming, resize and scroll-frame benchmarks with CPU/allocation profiles.
+- [x] Optimize measured hotspots without changing grid geometry, inline styles or literal search/copy text; add functional coverage (including table-to-user message boundaries and full-width Pi user bands).
+- [x] Record baseline/optimized results and remaining costs in `docs/internal/tui-complex-table-performance.md`.
+### Workspace tool path resolution
+
+- [x] Preserve absolute tool paths inside the workspace rather than prefixing the root; reject outside paths with a confinement error.
+- [x] Cover relative paths/roots, traversal, sibling-prefix attacks, existing/dangling symlinks and multiple missing descendants, plus actual paginated read behavior and native write/read round trips with index invalidation. Update read/write contracts and read schema.
+
+### Issue #12 — terminal-derived themes
+
+- [x] Bound terminal colour probing on silent Unix PTYs; validate OSC values and COLORFGBG indices.
+- [x] Apply independent Markdown, tool/diff, user and custom-message roles with built-in light/dark selection.
+- [x] Add Bun-only real-PTY acceptance for negotiation, fallback, explicit/auto settings and light/dark native UI.
+- [ ] Load Pi custom theme JSON with vars/OKHSL/OKLCH; add live switching.
+- [x] Derive Pi's default `system` theme from the terminal's colours and OSC 4 palette (#31); golden-tested against Pi's generator, 13 real-PTY scenarios.
+- [ ] Windows console querying/input preservation remain open.
+- Contract and verification: [terminal themes](../internal/tui-terminal-theme.md). Issue #12 remains open.
+
 # gi implementation checklist
+
+- [x] Make `/settings` and `/config` explicitly identify the live runtime summary; preserve full workspace paths, distinguish effective/configured thinking and theme, show wheel scrolling, normalized provider retry policy and complete compaction budgets. [Contract](../internal/tui-settings.md).
+
+- [x] Upgrade Joker and go-ai to pinned upstream commits; add a whole-interpreter WASI evaluation/cancellation smoke target. [Scope and WASI bootstrap fix](../internal/scripting/joker-wasi.md). No production codemode or MCP support claimed.
+- [x] Split large generated Joker WASI bootstrap initializers via a reproducible build overlay; preserve initialization dependencies and verify evaluation/cancellation on interpreter and ARM64 native compiler backends.
+- [ ] Replace go-ai Pi 0.99.2 parity commit pin with a proper upstream release tag when available.
+- [ ] Complete Joker WASI capability isolation, bounded host/output handling, authorized MCP broker and performance evaluation before production codemode integration.
+- [x] Retain thinking Markdown source and reproject to the padded inner width on render/resize; cover orphan-word double wrapping, table margins, streaming and completed blocks. [Contract and evidence](../internal/tui-thinking-wrap.md). Full TUI suite has an unrelated rejected-route history failure.
+
+- [x] Default fullscreen mouse-selection copy to OSC 52 when clipboard mode is unset; preserve explicit off/native/auto and transcript-only `/copy`, report terminal dispatch truthfully, and add fresh-workspace/opt-out regression coverage. Go tests/vet/build/hook checks pass. [Policy and validation limits](../internal/tui-clipboard-media.md#selection-default-regression-coverage).
+- [ ] Rerun selection-default PTY/browser/race acceptance on a provisioned host: current attempts blocked by missing sqlite3, missing Playwright browser binaries and unsupported ARM64 ThreadSanitizer VMA range.
 
 Status: Active
 Date: 2026-04-22
@@ -22,6 +53,7 @@ Last updated: 2026-09-28
 - [x] Isolated WebKit reload-oracle symptom with minimal native HTTP/EventSource/presence page: same cancelled-request/access-control errors without Piclaw assets or routing; replacement stream connects and server receives presence. Chromium clean. Strict Piclaw gate remains failed; no waiver/product workaround/parity claim. [Control](../internal/webkit-reload-control-2026-09-28.md).
 
 - [x] User P0 TUI tables reproduced/fixed: hidden inline-code markers inflated widths; rune padding and precomputed resize broke grids. Pi0.87.1 width-aware grid/wrapped cells, terminal/grapheme widths, source-backed reflow and larger bounded regular live preview. Oracle4widths+race3,6native streaming/resize/reloadPTY,24Markdown,6inlineprose,6copy,3scrollbar,check144functional11skips+206support pass. Broad searchPTY fails identically on clean pre-fix5ef8dd8; retained/not waived. Review timeouts disclosed. No running TUI replacement/deploy. [Evidence](../internal/tui-tables-2026-09-28.md).
+- [x] Repair reproduced Unicode table scroll redraw: retain ASCII padding and disable redundant rich-text wrapping instead of injecting NBSP (tmux flag cursor mismatch). Ordinary padding regression and 516 native scroll-frame comparisons across four widths pass, as do Go/vet/build/hooks. Browser suite remains environment-blocked by missing Playwright executables. Isolated worktree; no running TUI replacement. [Evidence](../internal/tui-tables-2026-09-28.md#unicode-table-scroll-redraw-repair).
 
 - [x] Reproduced Anthropic empty-tool HTTP400: pinned decoder leaves nil args, next request sends input:null. Immutable inference-boundary {} normalisation matches installed Pi0.87.1 stream/encoder. Native two-request wire/race3+oracle pass; check144functional11skips,206support7760assertions. No live provider/deploy, no screenshot-provider attribution; OpenCode chunks/full schema repair remain separate. [Evidence](../internal/empty-tool-input-2026-09-28.md).
 
@@ -840,3 +872,22 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 - [x] Review all26additive scenarios in `docs/internal/passkey-scenario-review.md`:004/014/022/025 candidate complete automated journeys; others partial/manual/unsupported with specific gaps. No new source mapping or frozen credit. Initial-owner bootstrap/Visual/physical/synced/nativeprompt/productionRP remain open; no live auth mutation or terminal rows.
 - [ ] Native CI and guarded disabled-config deployment follow before shipping policy UI.
 - [x] CI36086022919 for71f43c3 passed Test,native3OSauth,passkeybrowser gate,5builds.Deployed8090PID2640270 after RP-config-absent check;6guarded Chromium/WebKit3size Authentication checks no writes/errors/draft retained;policyGET401/authunenrolled. DBintegrity/counts62/51/146/normalized hash792e8258…ded00 unchanged except runtimelease.No production policy/enrolment change.
+- [x] TUI Pi visual parity: transcript/footer/selector colors use Pi's dark theme truecolor roles (text, muted, dim, accent, error, warning, success, thinkingText, userMessageBg, bashMode, mdCode, toolDiff*); editor ports Pi's Editor (word wrap, reverse-video cursor, reserved cursor column, thinking-level border colors, `↑/↓ N more` borders) with the working spinner embedded in the top border (`── ⠋ Working ──`) instead of a transcript "Thinking..." row. Transcript scrollbar, `/scrollbar`, `tuiScrollbar` setting and its PTY test removed.
+- [x] TUI Pi parity, round 2: tool calls render as Pi's ToolExecutionComponent (Spacer + padded band in toolPendingBg/toolSuccessBg/toolErrorBg; `$ cmd` / `name arg` header; 10-line head or 5-line shell tail previews with `... (N more/earlier lines, ctrl+o to expand)`; `Took`/`Elapsed`), local `!!` commands as BashExecutionComponent (rules, bashMode header, `(exit N)`), footer as Pi's FooterComponent (home-relative pwd/branch/session name; cumulative ↑↓RW, CH%, cost/(sub), context %/window (auto) with warning/error colors; right-aligned model • thinking; extension statuses on one line). Colors follow Pi's truecolor detection and 256-color quantization. go-tui upgraded to v0.22.1.
+- [x] Regular (inline) TUI resize follows Pi: once resizing settles, clear screen and scrollback and re-print the retained transcript at the new size, then fully redraw the dock. Replaces the `sys: terminal resized` marker; fixes go-tui ≥0.19's grow-clear (#119/#123) erasing history rows that tmux pulls down, and v0.18.2's stale dock bands. `make test-tui-markdown` (24 PTYs) and `make test-tui-table-scroll` pass; `test-tui-regular`/`test-tui-outcomes` still assert pre-Pi `you:` labels and need rewriting.
+
+### Issue #13 — read/write syntax highlighting
+
+- [x] Highlight file-tool content by Pi-compatible extension mapping, preserving source and theme colours.
+- [x] Recover arguments from stored calls; retain Pi read/write preview behavior on reload.
+- [x] Verify live/history rendering, errors, narrow widths/resizes, and PTY keyword colours.
+
+### Pi fullscreen scrolling/redraw parity
+
+- [x] Use complete changed-row clear/repaint output instead of partial cell diffs, with Unicode, resize, style/link and regular-mode regression coverage.
+- [x] Match Pi wheel acceleration policy, including local macOS versus SSH and gesture reset on setting changes.
+- [x] Match Pi’s four-row paging overlap; document the opt-in go-tui runtime patch and terminal verification limits.
+
+### Follow-up — workspace tool path resolution
+
+- [x] In a separate change (`ffbafe19`, `fix/tool-absolute-paths`; not merged), stop `read`/shared tool resolution from silently joining absolute paths to the workspace root. Accept in-workspace absolute paths or clearly reject unsupported paths; test outside-workspace paths, traversal and symlink escapes, and update the tool contract. Reported while profiling tables; deliberately excluded from renderer changes.

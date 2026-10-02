@@ -17,7 +17,7 @@ func TestPendingQueuePanelUsesDurableSteerThenFollowUp(t *testing.T) {
 	if _, err := c.store.EnqueueSteering(ctx, c.sessionID, "", "user", "steer now🙂", nil, nil, "one-at-a-time"); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"Steering: steer now🙂", "Follow-up: follow", "↳ /queue to inspect · Alt+Up restores text-only queue when safe"}
+	want := []string{"Steering: steer now🙂", "Follow-up: follow", "↳ alt+up to edit all queued messages"}
 	got := c.pendingQueueLines(80, 32)
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("panel=%q want=%q", got, want)

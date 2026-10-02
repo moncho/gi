@@ -11,7 +11,7 @@ for(const mode of ['fullscreen','regular'])for(const[width,height]of[[60,18],[10
  const kill=()=>{const pid=Number(tm('display-message','-p','-t',pane,'#{pane_pid}').trim());const child=run('pgrep',['-P',String(pid)]).trim().split('\n').map(Number).find(Boolean);run('kill',['-KILL',String(child)]);tm('kill-session','-t','proof')};
  const command=async text=>{keys('C-e','C-u');type(text);keys('Enter');await sleep(180)};
  try{
-  launch();await wait(()=>cap().includes('m0/t0'),'ready');const id=sql('select id from sessions limit 1');
+  launch();await wait(()=>cap().includes('%/'),'ready');const id=sql('select id from sessions limit 1');
   const journal=()=>JSON.parse(sql(`select cast(value as text) from kv_store where namespace='tui_text_draft_v1' and key='${id}'`)||'{}');
   const draft='first 中文🙂\nsecond β';type('\x1b[200~'+draft+'\x1b[201~');keys('Left','Left');await wait(()=>journal().text===draft&&journal().cursor===Array.from(draft).length-2,'saved draft/cursor');shot('saved');kill();launch();await wait(()=>cap().includes('second'),'recovered');assert(journal().text===draft,'restart changed bytes');type('X');await wait(()=>journal().text==='first 中文🙂\nsecondX β','cursor restored');shot('restored');
   // Clear deliberately, then send once and crash after confirmed admission.

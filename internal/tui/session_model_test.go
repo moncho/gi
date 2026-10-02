@@ -116,6 +116,7 @@ func TestTerminalModelPickerRetainsDraftAndFootprintOnSuccessAndError(t *testing
 			c.openModelMenu()
 			c.modelMenuQuery = "test/unavailable"
 			c.applyModelMenuFilter()
+			openHeight := c.modelMenuHeight()
 			c.acceptModelMenuSelection()
 			if !c.modelMenuOpen || c.modelMenuError == "" || c.cfg.DefaultModel != "test-model" {
 				t.Fatal("invalid selection didn't retain menu/model")
@@ -125,7 +126,7 @@ func TestTerminalModelPickerRetainsDraftAndFootprintOnSuccessAndError(t *testing
 					t.Fatal("overflow", line)
 				}
 			}
-			if c.modelMenuHeight() > 8 {
+			if c.modelMenuHeight() > openHeight {
 				t.Fatal("error added rows")
 			}
 			c.closeModelMenu()

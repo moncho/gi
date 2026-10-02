@@ -77,12 +77,17 @@ func (e *Engine) SubmitTUIComposerIntent(ctx context.Context, sessionID, token s
 		return nil, state, err
 	}
 	inbound.SenderID = "user"
-	route, body, _, err := routing.PreparePromptRoutedInput(prompt, inbound, e.routeResolver)
+	route, body, directed, err := routing.PreparePromptRoutedInput(prompt, inbound, e.routeResolver)
 	if err != nil {
 		return nil, state, err
 	}
-	if routing.NormalizeAgentID(route.AgentID) != routing.NormalizeAgentID(identity.AgentID) {
-		return nil, state, fmt.Errorf("composer: cross-session routing not supported for durable draft; original claim retained")
+	if !directed {
+		// Text typed in this session's composer belongs to this session. The
+		// channel dispatch rules resolve undirected input to the default agent,
+		// which rejected every prompt in peer, forked and cloned sessions.
+		route.AgentID, route.MatchedBy = identity.AgentID, "session"
+	} else if routing.NormalizeAgentID(route.AgentID) != routing.NormalizeAgentID(identity.AgentID) {
+		return nil, state, fmt.Errorf("composer: @%s addresses another agent; use /send @%s <message>; original claim retained", route.AgentID, route.AgentID)
 	}
 	if strings.HasPrefix(prompt, "!") {
 		body = "Run this shell command and summarize the result: " + strings.TrimSpace(strings.TrimPrefix(prompt, "!"))

@@ -18,7 +18,7 @@ gi uses:
 - **Bun** for build-time web asset bundling only (not runtime)
 
 ### Runtime architecture
-- **single binary** with `-bind`, `-port`, `-model`, `-workspace`, and `-tui` flags
+- **single binary** with `-bind`, `-port`, `-model`, `-workspace`, and `-web` flags (terminal UI by default; `-web` runs the web server)
 - long-running **web mode** under supervisor/systemd
 - **TUI mode** is launched from the same `gi` binary rather than a separate primary binary
 - **CLI** remains a separate process model where needed

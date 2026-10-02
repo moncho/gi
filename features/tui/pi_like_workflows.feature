@@ -4,17 +4,17 @@ Feature: TUI Pi-like workflow affordances
   Scenario: Discover commands, inspect models, and use shell shortcut help
     Given a fresh gi TUI workspace
     When I start the gi TUI in tmux
-    Then the screen should contain "(no messages yet)"
+    Then the screen should contain "Press Ctrl+O to show full startup help and loaded resources."
     When I type "/help" and press Enter
     Then the screen should contain "help"
     And the screen should contain "/commands all commands"
     And the screen should contain "!!cmd run locally"
     When I type "/commands model" and press Enter
     Then the screen should contain "commands: palette"
-    And the screen should contain "/model [name|index]"
+    And the screen should contain "/model <provider/model>"
     When I type "/model" and press Enter
-    Then the screen should contain "Select model"
-    And the screen should contain "1. test/test-model"
+    Then the screen should contain "Ctrl+S to set as default"
+    And the screen should contain "test-model [test]"
     When I press Escape
     And I type "!!printf local-ok" and press Enter
     Then the screen should contain "$ printf local-ok"
@@ -23,10 +23,9 @@ Feature: TUI Pi-like workflow affordances
   Scenario: Inspect sessions and settings in a narrow terminal
     Given a fresh gi TUI workspace
     When I start the gi TUI in tmux
-    Then the screen should contain "(no messages yet)"
+    Then the screen should contain "Press Ctrl+O to show full startup help and loaded resources."
     When I resize the terminal to 60x18
     Then the tmux session should be alive
     When I type "/settings" and press Enter
-    Then the screen should contain "settings: session"
-    And the screen should contain "settings: discovery"
-    And the screen should contain "settings: compaction"
+    Then the screen should contain "settings: provider retry"
+    And the screen should contain "settings: peering"

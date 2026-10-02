@@ -2,8 +2,8 @@ package tui
 
 import (
 	"strings"
+	"unicode/utf8"
 
-	"github.com/clipperhouse/uax29/v2/graphemes"
 	gotui "github.com/grindlemire/go-tui"
 )
 
@@ -80,18 +80,31 @@ func tableColumnWidths(headers []string, rows [][]string, width int) []int {
 }
 
 type tableGlyph struct {
-	text  string
-	width int
-	code  bool
+	text   string
+	width  int
+	code   bool
+	styles string // Markdown element styles, comma separated
 }
 
 func wrapTableCell(text string, width int) []string {
-	var glyphs []tableGlyph
-	for _, segment := range parseTUIInlineSegments(text) {
-		iter := graphemes.FromString(segment.Text)
-		for iter.Next() {
-			g := iter.Value()
-			glyphs = append(glyphs, tableGlyph{g, gotui.StringWidth(g), segment.Code})
+	segments := parseTUIInlineSegments(text)
+	count := 0
+	for _, segment := range segments {
+		count += utf8.RuneCountInString(segment.Text)
+	}
+	glyphs := make([]tableGlyph, 0, count)
+	for _, segment := range segments {
+		styles := strings.Join(segment.Styles, ",")
+		// Use the renderer's cluster boundaries as well as its cell widths.
+		// UAX #29 and go-tui disagree for some ZWJ sequences; measuring
+		// separately segmented glyphs can shift every following grid border.
+		for rest := segment.Text; rest != ""; {
+			g, width, size := gotui.NextCluster(rest)
+			if size == 0 {
+				break
+			}
+			glyphs = append(glyphs, tableGlyph{g, width, segment.Code, styles})
+			rest = rest[size:]
 		}
 	}
 	if len(glyphs) == 0 {
@@ -119,21 +132,36 @@ func wrapTableCell(text string, width int) []string {
 			cut, next = lastSpace, lastSpace+1
 		}
 		var b strings.Builder
-		inCode := false
-		for _, g := range glyphs[:cut] {
-			if g.code != inCode {
+		var run *tableGlyph
+		closeRun := func() {
+			if run == nil {
+				return
+			}
+			if run.code {
+				b.WriteString(markdownInlineCodeEnd)
+			}
+			if run.styles != "" {
+				for range strings.Split(run.styles, ",") {
+					b.WriteString(markdownStyleEnd)
+				}
+			}
+		}
+		for i, g := range glyphs[:cut] {
+			if run == nil || g.code != run.code || g.styles != run.styles {
+				closeRun()
+				if g.styles != "" {
+					for _, name := range strings.Split(g.styles, ",") {
+						b.WriteString(markdownStyleStart(name))
+					}
+				}
 				if g.code {
 					b.WriteString(markdownInlineCodeStart)
-				} else {
-					b.WriteString(markdownInlineCodeEnd)
 				}
-				inCode = g.code
+				run = &glyphs[i]
 			}
 			b.WriteString(g.text)
 		}
-		if inCode {
-			b.WriteString(markdownInlineCodeEnd)
-		}
+		closeRun()
 		lines = append(lines, b.String())
 		glyphs = glyphs[next:]
 	}
@@ -181,13 +209,14 @@ func (m *markdownProjector) renderTableGrid(headers []string, rows [][]string) [
 		}
 		return out
 	}
+	divider := border("├", "┼", "┤")
 	out := []string{border("┌", "┬", "┐")}
 	out = append(out, renderRow(headers)...)
-	out = append(out, border("├", "┼", "┤"))
+	out = append(out, divider)
 	for i, row := range rows {
 		out = append(out, renderRow(row)...)
 		if i < len(rows)-1 {
-			out = append(out, border("├", "┼", "┤"))
+			out = append(out, divider)
 		}
 	}
 	return append(out, border("└", "┴", "┘"))

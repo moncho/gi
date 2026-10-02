@@ -28,7 +28,7 @@ func TestInlineCodeKeepsSentenceAndSpacesAcrossStyling(t *testing.T) {
 		root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(50), gotui.WithHeight(5))
 		root.AddChild(el)
 		buf := gotui.NewBuffer(50, 5)
-		root.Render(buf, 50, 5)
+		root.RenderTo(buf, 50, 5)
 		// The terminal displays non-breaking spaces like ordinary spaces. They
 		// prevent go-tui's word wrapper from eating code's boundary spaces.
 		screen := strings.ReplaceAll(buf.StringTrimmed(), "\u00a0", " ")
@@ -38,7 +38,7 @@ func TestInlineCodeKeepsSentenceAndSpacesAcrossStyling(t *testing.T) {
 		}
 		if tc.markdown == "Before `mono` after." {
 			// Styling belongs to the code cells, not the text after them.
-			if code, after := buf.Cell(1+len("Before "), 1), buf.Cell(1+len("Before mono "), 1); code.Style.Fg != gotui.BrightBlack || after.Style.Fg == gotui.BrightBlack {
+			if code, after := buf.Cell(1+len("Before "), 1), buf.Cell(1+len("Before mono "), 1); code.Style.Fg != piMdCode || after.Style.Fg == piMdCode {
 				t.Fatalf("inline code style bled into following text: code=%+v after=%+v", code, after)
 			}
 		}

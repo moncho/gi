@@ -17,10 +17,10 @@ for(const mode of ['fullscreen','regular'])for(const [width,height]of [[60,18],[
  const idle=()=>sql('select count(*) from session_active_turns;')==='0';
  const barRows=()=>cap().split('\n').map((l,i)=>/^\s*─{10,}\s*$/.test(l)?i:-1).filter(i=>i>=0);
  const footprint=()=>{const rows=barRows();if(mode==='fullscreen')return JSON.stringify(rows);const end=cap().trimEnd().split('\n').length;return JSON.stringify({editor:rows.at(-1)-rows.at(-2),dock:end-rows.at(-2)});};
- const line=()=>hist().split('\n').filter(l=>l.includes('shell')&&/\d+(?:\.\d+)?(?:ms|s)/.test(l)).at(-1)?.trim();
+ const line=()=>hist().split('\n').filter(l=>/^\s*(?:Elapsed|Took) \d+(?:\.\d+)?(?:ms|s)/.test(l)).at(-1)?.trim();
  try{
   tmux('new-session','-d','-s',session,'-x',String(width),'-y',String(height),`cd '${dir}' && HOME='${dir}' PATH='${root}/tests/ux/shell':"$PATH" GI_UX_QUEUE_GATES='${dir}' TERM=xterm-256color COLORTERM=truecolor '${bin}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'`);tmux('set-option','-t',session,'status','off');
-  await wait(()=>cap().includes('m0/t0'),'startup');const rows=barRows();assert(rows.length===2,'initial editor bands');const idleFootprint=footprint();writeFileSync(join(artifacts,`${mode}-${width}-baseline.txt`),cap());
+  await wait(()=>cap().includes('%/'),'startup');const rows=barRows();assert(rows.length===2,'initial editor bands');const idleFootprint=footprint();writeFileSync(join(artifacts,`${mode}-${width}-baseline.txt`),cap());
   type('UX queue gate:timed');keys('Enter');await wait(()=>!idle()&&sql("select count(*) from turn_events where event_type='tool.started';")==='1','tool start');
   type('draft β middle');keys('Left','Left','Left');await sleep(1200);
   if(mode==='fullscreen'){await wait(()=>Boolean(line()),'live tool elapsed');const first=line();await wait(()=>line()!==first,'elapsed tick');}else{assert(!hist().includes('tool running'),'regular mode printed mutable tool block');}
@@ -30,7 +30,7 @@ for(const mode of ['fullscreen','regular'])for(const [width,height]of [[60,18],[
   const final=line();await sleep(1250);assert(line()===final,'terminal duration drift');assert(plain(cap()).includes('draft β middle'),'completion lost draft');assert(footprint()===idleFootprint,`completion footprint ${mode}-${width}: ${footprint()} != ${idleFootprint}`);
   const eventTimes=JSON.parse(run('sqlite3',['-json',db,"select event_type,created_at from turn_events where event_type in ('tool.started','tool.finished') order by seq;"]));const ms=Date.parse(eventTimes[1].created_at)-Date.parse(eventTimes[0].created_at);assert(ms>=1000,'native event interval absent');
   const match=final.match(/([\d.]+)(ms|s)/);assert(match,'no frozen elapsed');const rendered=Number(match[1])*(match[2]==='s'?1000:1);assert(Math.abs(rendered-ms)<500,'elapsed differs from event timestamps');shot('completed');
-  keys('C-a','C-k');type('UX tool fail:terminal');keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='failed';")==='1','native failure');await wait(()=>/shell.*error|error.*shell/.test(hist()),'failed block');
+  keys('C-a','C-k');type('UX tool fail:terminal');keys('Enter');await wait(()=>idle()&&sql("select count(*) from turns where status='failed';")==='1','native failure');await wait(()=>/error=exit status 7/.test(hist()),'failed block');
   type('after failure β');const failed=line();await sleep(1200);assert(line()===failed,'failure duration drift');assert(plain(cap()).includes('after failure β'),'failed block consumes editor');assert(footprint()===idleFootprint,'failed block added idle rows');shot('failed');
   assert(sql("select count(*) from turn_events where event_type='tool.started';")==='2','start count');assert(sql("select count(*) from turn_events where event_type in ('tool.finished','tool.failed');")==='2','terminal count');
   if(mode==='regular'){assert(!hist().includes('tool running'),'mutable tool text leaked into scrollback');assert((hist().match(/Gi received:/g)||[]).length>=1,'immutable output missing');}

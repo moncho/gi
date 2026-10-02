@@ -153,7 +153,7 @@ func (s *Server) routes() {
 	if err != nil {
 		panic(err)
 	}
-	fileServer := http.FileServer(http.FS(staticRoot))
+	fileServer := withPrecompressed(staticRoot, http.FileServer(http.FS(staticRoot)))
 	s.mux.HandleFunc("/manifest.json", s.serveManifest)
 	s.mux.Handle("/static/icon-192.png", http.StripPrefix("/static", fileServer))
 	s.mux.Handle("/static/icon-512.png", http.StripPrefix("/static", fileServer))

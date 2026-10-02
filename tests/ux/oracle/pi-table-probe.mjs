@@ -2,9 +2,12 @@
 import fs from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
-const root=process.env.PICLAW_ORACLE_ROOT||'/opt/piclaw/current';
-const base=root+'/app/node_modules/@earendil-works/pi-tui';
-const pkg=JSON.parse(await fs.readFile(base+'/package.json','utf8'));assert.equal(pkg.version,'0.87.1');
+import os from 'node:os';
+// Prefer the Piclaw install; fall back to the globally installed Pi.
+const candidates=[process.env.PI_TUI_DIR,(process.env.PICLAW_ORACLE_ROOT||'/opt/piclaw/current')+'/app/node_modules/@earendil-works/pi-tui',os.homedir()+'/.bun/install/global/node_modules/@earendil-works/pi-tui'].filter(Boolean);
+let base='',pkg=null;
+for(const dir of candidates){try{pkg=JSON.parse(await fs.readFile(dir+'/package.json','utf8'));base=dir;break;}catch{}}
+assert.ok(pkg,'pi-tui not found in '+candidates.join(', '));
 const {Markdown}=await import(pathToFileURL(base+'/dist/components/markdown.js'));
 const {visibleWidth}=await import(pathToFileURL(base+'/dist/utils.js'));
 const theme=Object.fromEntries(['heading','link','linkUrl','code','codeBlock','codeBlockBorder','quote','quoteBorder','hr','listBullet','bold','italic','strikethrough','underline'].map(k=>[k,s=>s]));

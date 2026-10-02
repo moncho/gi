@@ -15,7 +15,7 @@ func TestTranscriptSearchIndexesVisibleRenderingAndRestoresEditor(t *testing.T) 
 			c.outputWidth = width
 			c.transcript = nil
 			c.appendTranscript("you: ALPHA 中文🙂", "assistant: beta Alpha")
-			c.appendTranscriptBlock(transcriptBlockMeta{Key: "tool", Kind: "tool", Title: "read", Status: "ok"}, []string{"visible one", "visible two", "hidden-only", "tail"})
+			c.appendTranscriptBlock(transcriptBlockMeta{Key: "tool", Kind: "tool", Title: "read", Status: "ok"}, append([]string{"visible one", "visible two", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10"}, "hidden-only", "tail"))
 			c.input.SetText("unsent\n中文🙂")
 			c.input.cursorPos = 3
 			c.input.undoText = "undo"
@@ -53,9 +53,9 @@ func TestTranscriptSearchIndexesVisibleRenderingAndRestoresEditor(t *testing.T) 
 			el := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(30))
 			c.renderTranscriptSearchRows(el)
 			buf := gotui.NewBuffer(width, 30)
-			el.Render(buf, width, 30)
+			el.RenderTo(buf, width, 30)
 			match := c.search.matches[0]
-			if buf.Cell(match.start, match.row).Style.Bg != piText {
+			if st := buf.Cell(match.start, match.row).Style; st.Bg != piSearchMatchBg || !st.HasAttr(gotui.AttrReverse) {
 				t.Fatal("current match highlight absent")
 			}
 			c.closeTranscriptSearch()
@@ -138,7 +138,7 @@ func TestTranscriptSearchRowsMatchActualScrollLayout(t *testing.T) {
 		for _, block := range c.buildTranscriptRenderableBlocks(c.visibleTranscript()) {
 			el.AddChild(c.renderTranscriptBlock(block))
 		}
-		el.Render(gotui.NewBuffer(width, 8), width, 8)
+		el.RenderTo(gotui.NewBuffer(width, 8), width, 8)
 		c.transcriptRef.Set(el)
 		rows := c.renderedTranscriptRows(width)
 		_, contentHeight := el.ContentSize()
@@ -198,11 +198,11 @@ func TestTranscriptSearchOccurrencesDisplayCellsAndNavigation(t *testing.T) {
 			el := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(4))
 			c.renderTranscriptSearchRows(el)
 			buf := gotui.NewBuffer(width, 4)
-			el.Render(buf, width, 4)
-			if buf.Cell(second.start, 0).Style.Bg != piText || buf.Cell(second.start+1, 0).Style.Bg != piText {
+			el.RenderTo(buf, width, 4)
+			if a, b := buf.Cell(second.start, 0).Style, buf.Cell(second.start+1, 0).Style; !a.HasAttr(gotui.AttrReverse) || !b.HasAttr(gotui.AttrReverse) {
 				t.Fatal("wide active match incomplete")
 			}
-			if buf.Cell(first.start, 0).Style.Bg != piUserBg {
+			if st := buf.Cell(first.start, 0).Style; st.Bg != piSearchMatchBg || st.HasAttr(gotui.AttrReverse) {
 				t.Fatal("inactive occurrence not distinguished")
 			}
 			if buf.Cell(0, 0).Style != c.search.rows[0].spans[0].Style {
@@ -214,9 +214,9 @@ func TestTranscriptSearchOccurrencesDisplayCellsAndNavigation(t *testing.T) {
 			c.updateTranscriptSearchQuery("example")
 			linked := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(4))
 			c.renderTranscriptSearchRows(linked)
-			linked.Render(buf, width, 4)
+			linked.RenderTo(buf, width, 4)
 			match := c.search.matches[0]
-			if buf.Cell(match.start, 0).Link != "https://example.invalid/aaa" || buf.Cell(match.start, 0).Style.Bg != piText {
+			if buf.Cell(match.start, 0).Link != "https://example.invalid/aaa" || !buf.Cell(match.start, 0).Style.HasAttr(gotui.AttrReverse) {
 				t.Fatal("highlighted URL lost link metadata")
 			}
 			c.updateTranscriptSearchQuery("界")
@@ -317,11 +317,11 @@ func TestTranscriptSearchAcrossSoftWrapsOnly(t *testing.T) {
 			el := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width), gotui.WithHeight(len(c.search.rows)))
 			c.renderTranscriptSearchRows(el)
 			buf := gotui.NewBuffer(width, len(c.search.rows))
-			el.Render(buf, width, len(c.search.rows))
+			el.RenderTo(buf, width, len(c.search.rows))
 			match := c.search.matches[0]
 			parts := append([]transcriptSearchCell{{match.row, match.start, match.end}}, match.continuation...)
 			for _, p := range parts {
-				if buf.Cell(p.start, p.row).Style.Bg != piText {
+				if !buf.Cell(p.start, p.row).Style.HasAttr(gotui.AttrReverse) {
 					t.Fatalf("unhighlighted segment %#v", p)
 				}
 			}
@@ -360,7 +360,7 @@ func TestTranscriptSearchWrappedWordsLinksAndCollapsedBoundaries(t *testing.T) {
 			t.Fatal("expected wrapped phrase")
 		}
 	}
-	c.transcript = []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "wrap-tool", Kind: "tool", Title: "shell command", Status: "ok"}), "│ visible top", "│ second line", "│ " + strings.Repeat("x", 80) + "secret"}
+	c.transcript = []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "wrap-tool", Kind: "tool", Title: "shell command", Status: "ok"}), "│ visible top", "│ second line", "│ 3", "│ 4", "│ 5", "│ 6", "│ 7", "│ 8", "│ 9", "│ 10", "│ " + strings.Repeat("x", 80) + "secret"}
 	c.outputWidth = 18
 	c.refreshTranscriptSearch(18)
 	c.updateTranscriptSearchQuery(strings.Repeat("x", 80) + "secret")
@@ -377,7 +377,7 @@ func TestTranscriptSearchWrappedWordsLinksAndCollapsedBoundaries(t *testing.T) {
 	el := gotui.New(gotui.WithText("abcdef"), gotui.WithWidth(3), gotui.WithHeight(2))
 	root := gotui.New(gotui.WithWidth(3), gotui.WithHeight(2))
 	root.AddChild(el)
-	root.Render(gotui.NewBuffer(3, 2), 3, 2)
+	root.RenderTo(gotui.NewBuffer(3, 2), 3, 2)
 	rows := []transcriptSearchRow{{spans: []gotui.TextSpan{{Text: "abc"}}}, {spans: []gotui.TextSpan{{Text: "xyz"}}}}
 	if len(transcriptWrapRuns(el, rows)) != 0 {
 		t.Fatal("mismatched projection admitted")

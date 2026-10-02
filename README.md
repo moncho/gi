@@ -4,6 +4,12 @@
 
 A coding agent built on `go-ai`, informed by lessons learned from Pi, Piclaw, and Vibes.
 
+## Why
+
+In short, I needed to run `pi` and `piclaw` on RISC-V, and `bun` didn't run there. Then I realized that having a single binary with _everything_ I needed was a much nicer way to deploy an agent overall, and that Go and `go-joker` were a much nicer (and less resource-intensive) thing to use, especially considering that the Rust compiler is slow as molasses and kept filling the disk on all my sandboxes.
+
+So this was the result. If you like `pi`, you should feel very much at home. If you use `piclaw` or love the Vibes web UI (like I do), the same should be true--even if in either case there will be differences. The goal was not to achieve full parity, but to be a tight, efficient bundle of core features that I can rely upon.
+
 ## Status
 
 Gi runs a web UI and a terminal UI from one pure-Go binary, with embedded web assets and SQLite-backed sessions, messages and turns. Bun is needed to build the browser assets, but there is no Node or Bun runtime dependency.
@@ -130,7 +136,8 @@ make start PORT=3000 BIND=0.0.0.0 MODEL=github-copilot/gpt-5-mini WORKSPACE=/wor
 | `-acme-cache` | `sqlite` | ACME cache backend: sqlite, vfs, or directory |
 | `-acme-accept-tos` | `false` | Accept ACME CA terms |
 | `-acme-http-listen` | `:http` | ACME HTTP-01/redirect listener; empty disables |
-| `-tui` | `false` | Run the terminal UI instead of the web server |
+| `-web` | `false` | Run the web UI server instead of the terminal UI (required for the web-only flags above and `-pid-file`) |
+| `-tui` | `true` | Terminal UI (the default; accepted for compatibility) |
 | `-tui-mode` | `fullscreen` | Terminal-owned scrollback (`regular`) or in-app transcript (`fullscreen`) |
 | `-db` | `./gi.db` | SQLite database path |
 | `-workspace` | `/workspace` | Workspace root |
@@ -139,11 +146,14 @@ make start PORT=3000 BIND=0.0.0.0 MODEL=github-copilot/gpt-5-mini WORKSPACE=/wor
 
 ### TUI mode
 
-Run the terminal UI from the same binary:
+`gi` starts the terminal UI by default; pass `-web` for the web UI server:
 
 ```sh
-gi -tui -db .gi-run/gi.db -workspace /workspace
+gi -db .gi-run/gi.db -workspace /workspace            # terminal UI
+gi -web -bind 0.0.0.0 -port 8090 -workspace /workspace # web UI
 ```
+
+Web-only flags (`-listen`, `-bind`, `-port`, TLS/ACME, `-pid-file`) without `-web` are rejected rather than silently opening the TUI.
 
 The current TUI uses `go-tui`, supports terminal resize handling through the runtime event loop, and enables mouse clicks so the input can regain focus.
 
@@ -201,6 +211,8 @@ The `test-ux` target creates a fresh database, workspace and configuration for e
 The frozen catalogue contains 236 Classic scenario IDs (256 expanded cases) and 42 shared cases. Mapped scenarios and successful test executions are tracked separately in the [parity matrix][parity]. CI gates Linux/macOS builds on native tests, the isolated Chromium passkey suite and six-project Chromium/WebKit startup/Return journeys. The complete browser UX matrix is not yet a CI gate.
 
 The `test-tui-smoke` target launches `gi -tui` inside tmux, captures the pane, submits input, verifies blur handling, exercises transcript scrolling keys, resizes the terminal, and writes pane captures plus session artifacts under `test-results/tui-smoke/`. Mouse click focus is covered in unit tests.
+
+The smoke workspace is isolated from `SMOKE_LOWER` (default `/workspace`) with a kernel overlay (`sudo -n`), falling back to `fuse-overlayfs`, a `--reflink=auto` copy (`SMOKE_COPY_LOWER=1`), or an empty scratch workspace where overlayfs, root or the lower directory are unavailable. The chosen mode is written to `test-results/tui-smoke/workspace-mode.txt`.
 
 ## Documentation
 

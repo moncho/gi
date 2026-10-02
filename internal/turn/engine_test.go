@@ -40,6 +40,24 @@ func openTestStore(t *testing.T) *store.Store {
 	return s
 }
 
+// holdShellTurns keeps bootstrap shell turns active until the test ends (or
+// the turn is cancelled), so steering assertions don't race the shell exit.
+func holdShellTurns(t *testing.T) {
+	t.Helper()
+	release := make(chan struct{})
+	hook := func(ctx context.Context) {
+		select {
+		case <-release:
+		case <-ctx.Done():
+		}
+	}
+	shellTurnStartHook.Store(&hook)
+	t.Cleanup(func() {
+		shellTurnStartHook.Store(nil)
+		close(release)
+	})
+}
+
 func withStreamWithToolsStub(t *testing.T, stub func(context.Context, string, *goai.Context, func(map[string]any)) (*inference.StreamResult, error)) {
 	t.Helper()
 	withStreamWithToolsHookStub(t, func(ctx context.Context, model string, convCtx *goai.Context, cb func(map[string]any), hooks *inference.StreamHooks) (*inference.StreamResult, error) {
@@ -2347,6 +2365,7 @@ func TestCleanupSchedulesContinuationBeforeConcurrentSubmit(t *testing.T) {
 }
 
 func TestBusySameSessionPromptCreatesSteeringNotQueuedTurn(t *testing.T) {
+	holdShellTurns(t)
 	s := openTestStore(t)
 	defer s.Close()
 	ctx := context.Background()
@@ -5303,6 +5322,7 @@ func TestProcessDirectPromptUsesNormalSubmitPathAndIngressMetadata(t *testing.T)
 }
 
 func TestProcessDirectSteersSameSessionWhileActive(t *testing.T) {
+	holdShellTurns(t)
 	s := openTestStore(t)
 	defer s.Close()
 	ctx := context.Background()
@@ -5420,6 +5440,7 @@ func TestMixedSubmitSteeringHookAndCancelPublishesAlignedTopics(t *testing.T) {
 }
 
 func TestProcessDirectSteeringNormalizesUnexpectedIngressRole(t *testing.T) {
+	holdShellTurns(t)
 	s := openTestStore(t)
 	defer s.Close()
 	ctx := context.Background()

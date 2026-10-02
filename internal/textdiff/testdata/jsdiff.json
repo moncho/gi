@@ -1,0 +1,846 @@
+{
+ "lines": [
+  {
+   "old": "",
+   "new": "",
+   "changes": []
+  },
+  {
+   "old": "a\n",
+   "new": "a\n",
+   "changes": [
+    {
+     "value": "a\n",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "a\nb\nc\n",
+   "new": "a\nB\nc\n",
+   "changes": [
+    {
+     "value": "a\n",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "b\n",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "B\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": "c\n",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "a\nb\nc",
+   "new": "a\nb\nc\nd",
+   "changes": [
+    {
+     "value": "a\nb\n",
+     "count": 2,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "c",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "c\nd",
+     "count": 2,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "one\ntwo\nthree\n",
+   "new": "zero\none\nthree\nfour\n",
+   "changes": [
+    {
+     "value": "zero\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": "one\n",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "two\n",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "three\n",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "four\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "x\r\ny\r\n",
+   "new": "x\r\nz\r\n",
+   "changes": [
+    {
+     "value": "x\r\n",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "y\r\n",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "z\r\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "line 0\nline 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\nline 31\nline 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39",
+   "new": "line 0\nline 1\nline 2\nline 3\nline 4\nchanged 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nchanged 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\nchanged 31\nline 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39",
+   "changes": [
+    {
+     "value": "line 0\nline 1\nline 2\nline 3\nline 4\n",
+     "count": 5,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "line 5\n",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "changed 5\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": "line 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\n",
+     "count": 12,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "line 18\n",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "changed 18\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": "line 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\n",
+     "count": 12,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "line 31\n",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "changed 31\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": "line 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39",
+     "count": 8,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "a\nb\na\nb\na\n",
+   "new": "b\na\nb\na\nb\n",
+   "changes": [
+    {
+     "value": "a\n",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "b\na\nb\na\n",
+     "count": 4,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "b\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "\n\n\n",
+   "new": "\n\nx\n",
+   "changes": [
+    {
+     "value": "\n\n",
+     "count": 2,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "\n",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "x\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "abc",
+   "new": "",
+   "changes": [
+    {
+     "value": "abc",
+     "count": 1,
+     "added": false,
+     "removed": true
+    }
+   ]
+  },
+  {
+   "old": "",
+   "new": "abc\n",
+   "changes": [
+    {
+     "value": "abc\n",
+     "count": 1,
+     "added": true,
+     "removed": false
+    }
+   ]
+  }
+ ],
+ "words": [
+  {
+   "old": "foo bar baz",
+   "new": "foo baz",
+   "changes": [
+    {
+     "value": "foo ",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "bar ",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "baz",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "foo bar baz",
+   "new": "foo qux baz",
+   "changes": [
+    {
+     "value": "foo ",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "bar",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "qux",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": " baz",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "foo\nbar baz",
+   "new": "foo baz",
+   "changes": [
+    {
+     "value": "foo",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "\nbar",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": " baz",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "foo baz",
+   "new": "foo\nbar baz",
+   "changes": [
+    {
+     "value": "foo\n",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "bar ",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": "baz",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "foo   bar baz",
+   "new": "foo  baz",
+   "changes": [
+    {
+     "value": "foo  ",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": " bar ",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "baz",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "  const x = 1;",
+   "new": "  const y = 2;",
+   "changes": [
+    {
+     "value": "  const ",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "x",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "y",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": " = ",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "1",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "2",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": ";",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "return a + b",
+   "new": "return a - b;",
+   "changes": [
+    {
+     "value": "return a ",
+     "count": 2,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "+",
+     "count": 1,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "-",
+     "count": 1,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": " b",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": ";",
+     "count": 1,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "héllo wörld",
+   "new": "hello world",
+   "changes": [
+    {
+     "value": "héllo wörld",
+     "count": 2,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "hello world",
+     "count": 2,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "",
+   "new": "new",
+   "changes": [
+    {
+     "value": "new",
+     "count": 1,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "old",
+   "new": "",
+   "changes": [
+    {
+     "value": "old",
+     "count": 1,
+     "added": false,
+     "removed": true
+    }
+   ]
+  },
+  {
+   "old": "call(a, b)",
+   "new": "call(a,b, c)",
+   "changes": [
+    {
+     "value": "call(a,b",
+     "count": 5,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": ", c",
+     "count": 2,
+     "added": true,
+     "removed": false
+    },
+    {
+     "value": ")",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "\tindented\tline",
+   "new": "\tindented  line",
+   "changes": [
+    {
+     "value": "\tindented  line",
+     "count": 2,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "a b c d e",
+   "new": "e d c b a",
+   "changes": [
+    {
+     "value": "a b c d ",
+     "count": 4,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "e ",
+     "count": 1,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "d c b a",
+     "count": 4,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "日本語 テキスト",
+   "new": "日本語 文字",
+   "changes": [
+    {
+     "value": "日本語 ",
+     "count": 3,
+     "added": false,
+     "removed": false
+    },
+    {
+     "value": "テキスト",
+     "count": 4,
+     "added": false,
+     "removed": true
+    },
+    {
+     "value": "文字",
+     "count": 2,
+     "added": true,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": "trailing ",
+   "new": "trailing",
+   "changes": [
+    {
+     "value": "trailing",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  },
+  {
+   "old": " leading",
+   "new": "leading",
+   "changes": [
+    {
+     "value": "leading",
+     "count": 1,
+     "added": false,
+     "removed": false
+    }
+   ]
+  }
+ ],
+ "diffStrings": [
+  {
+   "old": "",
+   "new": "",
+   "diff": ""
+  },
+  {
+   "old": "a\n",
+   "new": "a\n",
+   "diff": ""
+  },
+  {
+   "old": "a\nb\nc\n",
+   "new": "a\nB\nc\n",
+   "diff": " 1 a\n-2 b\n+2 B\n 3 c",
+   "firstChangedLine": 2
+  },
+  {
+   "old": "a\nb\nc",
+   "new": "a\nb\nc\nd",
+   "diff": " 1 a\n 2 b\n-3 c\n+3 c\n+4 d",
+   "firstChangedLine": 3
+  },
+  {
+   "old": "one\ntwo\nthree\n",
+   "new": "zero\none\nthree\nfour\n",
+   "diff": "+1 zero\n 1 one\n-2 two\n 3 three\n+4 four",
+   "firstChangedLine": 1
+  },
+  {
+   "old": "x\r\ny\r\n",
+   "new": "x\r\nz\r\n",
+   "diff": " 1 x\r\n-2 y\r\n+2 z\r",
+   "firstChangedLine": 2
+  },
+  {
+   "old": "line 0\nline 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\nline 31\nline 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39",
+   "new": "line 0\nline 1\nline 2\nline 3\nline 4\nchanged 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nchanged 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\nchanged 31\nline 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39",
+   "diff": "    ...\n  2 line 1\n  3 line 2\n  4 line 3\n  5 line 4\n- 6 line 5\n+ 6 changed 5\n  7 line 6\n  8 line 7\n  9 line 8\n 10 line 9\n    ...\n 15 line 14\n 16 line 15\n 17 line 16\n 18 line 17\n-19 line 18\n+19 changed 18\n 20 line 19\n 21 line 20\n 22 line 21\n 23 line 22\n    ...\n 28 line 27\n 29 line 28\n 30 line 29\n 31 line 30\n-32 line 31\n+32 changed 31\n 33 line 32\n 34 line 33\n 35 line 34\n 36 line 35\n    ...",
+   "firstChangedLine": 6
+  },
+  {
+   "old": "a\nb\na\nb\na\n",
+   "new": "b\na\nb\na\nb\n",
+   "diff": "-1 a\n 2 b\n 3 a\n 4 b\n 5 a\n+5 b",
+   "firstChangedLine": 1
+  },
+  {
+   "old": "\n\n\n",
+   "new": "\n\nx\n",
+   "diff": " 1 \n 2 \n-3 \n+3 x",
+   "firstChangedLine": 3
+  },
+  {
+   "old": "abc",
+   "new": "",
+   "diff": "-1 abc",
+   "firstChangedLine": 1
+  },
+  {
+   "old": "",
+   "new": "abc\n",
+   "diff": "+1 abc",
+   "firstChangedLine": 1
+  }
+ ],
+ "edits": [
+  {
+   "name": "single",
+   "content": "function f0() {\n\treturn 0;\n}\nfunction f1() {\n\treturn 1;\n}\nfunction f2() {\n\treturn 2;\n}\nfunction f3() {\n\treturn 3;\n}\nfunction f4() {\n\treturn 4;\n}\nfunction f5() {\n\treturn 5;\n}\nfunction f6() {\n\treturn 6;\n}\nfunction f7() {\n\treturn 7;\n}\nfunction f8() {\n\treturn 8;\n}\nfunction f9() {\n\treturn 9;\n}\nfunction f10() {\n\treturn 10;\n}\nfunction f11() {\n\treturn 11;\n}\nfunction f12() {\n\treturn 12;\n}\nfunction f13() {\n\treturn 13;\n}\nfunction f14() {\n\treturn 14;\n}\nfunction f15() {\n\treturn 15;\n}\nfunction f16() {\n\treturn 16;\n}\nfunction f17() {\n\treturn 17;\n}\nfunction f18() {\n\treturn 18;\n}\nfunction f19() {\n\treturn 19;\n}\nfunction f20() {\n\treturn 20;\n}\nfunction f21() {\n\treturn 21;\n}\nfunction f22() {\n\treturn 22;\n}\nfunction f23() {\n\treturn 23;\n}\nfunction f24() {\n\treturn 24;\n}\nfunction f25() {\n\treturn 25;\n}\nfunction f26() {\n\treturn 26;\n}\nfunction f27() {\n\treturn 27;\n}\nfunction f28() {\n\treturn 28;\n}\nfunction f29() {\n\treturn 29;\n}\n",
+   "edits": [
+    {
+     "oldText": "\treturn 3;",
+     "newText": "\treturn 33;"
+    }
+   ],
+   "newContent": "function f0() {\n\treturn 0;\n}\nfunction f1() {\n\treturn 1;\n}\nfunction f2() {\n\treturn 2;\n}\nfunction f3() {\n\treturn 33;\n}\nfunction f4() {\n\treturn 4;\n}\nfunction f5() {\n\treturn 5;\n}\nfunction f6() {\n\treturn 6;\n}\nfunction f7() {\n\treturn 7;\n}\nfunction f8() {\n\treturn 8;\n}\nfunction f9() {\n\treturn 9;\n}\nfunction f10() {\n\treturn 10;\n}\nfunction f11() {\n\treturn 11;\n}\nfunction f12() {\n\treturn 12;\n}\nfunction f13() {\n\treturn 13;\n}\nfunction f14() {\n\treturn 14;\n}\nfunction f15() {\n\treturn 15;\n}\nfunction f16() {\n\treturn 16;\n}\nfunction f17() {\n\treturn 17;\n}\nfunction f18() {\n\treturn 18;\n}\nfunction f19() {\n\treturn 19;\n}\nfunction f20() {\n\treturn 20;\n}\nfunction f21() {\n\treturn 21;\n}\nfunction f22() {\n\treturn 22;\n}\nfunction f23() {\n\treturn 23;\n}\nfunction f24() {\n\treturn 24;\n}\nfunction f25() {\n\treturn 25;\n}\nfunction f26() {\n\treturn 26;\n}\nfunction f27() {\n\treturn 27;\n}\nfunction f28() {\n\treturn 28;\n}\nfunction f29() {\n\treturn 29;\n}\n",
+   "diff": "    ...\n  7 function f2() {\n  8 \treturn 2;\n  9 }\n 10 function f3() {\n-11 \treturn 3;\n+11 \treturn 33;\n 12 }\n 13 function f4() {\n 14 \treturn 4;\n 15 }\n    ...",
+   "firstChangedLine": 11
+  },
+  {
+   "name": "multi",
+   "content": "function f0() {\n\treturn 0;\n}\nfunction f1() {\n\treturn 1;\n}\nfunction f2() {\n\treturn 2;\n}\nfunction f3() {\n\treturn 3;\n}\nfunction f4() {\n\treturn 4;\n}\nfunction f5() {\n\treturn 5;\n}\nfunction f6() {\n\treturn 6;\n}\nfunction f7() {\n\treturn 7;\n}\nfunction f8() {\n\treturn 8;\n}\nfunction f9() {\n\treturn 9;\n}\nfunction f10() {\n\treturn 10;\n}\nfunction f11() {\n\treturn 11;\n}\nfunction f12() {\n\treturn 12;\n}\nfunction f13() {\n\treturn 13;\n}\nfunction f14() {\n\treturn 14;\n}\nfunction f15() {\n\treturn 15;\n}\nfunction f16() {\n\treturn 16;\n}\nfunction f17() {\n\treturn 17;\n}\nfunction f18() {\n\treturn 18;\n}\nfunction f19() {\n\treturn 19;\n}\nfunction f20() {\n\treturn 20;\n}\nfunction f21() {\n\treturn 21;\n}\nfunction f22() {\n\treturn 22;\n}\nfunction f23() {\n\treturn 23;\n}\nfunction f24() {\n\treturn 24;\n}\nfunction f25() {\n\treturn 25;\n}\nfunction f26() {\n\treturn 26;\n}\nfunction f27() {\n\treturn 27;\n}\nfunction f28() {\n\treturn 28;\n}\nfunction f29() {\n\treturn 29;\n}\n",
+   "edits": [
+    {
+     "oldText": "f1()",
+     "newText": "g1()"
+    },
+    {
+     "oldText": "\treturn 20;\n}",
+     "newText": "\treturn 20;\n}\n// end"
+    }
+   ],
+   "newContent": "function f0() {\n\treturn 0;\n}\nfunction g1() {\n\treturn 1;\n}\nfunction f2() {\n\treturn 2;\n}\nfunction f3() {\n\treturn 3;\n}\nfunction f4() {\n\treturn 4;\n}\nfunction f5() {\n\treturn 5;\n}\nfunction f6() {\n\treturn 6;\n}\nfunction f7() {\n\treturn 7;\n}\nfunction f8() {\n\treturn 8;\n}\nfunction f9() {\n\treturn 9;\n}\nfunction f10() {\n\treturn 10;\n}\nfunction f11() {\n\treturn 11;\n}\nfunction f12() {\n\treturn 12;\n}\nfunction f13() {\n\treturn 13;\n}\nfunction f14() {\n\treturn 14;\n}\nfunction f15() {\n\treturn 15;\n}\nfunction f16() {\n\treturn 16;\n}\nfunction f17() {\n\treturn 17;\n}\nfunction f18() {\n\treturn 18;\n}\nfunction f19() {\n\treturn 19;\n}\nfunction f20() {\n\treturn 20;\n}\n// end\nfunction f21() {\n\treturn 21;\n}\nfunction f22() {\n\treturn 22;\n}\nfunction f23() {\n\treturn 23;\n}\nfunction f24() {\n\treturn 24;\n}\nfunction f25() {\n\treturn 25;\n}\nfunction f26() {\n\treturn 26;\n}\nfunction f27() {\n\treturn 27;\n}\nfunction f28() {\n\treturn 28;\n}\nfunction f29() {\n\treturn 29;\n}\n",
+   "diff": "  1 function f0() {\n  2 \treturn 0;\n  3 }\n- 4 function f1() {\n+ 4 function g1() {\n  5 \treturn 1;\n  6 }\n  7 function f2() {\n  8 \treturn 2;\n    ...\n 60 }\n 61 function f20() {\n 62 \treturn 20;\n 63 }\n+64 // end\n 64 function f21() {\n 65 \treturn 21;\n 66 }\n 67 function f22() {\n    ...",
+   "firstChangedLine": 4
+  },
+  {
+   "name": "fuzzy",
+   "content": "say “hi”   \nnext\n",
+   "edits": [
+    {
+     "oldText": "say \"hi\"\nnext",
+     "newText": "say \"bye\"\nnext"
+    }
+   ],
+   "newContent": "say \"bye\"\nnext\n",
+   "diff": "-1 say “hi”   \n+1 say \"bye\"\n 2 next",
+   "firstChangedLine": 1
+  },
+  {
+   "name": "insertLines",
+   "content": "a\nb\nc\n",
+   "edits": [
+    {
+     "oldText": "b\n",
+     "newText": "b\nb2\nb3\n"
+    }
+   ],
+   "newContent": "a\nb\nb2\nb3\nc\n",
+   "diff": " 1 a\n 2 b\n+3 b2\n+4 b3\n 3 c",
+   "firstChangedLine": 3
+  },
+  {
+   "name": "notFound",
+   "content": "abc\n",
+   "edits": [
+    {
+     "oldText": "xyz",
+     "newText": "q"
+    }
+   ],
+   "error": "Could not find the exact text in f.txt. The old text must match exactly including all whitespace and newlines."
+  },
+  {
+   "name": "notFoundMulti",
+   "content": "abc\n",
+   "edits": [
+    {
+     "oldText": "abc",
+     "newText": "q"
+    },
+    {
+     "oldText": "xyz",
+     "newText": "q"
+    }
+   ],
+   "error": "Could not find edits[1] in f.txt. The oldText must match exactly including all whitespace and newlines."
+  },
+  {
+   "name": "duplicate",
+   "content": "x\nx\n",
+   "edits": [
+    {
+     "oldText": "x",
+     "newText": "y"
+    }
+   ],
+   "error": "Found 2 occurrences of the text in f.txt. The text must be unique. Please provide more context to make it unique."
+  },
+  {
+   "name": "empty",
+   "content": "abc",
+   "edits": [
+    {
+     "oldText": "",
+     "newText": "y"
+    }
+   ],
+   "error": "oldText must not be empty in f.txt."
+  },
+  {
+   "name": "overlap",
+   "content": "abcdef",
+   "edits": [
+    {
+     "oldText": "abc",
+     "newText": "1"
+    },
+    {
+     "oldText": "cde",
+     "newText": "2"
+    }
+   ],
+   "error": "edits[0] and edits[1] overlap in f.txt. Merge them into one edit or target disjoint regions."
+  },
+  {
+   "name": "noChange",
+   "content": "abc",
+   "edits": [
+    {
+     "oldText": "abc",
+     "newText": "abc"
+    }
+   ],
+   "error": "No changes made to f.txt. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected."
+  },
+  {
+   "name": "crlfEdit",
+   "content": "one\ntwo\n",
+   "edits": [
+    {
+     "oldText": "one\r\ntwo",
+     "newText": "1\r\n2"
+    }
+   ],
+   "newContent": "1\n2\n",
+   "diff": "-1 one\n-2 two\n+1 1\n+2 2",
+   "firstChangedLine": 1
+  }
+ ]
+}

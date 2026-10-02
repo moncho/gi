@@ -1,0 +1,442 @@
+{
+ "wraps": [
+  {
+   "text": "short line",
+   "width": 20,
+   "lines": [
+    "short line"
+   ]
+  },
+  {
+   "text": "trailing spaces   ",
+   "width": 10,
+   "lines": [
+    "trailing",
+    "spaces"
+   ]
+  },
+  {
+   "text": "the quick brown fox jumps over the lazy dog",
+   "width": 10,
+   "lines": [
+    "the quick",
+    "brown fox",
+    "jumps over",
+    "the lazy",
+    "dog"
+   ]
+  },
+  {
+   "text": "averyveryverylongwordthatdoesnotfit and more",
+   "width": 8,
+   "lines": [
+    "averyver",
+    "yverylon",
+    "gwordtha",
+    "tdoesnot",
+    "fit and",
+    "more"
+   ]
+  },
+  {
+   "text": "    indented code that wraps around",
+   "width": 12,
+   "lines": [
+    "    indented",
+    "code that",
+    "wraps around"
+   ]
+  },
+  {
+   "text": "日本語のテキストを折り返す",
+   "width": 7,
+   "lines": [
+    "日本語",
+    "のテキ",
+    "ストを",
+    "折り返",
+    "す"
+   ]
+  },
+  {
+   "text": "a  b   c    d",
+   "width": 3,
+   "lines": [
+    "a",
+    "b",
+    "c",
+    "d"
+   ]
+  },
+  {
+   "text": "func main() { fmt.Println(\"hello, world\") }",
+   "width": 16,
+   "lines": [
+    "func main() {",
+    "fmt.Println(\"hel",
+    "lo, world\") }"
+   ]
+  },
+  {
+   "text": "xxxxxxxxxxxxxxxxxxxxxxxxx",
+   "width": 10,
+   "lines": [
+    "xxxxxxxxxx",
+    "xxxxxxxxxx",
+    "xxxxx"
+   ]
+  },
+  {
+   "text": "emoji 👩🏽‍💻 here and there",
+   "width": 9,
+   "lines": [
+    "emoji 👩🏽‍💻",
+    "here and",
+    "there"
+   ]
+  },
+  {
+   "text": "word nbsp spaced",
+   "width": 6,
+   "lines": [
+    "word n",
+    "bsp",
+    "spaced"
+   ]
+  }
+ ],
+ "diffs": [
+  {
+   "diff": " 1 alpha\n-2 beta\n+2 beta two\n 3 gamma",
+   "lines": [
+    [
+     {
+      "text": " 1 alpha",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "-2 beta ",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "+2 beta ",
+      "inverse": false
+     },
+     {
+      "text": "two",
+      "inverse": true
+     }
+    ],
+    [
+     {
+      "text": " 3 gamma",
+      "inverse": false
+     }
+    ]
+   ]
+  },
+  {
+   "diff": "-1   const x = 1;\n+1   const y = 2;",
+   "lines": [
+    [
+     {
+      "text": "-1   const ",
+      "inverse": false
+     },
+     {
+      "text": "x",
+      "inverse": true
+     },
+     {
+      "text": " = ",
+      "inverse": false
+     },
+     {
+      "text": "1",
+      "inverse": true
+     },
+     {
+      "text": ";",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "+1   const ",
+      "inverse": false
+     },
+     {
+      "text": "y",
+      "inverse": true
+     },
+     {
+      "text": " = ",
+      "inverse": false
+     },
+     {
+      "text": "2",
+      "inverse": true
+     },
+     {
+      "text": ";",
+      "inverse": false
+     }
+    ]
+   ]
+  },
+  {
+   "diff": " 1 a\n-2 b\n-3 c\n+2 B\n+3 C\n 4 d\n+5 e",
+   "lines": [
+    [
+     {
+      "text": " 1 a",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "-2 b",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "-3 c",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "+2 B",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "+3 C",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 4 d",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "+5 e",
+      "inverse": false
+     }
+    ]
+   ]
+  },
+  {
+   "diff": " 1 \tif (a) {\n-2 \t\treturn b;\n+2 \t\treturn c;\n 3 \t}",
+   "lines": [
+    [
+     {
+      "text": " 1    if (a) {",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "-2       return ",
+      "inverse": false
+     },
+     {
+      "text": "b",
+      "inverse": true
+     },
+     {
+      "text": ";",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "+2       return ",
+      "inverse": false
+     },
+     {
+      "text": "c",
+      "inverse": true
+     },
+     {
+      "text": ";",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 3    }",
+      "inverse": false
+     }
+    ]
+   ]
+  },
+  {
+   "diff": "  1 l0\n  2 l1\n  3 l2\n- 4 l3\n+ 4 L3\n  5 l4\n  6 l5\n  7 l6\n  8 l7\n    ...\n 22 l21\n 23 l22\n 24 l23\n 25 l24\n-26 l25\n+26 L25\n 27 l26\n 28 l27\n 29 l28\n 30 l29",
+   "lines": [
+    [
+     {
+      "text": "  1 l0",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "  2 l1",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "  3 l2",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "- 4 ",
+      "inverse": false
+     },
+     {
+      "text": "l3",
+      "inverse": true
+     }
+    ],
+    [
+     {
+      "text": "+ 4 ",
+      "inverse": false
+     },
+     {
+      "text": "L3",
+      "inverse": true
+     }
+    ],
+    [
+     {
+      "text": "  5 l4",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "  6 l5",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "  7 l6",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "  8 l7",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "    ...",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 22 l21",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 23 l22",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 24 l23",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 25 l24",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "-26 ",
+      "inverse": false
+     },
+     {
+      "text": "l25",
+      "inverse": true
+     }
+    ],
+    [
+     {
+      "text": "+26 ",
+      "inverse": false
+     },
+     {
+      "text": "L25",
+      "inverse": true
+     }
+    ],
+    [
+     {
+      "text": " 27 l26",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 28 l27",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 29 l28",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": " 30 l29",
+      "inverse": false
+     }
+    ]
+   ]
+  },
+  {
+   "diff": "not a diff line\n+1 added",
+   "lines": [
+    [
+     {
+      "text": "not a diff line",
+      "inverse": false
+     }
+    ],
+    [
+     {
+      "text": "+1 added",
+      "inverse": false
+     }
+    ]
+   ]
+  }
+ ]
+}

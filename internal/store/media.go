@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	storeobject "github.com/rcarmo/gi/internal/store/object"
 	storevfs "github.com/rcarmo/gi/internal/store/vfs"
@@ -422,6 +423,21 @@ func (s *Store) ListVFSChildren(ctx context.Context, namespace, dir string) ([]V
 		return strings.ToLower(list[i].Name) < strings.ToLower(list[j].Name)
 	})
 	return list, nil
+}
+
+// PruneVFSNamespace deletes files in a writable namespace last updated before
+// cutoff and returns how many were removed. Used for generated output (e.g.
+// mcp-output), never for user-managed namespaces.
+func (s *Store) PruneVFSNamespace(ctx context.Context, namespace string, cutoff time.Time) (int64, error) {
+	namespace = strings.TrimSpace(namespace)
+	if namespace == "" || storevfs.IsReadOnlyNamespace(namespace) {
+		return 0, fmt.Errorf("prune vfs: invalid namespace %q", namespace)
+	}
+	res, err := s.db.ExecContext(ctx, `delete from vfs_files where namespace = ? and updated_at < ?`, namespace, cutoff.UTC().Format("2006-01-02T15:04:05.000Z")) // defaultNow's format
+	if err != nil {
+		return 0, fmt.Errorf("prune vfs: %w", err)
+	}
+	return res.RowsAffected()
 }
 
 func (s *Store) DeleteVFSFile(ctx context.Context, namespace, filePath string) error {

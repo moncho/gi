@@ -50,12 +50,14 @@ func (c *chatTUI) ownsScope(scope sessionScope) bool {
 }
 
 func (c *chatTUI) handleSessionEvent(event sessionEvent) {
+	c.invalidateFooter()
 	if c.ownsScope(event.scope) {
 		c.handleEvent(event.payload)
 	}
 }
 
 func (c *chatTUI) handleSessionTopicEvent(event sessionTopicEvent) {
+	c.invalidateFooter()
 	if c.ownsScope(event.scope) {
 		c.handleTopicEvent(event.envelope)
 	}

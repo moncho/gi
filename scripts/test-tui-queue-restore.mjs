@@ -17,7 +17,7 @@ for(const mode of ['fullscreen','regular']){
  const altUp=()=>tm('send-keys','-t',pane,'-H','1b','5b','31','3b','33','41');
  try{
   tm('new-session','-d','-s','proof','-x','100','-y','32',`cd '${dir}' && HOME='${dir}' PATH='${shell}':"$PATH" GI_UX_QUEUE_GATES='${gates}' '${binary}' -tui -tui-mode ${mode} -db '${db}' -workspace '${dir}' -model test-model 2>'${dir}/runtime.log'; sleep 20`);
-  tm('set-option','-t','proof','status','off');await wait(()=>cap().includes('m0/t0'),'startup');
+  tm('set-option','-t','proof','status','off');await wait(()=>cap().includes('%/'),'startup');
   send('UX queue gate:held');await wait(()=>sql("select count(*) from turn_events where event_type='tool.started';")==='1','held active turn');
   const sid=sql('select id from sessions limit 1');
   for(const text of ['restore first','restore second']){tm('send-keys','-t',pane,'-l',text);altEnter();await wait(()=>sql(`select count(*) from turns where prompt=${quote(text)} and status='queued';`)==='1',`queue ${text}`)}

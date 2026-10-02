@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	gotui "github.com/grindlemire/go-tui"
 )
@@ -39,6 +40,11 @@ func (c *chatTUI) flushRegularTranscript() {
 	if !c.regularMode || c.app == nil || c.workspaceIndex.active || c.modelMenuAltScreen {
 		return
 	}
+	if !c.regularHeaderPrinted && c.startupHeaderShown() {
+		// Scrollback cannot expand later: print the collapsed header once.
+		c.regularHeaderPrinted = true
+		c.app.PrintAboveElement(c.renderStartupHeader(false))
+	}
 	if c.regularSessionPending {
 		c.regularSessionPending = false
 		c.app.PrintAboveln("sys: session %s", c.sessionID)
@@ -60,12 +66,140 @@ func (c *chatTUI) flushRegularTranscript() {
 		if block.Kind == "thinking_indicator" {
 			continue
 		}
-		block.Expanded = true
+		block.Expanded, block.Static = true, true
 		root.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
-		previousKind = block.Kind
+		if block.Kind != "thinking_indicator" {
+			previousKind = block.Kind
+		}
 	}
 	c.regularPrinted = end
 	c.app.PrintAboveElement(root)
+}
+
+// Regular-mode resize repair. When the terminal grows, go-tui clears the rows
+// between the dock's old and new start row, assuming they hold a stale copy
+// of the dock. Terminals such as tmux pull scrollback down into exactly that
+// band instead, so the newest transcript rows above the dock were erased.
+// Once resizing settles, gi repaints just that band (the rows directly above
+// the dock) with the newest transcript rows at the current width, and resets
+// go-tui's model of the history rows. Other rows are never touched, so the
+// user's scrollback (shell history, earlier output) is neither erased nor
+// duplicated.
+// Long enough to treat a window drag as one burst: an intermediate repaint
+// would be pushed into scrollback by the next shrink and then repeated.
+const regularReflowDelay = 250 * time.Millisecond
+
+// noteRegularResize records the size before a resize burst and the tallest
+// height reached, which bounds the band go-tui cleared.
+func (c *chatTUI) noteRegularResize(oldWidth, oldHeight, newWidth, newHeight int) {
+	if c.regularResizeBase == 0 {
+		c.regularResizeBase = oldHeight
+		c.regularResizeBaseWidth = oldWidth
+	}
+	if newWidth != oldWidth {
+		c.regularResizeWidthChanged = true
+	}
+	c.regularResizePeak = max(c.regularResizePeak, max(oldHeight, newHeight))
+	c.scheduleRegularReflow()
+}
+
+func (c *chatTUI) scheduleRegularReflow() {
+	if !c.regularMode || c.app == nil {
+		return
+	}
+	c.regularReflowGen++
+	gen, app := c.regularReflowGen, c.app
+	time.AfterFunc(regularReflowDelay, func() {
+		app.QueueUpdate(func() {
+			if gen == c.regularReflowGen {
+				c.reflowRegular()
+			}
+		})
+	})
+}
+
+// regularTranscriptRows renders the printed transcript at width into a
+// buffer (all blocks expanded, as printed to scrollback).
+func (c *chatTUI) regularTranscriptRows(width int) (*gotui.Buffer, int) {
+	end := min(c.regularPrinted, len(c.transcript))
+	if end <= 0 || width <= 0 {
+		return nil, 0
+	}
+	root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidth(width))
+	previousKind := ""
+	for _, block := range c.buildTranscriptRenderableBlocks(c.transcript[:end]) {
+		if block.Kind == "thinking_indicator" {
+			continue
+		}
+		block.Expanded, block.Static = true, true
+		root.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
+		previousKind = block.Kind
+	}
+	height := root.HeightForWidth(width)
+	if height <= 0 {
+		return nil, 0
+	}
+	buf := gotui.NewBuffer(width, height)
+	root.RenderTo(buf, width, height)
+	return buf, height
+}
+
+// regularRepairChanges paints the newest `rows` transcript rows into screen
+// rows [top, top+rows), in place: nothing scrolls.
+func (c *chatTUI) regularRepairChanges(width, top, rows int) []gotui.CellChange {
+	if rows <= 0 || width <= 0 || top < 0 {
+		return nil
+	}
+	buf, height := c.regularTranscriptRows(width)
+	changes := make([]gotui.CellChange, 0, rows*4)
+	offset := height - rows // transcript row shown on screen row top
+	for y := 0; y < rows; y++ {
+		src := y + offset
+		if buf == nil || src < 0 {
+			changes = append(changes, gotui.CellChange{X: 0, Y: top + y, EraseToEOL: true})
+			continue
+		}
+		last := -1
+		for x := 0; x < width; x++ {
+			if cell := buf.Cell(x, src); !(cell.Rune == 0 || cell.Rune == ' ') || cell.Style != (gotui.Style{}) {
+				last = x
+			}
+		}
+		for x := 0; x <= last; x++ {
+			cell := buf.Cell(x, src)
+			if cell.Width == 0 && cell.Rune == 0 && x > 0 && buf.Cell(x-1, src).Width == 2 {
+				continue // continuation of a wide cluster
+			}
+			if cell.Rune == 0 {
+				cell = gotui.Cell{Rune: ' ', Style: cell.Style, Width: 1, Link: cell.Link}
+			}
+			changes = append(changes, gotui.CellChange{X: x, Y: top + y, Cell: cell})
+		}
+		changes = append(changes, gotui.CellChange{X: last + 1, Y: top + y, EraseToEOL: true})
+	}
+	return changes
+}
+
+func (c *chatTUI) reflowRegular() {
+	if !c.regularMode || c.app == nil || c.workspaceIndex.active || c.modelMenuAltScreen {
+		return
+	}
+	band := max(0, c.regularResizePeak-c.regularResizeBase)
+	widthChanged := c.regularResizeWidthChanged
+	c.regularResizeBase, c.regularResizePeak, c.regularResizeBaseWidth, c.regularResizeWidthChanged = 0, 0, 0, false
+	w, h := c.app.Size()
+	start := h - c.app.InlineHeight()
+	if widthChanged {
+		// The terminal rewrapped rows (including the dock drawn at another
+		// width) during the burst: repaint all visible rows above the dock
+		// at the settled width, as Pi re-renders.
+		band = start
+	}
+	band = min(band, start)
+	if changes := c.regularRepairChanges(w, start-band, band); len(changes) > 0 {
+		c.app.Terminal().Flush(changes)
+	}
+	c.resetInlineHistoryModel()
 }
 
 func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
@@ -80,9 +214,7 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 		app.Terminal().ClearToEnd()
 	}
 	if !c.workspaceIndex.active && !c.modelMenuAltScreen && c.regularWidth != 0 && (w != c.regularWidth || h != c.regularHeight) {
-		// The inline renderer invalidates history geometry on width changes.
-		// Re-establish it conservatively before any dynamic dock growth.
-		app.PrintAboveln("sys: terminal resized to %dx%d", w, h)
+		c.noteRegularResize(c.regularWidth, c.regularHeight, w, h)
 	}
 	c.regularWidth, c.regularHeight = w, h
 	c.outputWidth, c.outputHeight = w, h
@@ -113,12 +245,13 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	c.input.width = w
 	c.input.suspended = c.modelMenuOpen
 	footer := c.footerLines(w)
-	queue := c.pendingQueueLines(w, h)
-	widgets := c.extensionWidgetLines()
+	queue := c.pendingDockLines(w, h)
+	// Pi's Spacer(1) above the editor (widget container).
+	widgets := append([]string{""}, c.extensionWidgetLines()...)
 	if c.editorAskActive {
 		widgets = append(widgets, "? "+c.editorAskPrompt+" (Enter submit · Esc cancel)")
 	}
-	menuHeight := c.modelMenuHeight()
+	menuHeight := c.modelMenuHeight() + c.slashMenuHeight()
 	// Active output is temporary and bounded; the idle dock has only editor,
 	// separators and existing footer. Leave at least one terminal-owned history row.
 	previewHeight := 0
@@ -143,31 +276,33 @@ func (c *chatTUI) renderRegular(app *gotui.App) *gotui.Element {
 	root := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100), gotui.WithHeight(dock))
 	c.transcriptBlockRefs = nil
 	if previewHeight > 0 {
-		preview := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100), gotui.WithHeight(previewHeight), gotui.WithScrollable(gotui.ScrollVertical))
+		preview := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100), gotui.WithHeight(previewHeight), gotui.WithScrollable(gotui.ScrollVertical), gotui.WithScrollbarHidden(true))
 		previousKind := c.regularPreviousKind()
 		for _, block := range c.buildTranscriptRenderableBlocks(pending) {
 			preview.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
-			previousKind = block.Kind
+			if block.Kind != "thinking_indicator" {
+				previousKind = block.Kind
+			}
 		}
 		preview.ScrollToBottom()
 		root.AddChild(preview)
 	}
 	if len(queue) > 0 {
-		root.AddChild(c.renderLineBlock(queue, gotui.NewStyle().Dim()))
+		root.AddChild(c.renderLineBlock(queue, piFg(piDim)))
 	}
 	if c.modelMenuOpen {
 		root.AddChild(c.renderModelMenu(w))
 	}
 	if len(widgets) > 0 {
-		root.AddChild(c.renderLineBlock(widgets, gotui.NewStyle().Foreground(gotui.Blue)))
+		root.AddChild(c.renderLineBlock(widgets, gotui.NewStyle()))
 	}
-	separator := func() *gotui.Element {
-		return gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(1), gotui.WithText(c.horizontalRule(w)), gotui.WithTextStyle(gotui.NewStyle().Dim()))
-	}
-	root.AddChild(separator())
+	root.AddChild(c.renderEditorTopBorder(c.input, w))
 	root.AddChild(input)
-	root.AddChild(separator())
-	root.AddChild(c.renderLineBlock(footer, gotui.NewStyle().Dim()))
+	root.AddChild(c.renderEditorBottomBorder(c.input, w))
+	if c.slash.active {
+		root.AddChild(c.renderSlashMenu(w))
+	}
+	root.AddChild(c.renderFooter(w))
 	c.inputRegion = input
 	return root
 }
@@ -217,4 +352,24 @@ func (c *chatTUI) regularPreviousKind() string {
 		}
 	}
 	return ""
+}
+
+// resetInlineHistoryModel tells go-tui that every history row above the dock
+// holds content. go-tui models which rows are blank and prints into rows it
+// believes are blank without scrolling them into scrollback. That model goes
+// stale when gi paints rows itself (resize repaint) or when the dock height
+// changes on a temporary alternate screen (selectors, workspace index): the
+// scrolls it emitted there never touched the main screen. A width change
+// invalidates the model (go-tui has no direct API); the next print, which is
+// empty and writes nothing, re-establishes it conservatively as full. The
+// final same-size resize also forces a full dock redraw.
+func (c *chatTUI) resetInlineHistoryModel() {
+	if c.app == nil || !c.regularMode {
+		return
+	}
+	w, h := c.app.Size()
+	c.app.Dispatch(gotui.ResizeEvent{Width: max(1, w-1), Height: h})
+	c.app.Dispatch(gotui.ResizeEvent{Width: w, Height: h})
+	c.app.PrintAbove("")
+	c.app.MarkDirty()
 }

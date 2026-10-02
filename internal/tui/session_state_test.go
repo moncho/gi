@@ -22,6 +22,13 @@ func collectElementTexts(element *gotui.Element) []string {
 	if element.Text() != "" {
 		texts = append(texts, element.Text())
 	}
+	if spans := element.RichText(); len(spans) > 0 {
+		var b strings.Builder
+		for _, span := range spans {
+			b.WriteString(span.Text)
+		}
+		texts = append(texts, b.String())
+	}
 	for _, child := range element.Children() {
 		texts = append(texts, collectElementTexts(child)...)
 	}
@@ -223,8 +230,10 @@ func TestSessionPickerFootprintAndUnicodeAtTargetSizes(t *testing.T) {
 			c.openSessionMenu()
 			c.setModelMenuSelection(len(c.modelMenuChoices) - 1)
 			menu := c.renderModelMenu(size[0])
-			if c.modelMenuVisibleRows() > 6 || c.modelMenuHeight() > 8 {
-				t.Fatal("selector exceeds footprint")
+			// Pi's session selector replaces the editor; with the spacer and
+			// footer it must fit the screen.
+			if c.modelMenuVisibleRows() > 6 || c.modelMenuHeight()+1+len(idleFooter) > size[1] {
+				t.Fatal("selector exceeds footprint", c.modelMenuHeight())
 			}
 			if c.modelMenuSelected < c.modelMenuScroll || c.modelMenuSelected >= c.modelMenuScroll+c.modelMenuVisibleRows() {
 				t.Fatal("resize hides selection")
@@ -236,7 +245,7 @@ func TestSessionPickerFootprintAndUnicodeAtTargetSizes(t *testing.T) {
 			}
 			c.modelMenuQuery = "absent"
 			c.applyModelMenuFilter()
-			if !strings.Contains(strings.Join(collectElementTexts(c.renderModelMenu(size[0])), "\n"), "no matching sessions") {
+			if !strings.Contains(strings.Join(collectElementTexts(c.renderModelMenu(size[0])), "\n"), "No sessions found") {
 				t.Fatal("incorrect empty state")
 			}
 			c.closeModelMenu()

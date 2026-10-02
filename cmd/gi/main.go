@@ -9,9 +9,11 @@ import (
 	"log"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -20,10 +22,12 @@ import (
 
 	"github.com/rcarmo/gi/internal/config"
 	"github.com/rcarmo/gi/internal/httpserver"
+	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/store"
 	storecache "github.com/rcarmo/gi/internal/store/cache"
 	gitui "github.com/rcarmo/gi/internal/tui"
 	"github.com/rcarmo/gi/internal/turn"
+	"github.com/rcarmo/gi/internal/version"
 	giweb "github.com/rcarmo/gi/internal/web"
 )
 
@@ -44,26 +48,33 @@ func configureTUILogging(logFile string) {
 	log.SetOutput(f)
 }
 
+// webOnlyFlagsSet lists explicitly set flags that only affect the web server.
+func webOnlyFlagsSet() []string {
+	webOnly := map[string]bool{"listen": true, "bind": true, "port": true, "tls-cert": true, "tls-key": true, "acme-domains": true, "acme-email": true, "acme-cache": true, "acme-accept-tos": true, "acme-http-listen": true, "pid-file": true}
+	var set []string
+	flag.Visit(func(f *flag.Flag) {
+		if webOnly[f.Name] {
+			set = append(set, "-"+f.Name)
+		}
+	})
+	return set
+}
+
 func main() {
+	startProfiling()
+	if len(os.Args) > 1 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
+		fmt.Println("gi " + version.String())
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "mcp" {
+		os.Exit(runMCPCommand(os.Args[2:]))
+	}
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func run() error {
-	if len(os.Args) == 1 {
-		workspaceRoot := config.DefaultWorkspaceRoot()
-		dbPath := config.DefaultTUIDBPath()
-		configureTUILogging("")
-		if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
-			log.Fatalf("create tui db dir: %v", err)
-		}
-		if err := gitui.Run(dbPath, workspaceRoot, ""); err != nil {
-			log.Fatalf("tui: %v", err)
-		}
-		return nil
-	}
-
 	listen := flag.String("listen", "", "HTTP listen address (overrides -bind/-port)")
 	bind := flag.String("bind", "127.0.0.1", "Bind address / interface host")
 	port := flag.Int("port", 8081, "HTTP port")
@@ -79,12 +90,21 @@ func run() error {
 	model := flag.String("model", "", "Override default model (e.g. gemma4:latest)")
 	logFile := flag.String("log-file", "", "Optional log file path")
 	pidFile := flag.String("pid-file", "", "Optional pid file path")
-	tuiMode := flag.Bool("tui", false, "Run the terminal UI instead of the web server")
-	tuiLayout := flag.String("tui-mode", "fullscreen", "Terminal rendering: fullscreen or regular (native scrollback)")
+	webMode := flag.Bool("web", false, "Run the web UI server instead of the terminal UI")
+	_ = flag.Bool("tui", true, "Run the terminal UI (default; kept for compatibility)")
+	tuiLayout := flag.String("tui-mode", "", "Terminal rendering: fullscreen or regular (native scrollback); default: tuiMode setting, else fullscreen")
 	flag.Parse()
 
-	if *tuiMode {
+	if !*webMode {
+		// Server-only flags without -web are almost certainly a mistake;
+		// fail loudly rather than silently opening a terminal UI.
+		if flags := webOnlyFlagsSet(); len(flags) > 0 {
+			return fmt.Errorf("web UI flags %s need -web (gi runs the terminal UI by default)", strings.Join(flags, ", "))
+		}
 		configureTUILogging(*logFile)
+		if err := os.MkdirAll(filepath.Dir(*dbPath), 0o755); err != nil {
+			return fmt.Errorf("create tui db dir: %w", err)
+		}
 		if err := gitui.RunMode(*dbPath, *workspace, *model, *tuiLayout); err != nil {
 			log.Fatalf("tui: %v", err)
 		}
@@ -130,6 +150,7 @@ func run() error {
 	processCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	engine := turn.NewWithRuntimeConfig(s, runtimeCfg, runtimeCfg.SystemPrompt)
+	engine.EnableMCP() // Pi mcp.json servers (.gi first, then .pi); connects in the background
 	defer engine.Close()
 	server := giweb.New(s, engine, runtimeCfg)
 	server.StartInboundWorkDispatcher(processCtx)
@@ -205,4 +226,34 @@ func splitCSV(value string) []string {
 		}
 	}
 	return out
+}
+
+// runMCPCommand runs `gi mcp ...` (Pi's `pi mcp`) without starting a session.
+func runMCPCommand(args []string) int {
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = config.DefaultWorkspaceRoot()
+	}
+	return gimcp.RunCommand(args, gimcp.CLIOptions{
+		Cwd: cwd, UserPath: gimcp.UserConfigPath(), ProjectPath: gimcp.ProjectConfigPath(cwd),
+		LogPath:         config.UserConfigCandidates("mcp.log")[0],
+		CredentialsPath: config.UserConfigFile("mcp-auth.json"),
+	})
+}
+
+// startProfiling serves net/http/pprof on GI_PPROF (e.g. 127.0.0.1:6060)
+// when set, for CPU, allocation and goroutine profiles of a running gi. It
+// listens on its own server, never on the web UI's handler.
+func startProfiling() {
+	addr := strings.TrimSpace(os.Getenv("GI_PPROF"))
+	if addr == "" {
+		return
+	}
+	runtime.SetMutexProfileFraction(5)
+	runtime.SetBlockProfileRate(100000) // sample blocking events of 100µs and longer
+	go func() {
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			log.Printf("pprof: %v", err)
+		}
+	}()
 }

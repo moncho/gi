@@ -57,7 +57,7 @@ func TestTerminalManualCompactionPreservesEditorAndScopes(t *testing.T) {
 		t.Fatal("not started")
 	}
 	c.syncCompactionActivity()
-	if !c.compaction.active || !strings.Contains(c.compactionInline(), "Compacting") {
+	if _, msg, _, _, ok := c.editorStatus(time.Now()); !c.compaction.active || !ok || !strings.Contains(msg, "Compacting") {
 		t.Fatal(c.compaction)
 	}
 	if !reflect.DeepEqual(before, editor()) {

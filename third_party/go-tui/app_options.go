@@ -1,0 +1,257 @@
+package tui
+
+import (
+	"fmt"
+	"time"
+)
+
+// AppOption is a functional option for configuring an App.
+type AppOption func(*App) error
+
+// InlineStartupMode controls how inline mode initializes the visible terminal
+// viewport when an app starts.
+type InlineStartupMode int
+
+const (
+	// InlineStartupPreserveVisible keeps existing visible rows on launch.
+	// Unknown history is modeled conservatively so stale rows drain naturally as
+	// new PrintAbove/PrintAboveln content is appended.
+	InlineStartupPreserveVisible InlineStartupMode = iota
+
+	// InlineStartupFreshViewport clears the visible viewport immediately.
+	// Existing visible rows are discarded rather than pushed into scrollback.
+	InlineStartupFreshViewport
+
+	// InlineStartupSoftReset clears the visible viewport by pushing rows upward
+	// via newline flow, preserving previous visible rows in scrollback.
+	InlineStartupSoftReset
+)
+
+// WithInputLatency sets the polling timeout for the event reader.
+// Default is InputLatencyBlocking (blocks until input arrives).
+// Use a positive duration (e.g. 50ms) for polling mode.
+// A value of 0 is not allowed and will return an error.
+func WithInputLatency(d time.Duration) AppOption {
+	return func(a *App) error {
+		if d == 0 {
+			return fmt.Errorf("input latency of 0 (busy polling) is not allowed; use a positive duration or InputLatencyBlocking")
+		}
+		a.inputLatency = d
+		return nil
+	}
+}
+
+// WithFrameRate sets the target frame rate for the render loop.
+// Default is 60 fps (16ms frame duration). Valid range is 1-240 fps.
+func WithFrameRate(fps int) AppOption {
+	return func(a *App) error {
+		if fps < 1 {
+			return fmt.Errorf("frame rate must be at least 1 fps")
+		}
+		if fps > 240 {
+			return fmt.Errorf("frame rate cannot exceed 240 fps")
+		}
+		a.frameDuration = time.Second / time.Duration(fps)
+		return nil
+	}
+}
+
+// WithEventQueueSize sets the capacity of the event queue buffer.
+// Default is 256. Must be at least 1.
+//
+// Note: keyboard and mouse events use a separate lossless queue.
+// Background state updates (from QueueUpdate) use a bounded queue
+// that drops the oldest update when full to prevent backpressure.
+func WithEventQueueSize(size int) AppOption {
+	return func(a *App) error {
+		if size < 1 {
+			return fmt.Errorf("event queue size must be at least 1")
+		}
+		a.eventQueueSize = size
+		return nil
+	}
+}
+
+// WithGlobalKeyHandler sets a handler that runs before dispatching to focused element.
+// If the handler returns true, the event is consumed and not dispatched further.
+// Use this for app-level key bindings like quit.
+func WithGlobalKeyHandler(fn func(KeyEvent) bool) AppOption {
+	return func(a *App) error {
+		a.globalKeyHandler = fn
+		return nil
+	}
+}
+
+// WithRoot sets the root element after app initialization.
+func WithRoot(root *Element) AppOption {
+	return func(a *App) error {
+		a.pendingRootApply = func(app *App) {
+			app.SetRoot(root)
+		}
+		return nil
+	}
+}
+
+// WithRootView sets a Viewable root after app initialization.
+func WithRootView(view Viewable) AppOption {
+	return func(a *App) error {
+		a.pendingRootApply = func(app *App) {
+			app.SetRootView(view)
+		}
+		return nil
+	}
+}
+
+// WithRootComponent sets a Component root after app initialization.
+func WithRootComponent(component Component) AppOption {
+	return func(a *App) error {
+		a.pendingRootApply = func(app *App) {
+			app.SetRootComponent(component)
+		}
+		return nil
+	}
+}
+
+// WithMouse explicitly enables mouse event reporting.
+// Use this to enable mouse in inline mode (where it's disabled by default).
+func WithMouse() AppOption {
+	return func(a *App) error {
+		a.mouseEnabled = true
+		a.mouseExplicit = true
+		return nil
+	}
+}
+
+// WithPreRenderHook sets a callback that runs at the start of every render cycle,
+// after the buffer is cleared but before the component tree is re-rendered.
+// This is useful for state updates that must happen before the render.
+func WithPreRenderHook(fn func()) AppOption {
+	return func(a *App) error {
+		a.preRenderHook = fn
+		return nil
+	}
+}
+
+// WithPreFlushHook sets a function called with the frame buffer after the
+// element tree and overlays are rendered and before the frame is flushed, so
+// an application can composite cells over the laid-out frame (gi: Pi's
+// "Jump to latest message" indicator).
+func WithPreFlushHook(fn func(*Buffer)) AppOption {
+	return func(a *App) error {
+		a.preFlushHook = fn
+		return nil
+	}
+}
+
+// WithPostRenderHook sets a callback that runs after every render cycle.
+func WithPostRenderHook(fn func()) AppOption {
+	return func(a *App) error {
+		a.postRenderHook = fn
+		return nil
+	}
+}
+
+// WithoutMouse explicitly disables mouse event reporting.
+// Use this to disable mouse in full screen mode (where it's enabled by default).
+func WithoutMouse() AppOption {
+	return func(a *App) error {
+		a.mouseEnabled = false
+		a.mouseExplicit = true
+		return nil
+	}
+}
+
+// WithManualCursor disables framework-driven terminal cursor management. By
+// default the App places the real terminal cursor at the focused widget's
+// reported position at the end of every frame (see CursorReporter). Use this
+// when the application drives the cursor itself, or wants no cursor at all.
+func WithManualCursor() AppOption {
+	return func(a *App) error {
+		a.manualCursor = true
+		return nil
+	}
+}
+
+// WithCursor is deprecated and now a no-op. The framework drives the real
+// terminal cursor automatically at the focused text widget; use the default
+// behavior, or WithManualCursor to opt out. Retained as an alias so existing
+// call sites keep compiling.
+//
+// Deprecated: cursor visibility is managed by the framework; this option does
+// nothing. Use WithManualCursor to disable framework cursor management.
+func WithCursor() AppOption {
+	return func(a *App) error {
+		return nil
+	}
+}
+
+// WithInlineHeight enables inline widget mode.
+// The TUI manages only the bottom N rows of the terminal, allowing normal
+// terminal output above. Use PrintAbove() or PrintAboveln() to print
+// scrolling content above the widget.
+// For goroutine-safe queued writes, use QueuePrintAbove() /
+// QueuePrintAboveln().
+//
+// In inline mode:
+//   - Alternate screen is not used, so terminal history is preserved
+//   - Mouse events are disabled by default, allowing native terminal scrollback
+//   - Use WithMouse() to explicitly enable mouse if needed
+//   - Startup behavior can be configured with WithInlineStartupMode()
+func WithInlineHeight(rows int) AppOption {
+	return func(a *App) error {
+		if rows < 1 {
+			return fmt.Errorf("inline height must be at least 1 row")
+		}
+		a.inlineHeight = rows
+		return nil
+	}
+}
+
+// WithInlineStartupMode configures how inline mode handles existing visible
+// terminal content at app startup.
+func WithInlineStartupMode(mode InlineStartupMode) AppOption {
+	return func(a *App) error {
+		switch mode {
+		case InlineStartupPreserveVisible, InlineStartupFreshViewport, InlineStartupSoftReset:
+			a.inlineStartupMode = mode
+			return nil
+		default:
+			return fmt.Errorf("invalid inline startup mode: %d", mode)
+		}
+	}
+}
+
+// WithOnSuspend sets a callback that runs before the app suspends (Ctrl+Z).
+// Use this to save state or pause timers before the process stops.
+func WithOnSuspend(fn func()) AppOption {
+	return func(a *App) error {
+		a.onSuspend = fn
+		return nil
+	}
+}
+
+// WithOnResume sets a callback that runs after the app resumes (fg).
+// Use this to restart timers or refresh stale data.
+func WithOnResume(fn func()) AppOption {
+	return func(a *App) error {
+		a.onResume = fn
+		return nil
+	}
+}
+
+// WithLegacyKeyboard forces legacy keyboard mode, skipping Kitty keyboard
+// protocol negotiation. By default, go-tui attempts the Kitty protocol
+// and falls back to legacy if the terminal doesn't support it.
+func WithLegacyKeyboard() AppOption {
+	return func(a *App) error {
+		a.legacyKeyboard = true
+		return nil
+	}
+}
+
+// WithRowRedraw clears and repaints complete changed rows instead of cell diffs.
+// This avoids stale glyph fragments across wide/compound Unicode transitions.
+// Inline mode continues to use its existing terminal-scrollback renderer.
+func WithRowRedraw() AppOption {
+	return func(a *App) error { a.rowRedraw = true; return nil }
+}

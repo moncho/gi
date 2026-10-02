@@ -307,7 +307,7 @@ func renderClippedElement(buf *Buffer, e *Element, clipRect Rect, scrollX, scrol
 		if !e.noWrap && availTextWidth > 0 {
 			spanLines = e.wrappedSpans(availTextWidth)
 		} else {
-			spanLines = [][]TextSpan{e.richText}
+			spanLines = e.unwrappedSpans()
 		}
 		drawSpanLines(buf, spanLines, textBaseX, textBaseY, availTextWidth, e.textAlign, ts, clipRect, e.spanLinesCache(spanLines))
 	}
@@ -535,7 +535,7 @@ func renderTextContent(buf *Buffer, e *Element, textStyle Style, bg *Style) {
 		if !e.noWrap && contentRect.Width > 0 {
 			spanLines = e.wrappedSpans(contentRect.Width)
 		} else {
-			spanLines = [][]TextSpan{e.richText}
+			spanLines = e.unwrappedSpans()
 		}
 		drawSpanLines(buf, spanLines, contentRect.X, contentRect.Y, contentRect.Width, e.textAlign, ts, contentRect, e.spanLinesCache(spanLines))
 		return

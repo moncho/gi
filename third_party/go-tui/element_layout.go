@@ -110,7 +110,7 @@ func (e *Element) IntrinsicSize() (width, height int) {
 
 	// Text content has explicit intrinsic size
 	if e.text != "" {
-		textWidth := stringWidth(e.text)
+		textWidth := e.contentIntrinsicWidth()
 		textHeight := 1
 		// Add padding to get the element's intrinsic size
 		width = textWidth + e.style.Padding.Horizontal()
@@ -133,7 +133,7 @@ func (e *Element) IntrinsicSize() (width, height int) {
 
 	// Rich text content has explicit intrinsic size (single unwrapped line).
 	if len(e.richText) > 0 {
-		width = richTextWidth(e.richText) + e.style.Padding.Horizontal()
+		width = e.contentIntrinsicWidth() + e.style.Padding.Horizontal()
 		height = 1 + e.style.Padding.Vertical()
 		if e.border != BorderNone {
 			width += 2

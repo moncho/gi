@@ -39,11 +39,11 @@ func looksLikeMarkdown(text string) bool {
 // Table-bearing messages retain source in an invisible transcript metadata row
 // so terminal resize can allocate columns again instead of wrapping old borders.
 func renderChatMarkdown(role, prefix, markdown string, width int) []string {
-	lines := renderMarkdownTranscript(prefix, markdown, width)
 	if (role != "user" && role != "assistant") || !strings.Contains(markdown, "|") {
-		return lines
+		return renderMarkdownTranscript(prefix, markdown, width)
 	}
-	root := tuiMarkdown.Parser().Parse(text.NewReader([]byte(markdown)))
+	source := []byte(markdown)
+	root := tuiMarkdown.Parser().Parse(text.NewReader(source))
 	hasTable := false
 	_ = gast.Walk(root, func(n gast.Node, entering bool) (gast.WalkStatus, error) {
 		if _, ok := n.(*extast.Table); ok && entering {
@@ -53,9 +53,9 @@ func renderChatMarkdown(role, prefix, markdown string, width int) []string {
 		return gast.WalkContinue, nil
 	})
 	if !hasTable {
-		return lines
+		return projectMarkdownTranscript(prefix, source, root, width)
 	}
-	body := renderMarkdownTranscript("", markdown, max(1, width-1))
+	body := projectMarkdownTranscript("", source, root, max(1, width-1))
 	out := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "markdown-table", Kind: role, MarkdownSource: markdown})}
 	for _, line := range body {
 		out = append(out, "│ "+line)
@@ -64,12 +64,13 @@ func renderChatMarkdown(role, prefix, markdown string, width int) []string {
 }
 
 func renderMarkdownTranscript(prefix, markdown string, width int) []string {
-	contentWidth := width - utf8.RuneCountInString(prefix)
-	if contentWidth < 1 {
-		contentWidth = 1
-	}
 	source := []byte(markdown)
 	root := tuiMarkdown.Parser().Parse(text.NewReader(source))
+	return projectMarkdownTranscript(prefix, source, root, width)
+}
+
+func projectMarkdownTranscript(prefix string, source []byte, root gast.Node, width int) []string {
+	contentWidth := max(1, width-utf8.RuneCountInString(prefix))
 	renderer := &markdownProjector{source: source, width: contentWidth}
 	body := renderer.renderBlocks(root, 0)
 	if len(body) == 0 {

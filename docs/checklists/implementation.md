@@ -1,3 +1,9 @@
+### Complex Markdown table rendering performance
+
+- [x] Add reproducible Unicode/styled table projection, streaming, resize and scroll-frame benchmarks with CPU/allocation profiles.
+- [x] Optimize measured hotspots without changing grid geometry, inline styles or literal search/copy text; add functional coverage (including table-to-user message boundaries and full-width Pi user bands).
+- [x] Record baseline/optimized results and remaining costs in `docs/internal/tui-complex-table-performance.md`.
+
 ### Issue #12 — terminal-derived themes
 
 - [x] Bound terminal colour probing on silent Unix PTYs; validate OSC values and COLORFGBG indices.
@@ -876,3 +882,7 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 - [x] Use complete changed-row clear/repaint output instead of partial cell diffs, with Unicode, resize, style/link and regular-mode regression coverage.
 - [x] Match Pi wheel acceleration policy, including local macOS versus SSH and gesture reset on setting changes.
 - [x] Match Pi’s four-row paging overlap; document the opt-in go-tui runtime patch and terminal verification limits.
+
+### Follow-up — workspace tool path resolution
+
+- [x] In a separate change (`ffbafe19`, `fix/tool-absolute-paths`; not merged), stop `read`/shared tool resolution from silently joining absolute paths to the workspace root. Accept in-workspace absolute paths or clearly reject unsupported paths; test outside-workspace paths, traversal and symlink escapes, and update the tool contract. Reported while profiling tables; deliberately excluded from renderer changes.

@@ -104,11 +104,13 @@ func (e *Engine) promptSections(declared []goai.Tool) []prompt.Section {
 			o.ToolGuidelines[t.Name] = c.guidelines
 		}
 	}
-	if cfg.ProjectInstructions != "" {
-		o.ContextFiles = []prompt.ContextFile{{Path: cfg.ProjectInstructionsPath, Content: cfg.ProjectInstructions}}
+	for _, f := range cfg.ContextFiles {
+		o.ContextFiles = append(o.ContextFiles, prompt.ContextFile{Path: f.Path, Content: f.Content})
 	}
 	for _, s := range cfg.Discovery.Skills {
-		o.Skills = append(o.Skills, prompt.Skill{Name: s.Name, Description: s.Description, Location: s.Path})
+		if !s.DisableModelInvocation { // Pi: explicit invocation only
+			o.Skills = append(o.Skills, prompt.Skill{Name: s.Name, Description: s.Description, Location: s.Path})
+		}
 	}
 	if text := e.currentMCPSectionText(); text != "" {
 		o.Extra = append(o.Extra, prompt.Section{Name: "mcp_servers", Text: text})

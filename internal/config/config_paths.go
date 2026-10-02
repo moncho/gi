@@ -3,7 +3,8 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/rcarmo/gi/internal/agentdir"
 )
 
 // Config files are looked up in gi's own directories first, then Pi's: for
@@ -37,25 +38,7 @@ func UserConfigCandidates(rel ...string) []string {
 // UserConfigDirs are the user-level config directories in lookup order:
 // gi's (GI_CODING_AGENT_DIR, else ~/.gi/agent), then Pi's
 // (PI_CODING_AGENT_DIR, else ~/.pi/agent).
-func UserConfigDirs() []string {
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" {
-		home = "."
-	}
-	out := make([]string, 0, len(ConfigDirNames))
-	for _, dir := range ConfigDirNames {
-		env := "GI_CODING_AGENT_DIR"
-		if dir == ".pi" {
-			env = "PI_CODING_AGENT_DIR"
-		}
-		if v := strings.TrimSpace(os.Getenv(env)); v != "" {
-			out = append(out, v)
-		} else {
-			out = append(out, filepath.Join(home, dir, "agent"))
-		}
-	}
-	return out
-}
+func UserConfigDirs() []string { return agentdir.Dirs() }
 
 // ProjectConfigCandidates returns the project-level locations for a config
 // file in lookup order.

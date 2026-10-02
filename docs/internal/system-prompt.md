@@ -9,7 +9,7 @@ ordered sections, each replaceable on its own.
 | `tools` | `- <name>: <snippet>` for each declared tool with a snippet, then Pi's line about other custom tools |
 | `rules` | Pi's `buildRules`: the shell rule (`Use shell for file operations like ls, rg, find` when no grep/find/ls tool), the declared tools' guidelines, gi's rules, then Pi's `Be concise in your responses` and `Show file paths clearly when working with files`; trimmed and deduplicated |
 | `docs` | gi's: where gi's reference lives (`vfs://reference/...`) |
-| `project_context` | the workspace `AGENTS.md`, in Pi's `<project_instructions path="…">` form |
+| `project_context` | context files (agent directory, then root to workspace; [config-files.md](config-files.md)), in Pi's `<project_instructions path="…">` form |
 | `skills` | Pi's `formatSkillsForPrompt` (`<available_skills>` with name, description, location) |
 | `cwd` | the workspace root |
 | `mcp_servers` | MCP servers reached through codemode or `tool_search` ([mcp.md](mcp.md)) |
@@ -70,7 +70,5 @@ initial sections and the updates are kept in the session state
 
 ## Not ported
 
-- Pi loads `AGENTS.md`/`CLAUDE.md` from the agent directory and every
-  ancestor directory; gi uses the workspace `AGENTS.md`.
 - Pi's `SYSTEM.md` / `APPEND_SYSTEM.md` prompt files and extension-defined
   sections.

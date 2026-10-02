@@ -210,6 +210,15 @@ func NewWithRuntimeConfig(s *store.Store, cfg config.RuntimeConfig, systemPrompt
 	e.registerDefaultTools()
 	e.registerCodemodeTool()
 	e.startTopicBridge()
+	// User-level skills live outside the workspace; the prompt tells the model
+	// to load them with read (Pi), so their directories are readable.
+	readable := giskills.UserSkillDirs()
+	for _, s := range cfg.Discovery.Skills {
+		if s.Source == "user" {
+			readable = append(readable, s.BaseDir)
+		}
+	}
+	tools.SetReadOnlyRoots(readable)
 	if e.store != nil {
 		go e.runMCPOutputPruner(e.backgroundContext()) // mcp-output and codemode-output
 	}

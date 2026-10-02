@@ -137,8 +137,9 @@ func TestLoadKeepsAgentsInstructionsForProjectContext(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := Load(root)
-	if cfg.ProjectInstructions != "Project rule: keep APIs stable." || cfg.ProjectInstructionsPath != filepath.Join(root, "AGENTS.md") {
-		t.Fatalf("project instructions: %q %q", cfg.ProjectInstructions, cfg.ProjectInstructionsPath)
+	last := cfg.ContextFiles[len(cfg.ContextFiles)-1]
+	if last.Content != "Project rule: keep APIs stable." || last.Path != filepath.Join(root, "AGENTS.md") {
+		t.Fatalf("project instructions: %+v", cfg.ContextFiles)
 	}
 }
 

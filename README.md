@@ -194,7 +194,7 @@ gi uses `go-ai` for model inference. Supported providers:
 - Anthropic
 - GitHub Copilot (with automatic enterprise/individual endpoint detection)
 
-Credentials are read from `auth.json` (see [Configuration files](#configuration-files)). The workspace `AGENTS.md` becomes the system prompt's project instructions ([system prompt](docs/internal/system-prompt.md)).
+Credentials are read from `auth.json` (see [Configuration files](#configuration-files)). Context files (`AGENTS.md`/`CLAUDE.md` from the agent directory and the workspace's ancestors, as in Pi) become the system prompt's project instructions ([system prompt](docs/internal/system-prompt.md)).
 
 ## Configuration files
 
@@ -202,7 +202,7 @@ gi reads Pi's configuration unchanged and lets its own directories override it. 
 
 - **User level:** `$GI_CODING_AGENT_DIR` (default `~/.gi/agent`), then `$PI_CODING_AGENT_DIR` (default `~/.pi/agent`, as in Pi): `settings.json`, `auth.json`, `models-store.json`, `mcp.json`.
 - **Project level:** `<workspace>/.gi/`, then `<workspace>/.pi/`: `settings.json`, `mcp.json`.
-- **Directories** (`skills/`, `tools/`, `extensions/`): `.gi/` is scanned before `.pi/`; the first item of a name wins.
+- **Directories** (`skills/`, `tools/`, `extensions/`): `.gi/` is scanned before `.pi/`; the first item of a name wins. Skills are also loaded from the user agent directories, before the project's, as in Pi.
 
 A file is written where it was read (Pi refreshes `auth.json` in place). When neither location has it, it is created in Pi's location, so it stays shared with Pi. `.piclaw/config.json` (assistant and user identity) is Piclaw's file and is read only there. [Details](docs/internal/config-files.md).
 

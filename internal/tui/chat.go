@@ -232,6 +232,7 @@ type chatTUI struct {
 	transcript                  []string
 	regularMode                 bool
 	lastFooterSignature         string // footer data at the last idle check
+	blockHeights                map[uint64]int // rendered block heights (transcript windowing)
 	jumpToLatest                jumpToLatestRect // where the cue was drawn (none: width 0)
 	regularPrinted              int
 	regularSessionPending       bool
@@ -4502,13 +4503,9 @@ func (c *chatTUI) Render(app *gotui.App) *gotui.Element {
 	} else if c.search.active {
 		c.renderTranscriptSearchRows(transcript)
 	} else {
-		previousKind := ""
-		for _, block := range blocks {
-			transcript.AddChild(c.renderTranscriptBlockAfter(block, previousKind))
-			if block.Kind != "thinking_indicator" {
-				previousKind = block.Kind
-			}
-		}
+		// Only blocks on screen are laid out; spacers keep the scroll
+		// geometry (#34).
+		c.addTranscriptWindow(transcript, blocks, contentWidth, transcriptHeight)
 	}
 	if c.stickToBottom {
 		// Resolve the bottom after layout, when wrapping/expansion is known.

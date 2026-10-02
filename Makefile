@@ -827,6 +827,10 @@ test-tui-selection: build
 bench-tui-editor-layout:
 	$(GO) test ./internal/tui -run '^$$' -bench '^BenchmarkEditorLayout$$' -benchmem -benchtime=100ms
 
+.PHONY: bench-tui-transcript-frame
+bench-tui-transcript-frame:
+	$(GO) test ./internal/tui -run '^$$' -bench '^BenchmarkTranscriptFrame$$' -benchmem -benchtime=1s
+
 .PHONY: test-tui-editor-viewport
 test-tui-editor-viewport: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-editor-viewport.mjs

@@ -49,6 +49,8 @@ func TestToolSyntaxPTYFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("HOME", home)
+	t.Setenv("GI_CODING_AGENT_DIR", "")
+	t.Setenv("PI_CODING_AGENT_DIR", "")
 	if err := os.WriteFile(filepath.Join(home, ".pi", "agent", "auth.json"), []byte(`{"syntax-local":{"type":"api_key","apiKey":"fixture"}}`), 0600); err != nil {
 		t.Fatal(err)
 	}

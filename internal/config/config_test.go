@@ -28,10 +28,8 @@ func TestLoadReadsWorkspacePiAndPiclawConfig(t *testing.T) {
 	if len(cfg.EnabledModels) != 1 || cfg.EnabledModels[0] != "gemma4:latest" {
 		t.Fatalf("unexpected enabled models: %#v", cfg.EnabledModels)
 	}
-	for _, want := range []string{"agentic coding assistant", "## Tool environment", "`skills`", "## Path and safety policy"} {
-		if !strings.Contains(cfg.SystemPrompt, want) {
-			t.Fatalf("system prompt missing %q:\n%s", want, cfg.SystemPrompt)
-		}
+	if cfg.SystemPrompt != "" {
+		t.Fatalf("default prompt is built per turn, not preset: %q", cfg.SystemPrompt)
 	}
 }
 
@@ -133,17 +131,15 @@ func TestLoadUsesCurrentWorkingDirectoryWhenWorkspaceRootEmpty(t *testing.T) {
 	}
 }
 
-func TestLoadWrapsAgentsInstructionsInRuntimePrompt(t *testing.T) {
+func TestLoadKeepsAgentsInstructionsForProjectContext(t *testing.T) {
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, "AGENTS.md"), []byte("Project rule: keep APIs stable."), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	cfg := Load(root)
-	if !strings.Contains(cfg.SystemPrompt, "## Workspace instructions") || !strings.Contains(cfg.SystemPrompt, "Project rule: keep APIs stable.") {
-		t.Fatalf("workspace instructions missing from prompt:\n%s", cfg.SystemPrompt)
-	}
-	if !strings.Contains(cfg.SystemPrompt, "Use `tools` for staged discovery") {
-		t.Fatalf("runtime guidance missing from prompt:\n%s", cfg.SystemPrompt)
+	last := cfg.ContextFiles[len(cfg.ContextFiles)-1]
+	if last.Content != "Project rule: keep APIs stable." || last.Path != filepath.Join(root, "AGENTS.md") {
+		t.Fatalf("project instructions: %+v", cfg.ContextFiles)
 	}
 }
 

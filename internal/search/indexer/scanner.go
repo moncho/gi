@@ -112,8 +112,8 @@ func scanScope(ctx context.Context, config searchstore.ScopeConfig, limits scanL
 			if err != nil {
 				return err
 			}
-			// Ignore special entries and symlinks without opening them. .pi is not
-			// excluded: Piclaw's skills scope lives beneath it.
+			// Ignore special entries and symlinks without opening them. .gi and
+			// .pi are not excluded: the skills scope lives beneath them.
 			if info.Mode()&os.ModeSymlink != 0 || (!info.IsDir() && !info.Mode().IsRegular()) {
 				observe(childPath, info, nil)
 				continue

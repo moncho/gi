@@ -4,16 +4,18 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	goai "github.com/rcarmo/go-ai"
+
+	"github.com/rcarmo/gi/internal/config"
 )
 
 // PiModelsStorePath is Pi's refreshed per-provider model catalogue
-// (~/.pi/agent/models-store.json), read-only here like auth.json.
+// (~/.gi/agent/models-store.json when it exists, else Pi's agent directory),
+// read-only here like auth.json.
 func PiModelsStorePath() string {
-	return filepath.Join(filepath.Dir(AuthFilePath()), "models-store.json")
+	return config.UserConfigFile("models-store.json")
 }
 
 type piModelsStoreEntry struct {

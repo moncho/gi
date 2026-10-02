@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	storevfs "github.com/rcarmo/gi/internal/store/vfs"
 )
@@ -64,9 +65,45 @@ func resolveToolPath(root, raw string, writable bool) (resolvedPath, error) {
 		return resolvedPath{}, err
 	}
 	if !pathWithinRoot(targetResolved, rootResolved) {
-		return resolvedPath{}, fmt.Errorf("path escapes workspace")
+		if writable || !withinReadOnlyRoot(targetResolved) {
+			return resolvedPath{}, fmt.Errorf("path escapes workspace")
+		}
 	}
 	return resolvedPath{workspacePath: clean, isVFS: false}, nil
+}
+
+var (
+	readOnlyRootsMu sync.RWMutex
+	readOnlyRoots   []string // resolved
+)
+
+// SetReadOnlyRoots lets read-only tools (read) reach these directories
+// outside the workspace, such as user-level skill directories, which the
+// system prompt tells the model to load with read. Writes stay confined to
+// the workspace.
+func SetReadOnlyRoots(dirs []string) {
+	var resolved []string
+	for _, dir := range dirs {
+		if abs, err := filepath.Abs(dir); err == nil {
+			if real, err := filepath.EvalSymlinks(abs); err == nil {
+				resolved = append(resolved, real)
+			}
+		}
+	}
+	readOnlyRootsMu.Lock()
+	readOnlyRoots = resolved
+	readOnlyRootsMu.Unlock()
+}
+
+func withinReadOnlyRoot(path string) bool {
+	readOnlyRootsMu.RLock()
+	defer readOnlyRootsMu.RUnlock()
+	for _, root := range readOnlyRoots {
+		if pathWithinRoot(path, root) {
+			return true
+		}
+	}
+	return false
 }
 
 // Resolve through the nearest existing ancestor when a write creates multiple

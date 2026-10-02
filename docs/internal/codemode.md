@@ -75,7 +75,7 @@ The tool the model calls is a port of Pi's codemode extension. Its input is
   - **Listed tools:** in mode `on`, tools without direct exposure (MCP codemode and deferred tools); in mode `only`, every callable tool.
   - **Inline budget:** sections are chosen per namespace, cheapest first, until `codemode.inlineBudget` is spent (default 3000 tokens). Deferred-exposure tools are never listed.
   - **Golden values:** `scripts/golden-codemode-description.mjs` regenerates `internal/codemode/testdata/pi-description.json` from Pi.
-  - **Not ported:** Pi's codemode system-prompt guideline is not added, because gi's system prompt has no tool snippet or guideline section.
+  - **Prompt contribution:** while codemode is declared, its snippet and guideline (Pi's text, `vendor/codemode-texts.json`) are in the system prompt's tools and rules sections ([system-prompt.md](system-prompt.md)).
 - **Loadout (each request):**
   - **Mode `on`:** declared callable tools get one more line saying how scripts call them and what the call resolves to (`codemode.ScriptCallDescription`, a port of Pi's `describeScriptCall`), for example ``Codemode: `tools.bash(args)` resolves to `{ output, exit_code }`.``
   - **Mode `only`:** declarations of direct tools are left out. `codemode` and `tool_search` stay.

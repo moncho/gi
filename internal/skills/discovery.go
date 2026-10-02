@@ -2,19 +2,26 @@ package skills
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/rcarmo/gi/internal/agentdir"
 )
 
 type Skill struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description,omitempty"`
-	Path        string   `json:"path"`
-	Warnings    []string `json:"warnings,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Path        string `json:"path"`
+	// BaseDir is the skill's directory (relative paths in it resolve there);
+	// Source is "user" or "project".
+	BaseDir string `json:"base_dir,omitempty"`
+	Source  string `json:"source,omitempty"`
+	// DisableModelInvocation hides the skill from the system prompt; it can
+	// still be invoked explicitly (/skill:name).
+	DisableModelInvocation bool     `json:"disable_model_invocation,omitempty"`
+	Warnings               []string `json:"warnings,omitempty"`
 }
 
 type ToolManifest struct {
@@ -49,38 +56,47 @@ func Discover(workspaceRoot string) (Discovery, error) {
 	return out, nil
 }
 
+// DiscoverSkills ports Pi's loadSkills: user skill directories (gi's agent
+// directory, then Pi's), then the project's (.gi/skills, then .pi/skills);
+// the first skill of a name wins and a file reached twice (symlinks) loads
+// once. See skill_scan.go for the directory rules.
 func DiscoverSkills(workspaceRoot string) ([]Skill, error) {
-	roots := []string{filepath.Join(workspaceRoot, ".gi", "skills"), filepath.Join(workspaceRoot, ".pi", "skills")}
-	seen := map[string]bool{}
 	var out []Skill
-	for _, root := range roots {
-		entries, err := os.ReadDir(root)
-		if err != nil {
-			if os.IsNotExist(err) {
+	seenName := map[string]bool{}
+	seenFile := map[string]bool{}
+	add := func(found []Skill) {
+		for _, skill := range found {
+			real := skill.Path
+			if r, err := filepath.EvalSymlinks(skill.Path); err == nil {
+				real = r
+			}
+			if seenFile[real] {
 				continue
 			}
-			return nil, err
-		}
-		for _, entry := range entries {
-			if !entry.IsDir() {
-				continue
+			if seenName[skill.Name] {
+				continue // Pi reports a collision; the first one wins
 			}
-			path := filepath.Join(root, entry.Name(), "SKILL.md")
-			data, err := os.ReadFile(path)
-			if err != nil {
-				continue
-			}
-			skill := parseSkillMarkdown(entry.Name(), path, string(data))
-			key := strings.ToLower(skill.Name)
-			if key == "" || seen[key] {
-				continue
-			}
-			seen[key] = true
+			seenName[skill.Name], seenFile[real] = true, true
 			out = append(out, skill)
 		}
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	for _, dir := range UserSkillDirs() {
+		add(loadSkillsFromDir(dir, "user"))
+	}
+	for _, dir := range []string{filepath.Join(workspaceRoot, ".gi", "skills"), filepath.Join(workspaceRoot, ".pi", "skills")} {
+		add(loadSkillsFromDir(dir, "project"))
+	}
 	return out, nil
+}
+
+// UserSkillDirs are the user-level skill directories (<agent dir>/skills),
+// gi's first.
+func UserSkillDirs() []string {
+	var out []string
+	for _, dir := range agentdir.Dirs() {
+		out = append(out, filepath.Join(dir, "skills"))
+	}
+	return out
 }
 
 func DiscoverToolManifests(workspaceRoot string) ([]ToolManifest, error) {
@@ -116,66 +132,6 @@ func DiscoverToolManifests(workspaceRoot string) ([]ToolManifest, error) {
 	return out, nil
 }
 
-func PromptSummary(d Discovery) string {
-	if len(d.Skills) == 0 && len(d.Tools) == 0 {
-		return ""
-	}
-	var sb strings.Builder
-	sb.WriteString("\n\n## Workspace-discovered capabilities\n")
-	if len(d.Skills) > 0 {
-		sb.WriteString("\nSkills are discovered from `.gi/skills/*/SKILL.md` and `.pi/skills/*/SKILL.md`. Load a skill before using it when the task matches.\n")
-		for _, skill := range d.Skills {
-			fmt.Fprintf(&sb, "- %s: %s (%s)\n", skill.Name, skill.Description, relOrBase(skill.Path))
-		}
-	}
-	if len(d.Tools) > 0 {
-		sb.WriteString("\nScript tool manifests are discovered from `.gi/tools/*.json` and `.pi/tools/*.json` and registered in the tool registry.\n")
-		for _, tool := range d.Tools {
-			fmt.Fprintf(&sb, "- %s: %s\n", tool.Name, tool.Description)
-		}
-	}
-	return sb.String()
-}
-
-var mdFieldRE = regexp.MustCompile(`(?m)^([A-Za-z][A-Za-z0-9_-]*):\s*(.+)$`)
-
-func parseSkillMarkdown(fallbackName, path, body string) Skill {
-	s := Skill{Name: fallbackName, Path: path}
-	hasName := false
-	hasDescription := false
-	for _, match := range mdFieldRE.FindAllStringSubmatch(body, -1) {
-		switch strings.ToLower(match[1]) {
-		case "name":
-			hasName = true
-			s.Name = strings.TrimSpace(match[2])
-		case "description":
-			hasDescription = true
-			s.Description = strings.TrimSpace(match[2])
-		}
-	}
-	if !hasName {
-		s.Warnings = append(s.Warnings, "missing Name field; using directory name")
-	}
-	if !hasDescription {
-		s.Warnings = append(s.Warnings, "missing Description field; using first prose line when available")
-	}
-	if strings.TrimSpace(s.Name) == "" {
-		s.Warnings = append(s.Warnings, "empty Name field")
-	}
-	if s.Description == "" {
-		for _, line := range strings.Split(body, "\n") {
-			line = strings.TrimSpace(strings.TrimPrefix(line, "#"))
-			if line != "" && !strings.Contains(line, ":") {
-				s.Description = line
-				break
-			}
-		}
-	}
-	if s.Description == "" {
-		s.Warnings = append(s.Warnings, "empty Description field")
-	}
-	return s
-}
 
 func relOrBase(path string) string {
 	if path == "" {

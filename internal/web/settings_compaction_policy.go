@@ -21,7 +21,7 @@ func (s *Server) handleCompactionPolicy(w http.ResponseWriter, r *http.Request) 
 	case http.MethodGet:
 		saved, err := config.ReadCompactionPolicy(s.cfg.WorkspaceRoot)
 		if err != nil {
-			writeJSON(w, 500, map[string]any{"error": "Cannot read saved compaction policy; check .pi/settings.json without replacing it."})
+			writeJSON(w, 500, map[string]any{"error": "Cannot read saved compaction policy; check the project settings.json (.gi, else .pi) without replacing it."})
 			return
 		}
 		writeJSON(w, 200, s.compactionPolicyPayload(saved))

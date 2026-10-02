@@ -1,0 +1,476 @@
+{
+ "cases": {
+  "full": {
+   "input": {
+    "selectedTools": [
+     "read",
+     "bash",
+     "edit",
+     "write",
+     "codemode"
+    ],
+    "toolSnippets": {
+     "read": "Read file contents",
+     "bash": "Execute bash commands (ls, grep, find, etc.)",
+     "edit": "Make precise file edits",
+     "write": "Create or overwrite files"
+    },
+    "toolGuidelines": {
+     "read": [
+      "Use read to examine files instead of cat or sed."
+     ],
+     "edit": [
+      "Use edit for precise changes",
+      "  Use edit for precise changes  "
+     ],
+     "write": [
+      "Use write only for new files or complete rewrites."
+     ],
+     "codemode": [
+      "Prefer codemode"
+     ]
+    },
+    "promptGuidelines": [
+     "Be concise in your responses",
+     "Custom rule"
+    ],
+    "appendSystemPrompt": "Extra instructions.",
+    "contextFiles": [
+     {
+      "path": "/w/AGENTS.md",
+      "content": "# Project\nRules here."
+     }
+    ],
+    "skills": [
+     {
+      "name": "deploy",
+      "description": "Deploy <apps> & \"things\"",
+      "filePath": "/w/.pi/skills/deploy/SKILL.md",
+      "disableModelInvocation": false
+     }
+    ],
+    "cwd": "C:\\work\\proj",
+    "sections": {
+     "mcp_servers": "Server list"
+    }
+   },
+   "sections": [
+    {
+     "name": "preamble",
+     "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
+     "name": "tools",
+     "text": "<tools>\n- read: Read file contents\n- bash: Execute bash commands (ls, grep, find, etc.)\n- edit: Make precise file edits\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Use bash for file operations like ls, rg, find\n- Use read to examine files instead of cat or sed.\n- Use edit for precise changes\n- Use write only for new files or complete rewrites.\n- Prefer codemode\n- Be concise in your responses\n- Custom rule\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "docs",
+     "text": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>"
+    },
+    {
+     "name": "addendum",
+     "text": "<addendum>\nExtra instructions.\n</addendum>"
+    },
+    {
+     "name": "project_context",
+     "text": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"/w/AGENTS.md\">\n# Project\nRules here.\n</project_instructions>\n</project_context>"
+    },
+    {
+     "name": "skills",
+     "text": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>deploy</name>\n    <description>Deploy &lt;apps&gt; &amp; &quot;things&quot;</description>\n    <location>/w/.pi/skills/deploy/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\nC:/work/proj\n</cwd>"
+    },
+    {
+     "name": "mcp_servers",
+     "text": "<mcp_servers>\nServer list\n</mcp_servers>"
+    }
+   ]
+  },
+  "custom": {
+   "input": {
+    "selectedTools": [
+     "read",
+     "bash",
+     "edit",
+     "write",
+     "codemode"
+    ],
+    "toolSnippets": {
+     "read": "Read file contents",
+     "bash": "Execute bash commands (ls, grep, find, etc.)",
+     "edit": "Make precise file edits",
+     "write": "Create or overwrite files"
+    },
+    "toolGuidelines": {
+     "read": [
+      "Use read to examine files instead of cat or sed."
+     ],
+     "edit": [
+      "Use edit for precise changes",
+      "  Use edit for precise changes  "
+     ],
+     "write": [
+      "Use write only for new files or complete rewrites."
+     ],
+     "codemode": [
+      "Prefer codemode"
+     ]
+    },
+    "promptGuidelines": [
+     "Be concise in your responses",
+     "Custom rule"
+    ],
+    "appendSystemPrompt": "Extra instructions.",
+    "contextFiles": [
+     {
+      "path": "/w/AGENTS.md",
+      "content": "# Project\nRules here."
+     }
+    ],
+    "skills": [
+     {
+      "name": "deploy",
+      "description": "Deploy <apps> & \"things\"",
+      "filePath": "/w/.pi/skills/deploy/SKILL.md",
+      "disableModelInvocation": false
+     }
+    ],
+    "cwd": "C:\\work\\proj",
+    "sections": {
+     "mcp_servers": "Server list"
+    },
+    "customPrompt": "Custom preamble."
+   },
+   "sections": [
+    {
+     "name": "preamble",
+     "text": "Custom preamble."
+    },
+    {
+     "name": "addendum",
+     "text": "<addendum>\nExtra instructions.\n</addendum>"
+    },
+    {
+     "name": "project_context",
+     "text": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"/w/AGENTS.md\">\n# Project\nRules here.\n</project_instructions>\n</project_context>"
+    },
+    {
+     "name": "skills",
+     "text": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>deploy</name>\n    <description>Deploy &lt;apps&gt; &amp; &quot;things&quot;</description>\n    <location>/w/.pi/skills/deploy/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\nC:/work/proj\n</cwd>"
+    },
+    {
+     "name": "mcp_servers",
+     "text": "<mcp_servers>\nServer list\n</mcp_servers>"
+    }
+   ]
+  },
+  "bashOnly": {
+   "input": {
+    "selectedTools": [
+     "bash"
+    ],
+    "cwd": "/w",
+    "skills": [
+     {
+      "name": "deploy",
+      "description": "Deploy <apps> & \"things\"",
+      "filePath": "/w/.pi/skills/deploy/SKILL.md",
+      "disableModelInvocation": false
+     }
+    ]
+   },
+   "sections": [
+    {
+     "name": "preamble",
+     "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
+     "name": "tools",
+     "text": "<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Use bash for file operations like ls, rg, find\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "docs",
+     "text": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>"
+    },
+    {
+     "name": "skills",
+     "text": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse bash to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>deploy</name>\n    <description>Deploy &lt;apps&gt; &amp; &quot;things&quot;</description>\n    <location>/w/.pi/skills/deploy/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\n/w\n</cwd>"
+    }
+   ]
+  },
+  "noTools": {
+   "input": {
+    "selectedTools": [],
+    "cwd": "/w"
+   },
+   "sections": [
+    {
+     "name": "preamble",
+     "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
+     "name": "tools",
+     "text": "<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "docs",
+     "text": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\n/w\n</cwd>"
+    }
+   ]
+  },
+  "withGrep": {
+   "input": {
+    "selectedTools": [
+     "bash",
+     "grep"
+    ],
+    "toolSnippets": {
+     "grep": "Search"
+    },
+    "cwd": "/w"
+   },
+   "sections": [
+    {
+     "name": "preamble",
+     "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
+     "name": "tools",
+     "text": "<tools>\n- grep: Search\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "docs",
+     "text": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\n/w\n</cwd>"
+    }
+   ]
+  }
+ },
+ "diffs": [
+  {
+   "previous": [
+    {
+     "name": "preamble",
+     "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
+     "name": "tools",
+     "text": "<tools>\n- read: Read file contents\n- bash: Execute bash commands (ls, grep, find, etc.)\n- edit: Make precise file edits\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Use bash for file operations like ls, rg, find\n- Use read to examine files instead of cat or sed.\n- Use edit for precise changes\n- Use write only for new files or complete rewrites.\n- Prefer codemode\n- Be concise in your responses\n- Custom rule\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "docs",
+     "text": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>"
+    },
+    {
+     "name": "addendum",
+     "text": "<addendum>\nExtra instructions.\n</addendum>"
+    },
+    {
+     "name": "project_context",
+     "text": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"/w/AGENTS.md\">\n# Project\nRules here.\n</project_instructions>\n</project_context>"
+    },
+    {
+     "name": "skills",
+     "text": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>deploy</name>\n    <description>Deploy &lt;apps&gt; &amp; &quot;things&quot;</description>\n    <location>/w/.pi/skills/deploy/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\nC:/work/proj\n</cwd>"
+    },
+    {
+     "name": "mcp_servers",
+     "text": "<mcp_servers>\nServer list\n</mcp_servers>"
+    }
+   ],
+   "current": [
+    {
+     "name": "preamble",
+     "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
+     "name": "tools",
+     "text": "<tools>\n- read: Read file contents\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Use read to examine files instead of cat or sed.\n- Use write only for new files or complete rewrites.\n- Be concise in your responses\n- Custom rule\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "docs",
+     "text": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>"
+    },
+    {
+     "name": "project_context",
+     "text": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"/w/AGENTS.md\">\n# Project\nRules here.\n</project_instructions>\n</project_context>"
+    },
+    {
+     "name": "skills",
+     "text": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>deploy</name>\n    <description>Deploy &lt;apps&gt; &amp; &quot;things&quot;</description>\n    <location>/w/.pi/skills/deploy/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\nC:/work/proj\n</cwd>"
+    }
+   ],
+   "patch": [
+    {
+     "name": "tools",
+     "text": "<tools>\n- read: Read file contents\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Use read to examine files instead of cat or sed.\n- Use write only for new files or complete rewrites.\n- Be concise in your responses\n- Custom rule\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "addendum",
+     "text": null
+    },
+    {
+     "name": "mcp_servers",
+     "text": null
+    }
+   ]
+  }
+ ],
+ "replays": [
+  {
+   "initial": [
+    {
+     "name": "preamble",
+     "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
+     "name": "tools",
+     "text": "<tools>\n- read: Read file contents\n- bash: Execute bash commands (ls, grep, find, etc.)\n- edit: Make precise file edits\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Use bash for file operations like ls, rg, find\n- Use read to examine files instead of cat or sed.\n- Use edit for precise changes\n- Use write only for new files or complete rewrites.\n- Prefer codemode\n- Be concise in your responses\n- Custom rule\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "docs",
+     "text": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>"
+    },
+    {
+     "name": "addendum",
+     "text": "<addendum>\nExtra instructions.\n</addendum>"
+    },
+    {
+     "name": "project_context",
+     "text": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"/w/AGENTS.md\">\n# Project\nRules here.\n</project_instructions>\n</project_context>"
+    },
+    {
+     "name": "skills",
+     "text": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>deploy</name>\n    <description>Deploy &lt;apps&gt; &amp; &quot;things&quot;</description>\n    <location>/w/.pi/skills/deploy/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\nC:/work/proj\n</cwd>"
+    },
+    {
+     "name": "mcp_servers",
+     "text": "<mcp_servers>\nServer list\n</mcp_servers>"
+    }
+   ],
+   "patches": [
+    [
+     {
+      "name": "tools",
+      "text": "<tools>\n- read: Read file contents\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+     },
+     {
+      "name": "rules",
+      "text": "<rules>\n- Use read to examine files instead of cat or sed.\n- Use write only for new files or complete rewrites.\n- Be concise in your responses\n- Custom rule\n- Show file paths clearly when working with files\n</rules>"
+     },
+     {
+      "name": "addendum",
+      "text": null
+     },
+     {
+      "name": "mcp_servers",
+      "text": null
+     }
+    ],
+    [
+     {
+      "name": "mcp_servers",
+      "text": "<mcp_servers>\nback\n</mcp_servers>"
+     }
+    ]
+   ],
+   "sections": [
+    {
+     "name": "preamble",
+     "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files."
+    },
+    {
+     "name": "tools",
+     "text": "<tools>\n- read: Read file contents\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>"
+    },
+    {
+     "name": "rules",
+     "text": "<rules>\n- Use read to examine files instead of cat or sed.\n- Use write only for new files or complete rewrites.\n- Be concise in your responses\n- Custom rule\n- Show file paths clearly when working with files\n</rules>"
+    },
+    {
+     "name": "docs",
+     "text": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>"
+    },
+    {
+     "name": "project_context",
+     "text": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"/w/AGENTS.md\">\n# Project\nRules here.\n</project_instructions>\n</project_context>"
+    },
+    {
+     "name": "skills",
+     "text": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>deploy</name>\n    <description>Deploy &lt;apps&gt; &amp; &quot;things&quot;</description>\n    <location>/w/.pi/skills/deploy/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>"
+    },
+    {
+     "name": "cwd",
+     "text": "<cwd>\nC:/work/proj\n</cwd>"
+    },
+    {
+     "name": "mcp_servers",
+     "text": "<mcp_servers>\nback\n</mcp_servers>"
+    }
+   ],
+   "text": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n- read: Read file contents\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Use read to examine files instead of cat or sed.\n- Use write only for new files or complete rewrites.\n- Be concise in your responses\n- Custom rule\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/README.md\n- Additional docs: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs\n- Examples: /home/rcarmo/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"/w/AGENTS.md\">\n# Project\nRules here.\n</project_instructions>\n</project_context>\n\n<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>deploy</name>\n    <description>Deploy &lt;apps&gt; &amp; &quot;things&quot;</description>\n    <location>/w/.pi/skills/deploy/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>\n\n<cwd>\nC:/work/proj\n</cwd>\n\n<mcp_servers>\nback\n</mcp_servers>"
+  }
+ ]
+}

@@ -13,7 +13,7 @@ func TestExecuteToolListsAndReads(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	body := "Name: demo\nDescription: Demo skill\n\nUse this skill."
+	body := "---\nname: demo\ndescription: Demo skill\n---\n\nUse this skill."
 	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}

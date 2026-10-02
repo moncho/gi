@@ -210,6 +210,15 @@ func NewWithRuntimeConfig(s *store.Store, cfg config.RuntimeConfig, systemPrompt
 	e.registerDefaultTools()
 	e.registerCodemodeTool()
 	e.startTopicBridge()
+	// User-level skills live outside the workspace; the prompt tells the model
+	// to load them with read (Pi), so their directories are readable.
+	readable := giskills.UserSkillDirs()
+	for _, s := range cfg.Discovery.Skills {
+		if s.Source == "user" {
+			readable = append(readable, s.BaseDir)
+		}
+	}
+	tools.SetReadOnlyRoots(readable)
 	if e.store != nil {
 		go e.runMCPOutputPruner(e.backgroundContext()) // mcp-output and codemode-output
 	}
@@ -4896,11 +4905,6 @@ func providerRequestReplacementFromHook(resp HookResponse) (any, bool) {
 }
 
 func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store, turnID, sessionID, model, agentID string) (*goai.Context, error) {
-	sysPrompt := r.engine.systemPrompt
-	if sysPrompt == "" {
-		sysPrompt = "You are a helpful coding assistant."
-	}
-
 	var turnMetadata map[string]any
 	if turnRec, err := s.GetTurn(ctx, turnID); err == nil {
 		turnMetadata = turnRec.Metadata
@@ -4911,7 +4915,6 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 		return nil, fmt.Errorf("load session messages: %w", err)
 	}
 	convCtx := &goai.Context{
-		SystemPrompt: sysPrompt,
 		Tools:        r.engine.toolDefsForMetadata(turnMetadata),
 		Messages:     r.projectContextSnapshot(ctx, sessionID, snapshot),
 	}
@@ -4919,11 +4922,9 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 	r.engine.declareLoadedTools(convCtx, r.engine.sessionLoadedTools(ctx, sessionID))
 	r.engine.applyCodemodeLoadout(ctx, convCtx, sessionID, turnMetadata)
 	ids, offset := snapshotMessageIDs(snapshot)
-	if plan := r.engine.planMCPSection(ctx, sessionID, ids, offset, convCtx.Messages); plan != nil {
-		mcpSectionPlans.Store(sessionID, plan)
-	} else {
-		mcpSectionPlans.Delete(sessionID)
-	}
+	plan := r.engine.planPromptSections(ctx, sessionID, r.engine.promptSections(convCtx.Tools), ids, offset, convCtx.Messages)
+	sectionPlans.Store(sessionID, plan)
+	convCtx.SystemPrompt = plan.systemPrompt()
 
 	if resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeAgentStart, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, SystemPrompt: convCtx.SystemPrompt, Messages: convCtx.Messages, Tools: convCtx.Tools}); err != nil {
 		log.Printf("hook before_agent_start error: %v", err)
@@ -4986,10 +4987,9 @@ func (r *sessionRunner) prepareAgentIteration(ctx context.Context, sessionID, tu
 
 func (r *sessionRunner) runProviderIteration(ctx context.Context, s *store.Store, turnID, sessionID, model, agentID string, iter, maxIter int, convCtx *goai.Context) (*inference.StreamResult, error) {
 	requestCtx := &goai.Context{SystemPrompt: convCtx.SystemPrompt, Messages: append([]goai.Message(nil), convCtx.Messages...), Tools: append([]goai.Tool(nil), convCtx.Tools...)}
-	if plan, ok := mcpSectionPlans.Load(sessionID); ok {
-		requestCtx.SystemPrompt, requestCtx.Messages = plan.(*mcpSectionPlan).apply(requestCtx.SystemPrompt, requestCtx.Messages)
+	if plan, ok := sectionPlans.Load(sessionID); ok {
+		requestCtx.SystemPrompt, requestCtx.Messages = plan.(*sectionPlan).apply(requestCtx.SystemPrompt, requestCtx.Messages, inference.SupportsMidConversationSystemMessages(model))
 	}
-	requestCtx.SystemPrompt = withCodemodeGuidance(requestCtx.SystemPrompt, requestCtx.Tools)
 	if resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookBeforeProviderRequest, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, SystemPrompt: convCtx.SystemPrompt, Messages: convCtx.Messages, Tools: convCtx.Tools, Payload: map[string]any{"model": model, "messages": len(convCtx.Messages), "tools": len(convCtx.Tools), "stage": "context"}}); err != nil {
 		log.Printf("hook before_provider_request error: %v", err)
 	} else {

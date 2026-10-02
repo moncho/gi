@@ -6,6 +6,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/clipperhouse/uax29/v2 v2.7.0
 	github.com/dop251/goja v0.0.0-20260930195847-0f92c903ca4a
+	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/grindlemire/go-tui v0.22.1
 	github.com/klauspost/compress v1.20.1
@@ -18,6 +19,8 @@ require (
 	golang.org/x/net v0.59.0
 	golang.org/x/sys v0.48.0
 	golang.org/x/term v0.46.0
+	golang.org/x/text v0.42.0
+	gopkg.in/yaml.v2 v2.4.0
 	modernc.org/sqlite v1.60.1
 	tailscale.com v1.104.0
 )
@@ -43,7 +46,6 @@ require (
 	github.com/gaissmai/bart v0.30.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.1 // indirect
-	github.com/go-git/go-git/v5 v5.19.2 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260820222146-c27c302e5fc3 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
@@ -95,12 +97,10 @@ require (
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard/windows v1.1.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gvisor.dev/gvisor v0.0.0-20260915211658-a6f909f08a72 // indirect
 	modernc.org/libc v1.77.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

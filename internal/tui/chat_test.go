@@ -1075,12 +1075,12 @@ func TestSkillCommandLoadsDiscoveredSkill(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("Name: demo\nDescription: Demo skill\n\nUse it."), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("---\nname: demo\ndescription: Demo skill\n---\n\nUse it."), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	c := &chatTUI{cfg: config.RuntimeConfig{WorkspaceRoot: root}}
 	lines := strings.Join(c.skillCommandLines("/skill:demo --flag"), "\n")
-	for _, want := range []string{"skill:demo loaded", "args: --flag", "Name: demo", "Use it."} {
+	for _, want := range []string{"skill:demo loaded", "args: --flag", "name: demo", "Use it."} {
 		if !strings.Contains(lines, want) {
 			t.Fatalf("skill command missing %q:\n%s", want, lines)
 		}
@@ -1761,6 +1761,8 @@ func TestModelListIncludesAuthBackedProviderModels(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("HOME", home)
+	t.Setenv("GI_CODING_AGENT_DIR", "")
+	t.Setenv("PI_CODING_AGENT_DIR", "")
 	s, err := store.Open("file::memory:?cache=shared")
 	if err != nil {
 		t.Fatal(err)
@@ -2564,6 +2566,8 @@ func TestPiFormatTokens(t *testing.T) {
 func TestFooterPathLineShowsHomeRelativeCwdAndBranch(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("GI_CODING_AGENT_DIR", "")
+	t.Setenv("PI_CODING_AGENT_DIR", "")
 	root := filepath.Join(home, "proj")
 	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
 		t.Fatal(err)
@@ -2690,6 +2694,8 @@ func TestModelCommandOpensCursorNavigableMenu(t *testing.T) {
 func TestLoginAndLogoutCommands(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("HOME", root)
+	t.Setenv("GI_CODING_AGENT_DIR", "")
+	t.Setenv("PI_CODING_AGENT_DIR", "")
 	if err := os.MkdirAll(filepath.Join(root, ".pi", "agent"), 0o755); err != nil {
 		t.Fatal(err)
 	}

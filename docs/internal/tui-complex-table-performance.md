@@ -115,4 +115,9 @@ The absolute-path tool resolver problem encountered during profiling is fixed
 in the separate `fix/tool-absolute-paths` branch (`ffbafe19`), not in this renderer
 commit. That change covers confined absolute paths, paginated reads, missing-file
 errors, symlink escapes and native write/index behavior. Its full Go suite, vet,
-Bun web build and hook checks pass. Both branches still need integration into main.
+Bun web build and hook checks pass. Both branches are now integrated into main:
+renderer merge `9b464fe2`, resolver merge `623262fc`. On the merged code, Unicode
+regressions, the TUI/tool suites, all 148 complex-table PTY frames and vet pass.
+The full Go suite passed on rerun; its first run failed in
+`TestQueueSteerNativeCheckpointKeepsMediaAndAtMostOnce` with `no such table: turns`.
+No turn-engine code was changed to address that intermittent failure.

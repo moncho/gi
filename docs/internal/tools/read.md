@@ -19,7 +19,7 @@ Read a workspace file, a managed VFS asset (`vfs://`) or an FTS result
 ```
 
 ### Fields
-- `path`: a workspace-relative path, or `vfs://namespace/path`, or `fts://…`.
+- `path`: a workspace-relative path, an absolute path resolving inside the workspace, or `vfs://namespace/path`, or `fts://…`.
 - `offset` (optional): the 1-indexed line to start from.
 - `limit` (optional): the maximum number of lines to return.
 
@@ -62,3 +62,20 @@ read/write rules.
 - path traversal (`path escapes workspace`)
 - a missing or invalid `vfs://` path
 - an `offset` past the end of the file
+
+Absolute paths are not prefixed with the workspace root. Absolute paths outside
+its resolved filesystem boundary fail with `path escapes workspace`; the tool
+never reports an invented doubled path. Relative paths and VFS URLs retain their
+behavior. Existing symlinks, including ancestors of missing descendants, are
+resolved for confinement; unresolved/dangling symlinks are rejected. These checks
+are path validation, not a claim of race-free filesystem access. Native write
+retains its stricter rejection of existing symlink components.
+
+## Path regression coverage
+
+`make test-tool-paths` covers absolute/relative paths, sibling-prefix and traversal
+rejection, missing descendants, safe and escaping symlinks, and dangling links.
+Native read tests compare paginated absolute and relative responses and retain the
+original path in missing-file errors. Native write/read round trips verify parent
+creation and index invalidation; rejected outside writes create no directories or
+index events. The new absolute-path regressions fail against the previous resolver.

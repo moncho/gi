@@ -46,22 +46,21 @@ func resolveToolPath(root, raw string, writable bool) (resolvedPath, error) {
 		}
 		return resolvedPath{workspacePath: "", vfsNamespace: ns, vfsPath: vpath, isVFS: true}, nil
 	}
-	full := filepath.Join(root, trimmed)
-	clean := filepath.Clean(full)
-	rootClean := filepath.Clean(root)
-	rootResolved := rootClean
-	if rp, err := filepath.EvalSymlinks(rootClean); err == nil {
-		rootResolved = filepath.Clean(rp)
+	rootClean, err := filepath.Abs(root)
+	if err != nil {
+		return resolvedPath{}, fmt.Errorf("resolve workspace root: %w", err)
 	}
-	targetResolved := clean
-	if tp, err := filepath.EvalSymlinks(clean); err == nil {
-		targetResolved = filepath.Clean(tp)
-	} else if os.IsNotExist(err) {
-		parent := filepath.Dir(clean)
-		if pp, perr := filepath.EvalSymlinks(parent); perr == nil {
-			targetResolved = filepath.Clean(filepath.Join(pp, filepath.Base(clean)))
-		}
-	} else {
+	full := trimmed
+	if !filepath.IsAbs(full) {
+		full = filepath.Join(rootClean, full)
+	}
+	clean := filepath.Clean(full)
+	rootResolved, err := resolveExistingPath(rootClean)
+	if err != nil {
+		return resolvedPath{}, err
+	}
+	targetResolved, err := resolveExistingPath(clean)
+	if err != nil {
 		return resolvedPath{}, err
 	}
 	if !pathWithinRoot(targetResolved, rootResolved) {
@@ -70,10 +69,40 @@ func resolveToolPath(root, raw string, writable bool) (resolvedPath, error) {
 	return resolvedPath{workspacePath: clean, isVFS: false}, nil
 }
 
+// Resolve through the nearest existing ancestor when a write creates multiple
+// missing directories. Never fall back to lexical checks below an unresolved
+// (including dangling) symlink.
+func resolveExistingPath(path string) (string, error) {
+	candidate := path
+	var missing []string
+	for {
+		resolved, err := filepath.EvalSymlinks(candidate)
+		if err == nil {
+			for i := len(missing) - 1; i >= 0; i-- {
+				resolved = filepath.Join(resolved, missing[i])
+			}
+			return filepath.Clean(resolved), nil
+		}
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+		if info, lerr := os.Lstat(candidate); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
+			return "", fmt.Errorf("unresolved workspace symlink: %s", candidate)
+		} else if lerr != nil && !os.IsNotExist(lerr) {
+			return "", lerr
+		}
+		parent := filepath.Dir(candidate)
+		if parent == candidate {
+			return "", err
+		}
+		missing = append(missing, filepath.Base(candidate))
+		candidate = parent
+	}
+}
+
 func pathWithinRoot(path, root string) bool {
-	path = filepath.Clean(path)
-	root = filepath.Clean(root)
-	return path == root || strings.HasPrefix(path, root+string(os.PathSeparator))
+	relative, err := filepath.Rel(root, path)
+	return err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(os.PathSeparator))
 }
 
 type resolvedPath struct {

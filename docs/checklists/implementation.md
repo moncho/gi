@@ -1,3 +1,8 @@
+### Workspace tool path resolution
+
+- [x] Preserve absolute tool paths inside the workspace rather than prefixing the root; reject outside paths with a confinement error.
+- [x] Cover relative paths/roots, traversal, sibling-prefix attacks, existing/dangling symlinks and multiple missing descendants, plus actual paginated read behavior and native write/read round trips with index invalidation. Update read/write contracts and read schema.
+
 ### Issue #12 — terminal-derived themes
 
 - [x] Bound terminal colour probing on silent Unix PTYs; validate OSC values and COLORFGBG indices.

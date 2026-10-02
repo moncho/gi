@@ -1161,3 +1161,9 @@ test-tui-theme-pty:
 	mkdir -p $(BIN_DIR)
 	$(GO) test -c -o $(BIN_DIR)/gi-theme-test ./internal/tui
 	GI_THEME_TEST_BIN=$(abspath $(BIN_DIR)/gi-theme-test) $(BUN) scripts/test-tui-theme.mjs
+
+.PHONY: fmt-tool-paths test-tool-paths
+fmt-tool-paths:
+	$(GO) fmt ./internal/tools
+test-tool-paths:
+	$(GO) test $(RACE) ./internal/tools -count=1

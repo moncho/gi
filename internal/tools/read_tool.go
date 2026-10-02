@@ -19,10 +19,10 @@ const (
 )
 
 // ReadToolDescription is Pi's read tool description.
-var ReadToolDescription = fmt.Sprintf("Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to %d lines or %dKB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete. Accepts workspace-relative paths and vfs://namespace/path.", ReadMaxLines, ReadMaxBytes/1024)
+var ReadToolDescription = fmt.Sprintf("Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to %d lines or %dKB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete. Accepts workspace-relative paths, absolute paths inside the workspace, and vfs://namespace/path.", ReadMaxLines, ReadMaxBytes/1024)
 
 // ReadToolParameters is Pi's read schema (path, offset, limit).
-const ReadToolParameters = `{"type":"object","properties":{"path":{"type":"string","description":"Path to the file to read (workspace-relative or vfs://namespace/path)"},"offset":{"type":"number","description":"Line number to start reading from (1-indexed)"},"limit":{"type":"number","description":"Maximum number of lines to read"}},"required":["path"]}`
+const ReadToolParameters = `{"type":"object","properties":{"path":{"type":"string","description":"Path to the file to read (workspace-relative, absolute inside workspace, or vfs://namespace/path)"},"offset":{"type":"number","description":"Line number to start reading from (1-indexed)"},"limit":{"type":"number","description":"Maximum number of lines to read"}},"required":["path"]}`
 
 // supportedImageTypes are the image formats read attaches (Pi).
 var supportedImageTypes = map[string]bool{"image/jpeg": true, "image/png": true, "image/gif": true, "image/webp": true, "image/bmp": true}

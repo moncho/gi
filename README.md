@@ -4,6 +4,12 @@
 
 A coding agent built on `go-ai`, informed by lessons learned from Pi, Piclaw, and Vibes.
 
+## Why
+
+In short, I needed to run `pi` and `piclaw` on RISC-V, and `bun` didn't run there. Then I realized that having a single binary with _everything_ I needed was a much nicer way to deploy an agent overall, and that Go and `go-joker` were a much nicer (and less resource-intensive) thing to use, especially considering that the Rust compiler is slow as molasses and kept filling the disk on all my sandboxes.
+
+So this was the result. If you like `pi`, you should feel very much at home. If you use `piclaw` or love the Vibes web UI (like I do), the same should be true--even if in either case there will be differences. The goal was not to achieve full parity, but to be a tight, efficient bundle of core features that I can rely upon.
+
 ## Status
 
 Gi runs a web UI and a terminal UI from one pure-Go binary, with embedded web assets and SQLite-backed sessions, messages and turns. Bun is needed to build the browser assets, but there is no Node or Bun runtime dependency.

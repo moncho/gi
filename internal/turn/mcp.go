@@ -99,11 +99,16 @@ func (e *Engine) EnableMCP() {
 	if len(cfg.Servers) == 0 {
 		return
 	}
-	// gi writes its own log (Pi's is ~/.pi/agent/mcp.log).
-	logPath := config.UserConfigCandidates("mcp.log")[0]
+	// gi writes its own log (Pi's is ~/.pi/agent/mcp.log); OAuth credentials
+	// are shared with Pi (mcp-auth.json).
+	e.EnableMCPConfig(cfg, gimcp.NewCredentialStore(config.UserConfigFile("mcp-auth.json")), config.UserConfigCandidates("mcp.log")[0])
+}
+
+// EnableMCPConfig enables MCP with an explicit configuration and OAuth
+// credential store (EnableMCP reads the user's; tests pass their own).
+func (e *Engine) EnableMCPConfig(cfg gimcp.Config, credentials *gimcp.CredentialStore, logPath string) {
 	m := gimcp.NewManager(cfg, e.runtimeCfg.WorkspaceRoot, logPath)
-	// OAuth credentials are shared with Pi (mcp-auth.json).
-	m.SetCredentials(gimcp.NewCredentialStore(config.UserConfigFile("mcp-auth.json")))
+	m.SetCredentials(credentials)
 	e.enableMCPWith(m)
 }
 
@@ -538,4 +543,43 @@ func (e *Engine) MCPReconnect(ctx context.Context, name string) error {
 	}
 	e.refreshMCPServer(ctx, name)
 	return nil
+}
+
+// MCPUsesOAuth reports an enabled HTTP server without an Authorization
+// header (Pi's usesOAuth), when OAuth credentials are available.
+func (e *Engine) MCPUsesOAuth(name string) bool {
+	if e.mcp == nil || e.mcp.manager.Credentials() == nil {
+		return false
+	}
+	sc, ok := e.mcp.manager.Config().Servers[name]
+	return ok && sc.Enabled && sc.UsesOAuth()
+}
+
+// MCPSignIn runs the browser sign-in for a server (Pi's signIn) and
+// reconnects it; the error text follows Pi's messages.
+func (e *Engine) MCPSignIn(ctx context.Context, name string, prompt gimcp.SignInPrompt) error {
+	if !e.MCPUsesOAuth(name) {
+		return fmt.Errorf("MCP server %q does not use OAuth.", name)
+	}
+	if err := e.mcp.manager.SignIn(ctx, name, prompt); err != nil {
+		if errors.Is(err, gimcp.ErrSignInCancelled) || errors.Is(err, context.Canceled) {
+			return gimcp.ErrSignInCancelled
+		}
+		return fmt.Errorf("Sign-in failed: %v", err)
+	}
+	if err := e.MCPReconnect(ctx, name); err != nil {
+		return fmt.Errorf("Signed in, but %v", err)
+	}
+	return nil
+}
+
+// MCPSignOut deletes a server's stored credentials and drops its connection,
+// so it shows needs-auth (Pi's signOut); it reports whether any were stored.
+func (e *Engine) MCPSignOut(ctx context.Context, name string) bool {
+	if !e.MCPUsesOAuth(name) {
+		return false
+	}
+	removed := e.mcp.manager.Credentials().Remove(name, e.mcp.manager.Config().Servers[name].URL)
+	_ = e.MCPReconnect(ctx, name) // fails with needs-auth now
+	return removed
 }

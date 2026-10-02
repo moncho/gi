@@ -304,6 +304,9 @@ type chatTUI struct {
 	extensionWidgets            map[string][]string
 	extensionToolModes          map[string]string
 	editorAskActive             bool
+	editorAskHandler            func(answer string, cancelled bool) // internal asks (e.g. /mcp login); nil: extension asks
+	mcpSignIn                   *mcpSignInState
+	uiQueue                     chan func() // background UI updates when there is no app (tests)
 	editorAskKey                string
 	editorAskPrompt             string
 	editorAskPrevPlaceholder    string
@@ -3174,7 +3177,7 @@ var giCommands = []struct{ name, hint string }{
 	{"/detach <media:id|all|unresolved>", "Remove pending media refs"},
 	{"/paste-image [prompt]", "Paste a clipboard image, optionally with a prompt"},
 	{"/tools [query|active|activate|reset]", "Inspect or change active tools"},
-	{"/mcp [reconnect [server]]", "Show MCP server status; reconnect a server"},
+	{"/mcp [login|logout|reconnect [server]]", "MCP servers: status, sign in or out, reconnect"},
 	{"/codemode [on|off|only|default|status]", "Toggle the codemode tool for this session"},
 	{"/skills [query]", "List discovered skills"},
 	{"/skill:name [args]", "Load a discovered SKILL.md"},
@@ -4771,6 +4774,12 @@ func (c *chatTUI) setEditorAsk(key, prompt, prefill string) {
 }
 
 func (c *chatTUI) completeEditorAsk(answer string) {
+	if h := c.editorAskHandler; h != nil {
+		c.editorAskHandler = nil
+		c.exitEditorAsk()
+		h(answer, false)
+		return
+	}
 	key := c.editorAskKey
 	c.exitEditorAsk()
 	label := key
@@ -4785,6 +4794,12 @@ func (c *chatTUI) completeEditorAsk(answer string) {
 
 func (c *chatTUI) cancelEditorAsk() {
 	if !c.editorAskActive {
+		return
+	}
+	if h := c.editorAskHandler; h != nil {
+		c.editorAskHandler = nil
+		c.exitEditorAsk()
+		h("", true)
 		return
 	}
 	c.exitEditorAsk()

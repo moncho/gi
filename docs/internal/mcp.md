@@ -211,4 +211,11 @@ This is a port of Pi's MCP OAuth (pi-coding-agent `extensions/mcp/oauth.js`, pi-
   - **Step-up sign-in** (`insufficient_scope`): requests the granted scopes plus the challenged ones. Saved tokens record their scope (the requested scope when the response omits it, the grant's scope after a refresh).
   - **Empty or `null` optional token fields** count as absent, and `expires_in` may be a numeric string.
 - **Sign-out** (`gi mcp logout`) deletes the stored credentials.
-- **TUI:** `/mcp` shows `needs sign-in`; `/mcp login` currently points to `gi mcp login`, followed by `/mcp reconnect`.
+- **TUI** (`/mcp login|logout [server]`, Pi's in-session sign-in):
+  - **Picking the server:** as in Pi: the named server, else the only OAuth server, else the only one needing sign-in.
+  - **Signing in:**
+    - The authorization link is printed as a link that stays clickable when it wraps, and the browser opens.
+    - The editor asks for the redirect URL in case the browser cannot reach this machine; Esc cancels (`Sign-in cancelled.`).
+    - Success reconnects the server (`Signed in to MCP server "x" (N tools).`).
+  - **Logout** deletes the credentials and leaves the server in `needs-auth`.
+  - **`/mcp`** lists such servers as `x: needs sign-in, run /mcp login x`.

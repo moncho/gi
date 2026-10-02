@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -28,12 +29,19 @@ func (c *chatTUI) mcpCommand(fields []string) []string {
 	}
 	switch action {
 	case "login", "logout":
-		// The browser flow runs from a shell for now; reconnect afterwards.
-		target := name
-		if target == "" {
-			target = "<server>"
+		server, problem := c.pickOAuthServer(name)
+		if problem != "" {
+			return []string{problem}
 		}
-		return []string{fmt.Sprintf("Run `gi mcp %s %s` in a shell, then /mcp reconnect %s.", action, target, target)}
+		if action == "logout" {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if c.engine.MCPSignOut(ctx, server) {
+				return []string{fmt.Sprintf("Signed out of MCP server %q.", server)}
+			}
+			return []string{fmt.Sprintf("No stored credentials for MCP server %q.", server)}
+		}
+		return c.startMCPSignIn(server)
 	case "reconnect":
 		statuses, _ := c.engine.MCPStatus()
 		if name == "" {
@@ -109,7 +117,7 @@ func (c *chatTUI) mcpStatusText() string {
 	var lines []string
 	for _, st := range statuses {
 		if st.State == gimcp.StateNeedsAuth {
-			lines = append(lines, fmt.Sprintf("%s: needs sign-in, run gi mcp login %s (%s)", st.Name, st.Name, st.Exposure))
+			lines = append(lines, fmt.Sprintf("%s: needs sign-in, run /mcp login %s (%s)", st.Name, st.Name, st.Exposure))
 			continue
 		}
 		tools := ""
@@ -131,3 +139,125 @@ func (c *chatTUI) mcpStatusText() string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+const mcpOAuthNone = "No enabled MCP server uses OAuth. Only HTTP servers without an Authorization header do."
+
+// pickOAuthServer ports Pi's pickServer for login/logout: the named server,
+// else the only OAuth server, else the only one needing sign-in.
+func (c *chatTUI) pickOAuthServer(name string) (string, string) {
+	statuses, _ := c.engine.MCPStatus()
+	if name != "" {
+		for _, st := range statuses {
+			if st.Name == name {
+				if !c.engine.MCPUsesOAuth(name) {
+					return "", mcpOAuthNone
+				}
+				return name, ""
+			}
+		}
+		return "", fmt.Sprintf("No MCP server named %q.", name)
+	}
+	var candidates, preferred []string
+	for _, st := range statuses {
+		if c.engine.MCPUsesOAuth(st.Name) {
+			candidates = append(candidates, st.Name)
+			if st.State == gimcp.StateNeedsAuth {
+				preferred = append(preferred, st.Name)
+			}
+		}
+	}
+	switch {
+	case len(candidates) == 0:
+		return "", mcpOAuthNone
+	case len(candidates) == 1:
+		return candidates[0], ""
+	case len(preferred) == 1:
+		return preferred[0], ""
+	}
+	return "", "Which MCP server? Use /mcp login <server>: " + strings.Join(candidates, ", ")
+}
+
+// mcpSignInState is a sign-in waiting for the browser or a pasted URL.
+type mcpSignInState struct {
+	server string
+	cancel context.CancelFunc
+	paste  chan string
+}
+
+// startMCPSignIn runs Pi's in-session sign-in: it shows the authorization
+// link, opens the browser, and asks in the editor for the redirect URL in
+// case the browser cannot reach this machine (Esc cancels).
+func (c *chatTUI) startMCPSignIn(server string) []string {
+	if c.mcpSignIn != nil {
+		return []string{fmt.Sprintf("Already signing in to MCP server %q; Esc cancels it.", c.mcpSignIn.server)}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	state := &mcpSignInState{server: server, cancel: cancel, paste: make(chan string, 1)}
+	c.mcpSignIn = state
+	ui := func(fn func()) {
+		switch {
+		case c.app != nil:
+			c.app.QueueUpdate(func() { fn(); c.markDirty() })
+		case c.uiQueue != nil: // tests run updates on their own goroutine
+			c.uiQueue <- fn
+		default:
+			fn()
+		}
+	}
+	prompt := gimcp.SignInPrompt{
+		ShowAuthorizationURL: func(u string) {
+			ui(func() {
+				c.appendTranscript(fmt.Sprintf("Sign in to MCP server %q in your browser:", server), "("+u+")")
+				c.editorAskHandler = func(answer string, cancelled bool) {
+					if cancelled {
+						state.cancel()
+						return
+					}
+					select {
+					case state.paste <- answer:
+					default:
+					}
+				}
+				c.setEditorAsk("mcp-login", fmt.Sprintf("Waiting for sign-in to %q. If the browser cannot reach this machine, paste the URL it was redirected to.", server), "")
+			})
+			openBrowser(u)
+		},
+		PromptForRedirectURL: func(ctx context.Context) string {
+			select {
+			case s := <-state.paste:
+				return s
+			case <-ctx.Done():
+				return ""
+			}
+		},
+	}
+	go func() {
+		err := c.engine.MCPSignIn(ctx, server, prompt)
+		ui(func() {
+			c.mcpSignIn = nil
+			if c.editorAskActive && c.editorAskKey == "mcp-login" {
+				c.editorAskHandler = nil
+				c.exitEditorAsk()
+			}
+			switch {
+			case errors.Is(err, gimcp.ErrSignInCancelled):
+				c.appendTranscript("Sign-in cancelled.")
+			case err != nil:
+				c.appendTranscript(err.Error())
+			default:
+				tools := 0
+				statuses, _ := c.engine.MCPStatus()
+				for _, st := range statuses {
+					if st.Name == server {
+						tools = st.Tools
+					}
+				}
+				c.appendTranscript(fmt.Sprintf("Signed in to MCP server %q (%d tools).", server, tools))
+			}
+		})
+	}()
+	return nil
+}
+
+// openBrowser opens sign-in pages (tests replace it).
+var openBrowser = gimcp.OpenBrowser

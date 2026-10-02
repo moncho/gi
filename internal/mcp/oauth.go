@@ -1290,8 +1290,6 @@ type callbackResult struct {
 	err         error
 }
 
-const callbackPage = `<!doctype html><html><head><meta charset="utf-8"><title>gi</title></head><body style="font-family:sans-serif;margin:3em"><h1>%s</h1><p>%s</p></body></html>`
-
 func listenForCallback(host, redirectHost, path string, port *int, required bool) (*callbackServer, error) {
 	listen := func(p int) (net.Listener, error) { return net.Listen("tcp", net.JoinHostPort(host, strconv.Itoa(p))) }
 	want := 0
@@ -1315,8 +1313,14 @@ func listenForCallback(host, redirectHost, path string, port *int, required bool
 	cs := &callbackServer{listener: ln, redirectURL: fmt.Sprintf("http://%s:%d%s", hostPart, actual, path), results: make(chan callbackResult, 1)}
 	mux := http.NewServeMux()
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		// Pi's callback replies (pi-mcp oauth/callback.js) and pages.
 		q := r.URL.Query()
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		reply := func(status int, page string) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-store")
+			w.WriteHeader(status)
+			_, _ = w.Write([]byte(page))
+		}
 		res := callbackResult{code: q.Get("code"), state: q.Get("state"), iss: issParam(q)}
 		if e := q.Get("error"); e != "" {
 			desc := q.Get("error_description")
@@ -1324,12 +1328,12 @@ func listenForCallback(host, redirectHost, path string, port *int, required bool
 				desc = e
 			}
 			res.err = errors.New(desc)
-			fmt.Fprintf(w, callbackPage, "Sign-in failed", htmlEscape(desc))
+			reply(http.StatusOK, oauthErrorHTML("Authorization failed. You may close this window.", desc))
 		} else if res.code == "" {
-			res.err = errors.New("The redirect URL does not contain an authorization code")
-			fmt.Fprintf(w, callbackPage, "Sign-in failed", "Missing authorization code.")
+			res.err = errors.New("OAuth callback did not include an authorization code")
+			reply(http.StatusBadRequest, oauthErrorHTML("Missing authorization code", ""))
 		} else {
-			fmt.Fprintf(w, callbackPage, "Signed in", "Signed in to the MCP server. You may now close this page.")
+			reply(http.StatusOK, oauthSuccessHTML("Signed in to the MCP server. You may now close this page."))
 		}
 		select {
 		case cs.results <- res:
@@ -1339,10 +1343,6 @@ func listenForCallback(host, redirectHost, path string, port *int, required bool
 	cs.server = &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	go func() { _ = cs.server.Serve(ln) }()
 	return cs, nil
-}
-
-func htmlEscape(s string) string {
-	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;").Replace(s)
 }
 
 func (c *callbackServer) close() { _ = c.server.Close() }

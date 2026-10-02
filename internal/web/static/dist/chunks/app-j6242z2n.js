@@ -9698,7 +9698,7 @@ function QueuedFollowupStack({
     const canMoveUp = index > 0;
     const canMoveDown = index < items.length - 1;
     return fe`
-                    <div class="compose-queue-stack-item" role="listitem" data-queue-id=${item.id} aria-busy=${item.pending ? "true" : "false"}>
+                    <div key=${item.metadata?.client_request_id || item.id} class="compose-queue-stack-item" role="listitem" data-queue-id=${item.id} aria-busy=${item.pending ? "true" : "false"}>
                         <div class="compose-queue-stack-content" title=${rowText}>
                             ${parsed.text.trim() && fe`<div class="compose-queue-stack-text">${parsed.text}</div>`}
                             ${(parsed.messageRefs.length > 0 || parsed.fileRefs.length > 0 || parsed.attachmentRefs.length > 0) && fe`
@@ -22857,11 +22857,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-czwx62mx.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-sx19z14y.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-h5ckzjt0.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-bvc166dt.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-n3crd6hv.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-a1kc43ff.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-fjemvyqv.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-fgxb8ycp.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-zmjbpt4w.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-d5g2c63k.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;
@@ -25451,8 +25451,10 @@ function GiApp() {
                     onQueuedSubmissionEnd=${(token) => {
     if (!selection.isCurrent(renderedSelection))
       return;
-    setOptimisticQueue((items) => items.filter((item) => item.id !== token));
-    refreshSelectedState();
+    refreshSelectedState().finally(() => {
+      if (selection.isCurrent(renderedSelection))
+        setOptimisticQueue((items) => items.filter((item) => item.id !== token));
+    });
   }}
                     onDraftAccepted=${(token) => drafts.accepted(sessionId, token)}
                     onDraftFailed=${(token, error) => {
@@ -25646,5 +25648,5 @@ export {
   parseAuthPolicy
 };
 
-//# debugId=CDA2F52127DDBAC964756E2164756E21
-//# sourceMappingURL=app-6t5gww8b.js.map
+//# debugId=65B5EC269C46BEE464756E2164756E21
+//# sourceMappingURL=app-j6242z2n.js.map

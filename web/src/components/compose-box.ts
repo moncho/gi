@@ -521,7 +521,7 @@ export function QueuedFollowupStack({
                 const canMoveUp = index > 0;
                 const canMoveDown = index < items.length - 1;
                 return html`
-                    <div class="compose-queue-stack-item" role="listitem" data-queue-id=${item.id} aria-busy=${item.pending ? 'true' : 'false'}>
+                    <div key=${item.metadata?.client_request_id || item.id} class="compose-queue-stack-item" role="listitem" data-queue-id=${item.id} aria-busy=${item.pending ? 'true' : 'false'}>
                         <div class="compose-queue-stack-content" title=${rowText}>
                             ${parsed.text.trim() && html`<div class="compose-queue-stack-text">${parsed.text}</div>`}
                             ${(parsed.messageRefs.length > 0 || parsed.fileRefs.length > 0 || parsed.attachmentRefs.length > 0) && html`

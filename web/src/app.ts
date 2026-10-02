@@ -1215,8 +1215,13 @@ function GiApp() {
                     }}
                     onQueuedSubmissionEnd=${(token: string) => {
                         if (!selection.isCurrent(renderedSelection)) return;
-                        setOptimisticQueue(items => items.filter(item => item.id !== token));
-                        void refreshSelectedState();
+                        // Keep the optimistic row until the authoritative queue refresh
+                        // can replace it. Removing it first leaves a visible gap while
+                        // the GET is in flight, even after the server admitted the item.
+                        void refreshSelectedState().finally(() => {
+                            if (selection.isCurrent(renderedSelection))
+                                setOptimisticQueue(items => items.filter(item => item.id !== token));
+                        });
                     }}
                     onDraftAccepted=${(token: string) => drafts.accepted(sessionId, token)}
                     onDraftFailed=${(token: string, error: string) => {

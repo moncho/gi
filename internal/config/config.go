@@ -33,7 +33,7 @@ type RuntimeConfig struct {
 	EnabledModelsConfigured bool `json:"-"`
 	// TUIWheelScrollLines is Pi's fullscreenWheelScrollLines; 0 means "auto".
 	TUIWheelScrollLines int `json:"tui_wheel_scroll_lines"`
-	// Theme is Pi's theme setting (project .pi/settings.json, else global).
+	// Theme is Pi's theme setting (project settings.json, else global).
 	Theme string `json:"theme,omitempty"`
 	// TUIMode is Pi's tuiMode setting (project, else global); the -tui-mode
 	// flag overrides it.
@@ -170,7 +170,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.UserAvatarBackground = pc.User.UserAvatarBackground
 	}
 	var ps piSettings
-	if err := readJSON(filepath.Join(workspaceRoot, ".pi", "settings.json"), &ps); err == nil {
+	if err := readJSON(ProjectConfigFile(workspaceRoot, "settings.json"), &ps); err == nil {
 		cfg.DefaultProvider = ps.DefaultProvider
 		cfg.DefaultModel = ps.DefaultModel
 		cfg.DefaultThinkingLevel = ps.DefaultThinkingLevel
@@ -348,29 +348,13 @@ func readJSON(path string, target any) error {
 	return json.Unmarshal(data, target)
 }
 
-// piAgentDir is Pi's global config directory (PI_CODING_AGENT_DIR or
-// ~/.pi/agent).
-func piAgentDir() string {
-	if dir := strings.TrimSpace(os.Getenv("PI_CODING_AGENT_DIR")); dir != "" {
-		return dir
-	}
-	home, err := os.UserHomeDir()
-	if err != nil || strings.TrimSpace(home) == "" {
-		return ""
-	}
-	return filepath.Join(home, ".pi", "agent")
-}
-
-// applyGlobalPiSettings merges Pi's global settings.json under the project
+// applyGlobalPiSettings merges the global settings.json (~/.gi/agent, else
+// Pi's agent directory) under the project
 // settings, as Pi does: project values win, global values fill the model,
 // provider, thinking level and scoped models when the project leaves them unset.
 func applyGlobalPiSettings(cfg *RuntimeConfig) {
-	dir := piAgentDir()
-	if dir == "" {
-		return
-	}
 	var global piSettings
-	if err := readJSON(filepath.Join(dir, "settings.json"), &global); err != nil {
+	if err := readJSON(UserConfigFile("settings.json"), &global); err != nil {
 		return
 	}
 	if strings.TrimSpace(cfg.DefaultProvider) == "" && strings.TrimSpace(cfg.DefaultModel) == "" {

@@ -66,7 +66,7 @@ func readSettingsDocument(root *os.Root) (settingsDocument, error) {
 func readPiSettings(workspace string) (settingsDocument, error) {
 	settingsMu.Lock()
 	defer settingsMu.Unlock()
-	root, err := openConfigDirectory(workspace, ".pi", false)
+	root, err := openConfigDirectory(workspace, ProjectConfigDirName(workspace, "settings.json"), false)
 	if errors.Is(err, os.ErrNotExist) {
 		return settingsDocument{Values: map[string]json.RawMessage{}, Revision: "missing", Mode: 0600}, nil
 	}
@@ -77,12 +77,14 @@ func readPiSettings(workspace string) (settingsDocument, error) {
 	return readSettingsDocument(root)
 }
 
-// All native .pi/settings.json mutations cooperate on this lock. expected empty
-// means an atomic merge of current values; policy writes require a file revision.
+// All native settings.json mutations cooperate on this lock; they update the
+// project file that is read (.gi/settings.json when it exists, else
+// .pi/settings.json). expected empty means an atomic merge of current values;
+// policy writes require a file revision.
 func updatePiSettings(workspace, expected string, change func(*settingsDocument) error) (settingsDocument, error) {
 	settingsMu.Lock()
 	defer settingsMu.Unlock()
-	root, err := openConfigDirectory(workspace, ".pi", true)
+	root, err := openConfigDirectory(workspace, ProjectConfigDirName(workspace, "settings.json"), true)
 	if err != nil {
 		return settingsDocument{}, err
 	}

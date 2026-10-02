@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -20,6 +18,8 @@ import (
 	_ "github.com/rcarmo/go-ai/inference/provider/openaicodex"
 	_ "github.com/rcarmo/go-ai/inference/provider/openairesponses"
 	"github.com/rcarmo/go-ai/oauth"
+
+	"github.com/rcarmo/gi/internal/config"
 )
 
 var once sync.Once
@@ -90,13 +90,10 @@ func registerCustomModels() {
 	})
 }
 
-func AuthFilePath() string {
-	home, _ := os.UserHomeDir()
-	if strings.TrimSpace(home) == "" {
-		return filepath.Join(".pi", "agent", "auth.json")
-	}
-	return filepath.Join(home, ".pi", "agent", "auth.json")
-}
+// AuthFilePath is the credentials file: ~/.gi/agent/auth.json when it
+// exists, else Pi's (PI_CODING_AGENT_DIR or ~/.pi/agent), which is shared
+// with Pi and refreshed in place.
+func AuthFilePath() string { return config.UserConfigFile("auth.json") }
 
 func loadAuthEntries() (map[string]authEntry, error) {
 	d, err := readCredentials()

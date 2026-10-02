@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"unicode"
@@ -39,44 +40,35 @@ func credentialRevision(raw []byte) (string, error) {
 	return hex.EncodeToString(mac.Sum(nil)), nil
 }
 
+// openCredentialRoot opens the directory of the credentials file
+// (AuthFilePath: ~/.gi/agent when it has auth.json, else Pi's agent
+// directory), creating Pi's when asked. The directory itself must not be a
+// symlink, and must still be the one opened.
 func openCredentialRoot(create bool) (*os.Root, error) {
-	home, err := os.UserHomeDir()
-	if err != nil || strings.TrimSpace(home) == "" {
+	dir := filepath.Dir(AuthFilePath())
+	if strings.TrimSpace(dir) == "" || dir == "." {
 		return nil, errors.New("credential home unavailable")
 	}
-	root, err := os.OpenRoot(home)
+	info, err := os.Lstat(dir)
+	if errors.Is(err, os.ErrNotExist) && create {
+		if err = os.MkdirAll(dir, 0700); err == nil {
+			info, err = os.Lstat(dir)
+		}
+	}
 	if err != nil {
-		return nil, errors.New("credential home unavailable")
+		return nil, err
 	}
-	for _, name := range []string{".pi", "agent"} {
-		info, e := root.Lstat(name)
-		if errors.Is(e, os.ErrNotExist) && create {
-			e = root.Mkdir(name, 0700)
-			if e == nil || errors.Is(e, os.ErrExist) {
-				info, e = root.Lstat(name)
-			}
-		}
-		if e != nil {
-			root.Close()
-			return nil, e
-		}
-		if !info.IsDir() {
-			root.Close()
-			return nil, errors.New("credential directory must not be a symlink")
-		}
-		next, e := root.OpenRoot(name)
-		if e != nil {
-			root.Close()
-			return nil, errors.New("cannot open credential directory")
-		}
-		opened, e := next.Stat(".")
-		current, currentErr := root.Lstat(name)
+	if !info.IsDir() {
+		return nil, errors.New("credential directory must not be a symlink")
+	}
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return nil, errors.New("cannot open credential directory")
+	}
+	opened, err := root.Stat(".")
+	if current, e := os.Lstat(dir); err != nil || e != nil || !current.IsDir() || !os.SameFile(info, opened) || !os.SameFile(opened, current) {
 		root.Close()
-		if e != nil || currentErr != nil || !current.IsDir() || !os.SameFile(info, opened) || !os.SameFile(opened, current) {
-			next.Close()
-			return nil, ErrCredentialConflict
-		}
-		root = next
+		return nil, ErrCredentialConflict
 	}
 	return root, nil
 }

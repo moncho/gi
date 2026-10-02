@@ -96,13 +96,25 @@ func NewScopeConfig(workspace, scope string, roots, extensions []string, chunker
 // builtinIndexRoots are the Piclaw default roots every scope starts from.
 var builtinIndexRoots = []string{"notes", ".pi/skills"}
 
+// giSkillsRoot is gi's skills directory (looked up before Pi's). It is a
+// root only where it exists, so workspaces without it keep their
+// configuration and index fingerprint.
+const giSkillsRoot = ".gi/skills"
+
+func skillRoots(workspace string) []string {
+	if info, err := os.Stat(filepath.Join(workspace, filepath.FromSlash(giSkillsRoot))); err == nil && info.IsDir() {
+		return []string{giSkillsRoot, ".pi/skills"}
+	}
+	return []string{".pi/skills"}
+}
+
 func DefaultScopeConfig(workspace, scope string, extraRoots, extraExtensions []string, chunker string) (ScopeConfig, error) {
-	roots := slices.Clone(builtinIndexRoots)
+	roots := append([]string{"notes"}, skillRoots(workspace)...)
 	switch scope {
 	case "notes":
 		roots = []string{"notes"}
 	case "skills":
-		roots = []string{".pi/skills"}
+		roots = skillRoots(workspace)
 	case "all":
 		roots = append(roots, extraRoots...)
 	default:

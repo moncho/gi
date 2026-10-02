@@ -885,4 +885,4 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 
 ### Follow-up — workspace tool path resolution
 
-- [ ] In a separate change, stop `read`/shared tool resolution from silently joining absolute paths to the workspace root. Accept in-workspace absolute paths or clearly reject unsupported paths; test outside-workspace paths, traversal and symlink escapes, and update the tool contract. Reported while profiling tables; deliberately excluded from renderer changes.
+- [x] In a separate change (`ffbafe19`, `fix/tool-absolute-paths`; not merged), stop `read`/shared tool resolution from silently joining absolute paths to the workspace root. Accept in-workspace absolute paths or clearly reject unsupported paths; test outside-workspace paths, traversal and symlink escapes, and update the tool contract. Reported while profiling tables; deliberately excluded from renderer changes.

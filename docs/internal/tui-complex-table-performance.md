@@ -111,5 +111,8 @@ change user text, or paint assistant/tool cells with the user background.
 - Full Go suite, dependency tests, vet, web build and hook checks pass. Browser
   suites are skipped per the ChromeOS host guidance. No live instance restarted.
 
-The absolute-path tool resolver problem encountered during profiling remains a
-**separate follow-up** in the implementation checklist, not part of renderer code.
+The absolute-path tool resolver problem encountered during profiling is fixed
+in the separate `fix/tool-absolute-paths` branch (`ffbafe19`), not in this renderer
+commit. That change covers confined absolute paths, paginated reads, missing-file
+errors, symlink escapes and native write/index behavior. Its full Go suite, vet,
+Bun web build and hook checks pass. Both branches still need integration into main.

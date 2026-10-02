@@ -42,6 +42,9 @@ type ToolRuntime struct {
 	// SetDetails attaches structured details to the result for renderers
 	// (nil outside turns), e.g. codemode's nested calls.
 	SetDetails func(map[string]any)
+	// AddUsage adds model usage made by the tool (codemode's models.*) to
+	// the turn's usage and cost (nil outside turns).
+	AddUsage func(goai.Usage)
 }
 
 type ToolExecutor func(context.Context, ToolRuntime, goai.ToolCall) (string, error)

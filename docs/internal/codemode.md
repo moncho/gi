@@ -116,3 +116,18 @@ Codemode calls render like Pi's codemode renderer (`internal/tui/codemode_render
 - **Output:** the script output without the `Script completed|failed / Wall time / Output:` header. Collapsed, it shows 5 lines, plus `Full output: vfs://…` when the output was truncated.
 
 The web UI shows tool calls only while they run (its status panel), so it has no codemode result view.
+
+## Models API (`internal/turn/codemode_models.go`)
+
+`models.*` is a port of Pi's `createModelGlobals`. The typed catalogs come from go-ai v1.0.0 (`internal/inference/models_api.go`).
+
+- **`getModelsOfType(type, provider?)`, `getModelOfType(type, provider, id)`:** chat, image and classifier entries, without `headers`.
+- **`getAvailableOfType(type, provider?)`:** keeps only models whose provider has credentials. For chat that is the model picker's authenticated models; for the others, an auth.json entry or the provider's environment variable.
+- **`classify(model, context)` and `generateImages(model, context)`:**
+  - **Model:** resolved by provider and id only, so a script-supplied baseUrl or headers never receive credentials.
+  - **Context:** checked with Pi's messages.
+  - **Running:** at most 4 at once per script; provider errors come back as results (`stopReason`, `errorMessage`).
+  - **Call rows:** each call is a `models.classify` / `models.generateImages` row with the call's cost.
+  - **Usage:** added to the turn's usage and cost (`ToolRuntime.AddUsage`).
+  - **Unshown images:** a script that generates images without showing them gets Pi's note.
+- **Description:** the codemode description includes Pi's models line, pointing at `vfs://reference/codemode-scripts.md`.

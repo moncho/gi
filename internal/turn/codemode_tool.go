@@ -330,7 +330,8 @@ func (e *Engine) applyCodemodeLoadout(ctx context.Context, convCtx *goai.Context
 	if b := e.runtimeCfg.Codemode.InlineBudget; b != nil && *b >= 0 {
 		budget = *b
 	}
-	convCtx.Tools[idx].Description = codemode.Description(listed, rendered, codemode.DescriptionOptions{Namespaces: namespaces, Deferred: deferred, InlineBudget: &budget})
+	convCtx.Tools[idx].Description = codemode.Description(listed, rendered, codemode.DescriptionOptions{Namespaces: namespaces, Deferred: deferred, InlineBudget: &budget,
+		Models: true, DocsPath: codemode.ReferencePath})
 	declByName := map[string]codemode.Declaration{}
 	for _, d := range decls {
 		declByName[d.Name] = d
@@ -404,7 +405,9 @@ func (e *Engine) executeCodemode(ctx context.Context, rt tools.ToolRuntime, call
 	if err != nil {
 		return "", err
 	}
-	res := eng.Execute(ctx, code, codemode.Options{Tools: scriptTools, Globals: e.discoveryGlobals(callable, rendered),
+	generatedImages := 0
+	globals := append(e.discoveryGlobals(callable, rendered), e.codemodeModelGlobals(rt, calls, &generatedImages)...)
+	res := eng.Execute(ctx, code, codemode.Options{Tools: scriptTools, Globals: globals,
 		Store: store, Timeout: timeout, MemoryLimitBytes: codemodeMemoryLimit})
 
 	var texts []string
@@ -425,6 +428,13 @@ func (e *Engine) executeCodemode(ctx context.Context, rt tools.ToolRuntime, call
 		}
 	} else {
 		texts = append(texts, "Script error:\n"+formatCodemodeError(res.Error, res.Calls))
+	}
+	if generatedImages > 0 && len(images) == 0 {
+		plural := "s"
+		if generatedImages == 1 {
+			plural = ""
+		}
+		texts = append(texts, fmt.Sprintf("Note: models.generateImages() returned %d image%s that the script did not show. Show each image block of result.output with image(block).", generatedImages, plural))
 	}
 	maxTokens := codemodeDefaultMaxTokens
 	if opts.MaxOutputTokens != nil {
@@ -780,6 +790,7 @@ type codemodeCallRecord struct {
 	Status     string  `json:"status"` // running, ok, error, cancelled
 	DurationMs float64 `json:"durationMs,omitempty"`
 	Error      string  `json:"error,omitempty"`
+	Cost       float64 `json:"cost,omitempty"` // model calls (USD)
 	started    time.Time
 }
 

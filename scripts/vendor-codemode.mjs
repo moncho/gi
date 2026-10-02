@@ -34,6 +34,8 @@ const agentVersion = JSON.parse(readFileSync(`${piAgent}/package.json`, 'utf8'))
 const tool = await import(`${piAgent}/dist/extensions/codemode/tool.js`);
 writeFileSync(`${out}/codemode-texts.json`, JSON.stringify({
   baseDescription: tool.createCodemodeDescription([], { models: false }),
+  // With the models API; Pi's docs path becomes a placeholder gi fills in.
+  baseDescriptionModels: tool.createCodemodeDescription([], { models: true }).split(tool.CODEMODE_DOCS_PATH).join('{{CODEMODE_DOCS}}'),
   codeDescription: tool.codemodeSchema.properties.code.description,
   promptSnippet: tool.codemodeToolSystemPromptContribution.snippet,
   promptGuidelines: tool.codemodeToolSystemPromptContribution.guidelines,

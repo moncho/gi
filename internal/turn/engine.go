@@ -4388,6 +4388,7 @@ func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.Too
 		AddTools:      images.addToolsFunc(),
 		ToolCallID:    call.ID,
 		SetDetails:    images.setDetailsFunc(),
+		AddUsage:      images.addUsageFunc(),
 	}, call)
 }
 
@@ -5238,6 +5239,9 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 		reportOutput := r.toolOutputReporter(turnID, sessionID, call.ID, toolOccurrenceID)
 		images := &toolExtras{}
 		toolResult, toolErr := r.executeToolWithImages(ctx, call, sessionID, turnID, func(text string) error { return reportOutput(text, false) }, images)
+		if totalUsage != nil {
+			addUsage(totalUsage, images.usage) // model calls made by the tool (codemode models.*)
+		}
 		if outputErr := reportOutput(toolResult, true); outputErr != nil {
 			r.persistStoppedTool(s, sessionID, turnID, call, toolOccurrenceID, "aborted")
 			r.finishTurn(s, turnID, sessionID, agentID, model, "failed", "Persist tool output: "+outputErr.Error(), "persistence_error")

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/rcarmo/gi/internal/mcp"
 	goai "github.com/rcarmo/go-ai"
@@ -22,6 +23,31 @@ type toolExtras struct {
 	notes   []string       // transcript lines describing each image
 	added   []string       // tools loaded by this call
 	details map[string]any // structured result details for renderers (codemode calls)
+	usage   goai.Usage     // model usage made by the tool (codemode models.*)
+}
+
+func (t *toolExtras) addUsageFunc() func(goai.Usage) {
+	if t == nil {
+		return nil
+	}
+	var mu sync.Mutex
+	return func(u goai.Usage) {
+		mu.Lock()
+		defer mu.Unlock()
+		addUsage(&t.usage, u)
+	}
+}
+
+// addUsage adds u to total (tokens and cost).
+func addUsage(total *goai.Usage, u goai.Usage) {
+	total.Input += u.Input
+	total.Output += u.Output
+	total.TotalTokens += u.TotalTokens
+	total.CacheRead += u.CacheRead
+	total.CacheWrite += u.CacheWrite
+	total.Cost.Input += u.Cost.Input
+	total.Cost.Output += u.Cost.Output
+	total.Cost.Total += u.Cost.Total
 }
 
 func (t *toolExtras) setDetailsFunc() func(map[string]any) {

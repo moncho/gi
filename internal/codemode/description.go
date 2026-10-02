@@ -124,15 +124,23 @@ func nullIfEmpty(raw json.RawMessage) json.RawMessage {
 //go:embed vendor/codemode-texts.json
 var textsJSON []byte
 
+// ReferencePath is gi's codemode script reference (adapted from Pi's
+// docs/codemode.md), shipped as docs/internal/codemode-scripts.md in the
+// read-only vfs://reference tree. The models line points the model there.
+const ReferencePath = "vfs://reference/codemode-scripts.md"
+
 // Texts are Pi's model-facing codemode texts, produced by Pi's codemode
 // extension (scripts/vendor-codemode.mjs): the description without tools
 // (intro and globals; no models API), the code parameter text, and the
 // system-prompt snippet and guidelines.
 var Texts = func() (t struct {
-	BaseDescription  string   `json:"baseDescription"`
-	CodeDescription  string   `json:"codeDescription"`
-	PromptSnippet    string   `json:"promptSnippet"`
-	PromptGuidelines []string `json:"promptGuidelines"`
+	BaseDescription string `json:"baseDescription"`
+	// BaseDescriptionModels includes the models API line, with
+	// {{CODEMODE_DOCS}} where Pi names its codemode reference.
+	BaseDescriptionModels string   `json:"baseDescriptionModels"`
+	CodeDescription       string   `json:"codeDescription"`
+	PromptSnippet         string   `json:"promptSnippet"`
+	PromptGuidelines      []string `json:"promptGuidelines"`
 }) {
 	if err := json.Unmarshal(textsJSON, &t); err != nil {
 		panic("codemode: vendored texts: " + err.Error())
@@ -153,6 +161,10 @@ type DescriptionOptions struct {
 	Namespaces   map[string]Namespace // tool name -> namespace
 	Deferred     map[string]bool      // tools never listed
 	InlineBudget *int                 // nil: no limit
+	// Models adds the models API line, pointing at DocsPath (Pi's
+	// createCodemodeDescription models option).
+	Models   bool
+	DocsPath string
 }
 
 type catalogEntry struct {
@@ -214,7 +226,11 @@ func Description(listed []Declaration, rendered Rendered, opts DescriptionOption
 		return a.Name < b.Name
 	})
 	shown := selectCatalog(ordered, opts.InlineBudget)
-	sections := []string{Texts.BaseDescription}
+	base := Texts.BaseDescription
+	if opts.Models {
+		base = strings.ReplaceAll(Texts.BaseDescriptionModels, "{{CODEMODE_DOCS}}", opts.DocsPath)
+	}
+	sections := []string{base}
 	for _, d := range decls {
 		if shown[d.Name] && rendered.MCPResult[d.Name] {
 			sections = append(sections, "Shared MCP Types:\n```ts\n"+rendered.MCPPrelude+"\n```")

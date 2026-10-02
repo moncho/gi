@@ -8,7 +8,7 @@ import {
   currentAppearance,
   persistAppearance,
   subscribeAppearance
-} from "./app-j6242z2n.js";
+} from "./app-wnnf88fh.js";
 
 // web/src/gi-settings-appearance.ts
 function Appearance() {

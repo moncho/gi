@@ -4081,6 +4081,39 @@ for (let value = 0;value < 256; value += 1) {
   }
   REVERSED_BITS[value] = reversed;
 }
+// web/src/gi-markdown-code.ts
+function mapMarkdownOutsideCode(text, transform) {
+  const source = String(text || "").replace(/\r\n?/g, `
+`);
+  const ranges = [];
+  const opening = /^ {0,3}(`{3,}|~{3,})[^\n]*\n/gm;
+  let match;
+  while (match = opening.exec(source)) {
+    const fence = match[1];
+    const closing = new RegExp(`^ {0,3}${fence[0]}{${fence.length},}[ \\t]*(?:\\n|$)`, "gm");
+    closing.lastIndex = opening.lastIndex;
+    const end = closing.exec(source);
+    const stop = end ? closing.lastIndex : source.length;
+    ranges.push([match.index, stop]);
+    opening.lastIndex = stop;
+  }
+  let result = "", cursor = 0;
+  const prose = (value) => {
+    const inline = /(`+)(?!`)([\s\S]*?[^`])\1(?!`)/g;
+    let out = "", from = 0, span;
+    while (span = inline.exec(value)) {
+      out += transform(value.slice(from, span.index)) + span[0];
+      from = inline.lastIndex;
+    }
+    return out + transform(value.slice(from));
+  };
+  for (const [start, end] of ranges) {
+    result += prose(source.slice(cursor, start)) + source.slice(start, end);
+    cursor = end;
+  }
+  return result + prose(source.slice(cursor));
+}
+
 // web/piclaw-svg-3.2.4/ui/svg-theme.ts
 var light = {
   background: "#ffffff",
@@ -5144,10 +5177,11 @@ function prepareMarkdownSource(text) {
   const normalizedFrontmatter = normalizeLeadingFrontmatter(text || "");
   const normalizedMath = normalizeMathFences(normalizedFrontmatter);
   const { text: stripped, blocks: mermaidBlocks } = extractMermaidBlocks(normalizedMath);
-  const decoded = decodeEntitiesDeep(stripped, 2);
-  const normalized = normalizeHtmlCodeTags(decoded);
-  const escaped = normalized.replace(/</g, "&lt;");
-  const safeHtml = restoreAllowedHtmlTags(escaped);
+  const safeHtml = mapMarkdownOutsideCode(stripped, (prose) => {
+    const decoded = decodeEntitiesDeep(prose, 2);
+    const normalized = normalizeHtmlCodeTags(decoded);
+    return restoreAllowedHtmlTags(normalized.replace(/</g, "&lt;"));
+  });
   return { safeHtml, mermaidBlocks };
 }
 function renderMarkdownBody(text, onHashtagClick, options = {}) {
@@ -22857,11 +22891,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-a1kc43ff.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-fjemvyqv.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-fgxb8ycp.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-zmjbpt4w.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-d5g2c63k.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-f5a0323d.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-98mpw5vc.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-9cv4ngqj.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-w69nfhbe.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-c92y93c2.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;

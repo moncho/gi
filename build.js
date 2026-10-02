@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, rmSync,
 import { fileURLToPath } from 'url';
 import { piclawStatusAdapter } from './scripts/piclaw-status-adapter.mjs';
 import {piclawSvgAdapter, patchMarkdownSvg, patchPostSvg, verifyPiclawSvg} from './scripts/piclaw-svg-adapter.mjs';
+import { patchMarkdownCode } from './scripts/gi-markdown-code-adapter.mjs';
 import { patchTimelineMenu } from './scripts/patch-timeline-menu.mjs';
 import { patchWorkspaceReadonly } from './scripts/patch-workspace-readonly.mjs';
 import { patchTabReadonly } from './scripts/patch-tab-readonly.mjs';
@@ -108,7 +109,7 @@ const appBuild = await Bun.build({
     build.onLoad({ filter: /[\\/]components[\\/]post\.ts$/ }, async args => ({
       contents: patchPostSvg(patchPostRecoveryControl(patchPostOutcomes(patchPostSpeech(await Bun.file(args.path).text())))), loader: 'ts',
     }));
-    build.onLoad({filter:/[\\/]src[\\/]markdown\.ts$/},async args=>({contents:patchMarkdownSvg(await Bun.file(args.path).text()),loader:'ts'}));
+    build.onLoad({filter:/[\\/]src[\\/]markdown\.ts$/},async args=>({contents:patchMarkdownCode(patchMarkdownSvg(await Bun.file(args.path).text())),loader:'ts'}));
   } }, { name: 'gi-popup-key-ownership', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]timeline-quick-actions\.ts$/ }, async args => ({
       contents: patchQuickActionKeys(await Bun.file(args.path).text()), loader: 'ts',

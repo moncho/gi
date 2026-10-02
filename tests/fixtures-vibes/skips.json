@@ -1,6 +1,6 @@
 {
   "runtime": "gi",
-  "fixturesVibes": "v0.1.0-rc.13",
+  "fixturesVibes": "v0.1.0-rc.14",
   "skips": [
     { "id": "@ux-shared-009", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
     { "id": "@ux-shared-010", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },

@@ -47,6 +47,9 @@ const (
 func (e *Engine) pruneMCPOutput(ctx context.Context) {
 	for _, ns := range []string{mcpOutputNamespace, codemodeOutputNamespace} {
 		if n, err := e.store.PruneVFSNamespace(ctx, ns, time.Now().Add(-mcpOutputRetention)); err != nil {
+			if ctx.Err() != nil || errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "database is closed") {
+				return // the engine is shutting down
+			}
 			log.Printf("prune %s: %v", ns, err)
 		} else if n > 0 {
 			log.Printf("pruned %d saved outputs in %s older than %s", n, ns, mcpOutputRetention)

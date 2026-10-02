@@ -4,7 +4,7 @@ Feature: TUI active tool controls
   Scenario: Activate and reset a focused tool set
     Given a fresh gi TUI workspace
     When I start the gi TUI in tmux
-    Then the screen should contain "(no messages yet)"
+    Then the screen should contain "Press Ctrl+O to show full startup help and loaded resources."
     When I type "/tools active" and press Enter
     Then the screen should contain "tools: active:"
     When I type "/tools activate read shell" and press Enter

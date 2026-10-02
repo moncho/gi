@@ -4,13 +4,13 @@ Feature: TUI assistant basics
   Scenario: Invoking gi without arguments starts the TUI
     Given a fresh gi TUI workspace
     When I start gi without arguments in tmux
-    Then the screen should contain "(no messages yet)"
+    Then the screen should contain "Press Ctrl+O to show full startup help and loaded resources."
     And the screen should contain "%/"
 
   Scenario: Boot, discover help and tools, and submit a prompt
     Given a fresh gi TUI workspace
     When I start the gi TUI in tmux
-    Then the screen should contain "(no messages yet)"
+    Then the screen should contain "Press Ctrl+O to show full startup help and loaded resources."
     And the screen should contain "%/"
     When I type "/help" and press Enter
     Then the screen should contain "help"

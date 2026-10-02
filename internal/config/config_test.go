@@ -261,3 +261,11 @@ func TestLoadTUIModeSetting(t *testing.T) {
 		t.Fatalf("project tuiMode: %q", cfg.TUIMode)
 	}
 }
+
+func TestQuietStartupSetting(t *testing.T) {
+	for raw, want := range map[string]string{"true": "true", `"header"`: "header", "false": "", "": "", `"x"`: ""} {
+		if got := parseQuietStartup([]byte(raw)); got != want {
+			t.Fatalf("%s: %q, want %q", raw, got, want)
+		}
+	}
+}

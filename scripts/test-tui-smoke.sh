@@ -83,7 +83,9 @@ if ! grep -q "%/" "$ARTIFACT_DIR/01-start.txt"; then
   echo "TUI did not render bottom-band session counters" >&2
   exit 1
 fi
-if ! grep -q "(no messages yet)" "$ARTIFACT_DIR/01-start.txt"; then
+# An empty session shows gi's startup header (or, with quietStartup true,
+# the empty-transcript placeholder).
+if ! sed 's/\x1b\[[0-9;]*m//g' "$ARTIFACT_DIR/01-start.txt" | grep -Eq "\(no messages yet\)|Ctrl\+O to show full startup help"; then
   echo "TUI did not render the empty transcript" >&2
   exit 1
 fi

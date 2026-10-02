@@ -27,6 +27,7 @@ import (
 	storecache "github.com/rcarmo/gi/internal/store/cache"
 	gitui "github.com/rcarmo/gi/internal/tui"
 	"github.com/rcarmo/gi/internal/turn"
+	"github.com/rcarmo/gi/internal/version"
 	giweb "github.com/rcarmo/gi/internal/web"
 )
 
@@ -61,6 +62,10 @@ func webOnlyFlagsSet() []string {
 
 func main() {
 	startProfiling()
+	if len(os.Args) > 1 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
+		fmt.Println("gi " + version.String())
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "mcp" {
 		os.Exit(runMCPCommand(os.Args[2:]))
 	}

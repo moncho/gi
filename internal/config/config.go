@@ -38,6 +38,9 @@ type RuntimeConfig struct {
 	// TUIMode is Pi's tuiMode setting (project, else global); the -tui-mode
 	// flag overrides it.
 	TUIMode string `json:"tui_mode,omitempty"`
+	// QuietStartup is Pi's quietStartup: "" (false: header and loaded
+	// resources), "true" (neither) or "header" (header only).
+	QuietStartup string `json:"quiet_startup,omitempty"`
 	// DefaultToolsLayers are Pi's defaultTools lists, user then project.
 	DefaultToolsLayers [][]string `json:"default_tools_layers,omitempty"`
 	// ExtensionsLayers are Pi's extensions lists, user then project.
@@ -121,6 +124,8 @@ type piSettings struct {
 	Theme                string   `json:"theme"`
 	// TUIMode is Pi's tuiMode: "fullscreen" (default) or "regular".
 	TUIMode string `json:"tuiMode"`
+	// QuietStartup is Pi's quietStartup: false, true or "header".
+	QuietStartup json.RawMessage `json:"quietStartup"`
 	DefaultProvider      string   `json:"defaultProvider"`
 	DefaultModel         string   `json:"defaultModel"`
 	DefaultThinkingLevel string   `json:"defaultThinkingLevel"`
@@ -184,6 +189,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.WorkspaceIndex = ps.WorkspaceIndex
 		cfg.Theme = strings.TrimSpace(ps.Theme)
 		cfg.TUIMode = strings.TrimSpace(ps.TUIMode)
+		cfg.QuietStartup = parseQuietStartup(ps.QuietStartup)
 		projectTools, projectExtensions, projectCodemode = ps.DefaultTools, ps.Extensions, ps.Codemode
 	}
 	applyGlobalPiSettings(&cfg)
@@ -379,6 +385,9 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	if cfg.TUIMode == "" {
 		cfg.TUIMode = strings.TrimSpace(global.TUIMode)
 	}
+	if cfg.QuietStartup == "" {
+		cfg.QuietStartup = parseQuietStartup(global.QuietStartup)
+	}
 	if global.DefaultTools != nil {
 		cfg.DefaultToolsLayers = append([][]string{global.DefaultTools}, cfg.DefaultToolsLayers...)
 	}
@@ -450,4 +459,16 @@ func (c RuntimeConfig) BuiltinDisabled(name string) bool {
 		}
 	}
 	return disabled
+}
+
+// parseQuietStartup reads Pi's quietStartup (true, false or "header"):
+// "true", "header" or "" for false and anything else.
+func parseQuietStartup(raw json.RawMessage) string {
+	switch strings.TrimSpace(string(raw)) {
+	case "true":
+		return "true"
+	case `"header"`:
+		return "header"
+	}
+	return ""
 }

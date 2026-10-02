@@ -4,7 +4,7 @@ Feature: TUI session and agent workflows
   Scenario: List agents, fork, switch, and send to a peer agent
     Given a fresh gi TUI workspace
     When I start the gi TUI in tmux
-    Then the screen should contain "(no messages yet)"
+    Then the screen should contain "Press Ctrl+O to show full startup help and loaded resources."
     When I type "/agents" and press Enter
     Then the screen should contain "sys: agents:"
     And the screen should contain "@agent"

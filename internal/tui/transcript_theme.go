@@ -107,14 +107,18 @@ func (c *chatTUI) transcriptMaxScroll() int {
 func (c *chatTUI) toggleToolOutput() {
 	blocks := c.buildTranscriptRenderableBlocks(c.visibleTranscript())
 	expand := false
+	// Ctrl+O also expands the startup header, as Pi's app.tools.expand does.
+	toggles := func(b transcriptRenderableBlock) bool {
+		return (b.Kind == "tool" || b.Kind == "bash" || b.Kind == "local" || b.Kind == startupHeaderKind) && b.Expandable
+	}
 	for _, b := range blocks {
-		if (b.Kind == "tool" || b.Kind == "bash" || b.Kind == "local") && b.Expandable && !b.Expanded {
+		if toggles(b) && !b.Expanded {
 			expand = true
 			break
 		}
 	}
 	for _, b := range blocks {
-		if (b.Kind == "tool" || b.Kind == "bash" || b.Kind == "local") && b.Expandable {
+		if toggles(b) {
 			c.transcriptExpanded[b.Key] = expand
 		}
 	}

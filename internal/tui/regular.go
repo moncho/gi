@@ -40,6 +40,11 @@ func (c *chatTUI) flushRegularTranscript() {
 	if !c.regularMode || c.app == nil || c.workspaceIndex.active || c.modelMenuAltScreen {
 		return
 	}
+	if !c.regularHeaderPrinted && c.startupHeaderShown() {
+		// Scrollback cannot expand later: print the collapsed header once.
+		c.regularHeaderPrinted = true
+		c.app.PrintAboveElement(c.renderStartupHeader(false))
+	}
 	if c.regularSessionPending {
 		c.regularSessionPending = false
 		c.app.PrintAboveln("sys: session %s", c.sessionID)

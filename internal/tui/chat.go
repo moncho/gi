@@ -99,6 +99,7 @@ func runWithEngineMode(s *store.Store, engine *turn.Engine, cfg config.RuntimeCo
 		stickToBottom: true,
 		durableDrafts: true,
 		regularMode:   regular,
+		startupHeader: true,
 	}
 
 	options := []gotui.AppOption{gotui.WithLegacyKeyboard(), gotui.WithRowRedraw()}
@@ -231,6 +232,8 @@ type chatTUI struct {
 	transcriptRef               *gotui.Ref
 	transcript                  []string
 	regularMode                 bool
+	regularHeaderPrinted        bool      // startup header printed to scrollback (regular mode)
+	startupHeader               bool      // show gi\'s startup header (set by the app, not by test fixtures)
 	lastFooterSignature         string    // footer data at the last idle check
 	lastFooterCheck             time.Time // when the idle check last read the session
 	runningCheckLines           []string  // transcript at the last running-block check
@@ -3333,7 +3336,7 @@ func (c *chatTUI) hotkeyLines() []string {
 		"  Drag select · hold edges to scroll · release/Ctrl+C/X copy (clipboard setting) · Esc clear",
 		"session:",
 		"  Esc blur input · Tab focus input · F2/F3 (or Ctrl+P/Ctrl+N) history",
-		"  Ctrl+C interrupt · Ctrl+D exit (empty input)",
+		"  Esc interrupt · Ctrl+C quit · Ctrl+D exit (empty input)",
 		"shell:",
 		"  !cmd ask model to run · !!cmd run locally",
 	}
@@ -5095,6 +5098,12 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
 		if meta, ok := parseTranscriptBlockMarker(line); ok {
+			if meta.Kind == startupHeaderKind {
+				// gi's startup header; Body carries its content signature so
+				// cached renders follow MCP/extension/skill changes.
+				blocks = append(blocks, transcriptRenderableBlock{Kind: startupHeaderKind, Key: meta.Key, Expanded: c.transcriptExpanded[meta.Key], Expandable: true, Body: c.startupSignature()})
+				continue
+			}
 			body := make([]string, 0, 4)
 			j := i + 1
 			for j < len(lines) && strings.HasPrefix(lines[j], "│ ") {
@@ -5366,6 +5375,8 @@ func (c *chatTUI) renderTranscriptBlock(block transcriptRenderableBlock) *gotui.
 
 func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) *gotui.Element {
 	switch block.Kind {
+	case startupHeaderKind:
+		return c.renderStartupHeader(block.Expanded)
 	case "tool":
 		return c.renderPiToolBlock(block)
 	case "bash":
@@ -5716,6 +5727,11 @@ func (c *chatTUI) scrollTranscriptToBottom() {
 
 func (c *chatTUI) visibleTranscript() []string {
 	lines := c.pruneTranscript(append([]string(nil), c.transcript...))
+	// Fullscreen shows gi's startup header first (Pi's header container);
+	// regular mode prints it once to scrollback instead.
+	if !c.regularMode && c.startupHeaderShown() {
+		return append([]string{startupHeaderMarker()}, lines...)
+	}
 	if len(lines) == 0 {
 		return []string{"(no messages yet)"}
 	}

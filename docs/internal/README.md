@@ -100,6 +100,8 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 - [passkey-login-cancellation.md](passkey-login-cancellation.md) — login start/prompt/finish ownership and bounded cancellation tests
 - [passkey-scenario-review.md](passkey-scenario-review.md) — compact 26-scenario evidence/gap review
 - [passkey-criteria.md](passkey-criteria.md) — validated per-step/example ledger and browser-only terminal adaptation
+- [TUI startup header](tui-startup-header.md) — gi's adaptation of Pi's header and loaded-resource listing, quietStartup, version
+- [Profiling](profiling.md) — GI_PPROF, idle CPU and frame-cost work
 - [Thinking transcript wrapping](tui-thinking-wrap.md) — padded width, retained source, resize and regression evidence
 - `tools/` — built-in tool contracts
 - `scripting/` — scripting runtimes and bridge docs

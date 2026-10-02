@@ -177,6 +177,9 @@ func (c *chatTUI) transcriptBlockState() string {
 	b.WriteString(strconv.Itoa(c.currentScrollbackLimit()))
 	b.WriteByte(0)
 	b.WriteString(strconv.Itoa(c.outputWidth))
+	if !c.regularMode && c.startupHeaderShown() {
+		b.WriteString("\x00h" + strings.Join(c.startupSignature(), "\x01"))
+	}
 	for _, k := range sortedKeys(c.transcriptExpanded) {
 		b.WriteString("\x00e" + k + strconv.FormatBool(c.transcriptExpanded[k]))
 	}

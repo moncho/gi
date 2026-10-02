@@ -47,6 +47,12 @@ func blockHeightKey(block transcriptRenderableBlock, previousKind string, width 
 	if block.ToolContent != nil {
 		write(*block.ToolContent)
 	}
+	write(block.ToolRange)
+	write(block.ToolNotice)
+	if block.EditDiff != nil {
+		write("diff:" + *block.EditDiff)
+	}
+	write(block.EditError)
 	if len(block.Calls) > 0 {
 		raw, _ := json.Marshal(block.Calls)
 		write(string(raw))

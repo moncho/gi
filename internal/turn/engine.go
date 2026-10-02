@@ -4058,6 +4058,18 @@ func (e *Engine) registerDefaultTools() {
 			return tools.ExecuteWrite(ctx, e.runtimeCfg, rt.Store, call)
 		},
 	})
+	must(tools.RegisteredTool{
+		Name:        "edit",
+		Description: tools.EditToolDescription,
+		Parameters:  json.RawMessage(tools.EditToolParameters),
+		Source:      "builtin",
+		Kind:        "mutating",
+		Weight:      "lightweight",
+		Activation:  "default",
+		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
+			return tools.ExecuteEditTool(ctx, e.runtimeCfg, rt, call)
+		},
+	})
 	if def := scriptTool.Definition(); def != nil {
 		params, _ := json.Marshal(def["parameters"])
 		must(tools.RegisteredTool{
@@ -5256,7 +5268,7 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 				return outcome
 			}
 			log.Printf("tool [%s] error: %v", call.Name, firstLine(toolErr.Error()))
-			errText := fmt.Sprintf("Error: %v", toolErr)
+			errText := toolErr.Error() // Pi's createErrorToolResult: the bare message
 			var resultErr *tools.ResultError
 			if errors.As(toolErr, &resultErr) {
 				errText = resultErr.Text // the complete result, e.g. shell output + exit status (Pi)

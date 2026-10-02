@@ -41,8 +41,10 @@ func piSyntaxStyle(base gotui.Style, name string) (gotui.Style, bool) {
 		return base.Foreground(piSyntaxNumber), true
 	case "syn-type":
 		return base.Foreground(piSyntaxType), true
-	case "syn-comment", "syn-meta":
+	case "syn-comment":
 		return base.Foreground(piSyntaxComment), true
+	case "syn-meta":
+		return base.Foreground(piMuted), true // Pi's cli-highlight theme: meta is muted
 	case "syn-added":
 		return base.Foreground(piDiffAdded), true
 	case "syn-removed":

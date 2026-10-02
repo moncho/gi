@@ -129,7 +129,16 @@ func toolOutputStyle(line string) gotui.Style {
 func (c *chatTUI) renderPiToolBlock(block transcriptRenderableBlock) *gotui.Element {
 	container := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
 	c.registerBlockTarget(block.Key, container)
-	container.AddChild(textRow(toolCallSpans(block)...))
+	isFileTool := block.Header == "read" || block.Header == "write" || block.Header == "edit"
+	if isFileTool {
+		container.AddChild(textRow(c.fileToolCallSpans(block)...))
+	} else {
+		container.AddChild(textRow(toolCallSpans(block)...))
+	}
+	if block.Header == "edit" {
+		c.renderEditBlock(block, container)
+		return container
+	}
 	if block.Header == "codemode" {
 		c.renderCodemodeBlock(block, container)
 		return container
@@ -148,13 +157,16 @@ func (c *chatTUI) renderPiToolBlock(block transcriptRenderableBlock) *gotui.Elem
 		if block.Header == "read" {
 			if block.Expanded || block.Status != "ok" {
 				c.appendFileToolPreview(container, block, strings.Join(body, "\n"), block.Status == "ok")
+				if block.ToolNotice != "" {
+					container.AddChild(textRow(gotui.TextSpan{Text: block.ToolNotice, Style: piFg(piWarning)}))
+				}
 			}
 		} else {
 			if block.ToolContent != nil {
 				c.appendFileToolPreview(container, block, *block.ToolContent, true)
 			}
 			if block.Status == "error" || block.Status == "failed" || block.Status == "skipped" {
-				c.appendFileToolPreview(container, block, strings.Join(body, "\n"), false)
+				c.appendErrorText(container, strings.Join(body, "\n"))
 			}
 		}
 	}

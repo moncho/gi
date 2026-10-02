@@ -127,7 +127,7 @@ func TestFileToolHistoryArgumentsTurnScoped(t *testing.T) {
 
 func TestFileToolMultilineAndResize(t *testing.T) {
 	source := "package main\n/* comment\ncontinues */\nvar message = `raw\ncontinued`\n\tprintln(\"日本語 👩🏽‍💻\")"
-	segments := fileToolSegments(source, "main.go", true)
+	segments, _ := fileToolSegments(source, "main.go", true)
 	if segments[2][0].class != "syn-comment" || segments[4][0].class != "syn-string" {
 		t.Fatalf("lost multiline state: %+v", segments)
 	}

@@ -110,7 +110,11 @@ func ExecuteReadTool(ctx context.Context, rt ToolRuntime, call goai.ToolCall) (s
 		rt.AttachImage(mime, raw)
 		return fmt.Sprintf("Read image file [%s]", mime), nil
 	}
-	return pageText(string(raw), path, isVFS, offset, hasOffset, limit, hasLimit)
+	text, truncation, err := pageText(string(raw), path, isVFS, offset, hasOffset, limit, hasLimit)
+	if truncation != nil && rt.SetDetails != nil {
+		rt.SetDetails(map[string]any{"truncation": truncation})
+	}
+	return text, err
 }
 
 // ExecuteRead is the read tool without an image-capable runtime (kept for
@@ -119,15 +123,16 @@ func ExecuteRead(ctx context.Context, workspaceRoot string, s *store.Store, call
 	return ExecuteReadTool(ctx, ToolRuntime{Store: s, WorkspaceRoot: workspaceRoot}, call)
 }
 
-// pageText ports Pi's read text handling.
-func pageText(text, path string, isVFS bool, offset int, hasOffset bool, limit int, hasLimit bool) (string, error) {
+// pageText ports Pi's read text handling; truncation is Pi's
+// details.truncation, set when the selection was cut to the limits.
+func pageText(text, path string, isVFS bool, offset int, hasOffset bool, limit int, hasLimit bool) (string, map[string]any, error) {
 	allLines := strings.Split(text, "\n")
 	startLine := 0
 	if hasOffset && offset > 0 {
 		startLine = offset - 1
 	}
 	if startLine >= len(allLines) {
-		return "", fmt.Errorf("Offset %d is beyond end of file (%d lines total)", offset, len(allLines))
+		return "", nil, fmt.Errorf("Offset %d is beyond end of file (%d lines total)", offset, len(allLines))
 	}
 	startDisplay := startLine + 1
 	var selected string
@@ -144,28 +149,45 @@ func pageText(text, path string, isVFS bool, offset int, hasOffset bool, limit i
 	case t.firstLineExceedsLimit:
 		size := formatReadSize(len(allLines[startLine]))
 		if isVFS {
-			return fmt.Sprintf("[Line %d is %s, exceeds %s limit and cannot be shown by read.]", startDisplay, size, formatReadSize(ReadMaxBytes)), nil
+			return fmt.Sprintf("[Line %d is %s, exceeds %s limit and cannot be shown by read.]", startDisplay, size, formatReadSize(ReadMaxBytes)), t.details(), nil
 		}
-		return fmt.Sprintf("[Line %d is %s, exceeds %s limit. Use bash: sed -n '%dp' %s | head -c %d]", startDisplay, size, formatReadSize(ReadMaxBytes), startDisplay, path, ReadMaxBytes), nil
+		return fmt.Sprintf("[Line %d is %s, exceeds %s limit. Use bash: sed -n '%dp' %s | head -c %d]", startDisplay, size, formatReadSize(ReadMaxBytes), startDisplay, path, ReadMaxBytes), t.details(), nil
 	case t.truncated:
 		end := startDisplay + t.outputLines - 1
 		if t.byLines {
-			return fmt.Sprintf("%s\n\n[Showing lines %d-%d of %d. Use offset=%d to continue.]", t.content, startDisplay, end, len(allLines), end+1), nil
+			return fmt.Sprintf("%s\n\n[Showing lines %d-%d of %d. Use offset=%d to continue.]", t.content, startDisplay, end, len(allLines), end+1), t.details(), nil
 		}
-		return fmt.Sprintf("%s\n\n[Showing lines %d-%d of %d (%s limit). Use offset=%d to continue.]", t.content, startDisplay, end, len(allLines), formatReadSize(ReadMaxBytes), end+1), nil
+		return fmt.Sprintf("%s\n\n[Showing lines %d-%d of %d (%s limit). Use offset=%d to continue.]", t.content, startDisplay, end, len(allLines), formatReadSize(ReadMaxBytes), end+1), t.details(), nil
 	case userLimited >= 0 && startLine+userLimited < len(allLines):
 		remaining := len(allLines) - (startLine + userLimited)
-		return fmt.Sprintf("%s\n\n[%d more lines in file. Use offset=%d to continue.]", t.content, remaining, startLine+userLimited+1), nil
+		return fmt.Sprintf("%s\n\n[%d more lines in file. Use offset=%d to continue.]", t.content, remaining, startLine+userLimited+1), nil, nil
 	default:
-		return t.content, nil
+		return t.content, nil, nil
 	}
 }
 
 type headTruncation struct {
-	content               string
-	truncated, byLines    bool
-	outputLines           int
-	firstLineExceedsLimit bool
+	content                 string
+	truncated, byLines      bool
+	outputLines, totalLines int
+	totalBytes              int
+	firstLineExceedsLimit   bool
+}
+
+// details is Pi's TruncationResult as stored in details.truncation, less
+// its content (a second copy of the output no renderer reads).
+func (t headTruncation) details() map[string]any {
+	by := "bytes"
+	if t.byLines {
+		by = "lines"
+	}
+	return map[string]any{
+		"truncated": t.truncated, "truncatedBy": by,
+		"totalLines": t.totalLines, "totalBytes": t.totalBytes,
+		"outputLines": t.outputLines, "outputBytes": len(t.content),
+		"lastLinePartial": false, "firstLineExceedsLimit": t.firstLineExceedsLimit,
+		"maxLines": ReadMaxLines, "maxBytes": ReadMaxBytes,
+	}
 }
 
 // truncateHead ports Pi's truncateHead: keep whole leading lines within the
@@ -178,10 +200,10 @@ func truncateHead(content string, maxLines, maxBytes int) headTruncation {
 		lines = lines[:len(lines)-1]
 	}
 	if len(lines) <= maxLines && len(content) <= maxBytes {
-		return headTruncation{content: content, outputLines: len(lines)}
+		return headTruncation{content: content, outputLines: len(lines), totalLines: len(lines), totalBytes: len(content)}
 	}
 	if len(lines) > 0 && len(lines[0]) > maxBytes {
-		return headTruncation{truncated: true, firstLineExceedsLimit: true}
+		return headTruncation{truncated: true, firstLineExceedsLimit: true, totalLines: len(lines), totalBytes: len(content)}
 	}
 	var out []string
 	used := 0
@@ -201,8 +223,11 @@ func truncateHead(content string, maxLines, maxBytes int) headTruncation {
 	if len(out) >= maxLines && used <= maxBytes {
 		byLines = true
 	}
-	return headTruncation{content: strings.Join(out, "\n"), truncated: true, byLines: byLines, outputLines: len(out)}
+	return headTruncation{content: strings.Join(out, "\n"), truncated: true, byLines: byLines, outputLines: len(out), totalLines: len(lines), totalBytes: len(content)}
 }
+
+// FormatSize is Pi's formatSize (B, KB, MB with one decimal).
+func FormatSize(bytes int) string { return formatReadSize(bytes) }
 
 // formatReadSize ports Pi's formatSize.
 func formatReadSize(bytes int) string {

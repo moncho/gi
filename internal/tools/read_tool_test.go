@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -140,5 +141,31 @@ func TestReadAbsoluteWorkspacePaginationAndMissingFile(t *testing.T) {
 	missing := filepath.Join(rt.WorkspaceRoot, "missing.txt")
 	if _, err := readWith(t, rt, map[string]any{"path": missing}); err == nil || !strings.Contains(err.Error(), missing) || strings.Contains(err.Error(), filepath.Join(rt.WorkspaceRoot, missing)) {
 		t.Fatalf("missing absolute path should retain original, not double root: %v", err)
+	}
+}
+
+// details.truncation is Pi's truncateHead result (less content), computed by
+// Pi on the same fixtures.
+func TestReadTruncationDetailsMatchPi(t *testing.T) {
+	rt, _ := readFixture(t)
+	for path, want := range map[string]string{
+		"lines.txt": `{"firstLineExceedsLimit":false,"lastLinePartial":false,"maxBytes":51200,"maxLines":2000,"outputBytes":18892,"outputLines":2000,"totalBytes":28893,"totalLines":3000,"truncated":true,"truncatedBy":"lines"}`,
+		"wide.txt":  `{"firstLineExceedsLimit":false,"lastLinePartial":false,"maxBytes":51200,"maxLines":2000,"outputBytes":51128,"outputLines":247,"totalBytes":82593,"totalLines":399,"truncated":true,"truncatedBy":"bytes"}`,
+		"huge.txt":  `{"firstLineExceedsLimit":true,"lastLinePartial":false,"maxBytes":51200,"maxLines":2000,"outputBytes":0,"outputLines":0,"totalBytes":60008,"totalLines":2,"truncated":true,"truncatedBy":"bytes"}`,
+	} {
+		var details map[string]any
+		rt.SetDetails = func(d map[string]any) { details = d }
+		if _, err := readWith(t, rt, map[string]any{"path": path}); err != nil {
+			t.Fatal(err)
+		}
+		got, _ := json.Marshal(details["truncation"])
+		if string(got) != want {
+			t.Fatalf("%s:\n got %s\nwant %s", path, got, want)
+		}
+	}
+	var details map[string]any
+	rt.SetDetails = func(d map[string]any) { details = d }
+	if _, err := readWith(t, rt, map[string]any{"path": "lines.txt", "offset": float64(5), "limit": float64(10)}); err != nil || details != nil {
+		t.Fatalf("untruncated read set details %v (%v)", details, err)
 	}
 }

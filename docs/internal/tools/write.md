@@ -32,6 +32,12 @@ For VFS writes, `write` persists into the managed namespace using metadata-safe 
 
 [ADR-0051](../../adr/0051-native-write-index-invalidation.md) defines the bounded notification protocol and crash limits. Caller cancellation does not skip post-notification after an attempted filesystem write. Index content and last-success metadata remain unchanged until explicit refresh. The filesystem/SQLite gap is not crash-atomic; shell/external edits and hard-link aliases still need reconciliation.
 
+## TUI rendering (Pi's write renderer)
+The call line is `write <path>` (home shown as `~`), then a blank line and the
+content: highlighted as for `read`, 10 lines while collapsed with
+`... (N more lines, T total, ctrl+o to expand)`. A successful result adds
+nothing; a failure shows its whole message in the error colour.
+
 ## Path semantics
 - relative workspace paths resolve against configured `workspace_root`; absolute paths are preserved and must resolve inside its filesystem boundary
 - `vfs://skills/...`, `vfs://scripts/...`, etc. resolve into managed namespaces

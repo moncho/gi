@@ -44,9 +44,34 @@ comes first, and only whole lines are returned.
   [<mime>]`. Callers without image support, such as the HTTP tool API, get a
   text note instead. gi does not resize images; Pi does.
 
+When the output was cut, the result's `details.truncation` is Pi's
+`truncateHead` result (`truncated`, `truncatedBy`, `totalLines`,
+`totalBytes`, `outputLines`, `outputBytes`, `firstLineExceedsLimit`,
+`maxLines`, `maxBytes`), less its `content`, a second copy of the output.
+
 This lets the model page through large MCP outputs saved to
 `vfs://mcp-output/...`, as their `[Full output: … (read it with
 offset/limit)]` pointer says.
+
+## TUI rendering (Pi's read renderer)
+- The call line is `read <path>`, with the home directory shown as `~` and
+  the requested range as `:start-end` (or `:start`) in the warning colour.
+- While collapsed, some reads get a compact call line ending in
+  `(ctrl+o to expand)`: `[skill] <dir>` for a `SKILL.md`, `read resource
+  <path>` for `AGENTS.md`/`CLAUDE.md` files, and `read docs <path>` for gi's
+  reference tree (`vfs://reference/...`, Pi's own docs in Pi).
+- A successful read shows its content only when expanded; an error always
+  shows (10 lines while collapsed).
+- Content is highlighted by file extension (Pi's extension map); text the
+  highlighter does not classify keeps the terminal colour, a known extension
+  without a highlighter uses `mdCodeBlock`, other files `toolOutput`. Tabs are
+  three spaces, trailing empty lines are dropped, lines word-wrap as in
+  pi-tui. gi highlights with chroma where Pi uses highlight.js, so a token may
+  be classified differently.
+- After the content, `details.truncation` adds Pi's notice:
+  `[Truncated: showing N of M lines (L line limit)]`,
+  `[Truncated: N lines shown (50.0KB limit)]` or
+  `[First line exceeds 50.0KB limit]`.
 
 ## Path semantics
 - Workspace paths resolve against the configured `workspace_root`.

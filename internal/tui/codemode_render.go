@@ -164,13 +164,13 @@ func (c *chatTUI) renderCodemodeBlock(block transcriptRenderableBlock, container
 		code := strings.TrimRight(strings.ReplaceAll(*block.ToolContent, "\r", ""), " \t\n")
 		code = strings.ReplaceAll(code, "\t", "   ")
 		if code != "" {
-			lines := fileToolSegments(code, "codemode.js", true)
+			lines, base := fileToolSegments(code, "codemode.js", true)
 			visible, hidden := lines, 0
 			if !block.Expanded && len(lines) > codemodeCodePreviewLines {
 				visible, hidden = lines[:codemodeCodePreviewLines], len(lines)-codemodeCodePreviewLines
 			}
 			for _, line := range visible {
-				for _, row := range fileToolRows(line, c.transcriptBlockContentWidth("tool"), piFg(piMuted)) {
+				for _, row := range fileToolRows(line, c.transcriptBlockContentWidth("tool"), base) {
 					container.AddChild(row)
 				}
 			}

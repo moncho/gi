@@ -80,7 +80,7 @@ func fileToolLanguage(filePath string) string {
 // Presentation metadata is independent of the abbreviated call header. Never
 // read the filesystem to reconstruct a past write or read.
 func setFileToolArguments(meta *transcriptBlockMeta, args any) {
-	if meta.Title != "read" && meta.Title != "write" {
+	if meta.Title != "read" && meta.Title != "write" && meta.Title != "edit" {
 		return
 	}
 	m, ok := args.(map[string]any)
@@ -95,6 +95,9 @@ func setFileToolArguments(meta *transcriptBlockMeta, args any) {
 	if meta.ToolPath != "" {
 		meta.Detail = truncate(strings.Join(strings.Fields(meta.ToolPath), " "), 500)
 	}
+	if meta.Title == "read" {
+		meta.ToolRange = readLineRange(m)
+	}
 	if meta.Title == "write" {
 		if content, ok := m["content"].(string); ok {
 			content = plainTerminalOutput(content)
@@ -103,21 +106,26 @@ func setFileToolArguments(meta *transcriptBlockMeta, args any) {
 	}
 }
 
-// Tokenize the complete available source before selecting preview lines. This
-// preserves multiline lexer state. Tabs follow Pi's fixed three-space display.
-func fileToolSegments(source, filePath string, highlight bool) [][]synSegment {
+// fileToolSegments is Pi's highlightCode for a read or write preview: with a
+// language from the path, highlighted lines whose unclassified text keeps
+// the terminal's colour (mdCodeBlock when the language has no highlighter);
+// without one, toolOutput lines. Tokenizing the whole source keeps multiline
+// lexer state; tabs are Pi's three spaces; trailing empty lines are trimmed.
+func fileToolSegments(source, filePath string, highlight bool) ([][]synSegment, gotui.Style) {
 	source = strings.ReplaceAll(plainTerminalOutput(source), "\r", "")
 	source = strings.ReplaceAll(source, "\t", "   ")
-	if highlight {
-		if lines, ok := highlightCodeLines(source, fileToolLanguage(filePath)); ok {
-			return trimFileToolLines(lines)
+	base := piFg(piToolOutput)
+	if lang := fileToolLanguage(filePath); highlight && lang != "" {
+		if lines, ok := highlightCodeLines(source, lang); ok {
+			return trimFileToolLines(lines), gotui.NewStyle()
 		}
+		base = piFg(piMdCodeBlock)
 	}
 	lines := make([][]synSegment, 0)
 	for _, line := range strings.Split(source, "\n") {
 		lines = append(lines, []synSegment{{text: line}})
 	}
-	return trimFileToolLines(lines)
+	return trimFileToolLines(lines), base
 }
 
 func trimFileToolLines(lines [][]synSegment) [][]synSegment {
@@ -138,54 +146,25 @@ func trimFileToolLines(lines [][]synSegment) [][]synSegment {
 	return lines
 }
 
-// Literal rich-text rows: no Markdown interpretation, no second word wrapping,
-// and width measured inside the tool band's padding on every render/resize.
+// fileToolRows lays out one preview line as Pi's Text does (word wrapped
+// to the tool band's content width).
 func fileToolRows(segments []synSegment, width int, base gotui.Style) []*gotui.Element {
-	width = max(1, width)
-	var rows []*gotui.Element
-	var spans []gotui.TextSpan
-	used := 0
-	flush := func() {
-		var linked []gotui.TextSpan
-		for _, span := range spans {
-			linked = append(linked, transcriptLinkSpans(span.Text, span.Style)...)
-		}
-		rows = append(rows, gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(1), gotui.WithWrap(false), gotui.WithRichText(linked...)))
-		spans = nil
-		used = 0
-	}
+	spans := make([]gotui.TextSpan, 0, len(segments))
 	for _, seg := range segments {
 		style := base
 		if seg.class != "" {
 			style, _ = piSyntaxStyle(base, seg.class)
 		}
-		for text := seg.text; text != ""; {
-			cluster, cells, size := gotui.NextCluster(text)
-			if size == 0 {
-				break
-			}
-			text = text[size:]
-			if used > 0 && used+cells > width {
-				flush()
-			}
-			if cells > width {
-				cluster = "�"
-				cells = 1
-			} // impossible-width cluster: do not overflow the band
-			if n := len(spans); n > 0 && spans[n-1].Style == style {
-				spans[n-1].Text += cluster
-			} else {
-				spans = append(spans, gotui.TextSpan{Text: cluster, Style: style})
-			}
-			used += cells
-		}
+		spans = append(spans, gotui.TextSpan{Text: seg.text, Style: style})
 	}
-	flush()
-	return rows
+	return piTextRows(spans, width)
 }
 
+// appendFileToolPreview is the body of Pi's read result and write call: a
+// blank line, then up to 10 lines while collapsed and the expand hint
+// (write's also counts the total).
 func (c *chatTUI) appendFileToolPreview(container *gotui.Element, block transcriptRenderableBlock, source string, highlight bool) {
-	lines := fileToolSegments(source, block.ToolPath, highlight)
+	lines, base := fileToolSegments(source, block.ToolPath, highlight)
 	limit := len(lines)
 	if !block.Expanded && limit > toolPreviewLines {
 		limit = toolPreviewLines
@@ -198,11 +177,29 @@ func (c *chatTUI) appendFileToolPreview(container *gotui.Element, block transcri
 	}
 	container.AddChild(blankRow())
 	for _, line := range lines[:limit] {
-		for _, row := range fileToolRows(line, c.transcriptBlockContentWidth("tool"), piFg(piMuted)) {
+		for _, row := range fileToolRows(line, c.transcriptBlockContentWidth("tool"), base) {
 			container.AddChild(row)
 		}
 	}
 	if remaining := len(lines) - limit; remaining > 0 && c.extensionToolModes[block.Header] != "compact" {
-		container.AddChild(textRow(expandHint(fmt.Sprintf("... (%d more lines, ", remaining), "to expand")...))
+		prefix := fmt.Sprintf("... (%d more lines, ", remaining)
+		if block.Header == "write" {
+			prefix = fmt.Sprintf("... (%d more lines, %d total, ", remaining, len(lines))
+		}
+		container.AddChild(textRow(expandHint(prefix, "to expand")...))
+	}
+}
+
+// appendErrorText is a result shown whole in the error colour (Pi's write
+// result).
+func (c *chatTUI) appendErrorText(container *gotui.Element, text string) {
+	if text = strings.TrimSpace(text); text == "" {
+		return
+	}
+	container.AddChild(blankRow())
+	for _, line := range strings.Split(text, "\n") {
+		for _, row := range piTextRows([]gotui.TextSpan{{Text: line, Style: piFg(piError)}}, c.transcriptBlockContentWidth("tool")) {
+			container.AddChild(row)
+		}
 	}
 }

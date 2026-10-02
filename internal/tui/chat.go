@@ -139,6 +139,12 @@ type transcriptBlockMeta struct {
 	MarkdownSource string  `json:"markdown_source,omitempty"`
 	ToolPath       string  `json:"tool_path,omitempty"`
 	ToolContent    *string `json:"tool_content,omitempty"`
+	// Pi's file tool renderers: read's line range and truncation notice,
+	// edit's diff or error preview.
+	ToolRange  string  `json:"tool_range,omitempty"`
+	ToolNotice string  `json:"tool_notice,omitempty"`
+	EditDiff   *string `json:"edit_diff,omitempty"`
+	EditError  string  `json:"edit_error,omitempty"`
 	// Codemode: nested call rows and the saved full output.
 	Calls          []codemodeCallRow `json:"calls,omitempty"`
 	FullOutputPath string            `json:"full_output_path,omitempty"`
@@ -175,6 +181,10 @@ type transcriptRenderableBlock struct {
 	// Tool call rendering (Pi's renderCall): argument text and timing.
 	ToolPath           string
 	ToolContent        *string
+	ToolRange          string
+	ToolNotice         string
+	EditDiff           *string
+	EditError          string
 	Calls              []codemodeCallRow
 	FullOutputPath     string
 	ToolArg            string
@@ -1626,7 +1636,7 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 	}
 	// Pi renders the call (e.g. "$ ls -la", "read path") as the tool header;
 	// the body holds only the result output.
-	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName, Detail: previous.Detail, ToolPath: previous.ToolPath, ToolContent: previous.ToolContent, Calls: previous.Calls}
+	meta := transcriptBlockMeta{Key: blockKey, Kind: "tool", Title: toolName, Detail: previous.Detail, ToolPath: previous.ToolPath, ToolContent: previous.ToolContent, ToolRange: previous.ToolRange, ToolNotice: previous.ToolNotice, EditDiff: previous.EditDiff, EditError: previous.EditError, Calls: previous.Calls}
 	if invocation := c.toolInvocationBody(toolName, payload); len(invocation) > 0 {
 		meta.Detail = invocation[0]
 	}
@@ -1643,6 +1653,7 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 		c.markRunning()
 		meta.Status = "running"
 		meta.StartedAt = startedAt.Format(time.RFC3339Nano)
+		c.setEditPreview(&meta, payload["arguments"])
 		if meta.Key == "" {
 			meta.Key = fmt.Sprintf("tool:%d:%s", time.Now().UnixNano(), toolName)
 			c.transcriptToolBlocks[toolKey] = meta.Key
@@ -1688,6 +1699,7 @@ func (c *chatTUI) renderToolEvent(payload map[string]any, ts time.Time) {
 			}
 		}
 		body = append(body, resultBody...)
+		setFileToolDetails(&meta, payload["details"], strings.TrimSpace(strings.Join(resultBody, "\n")))
 		if meta.Key == "" {
 			c.appendTranscriptBlock(meta, body)
 		} else {
@@ -5199,6 +5211,9 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 				if meta.Title == "read" && meta.ToolPath != "" && meta.Status == "ok" {
 					expandable = len(body) > 0 && c.extensionToolModes[meta.Title] == ""
 				}
+				if meta.Title == "edit" && (meta.EditDiff != nil || meta.EditError != "") {
+					expandable = false
+				}
 				if meta.Title == "write" && meta.ToolContent != nil {
 					expandable = c.extensionToolModes[meta.Title] == "" && len(strings.Split(*meta.ToolContent, "\n")) > previewLimit
 				}
@@ -5216,7 +5231,7 @@ func (c *chatTUI) buildTranscriptRenderableBlocks(lines []string) []transcriptRe
 				previewTail = true
 				expandable = len(body) > bashPreviewLines
 			}
-			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolPath: meta.ToolPath, ToolContent: meta.ToolContent, Calls: meta.Calls, FullOutputPath: meta.FullOutputPath, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
+			blocks = append(blocks, transcriptRenderableBlock{Key: meta.Key, Kind: meta.Kind, MarkdownSource: meta.MarkdownSource, Header: header, Subheader: subheader, Body: body, Expandable: expandable, Expanded: expanded, PreviewLimit: previewLimit, PreviewTail: previewTail, Footer: strings.TrimSpace(meta.Footer), Status: meta.Status, Selected: c.selectedTranscriptBlock == meta.Key, Border: gotui.BorderRounded, BorderStyle: border, HeaderStyle: headStyle, BodyStyle: bodyStyle, HintStyle: hintStyle, SelectedHint: selectedHint, ToolPath: meta.ToolPath, ToolContent: meta.ToolContent, ToolRange: meta.ToolRange, ToolNotice: meta.ToolNotice, EditDiff: meta.EditDiff, EditError: meta.EditError, Calls: meta.Calls, FullOutputPath: meta.FullOutputPath, ToolArg: strings.TrimSpace(meta.Detail), StartedAt: meta.StartedAt, EndedAt: meta.EndedAt})
 			i = j - 1
 			continue
 		}
@@ -5410,6 +5425,21 @@ func (c *chatTUI) renderTranscriptBlock(block transcriptRenderableBlock) *gotui.
 	if block.Kind == "thinking_indicator" {
 		// Pi shows turn activity in the editor's top border, not the transcript.
 		return gotui.New(gotui.WithWidthPercent(100), gotui.WithHeight(0))
+	}
+	if block.Kind == "tool" && block.Header == "edit" {
+		// Pi's edit box takes its colour from the preview; a result error the
+		// preview did not show sits below it.
+		banded := block
+		banded.Status = editBandStatus(block)
+		box := padTranscriptBlock(c.renderTranscriptBlockContent(block), banded)
+		below := c.editResultBelow(block)
+		if below == nil {
+			return box
+		}
+		wrapper := gotui.New(gotui.WithDirection(gotui.Column), gotui.WithWidthPercent(100))
+		wrapper.AddChild(box)
+		wrapper.AddChild(below)
+		return wrapper
 	}
 	return padTranscriptBlock(c.renderTranscriptBlockContent(block), block)
 }
@@ -5639,6 +5669,7 @@ func (c *chatTUI) renderToolResultWithArguments(m store.Message, arguments any) 
 		meta.Calls, meta.FullOutputPath = codemodeDetails(m.Payload["details"])
 		content = stripScriptHeader(content)
 	}
+	setFileToolDetails(&meta, m.Payload["details"], strings.TrimSpace(plainTerminalOutput(content)))
 	lines := []string{encodeTranscriptBlockMarker(meta)}
 	for _, line := range toolOutputBodyLines(content) {
 		if toolName != "read" {

@@ -3294,10 +3294,10 @@ func (c *chatTUI) loginLines(fields []string) []string {
 		for _, s := range statuses {
 			if strings.ToLower(s.ID) == want {
 				if s.Authenticated {
-					return []string{fmt.Sprintf("login: %s (%s) already authenticated [%s]", s.Name, s.ID, s.Kind)}
+					return []string{fmt.Sprintf("login: %s (%s) [%s] ✓ configured", s.Name, s.ID, s.AuthTypeLabel())}
 				}
 				return []string{
-					fmt.Sprintf("login: %s (%s) not authenticated", s.Name, s.ID),
+					fmt.Sprintf("login: %s (%s) [%s] • not configured", s.Name, s.ID, s.AuthTypeLabel()),
 					fmt.Sprintf("- add credentials to %s, then /reload", inference.AuthFilePath()),
 				}
 			}
@@ -3308,18 +3308,13 @@ func (c *chatTUI) loginLines(fields []string) []string {
 	if len(statuses) == 0 {
 		lines = append(lines, "- no OAuth providers registered")
 	}
+	// Pi's labels: the auth type, then "✓ configured" or "• not configured".
 	for _, s := range statuses {
-		mark := " "
-		state := "not authenticated"
+		state := " • not configured"
 		if s.Authenticated {
-			mark = "*"
-			state = "authenticated"
+			state = " ✓ configured"
 		}
-		kind := s.Kind
-		if kind == "" {
-			kind = "oauth"
-		}
-		lines = append(lines, fmt.Sprintf("%s %s (%s) · %s [%s]", mark, s.Name, s.ID, state, kind))
+		lines = append(lines, fmt.Sprintf("  %s (%s) [%s]%s", s.Name, s.ID, s.AuthTypeLabel(), state))
 	}
 	lines = append(lines, fmt.Sprintf("- credentials file: %s", inference.AuthFilePath()))
 	lines = append(lines, "- /login <provider> for details · /logout <provider> to remove credentials")

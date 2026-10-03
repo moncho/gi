@@ -2705,11 +2705,16 @@ func TestLoginAndLogoutCommands(t *testing.T) {
 	}
 	c := &chatTUI{cfg: config.RuntimeConfig{AssistantName: "Neo"}}
 	out := strings.Join(c.loginLines([]string{"/login"}), "\n")
-	if !strings.Contains(out, "github-copilot") || !strings.Contains(out, "authenticated") {
+	// Pi's labels: subscription-backed OAuth says "subscription", other
+	// sign-ins "account"; status "✓ configured" or "• not configured".
+	if !strings.Contains(out, "(github-copilot) [subscription] ✓ configured") {
 		t.Fatalf("login listing missing copilot status:\n%s", out)
 	}
+	if strings.Contains(out, "not authenticated") || !strings.Contains(out, "• not configured") || !strings.Contains(out, "[account]") {
+		t.Fatalf("login labels differ from Pi:\n%s", out)
+	}
 	detail := strings.Join(c.loginLines([]string{"/login", "github-copilot"}), "\n")
-	if !strings.Contains(detail, "already authenticated") {
+	if !strings.Contains(detail, "✓ configured") {
 		t.Fatalf("login detail wrong:\n%s", detail)
 	}
 	logout := strings.Join(c.logoutLines([]string{"/logout", "github-copilot"}), "\n")
@@ -2717,7 +2722,7 @@ func TestLoginAndLogoutCommands(t *testing.T) {
 		t.Fatalf("logout output wrong:\n%s", logout)
 	}
 	again := strings.Join(c.loginLines([]string{"/login", "github-copilot"}), "\n")
-	if !strings.Contains(again, "not authenticated") {
+	if !strings.Contains(again, "• not configured") {
 		t.Fatalf("expected copilot to be deauthenticated:\n%s", again)
 	}
 }

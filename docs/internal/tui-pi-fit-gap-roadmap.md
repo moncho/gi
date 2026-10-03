@@ -24,9 +24,9 @@ the chosen message goes to a new session; the message returns to the editor).
 gi's former `/fork @agentN` peer session is now `/spawn [@agentN]` (the old
 form still works).
 
-Pi built-ins not in gi yet (omitted, not approximated): `/share`, `/bug`,
-`/changelog`, `/trust`. `/import` reads Pi session files
-(docs/internal/session-import.md). `/tree`, `/settings`, `/scoped-models` and
+Pi built-ins not in gi yet (omitted, not approximated): `/bug`,
+`/changelog`, `/trust`. `/import` reads Pi session files and `/share`
+uploads one as a secret gist (docs/internal/session-import.md). `/tree`, `/settings`, `/scoped-models` and
 `/login` open Pi's interactive UIs; `/tree` navigates gi's branch sessions
 (docs/internal/tui-tree.md).
 
@@ -66,7 +66,6 @@ Implemented commands:
 
 Still intentionally absent or deferred:
 
-- `/share` (secret gist upload);
 - `/changelog` dedicated informational command (`/hotkeys` is implemented);
 - process-extension command dispatch (JS/Joker extension command dispatch is implemented);
 - additional rich forms/widgets beyond the searchable model/session/thinking selectors.
@@ -118,7 +117,6 @@ Implemented:
 Adapted/deferred:
 
 - Pi-style follow-up vs steering split is documented as an adapted gap: Gi currently routes active-session submissions through existing steering/queue semantics;
-- `/share` is deferred.
 
 ## Current transcript/layout surface
 

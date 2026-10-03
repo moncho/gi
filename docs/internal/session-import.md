@@ -1,4 +1,4 @@
-# Session import and export
+# Session import, export and sharing
 
 `/export` writes a session as Pi's session format (JSONL, version 3) or as
 Pi's HTML page (`internal/sessionexport`). `/import <path.jsonl>` reads a Pi
@@ -42,6 +42,32 @@ its session data and the theme variables for built-in, custom (every colour
 form, fallbacks, export colours) and system themes, and refreshes gi's copy
 of the template. `TestRenderHTMLMatchesPi` compares gi's page with Pi's,
 `TestExportThemeMatchesPi` the theme colours.
+
+## /share
+
+Pi's `/share` uploads the session and prints a viewer link. gi follows its
+GitHub gist path:
+
+1. gi first asks "Share session / Upload this session as a secret GitHub
+   gist?", warning that anyone with the link can read it and what sessions
+   contain. Pi does not ask; its docs tell users to review shared sessions.
+2. `gh auth status` must succeed: Pi's errors "GitHub CLI is not logged in.
+   Run 'gh auth login' first." and "GitHub CLI (gh) is not installed.
+   Install it from https://cli.github.com/".
+3. The session is exported as Pi's HTML page (the active theme) to
+   `session.html` in a temporary directory.
+4. `gh gist create --public=false session.html` runs behind Pi's bordered
+   "Creating gist..." loader, which replaces the editor; Escape or Ctrl+C
+   kills `gh` and reports "Share cancelled".
+5. gi prints `Share URL: <viewer>#<gist id>` and `Gist: <gist url>`. The
+   viewer is Pi's (`https://pi.dev/session/`), which renders the gist's
+   `session.html`; `GI_SHARE_VIEWER_URL` or Pi's `PI_SHARE_VIEWER_URL`
+   overrides it. A failed upload is `Failed to create gist: <gh's stderr>`.
+
+Pi shares through a Radius artifact when Radius sign-in is configured; gi has
+no Radius provider, so it always uses a gist. Pi's spawnSync never throws
+when `gh` is missing, so Pi reports "not logged in"; gi reports the missing
+CLI, as Pi's code intends.
 
 ## /import
 

@@ -319,6 +319,7 @@ type chatTUI struct {
 	treeSelector                *treeSelector      // Pi's /tree ("tree")
 	editorDialog                *editorDialog      // Pi's ctx.ui.editor ("editor-dialog")
 	branchSummaryCancel         context.CancelFunc // set while /tree summarizes a branch
+	loader                      *borderedLoader    // Pi's BorderedLoader (modelMenuKind "loader")
 	themeWatcher                *themeWatcher      // reloads the active custom theme's file
 	lastCtrlC                   time.Time          // Pi's app.clear: a second press within 500ms exits
 	modelMenuSession            sessionScope
@@ -710,7 +711,7 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 		if ticks%2 == 0 {
 			c.saveDurableDraft()
 		}
-		if (c.running || c.compaction.active || c.branchSummaryCancel != nil || c.hasRunningTranscriptBlock()) && c.app != nil {
+		if (c.running || c.compaction.active || c.branchSummaryCancel != nil || c.loader != nil || c.hasRunningTranscriptBlock()) && c.app != nil {
 			c.app.MarkDirty()
 		}
 	}))
@@ -1816,6 +1817,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "select" {
 		return c.selectDialogKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "loader" && c.loader != nil {
+		return c.loaderKeys()
+	}
 	if c.modelMenuOpen && c.modelMenuKind == "mcp-manager" && c.mcpManager != nil {
 		return c.mcpManagerKeys()
 	}
@@ -2152,6 +2156,13 @@ func (c *chatTUI) closeModelMenu() {
 		c.mcpManager = nil
 		if c.engine != nil {
 			c.engine.SetMCPChangeListener(nil)
+		}
+	}
+	if loader := c.loader; loader != nil {
+		// Closed by something else (session switch, quit): the work stops.
+		c.loader = nil
+		if loader.onAbort != nil {
+			defer loader.onAbort()
 		}
 	}
 	if c.selectDialog.onCancel != nil || c.selectDialog.onSelect != nil {
@@ -3110,6 +3121,8 @@ func (c *chatTUI) handleCommand(text string) {
 		c.appendTranscript(c.exportCommand(text))
 	case "/import":
 		c.appendTranscript(c.importCommand(text)...)
+	case "/share":
+		c.appendTranscript(c.shareCommand()...)
 	case "/quit", "/exit":
 		if c.app != nil {
 			c.app.Stop()
@@ -3252,8 +3265,8 @@ func (c *chatTUI) extensionCommandLines(text string, fields []string) ([]string,
 // Pi-style slash autocomplete below the editor.
 // piCommands mirrors Pi's BUILTIN_SLASH_COMMANDS: same order, names and
 // argument hints, with Pi's descriptions where gi behaves the same. Pi
-// built-ins gi does not implement yet (/import, /share, /bug,
-// /changelog, /trust) are omitted rather than approximated.
+// built-ins gi does not implement yet (/bug, /changelog, /trust) are
+// omitted rather than approximated.
 var piCommands = []struct{ name, hint string }{
 	{"/settings", "Open settings menu"},
 	{"/model <provider/model>", "Select model (opens selector UI)"},
@@ -3262,6 +3275,7 @@ var piCommands = []struct{ name, hint string }{
 	{"/scoped-models", "Enable/disable models for Ctrl+P cycling"},
 	{"/export [path]", "Export session (HTML default, or specify path: .html/.jsonl)"},
 	{"/import <path>", "Import and resume a session from a JSONL file"},
+	{"/share", "Share session as a secret GitHub gist"},
 	{"/copy [--osc52|--native|--auto|--fallback]", "Copy last agent message to clipboard"},
 	{"/name <name>", "Set session display name"},
 	{"/session", "Show session info and stats"},

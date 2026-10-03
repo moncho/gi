@@ -82,6 +82,17 @@ Rules, as in Pi:
     `mcp.log.1` past 5 MB.
   - Servers on protocol 2026-07-28 get the level per request through
     `_meta`; older servers through `logging/setLevel`.
+- **Startup report:** once every enabled server has finished its first
+  connection attempt, the engine posts Pi's `reportProblems` message
+  (`ProblemReport` in `internal/mcp/report.go`): config errors, failed servers
+  and servers that need a sign-in, then "Run /mcp to fix." Config errors are
+  reported even when no server is left to start.
+  - Notices go to `Engine.SetMCPNotifier`. Notices posted before a notifier is
+    set are kept and delivered when it is set. The TUI shows warnings as
+    `Warning: …` lines (Pi colours them; gi does not yet). `gi -web` has no
+    notifier and only logs them.
+- **Shutdown:** `Engine.Close` cancels background work before closing the
+  servers, so a server still connecting does not delay exit.
 - **Status:** `Status()` reports each server's state (`disabled`,
   `disconnected`, `connecting`, `connected` or `failed`), its error, tool
   count, exposure, source file, instructions and stderr tail.
@@ -97,8 +108,14 @@ Rules, as in Pi:
 - **`direct` tools:** registered in the tool registry like built-in tools. Hooks,
   permissions, events and audit apply, and the source is `mcp:<server>`. A
   `readOnlyHint` annotation marks the tool as `read`.
-  - Before a turn's tool set is admitted, admission waits up to 10 s, outside
-    the runner lock, for servers that can expose direct tools.
+  - Before the first prompt's tool set is admitted, admission waits up to 10 s
+    (Pi's `startupWaitMs`), outside the runner lock, for servers that can expose
+    direct tools. Only the first prompt of a run waits. If a server is still
+    connecting, Pi's notice "MCP servers are still connecting; their tools
+    become available once connected." is posted, and its tools are declared
+    once it connects. As in Pi, tools loaded with `tool_search` earlier in a
+    resumed session are declared once their server has registered them; the
+    first prompt does not wait for them.
   - When a server announces a changed tool list, its tools are re-registered,
     and withdrawn tools are unregistered.
 - **`codemode` and `deferred` tools** are registered as *deferred*:
@@ -181,7 +198,7 @@ Rules, as in Pi:
   - Without a name it picks the only enabled server, or the only failed or disconnected one; otherwise it asks for a name.
 - Not yet ported:
   - Pi's interactive manager (inspect tools, enable or disable a server, change exposure).
-  - `/mcp login` and `/mcp logout`, which need OAuth.
+  - `/mcp` argument completion and the server picker.
 
 ## OAuth (`internal/mcp/oauth.go`)
 

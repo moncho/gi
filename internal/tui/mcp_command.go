@@ -75,37 +75,12 @@ func (c *chatTUI) mcpCommand(fields []string) []string {
 		statuses, _ = c.engine.MCPStatus()
 		for _, st := range statuses {
 			if st.Name == name {
-				return []string{fmt.Sprintf("Reconnected to MCP server %q (%s).", name, describeMCPState(st))}
+				return []string{fmt.Sprintf("Reconnected to MCP server %q (%s).", name, gimcp.DescribeState(st))}
 			}
 		}
 		return []string{fmt.Sprintf("Reconnected to MCP server %q.", name)}
 	}
 	return []string{mcpUsage}
-}
-
-// describeMCPState ports Pi's describeState (without resource counts).
-func describeMCPState(st gimcp.Status) string {
-	switch st.State {
-	case gimcp.StateDisabled:
-		return "disabled"
-	case gimcp.StateFailed:
-		msg := st.Error
-		if msg == "" {
-			msg = "unknown error"
-		}
-		return "failed: " + strings.SplitN(msg, "\n", 2)[0]
-	case gimcp.StateConnected:
-		plural := "s"
-		if st.Tools == 1 {
-			plural = ""
-		}
-		return fmt.Sprintf("connected · %d tool%s", st.Tools, plural)
-	case gimcp.StateNeedsAuth:
-		return "needs sign-in"
-	case gimcp.StateConnecting:
-		return "connecting…"
-	}
-	return st.State
 }
 
 // mcpStatusText ports Pi's formatStatus.
@@ -194,16 +169,7 @@ func (c *chatTUI) startMCPSignIn(server string) []string {
 	ctx, cancel := context.WithCancel(context.Background())
 	state := &mcpSignInState{server: server, cancel: cancel, paste: make(chan string, 1)}
 	c.mcpSignIn = state
-	ui := func(fn func()) {
-		switch {
-		case c.app != nil:
-			c.app.QueueUpdate(func() { fn(); c.markDirty() })
-		case c.uiQueue != nil: // tests run updates on their own goroutine
-			c.uiQueue <- fn
-		default:
-			fn()
-		}
-	}
+	ui := c.runOnUI
 	prompt := gimcp.SignInPrompt{
 		ShowAuthorizationURL: func(u string) {
 			ui(func() {
@@ -261,3 +227,33 @@ func (c *chatTUI) startMCPSignIn(server string) []string {
 
 // openBrowser opens sign-in pages (tests replace it).
 var openBrowser = gimcp.OpenBrowser
+
+// runOnUI runs fn on the UI goroutine (from background goroutines).
+func (c *chatTUI) runOnUI(fn func()) {
+	switch {
+	case c.app != nil:
+		c.app.QueueUpdate(func() { fn(); c.markDirty() })
+	case c.uiQueue != nil: // tests run updates on their own goroutine
+		c.uiQueue <- fn
+	default:
+		fn()
+	}
+}
+
+// watchMCPNotices shows the engine's MCP notices (Pi's ctx.ui.notify):
+// warnings as "Warning: …", others as plain lines.
+func (c *chatTUI) watchMCPNotices() {
+	if c.engine == nil {
+		return
+	}
+	c.engine.SetMCPNotifier(func(level, text string) {
+		c.runOnUI(func() { c.showQueueCommand(mcpNoticeLines(level, text)) })
+	})
+}
+
+func mcpNoticeLines(level, text string) []string {
+	if level == "warning" {
+		text = "Warning: " + text
+	}
+	return strings.Split(text, "\n")
+}

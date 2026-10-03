@@ -117,3 +117,32 @@ func TestTUIMCPLoginCancel(t *testing.T) {
 		t.Fatal("sign-in state left behind")
 	}
 }
+
+// Pi's startup report reaches the transcript once servers finished their
+// first connection attempt: a server needing sign-in is listed as a warning.
+func TestTUIMCPStartupReport(t *testing.T) {
+	f := mcptest.NewOAuth(t)
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "mcp.json")
+	if err := os.WriteFile(cfgPath, []byte(fmt.Sprintf(`{"mcpServers": {"remote": {"url": %q}}}`, f.URL+"/mcp")), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c := sessionTestChat(t)
+	c.uiQueue = make(chan func(), 16)
+	c.watchMCPNotices()
+	c.engine.EnableMCPConfig(gimcp.LoadConfig(cfgPath, "", false), gimcp.NewCredentialStore(filepath.Join(dir, "mcp-auth.json")), "")
+	want := []string{"Warning: MCP servers need attention:", "  remote: needs sign-in", "Run /mcp to fix."}
+	deadline := time.Now().Add(10 * time.Second)
+	for !strings.Contains(strings.Join(c.transcript, "\n"), strings.Join(want, "\n")) {
+		select {
+		case fn := <-c.uiQueue:
+			fn()
+			continue
+		default:
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("no startup report:\n%s", strings.Join(c.transcript, "\n"))
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}

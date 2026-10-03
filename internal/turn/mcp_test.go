@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -394,4 +396,117 @@ func TestMCPReconnect(t *testing.T) {
 	if _, ok := e.tools.GetRegistered("mcp__fake_direct__echo"); !ok {
 		t.Fatal("tools lost after reconnect")
 	}
+}
+
+// Pi's startup report: once every enabled server finished its first
+// connection attempt, config errors and failed servers are reported in one
+// message, delivered to a notifier set later too.
+func TestMCPStartupProblemReport(t *testing.T) {
+	fake := mcptest.New("ok")
+	t.Cleanup(fake.Close)
+	dead := hangingListener(t, false)
+	path := filepath.Join(t.TempDir(), "mcp.json")
+	body := fmt.Sprintf(`{"mcpServers": {"good": {"url": %q}, "dead": {"url": %q}, "broken": {}}}`, fake.URL, dead)
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := gimcp.LoadConfig(path, "", false)
+	if len(cfg.Errors) != 1 {
+		t.Fatal(cfg.Errors)
+	}
+	s := openTestStore(t)
+	e := New(s)
+	t.Cleanup(func() { e.Close(); s.Close() })
+	e.enableMCPWith(gimcp.NewManager(cfg, t.TempDir(), ""))
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		e.mcpNotices.mu.Lock()
+		n := len(e.mcpNotices.pending)
+		e.mcpNotices.mu.Unlock()
+		if n > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("no startup report")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	var got [][2]string
+	e.SetMCPNotifier(func(level, text string) { got = append(got, [2]string{level, text}) })
+	if len(got) != 1 || got[0][0] != "warning" {
+		t.Fatalf("%q", got)
+	}
+	lines := strings.Split(got[0][1], "\n")
+	if len(lines) != 4 || lines[0] != "MCP servers need attention:" || lines[1] != "  config: "+cfg.Errors[0].Error() ||
+		!strings.HasPrefix(lines[2], "  dead: failed: ") || lines[3] != "Run /mcp to fix." {
+		t.Fatalf("%q", lines)
+	}
+}
+
+// Pi's waitForDirectServers: only the first prompt waits, and when a direct
+// server is still connecting it says so.
+func TestMCPDirectWaitOnlyOnce(t *testing.T) {
+	old := mcpDirectWait
+	mcpDirectWait = 200 * time.Millisecond
+	t.Cleanup(func() { mcpDirectWait = old })
+	slow := hangingListener(t, true)
+	path := filepath.Join(t.TempDir(), "mcp.json")
+	if err := os.WriteFile(path, []byte(fmt.Sprintf(`{"mcpServers": {"slow": {"url": %q, "exposure": "direct"}}}`, slow)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s := openTestStore(t)
+	e := New(s)
+	t.Cleanup(func() { e.Close(); s.Close() })
+	var notices []string
+	e.SetMCPNotifier(func(level, text string) { notices = append(notices, level+": "+text) })
+	e.enableMCPWith(gimcp.NewManager(gimcp.LoadConfig(path, "", false), t.TempDir(), ""))
+	start := time.Now()
+	e.awaitDirectMCPTools(context.Background())
+	if waited := time.Since(start); waited < 150*time.Millisecond {
+		t.Fatalf("first prompt did not wait: %v", waited)
+	}
+	start = time.Now()
+	e.awaitDirectMCPTools(context.Background())
+	if waited := time.Since(start); waited > 50*time.Millisecond {
+		t.Fatalf("later prompt waited: %v", waited)
+	}
+	if len(notices) != 1 || notices[0] != "info: "+gimcp.StillConnectingNotice {
+		t.Fatalf("%q", notices)
+	}
+}
+
+// hangingListener returns an HTTP URL whose connections either close at once
+// (a failed server) or are held open without a response (still connecting).
+func hangingListener(t *testing.T, hold bool) string {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	var conns []net.Conn
+	t.Cleanup(func() {
+		ln.Close()
+		mu.Lock()
+		for _, c := range conns {
+			c.Close()
+		}
+		mu.Unlock()
+	})
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			if !hold {
+				c.Close()
+				continue
+			}
+			mu.Lock()
+			conns = append(conns, c)
+			mu.Unlock()
+		}
+	}()
+	return "http://" + ln.Addr().String() + "/mcp"
 }

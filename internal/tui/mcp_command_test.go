@@ -23,7 +23,7 @@ func TestTUIMCPCommand(t *testing.T) {
 		{State: gimcp.StateFailed, Error: "boom\nmore"}: "failed: boom",
 		{State: gimcp.StateConnecting}:                  "connecting…",
 	} {
-		if got := describeMCPState(st); got != want {
+		if got := gimcp.DescribeState(st); got != want {
 			t.Fatalf("%+v: %q", st, got)
 		}
 	}

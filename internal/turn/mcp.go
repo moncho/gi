@@ -28,9 +28,9 @@ import (
 // tools are unreachable. The mcp_servers prompt section lists servers whose
 // tools are not declared.
 
-// mcpDirectWait bounds how long admission waits for servers with direct
-// tools (Pi: the first prompt waits up to 10 seconds).
-const mcpDirectWait = 10 * time.Second
+// mcpDirectWait bounds how long the first prompt waits for servers with
+// direct tools (Pi's startupWaitMs, 10 seconds). A variable for tests.
+var mcpDirectWait = 10 * time.Second
 
 // mcpOutputNamespace is the VFS namespace for full MCP outputs and binary
 // resources, readable with the read tool (Pi uses temp files).
@@ -97,6 +97,9 @@ func (e *Engine) EnableMCP() {
 		log.Printf("mcp: %v", err)
 	}
 	if len(cfg.Servers) == 0 {
+		// Pi reports config errors even when no server is left to start.
+		e.mcpConfigErrors = cfg.Errors
+		e.mcpNotices.post("warning", gimcp.ProblemReport(nil, cfg.Errors))
 		return
 	}
 	// gi writes its own log (Pi's is ~/.pi/agent/mcp.log); OAuth credentials
@@ -130,6 +133,66 @@ func (e *Engine) enableMCPWith(m *gimcp.Manager) {
 			continue
 		}
 		go e.refreshMCPServer(e.backgroundContext(), name)
+	}
+	go e.reportMCPStartup(e.backgroundContext(), st)
+}
+
+// reportMCPStartup posts Pi's one-time "need attention" report (config
+// errors, failed servers, required sign-ins) once every enabled server has
+// finished its first connection attempt.
+func (e *Engine) reportMCPStartup(ctx context.Context, st *mcpState) {
+	st.mu.Lock()
+	ready := make([]chan struct{}, 0, len(st.ready))
+	for _, ch := range st.ready {
+		ready = append(ready, ch)
+	}
+	st.mu.Unlock()
+	for _, ch := range ready {
+		select {
+		case <-ch:
+		case <-ctx.Done():
+			return
+		}
+	}
+	e.mcpNotices.post("warning", gimcp.ProblemReport(st.manager.Status(), st.manager.Config().Errors))
+}
+
+// mcpNotices holds MCP notices for the UI (Pi's ctx.ui.notify) until a
+// notifier is set, so startup reports are not lost.
+type mcpNotices struct {
+	mu      sync.Mutex
+	notify  func(level, text string)
+	pending [][2]string
+}
+
+func (n *mcpNotices) post(level, text string) {
+	if text == "" {
+		return
+	}
+	n.mu.Lock()
+	notify := n.notify
+	if notify == nil {
+		n.pending = append(n.pending, [2]string{level, text})
+	}
+	n.mu.Unlock()
+	if notify != nil {
+		notify(level, text)
+	} else {
+		log.Printf("mcp: %s", text)
+	}
+}
+
+// SetMCPNotifier receives MCP notices (level "info" or "warning"), including
+// ones posted before it was set. The TUI shows them; without a notifier they
+// are only logged.
+func (e *Engine) SetMCPNotifier(fn func(level, text string)) {
+	e.mcpNotices.mu.Lock()
+	e.mcpNotices.notify = fn
+	pending := e.mcpNotices.pending
+	e.mcpNotices.pending = nil
+	e.mcpNotices.mu.Unlock()
+	for _, n := range pending {
+		fn(n[0], n[1])
 	}
 }
 
@@ -310,10 +373,12 @@ func (e *Engine) mcpSaver(ctx context.Context, sessionID string) gimcp.SaveFunc 
 	}
 }
 
-// awaitDirectMCPTools waits (bounded) for servers that can give tools direct
-// exposure, so they are part of the turn's admitted tool set (Pi).
+// awaitDirectMCPTools ports Pi's waitForDirectServers: the first prompt
+// waits (at most mcpDirectWait) for servers that can give tools direct
+// exposure, so they are part of its admitted tool set. Later prompts do not
+// wait; a server that connects later declares its tools from then on.
 func (e *Engine) awaitDirectMCPTools(ctx context.Context) {
-	if e.mcp == nil {
+	if e.mcp == nil || e.mcpWaited.Swap(true) {
 		return
 	}
 	deadline := time.NewTimer(mcpDirectWait)
@@ -331,6 +396,7 @@ func (e *Engine) awaitDirectMCPTools(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-deadline.C:
+			e.mcpNotices.post("info", gimcp.StillConnectingNotice)
 			return
 		}
 	}
@@ -528,7 +594,7 @@ func (e *Engine) updateToolSearchLocked() {
 // MCPStatus reports the configured MCP servers (nil without MCP).
 func (e *Engine) MCPStatus() ([]gimcp.Status, []error) {
 	if e.mcp == nil {
-		return nil, nil
+		return nil, e.mcpConfigErrors
 	}
 	return e.mcp.manager.Status(), e.mcp.manager.Config().Errors
 }

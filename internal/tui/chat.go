@@ -632,6 +632,7 @@ func (c *chatTUI) Init() func() {
 	c.ensureInput()
 	c.loadDurableDraft()
 	c.noticeHeldInterruptions()
+	c.watchMCPNotices()
 	c.scrollTranscriptToBottom()
 
 	if c.app != nil {

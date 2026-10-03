@@ -52,6 +52,9 @@ type Engine struct {
 	bgCtx                             context.Context
 	bgCancel                          context.CancelFunc
 	mcp                               *mcpState      // nil unless EnableMCP was called
+	mcpConfigErrors                   []error        // config errors when no server is configured
+	mcpNotices                        mcpNotices     // for the UI (SetMCPNotifier)
+	mcpWaited                         atomic.Bool    // the first prompt waited for direct MCP servers
 	codemode                          *codemodeState // nil when -builtin:codemode
 	closing                           atomic.Bool    // set by Close: no new launches
 	runs                              sync.WaitGroup // in-flight runTurn goroutines
@@ -329,6 +332,11 @@ func (e *Engine) Close() error {
 	}
 	if e.closing.CompareAndSwap(false, true) {
 		e.abortActiveTurns(shutdownGrace)
+		// Cancel background work first: an MCP server still connecting holds
+		// its lock until the connect ends, which would delay closing it.
+		if e.bgCancel != nil {
+			e.bgCancel()
+		}
 		e.closeMCP()
 	}
 	if e.bgCancel != nil {

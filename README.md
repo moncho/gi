@@ -98,14 +98,16 @@ That installs Go/Bun dependencies, installs Playwright Chromium, and builds `gi`
 | `make test` | Go unit tests |
 | `make vet` | Go vet |
 | `make bun-checks` | Hook TDZ checker |
-| `make check` | Go tests, vet, web build, hook checks and functional browser tests; excludes the parity matrix |
+| `make check` | Go tests, vet, web build, hook checks, adapter tests and functional browser tests |
 | `make test-ux` | Functional browser/API tests against an isolated instance |
 | `make test-ux-journey` | Empty-store startup/new-chat/Return and retry journeys; Chromium/WebKit at three sizes; required CI gate |
 | `make test-ux-picker-geometry` | Pinned Classic composer/picker bounds, responsive transitions and dismissal; required browser CI step |
 | `make test-ux-slash` | Native command catalogue and composer/Quick Actions keyboard ownership; required browser CI step |
 | `make test-ux-workspace-tabs` | Read-only preview/conversation transitions, keyboard/touch tabs and lifecycle; required browser CI step |
-| `make ux-parity-inventory` | Check frozen feature hashes and generate the scenario inventory |
-| `make test-ux-parity` | Default browser parity suite in Chromium/WebKit at three viewport sizes; specialised suites have separate targets/flags |
+| `make fixtures-vibes` | Pinned shared Classic compliance across six browser/viewport projects |
+| `make test-ux-parity` | Compatibility alias for shared Classic compliance |
+| `make test-web-adapters` | Gi adapter tests and frozen provenance |
+| `make test-web-regression` | Gi-specific browser race and recovery probes |
 | `make test-ux-auth` | Isolated TOTP/browser-auth regression suite |
 | `make test-ux-passkeys` | Real Chromium WebAuthn API and Settings/login journeys at three sizes; virtual authenticators, no physical-device claim |
 | `make check-cross-build` | Optional local pure-Go builds for Linux/macOS amd64/arm64 and Windows amd64; Windows is excluded from CI |
@@ -216,9 +218,9 @@ make bun-checks # hook TDZ checker
 make check      # standard verification suite
 ```
 
-The `test-ux` target creates a fresh database, workspace and configuration for each run. It excludes `tests/ux/`, which has a separate runner and specialised fixture targets; see [the browser suite guide][ux].
+The `test-ux` target creates a fresh database, workspace and configuration for each run. Gi-specific race and recovery probes live in `tests/web-regression/`; see [the browser suite guide][ux].
 
-The frozen catalogue contains 236 Classic scenario IDs (256 expanded cases) and 42 shared cases. Mapped scenarios and successful test executions are tracked separately in the [parity matrix][parity]. CI gates Linux/macOS builds on native tests, the isolated Chromium passkey suite and six-project Chromium/WebKit startup/Return journeys. The complete browser UX matrix is not yet a CI gate.
+Classic compliance uses `references/fixtures-vibes`, pinned to the coordinator-authorised post-v0.1.0 patch `0874ea2`. `make fixtures-vibes` runs its six-project Chromium/WebKit matrix and report gate. Results and skips are recorded per shared scenario; rows without a suite test remain visible. Release-tag CI runs this gate separately from the native and Gi-specific browser checks. Frozen local feature snapshots remain historical provenance.
 
 The `test-tui-smoke` target launches `gi -tui` inside tmux, captures the pane, submits input, verifies blur handling, exercises transcript scrolling keys, resizes the terminal, and writes pane captures plus session artifacts under `test-results/tui-smoke/`. Mouse click focus is covered in unit tests.
 

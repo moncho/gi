@@ -24,7 +24,7 @@ test('versioned oracle scenarios are parseable, isolated and intentionally outsi
  ]);
  expect(pickles.every(p=>p.tags.some(t=>t.name==='@oracle-only')&&p.tags.some(t=>t.name==='@not-gi-parity'))).toBe(true);
  expect(pickles.every(p=>p.steps.length>=5)).toBe(true);
- const normal=readFileSync(resolve(root,'tests/ux/support/catalogue.mjs'),'utf8');
+ const normal=readFileSync(resolve(root,'tests/ux/support/provenance.mjs'),'utf8');
  expect(normal).not.toContain('features/oracle');
 });
 

@@ -59,107 +59,107 @@
   ],
   "evidence": {
     "metadata": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Classic Settings shows native credential metadata without exposing authentication material",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "first": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings first passkey waits for native confirmation and retains fresh TOTP sign-in without chat enrolment",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "second": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings adds a second distinct key with passkey-only proof and no configured TOTP",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "restart-api": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "native WebAuthn keeps two independent keys across restart and permits passkey-only further enrollment",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "restart-ui": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings enrolls two passkeys and fresh login accepts each after restart without replacing drafts",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "unnamed": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings renames one of two unnamed credentials without changing material and retains it after reload",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "names": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings rename validates ${example.label} and the same credential still signs in",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "remove": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings confirmed removal rejects a fresh removed-key assertion and accepts only the surviving key",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "cancel": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings removal cancellation sends no request and restores the exact identified control",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "failures": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings owns cancellation, reauth and failed or uncertain writes without replacing confirmed rows",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "duplicate": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "native duplicate registration does not replace keys and lost finish response reconciles once",
       "scope": "API/CDP only; duplicate-ID guard seeded by inserting collision record into disposable store."
     },
     "retry": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings ${operation} ${fault} failure retains confirmed state until explicit native retry",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "orphan": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings explains rejected local credentials and closing pending ceremony cannot update another pane",
       "scope": "Classic UI with mocked finish rejection and empty inventory; native rejection with an existing key is separately covered by invalid."
     },
     "unavailable": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings unavailable ${missing} never starts a credential operation and recovers explicitly",
       "scope": "Runtime capability overrides after real login/enrolment and native TOTP-only policy; not old-browser or insecure-origin proof."
     },
     "narrow": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Classic narrow passkeys avoid horizontal clipping and retain ${inputMode} cancellation ownership",
       "scope": "Explicit390px contexts, keyboard Tab/Enter and trusted taps; touch variant programmatically focuses Close for outside-focus assertion. Roles, not screen-reader speech."
     },
     "invalid": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings native registration ${fault} failure hides proof and retains usable credentials",
       "scope": "Native errors using real credential creation; origin/RP tampered payload; revocation after create before finish delivery, not prompt-open."
     },
     "reauth": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings cancelled reauthentication cannot authorise ${operation} before fresh proof",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "isolation": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings proof in one browser leaves another stale for add rename and remove",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "policy": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings changes accepted factors without lockout and reauthenticates under the current policy",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "race": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Two Settings views concurrently remove different keys without deleting the last sign-in factor",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
     "policy-race": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Policy changes reject stale browser revisions and protect a pending last-key removal",
       "scope": "Classic, HTTP localhost, Chromium CDP virtual authenticator; no physical prompt or Visual acceptance."
     },
@@ -169,7 +169,7 @@
       "scope": "Disposable single-user owner created and verified through native TOTP endpoints; HTTP localhost RP."
     },
     "auth-unconfigured": {
-      "file": "tests/ux/auth.spec.mjs",
+      "file": "tests/web-regression/auth.spec.mjs",
       "anchor": "Authentication pane explains unavailable passkeys and preserves drafts across narrow keyboard navigation",
       "scope": "Chromium/WebKit, configured TOTP owner without passkey RP."
     },
@@ -194,7 +194,7 @@
       "scope": "Native metadata/rename/concurrent last-factor safety; existing token remains valid immediately."
     },
     "return-reconcile": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings ${returnVia} reconciles a lost registration response without replay",
       "scope": "Classic HTTP localhost/CDP; pane switch and Settings reopen; authoritative held inventory GET; no physical prompt/Visual credit. Draft text and attachment pill retention, not attachment byte equality."
     },
@@ -204,12 +204,12 @@
       "scope": "Native HTTP handler with real owner/automation tokens and seeded nonempty credential; no ceremony verification or family mode credit. Exact refusal/state-byte equality/no cookie/no inventory canaries plus normal owner-list positive control."
     },
     "query-ui": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Passkey inventory refuses account queries without disclosing or changing the owner credentials",
       "scope": "Classic localhost/CDP real registration; seven account/unexpected query variants400; unchanged full auth store, ordinary owner-list/Settings refresh positive control."
     },
     "removal-reasons": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings removal explains ${example.name} from the committed native decision",
       "scope": "Classic localhost/CDP: real accepted passkey proof; seven native decision/explanation cases with held requests. Unsupported TOTP/RP preconditions seeded in disposable store; disabled secret is NOT pending owner enrolment."
     },
@@ -219,17 +219,17 @@
       "scope": "Seeded native factor matrix, recent owner proof; errors.Is compatibility, zero result/refusal byte-equality, unchanged sessions and legacy wrapper. Decision/reason/outcome share transaction."
     },
     "duplicate-ui": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings rejects a verified duplicate credential without replacing the original key",
       "scope": "Classic localhost/CDP original none-attestation material paired with fresh genuine clientData; crafted finish reaches native409 duplicate after verifier. No server collision seed or physical authenticator duplicate/forgery acceptance."
     },
     "session-end": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Removing a passkey preserves sessions until explicit ${ending}",
       "scope": "Classic localhost/CDP: passkey-proof owner and independent TOTP session; removal preserves exact session/cookie state, logout only captured session, accelerated2sserver-clock expiry fixture. Draft text/attachment pill retained; no byte equality or12hphysicalwait."
     },
     "logout-ui": {
-      "file": "tests/ux/auth.spec.mjs",
+      "file": "tests/web-regression/auth.spec.mjs",
       "anchor": "TOTP browser sign-out waits for native status and preserves drafts and other sessions",
       "scope": "Chromium/WebKitthreeviewports; native logout, held status read, confirmation Escape cancel, ownercookie cleared, independent browser unaffected, fresh login restores draft/pill/session selection."
     },
@@ -239,12 +239,12 @@
       "scope": "Atomic browser-owner-only revocation; removed/stale proof accepted for logout, only captured token removed; bearer/expired/revoked authority refused without changing state."
     },
     "insecure-host": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Actual insecure host blocks browser authority before Settings without weakening the secure-context boundary",
       "scope": "RealChromium HTTPgi-insecure.test mappedonlytoloopback, isSecureContextfalse, copiedvalidownercookie. No trust/propertyoverride. GateblocksSettings; UIzeroPOST/calls, directAPI401/403/fullauthstateequal andlocalhosttoken/keypositivecontrol. Not frozenSettingsleveljourney."
     },
     "owner-setup-ui": {
-      "file": "tests/ux/passkeys.spec.mjs",
+      "file": "tests/web-regression/passkeys.spec.mjs",
       "anchor": "Settings first-owner setup enables a real first passkey without chat enrolment",
       "scope": "Classic localhost/CDP: starts unenrolled, manually enters displayed TOTP key into test authenticator generator, verifies through Settings then creates actual first virtual passkey; fresh passkey and TOTP login. No QR scan/physical device/Visual acceptance."
     }

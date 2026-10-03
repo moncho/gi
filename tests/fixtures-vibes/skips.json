@@ -1,7 +1,13 @@
 {
   "runtime": "gi",
-  "fixturesVibes": "v0.1.0-rc.16",
+  "fixturesVibes": "0874ea2465394eb3d18c212c351cb9bad881acda",
   "skips": [
+    { "id": "@ux-compaction-001", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
+    { "id": "@ux-compaction-002", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
+    { "id": "@ux-compaction-003", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
+    { "id": "@ux-compaction-004", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
+    { "id": "@ux-shell-004", "reason": "capability-absent", "capability": "@cap-terminal", "detail": "Gi has no web Terminal or VNC callbacks." },
+    { "id": "@ux-shell-007", "reason": "capability-absent", "capability": "@cap-terminal", "detail": "Gi has read-only preview tabs but no web Terminal pane." },
     { "id": "@ux-theme-001", "reason": "capability-absent", "capability": "@cap-theme-tint", "detail": "Gi uses native appearance preferences, not composer /theme and /tint commands or Piclaw storage keys." },
     { "id": "@ux-theme-002", "reason": "capability-absent", "capability": "@cap-theme-tint", "detail": "Gi uses native appearance preferences, not composer /theme and /tint commands or Piclaw storage keys." },
     { "id": "@ux-theme-003", "reason": "capability-absent", "capability": "@cap-theme-tint", "detail": "Gi uses native appearance preferences, not composer /theme and /tint commands or Piclaw storage keys." },

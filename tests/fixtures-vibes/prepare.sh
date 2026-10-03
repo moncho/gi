@@ -13,5 +13,11 @@ printf '%s\n' '---' 'name: review' 'description: Examine the vermilion verificat
 printf '%s\n' '{"defaultProvider":"fixture-vibes","defaultModel":"fixture-vibes/fixture-1","defaultThinkingLevel":"low","enabledModels":["fixture-vibes/fixture-1","fixture-vibes/fixture-2"],"maxIterations":4,"inboundWork":{"enabled":false}}' > "$FIXTURES_ROOT/workspace/.pi/settings.json"
 printf '%s\n' '{"assistant":{"assistantName":"Gi Fixture"},"user":{"userName":"Fixture User"}}' > "$FIXTURES_ROOT/workspace/.piclaw/config.json"
 printf '%s\n' '{"fixture-vibes":{"type":"api_key","apiKey":"fixture-only"}}' > "$FIXTURES_ROOT/home/.pi/agent/auth.json"
-cd "$(dirname "$0")/../.."
-go build -tags fixtures_vibes -o "$FIXTURES_ROOT/bin/gi" ./cmd/gi
+# The Makefile builds once before Playwright starts. Replacement workers only
+# copy that fixture build, so compilation cannot exhaust their setup timeout.
+if [ -n "${GI_FIXTURE_BIN:-}" ]; then
+  cp "$GI_FIXTURE_BIN" "$FIXTURES_ROOT/bin/gi"
+else
+  cd "$(dirname "$0")/../.."
+  go build -tags fixtures_vibes -o "$FIXTURES_ROOT/bin/gi" ./cmd/gi
+fi

@@ -102,7 +102,7 @@ endef
 	build-web build \
 	run start stop restart status logs \
 	test vet bun-checks check \
-	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config ux-parity-inventory test-tui-smoke test-tui-gherkin test-tui-input-history test-tui-sessions test-tui-source-copy test-tui-markdown \
+	test-instance-start test-instance-stop test-ux test-ux-parity test-ux-index-config test-web-adapters test-tui-smoke test-tui-gherkin test-tui-input-history test-tui-sessions test-tui-source-copy test-tui-markdown \
 	clean
 
 # ── Help and bootstrap ──────────────────────────────────────────────────
@@ -137,8 +137,10 @@ help:
 		"  make test-tui-gherkin Run the TUI gherkin harness" \
 		"  make test-tui-markdown Run Markdown/ANSI Gherkin scenarios in tmux" \
 		"  make test-tui-sessions Verify draft isolation and compact picker sizes" \
-		"  make test-ux-parity   Run mapped frozen Piclaw scenarios in Chromium/WebKit" \
-		"  make ux-parity-inventory Verify all frozen feature hashes and list coverage" \
+		"  make test-ux-parity   Alias for pinned shared Classic compliance" \
+		"  make fixtures-vibes   Run pinned shared Classic compliance (six projects)" \
+		"  make test-web-adapters Run Gi adapter and frozen provenance checks" \
+		"  make test-web-regression Run Gi-only browser regressions" \
 		"" \
 		"Isolated test instance" \
 		"  make test-instance-start  Start the isolated test server on 127.0.0.1:$(TEST_PORT)" \
@@ -229,9 +231,7 @@ logs:
 # ── Checks and tests ────────────────────────────────────────────────────
 
 .PHONY: test-session-thinking test-ux-thinking test-shared-capability-evidence
-test-shared-capability-evidence: test-ux-thinking
-	$(BUN) test tests/ux/support/parity-report.test.ts tests/ux/support/passkey-criteria.test.ts
-	$(BUN) scripts/ux-parity-report.mjs test-results/ux-parity/results.json
+test-shared-capability-evidence: fixtures-vibes
 
 .PHONY: test-message-retrieval
 test-message-retrieval:
@@ -240,19 +240,17 @@ test-message-retrieval:
 .PHONY: test-ux-message-retrieval
 test-ux-message-retrieval: build-web test-message-retrieval
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_MESSAGE_RETRIEVAL=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test -c playwright.ux.config.mjs tests/ux/message-retrieval.spec.mjs $(UX_PARITY_ARGS)
+	GI_UX_MESSAGE_RETRIEVAL=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test -c playwright.web-regression.config.mjs tests/web-regression/message-retrieval.spec.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-shared-message-evidence
-test-shared-message-evidence: test-ux-message-retrieval
-	$(BUN) test tests/ux/support/parity-report.test.ts tests/ux/support/passkey-criteria.test.ts
-	$(BUN) scripts/ux-parity-report.mjs test-results/ux-parity/message-retrieval-results.json
+test-shared-message-evidence: fixtures-vibes
 
 test-session-thinking:
 	$(GO) test $(RACE) -count=3 ./internal/store ./internal/inference ./internal/turn ./internal/web -run SessionThinking
 
 test-ux-thinking: build-web test-session-thinking
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_THINKING=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config playwright.ux.config.mjs tests/ux/session-thinking.spec.mjs $(UX_PARITY_ARGS)
+	GI_UX_THINKING=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config playwright.web-regression.config.mjs tests/web-regression/session-thinking.spec.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-web-queue-hold
 test-web-queue-hold:
@@ -265,7 +263,7 @@ test-web-send-receipts:
 .PHONY: test-web-http-helpers test-web-basic-send test-web-basic-controls
 
 test-web-basic-controls:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV="GI_UX_BASIC_HTTP=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN))" UX_LOCAL_SPEC=tests/ux/basic-http-control.spec.mjs
+	$(MAKE) test-ux-steer UX_LOCAL_ENV="GI_UX_BASIC_HTTP=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN))" UX_LOCAL_SPEC=tests/web-regression/basic-http-control.spec.mjs
 test-web-http-helpers:
 	$(BUN) test tests/ux/support/random-id.test.ts tests/ux/support/drafts.test.ts tests/ux/support/send-recovery.test.ts
 
@@ -326,12 +324,12 @@ test-piclaw-idle-steer:
 
 .PHONY: test-ux-idle-steer
 test-ux-idle-steer: test-idle-queue-steer
-	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/queue-idle-steer.spec.mjs'
+	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/queue-idle-steer.spec.mjs'
 
 .PHONY: test-ux-ended-steer
 test-ux-ended-steer: build-web
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_ENDED_STEER=1 GI_UX_STEER=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/queue-ended-steer.spec.mjs $(UX_PARITY_ARGS)
+	GI_UX_ENDED_STEER=1 GI_UX_STEER=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/queue-ended-steer.spec.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-idle-queue-steer
 test-idle-queue-steer:
@@ -339,7 +337,7 @@ test-idle-queue-steer:
 
 .PHONY: test-ux-message-reference-labels
 test-ux-message-reference-labels: test-message-reference-labels
-	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/message-reference-labels.spec.mjs'
+	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/message-reference-labels.spec.mjs'
 
 .PHONY: test-message-reference-labels
 test-message-reference-labels:
@@ -465,7 +463,7 @@ test-piclaw-widget-persisted:
 
 UX_SETTINGS_PROJECTS ?=
 test-ux-settings-title: test-piclaw-settings-title
-	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/settings-shell.spec.mjs tests/ux/gi-settings.spec.mjs $(UX_SETTINGS_PROJECTS)'
+	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/settings-shell.spec.mjs tests/web-regression/gi-settings.spec.mjs $(UX_SETTINGS_PROJECTS)'
 
 .PHONY: test-piclaw-output-oracle test-piclaw-failed-tool-wait
 test-piclaw-output-oracle: build-web
@@ -505,11 +503,13 @@ vet:
 bun-checks:
 	$(BUN) run check:hook-tdz
 
-check: test vet build-web bun-checks test-ux
+check: test vet build-web bun-checks test-web-adapters test-ux
 
 .PHONY: fixtures-vibes
-fixtures-vibes:
-	$(MAKE) -C references/fixtures-vibes deps compliance PROFILE=$(CURDIR)/tests/fixtures-vibes/profile.json
+fixtures-vibes: build-web
+	mkdir -p $(BIN_DIR)
+	$(GO) build -tags fixtures_vibes -o $(BIN_DIR)/gi-fixtures-vibes ./cmd/gi
+	GI_FIXTURE_BIN=$(abspath $(BIN_DIR)/gi-fixtures-vibes) $(MAKE) -C references/fixtures-vibes deps compliance PROFILE=$(CURDIR)/tests/fixtures-vibes/profile.json $(FIXTURES_VIBES_ARGS)
 
 # ── Isolated UX test instance ───────────────────────────────────────────
 
@@ -552,46 +552,44 @@ UX_PARITY_ARGS ?=
 
 # Real local inference checkpoints (no paid provider).
 UX_LOCAL_ENV ?= GI_UX_STEER=1
-UX_LOCAL_SPEC ?= tests/ux/queue-steer.spec.mjs
+UX_LOCAL_SPEC ?= tests/web-regression/queue-steer.spec.mjs
 UX_LOCAL_BIN ?= bin/gi-ux-steer
 UX_LOCAL_PORT ?= 19092
 .PHONY: test-shared-stop-evidence
-test-shared-stop-evidence: test-ux-reconnect
-	$(BUN) test tests/ux/support/parity-report.test.ts tests/ux/support/passkey-criteria.test.ts
-	$(BUN) scripts/ux-parity-report.mjs test-results/ux-parity/reconnect-results.json
+test-shared-stop-evidence: fixtures-vibes
 
 test-ux-reconnect: build-web
 	@mkdir -p $(dir $(UX_LOCAL_BIN))
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_RECONNECT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/reconnect.spec.mjs $(UX_PARITY_ARGS)
+	GI_UX_RECONNECT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/reconnect.spec.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-ux-status-swipes test-ux-mobile-exclusions test-ux-thoughts test-ux-direct-reply-steer
 test-ux-direct-reply-steer:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV=GI_UX_DIRECT_REPLY_STEER=1 UX_LOCAL_SPEC=tests/ux/direct-reply-steer.spec.mjs
+	$(MAKE) test-ux-steer UX_LOCAL_ENV=GI_UX_DIRECT_REPLY_STEER=1 UX_LOCAL_SPEC=tests/web-regression/direct-reply-steer.spec.mjs
 
 test-ux-thoughts:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV=GI_UX_THOUGHTS=1 UX_LOCAL_SPEC=tests/ux/thoughts.spec.mjs
+	$(MAKE) test-ux-steer UX_LOCAL_ENV=GI_UX_THOUGHTS=1 UX_LOCAL_SPEC=tests/web-regression/thoughts.spec.mjs
 
 test-ux-status-swipes:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV=GI_UX_STATUS_SWIPES=1 UX_LOCAL_SPEC=tests/ux/status-swipes.spec.mjs
+	$(MAKE) test-ux-steer UX_LOCAL_ENV=GI_UX_STATUS_SWIPES=1 UX_LOCAL_SPEC=tests/web-regression/status-swipes.spec.mjs
 
 test-ux-mobile-exclusions:
-	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_REJECTION=1 GI_UX_MOBILE_EXCLUSIONS=1' UX_LOCAL_SPEC=tests/ux/mobile-exclusions.spec.mjs
+	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_REJECTION=1 GI_UX_MOBILE_EXCLUSIONS=1' UX_LOCAL_SPEC=tests/web-regression/mobile-exclusions.spec.mjs
+
 
 test-ux-compaction:
-	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_COMPACTION=1 UX_LOCAL_SPEC=tests/ux/compaction.spec.mjs
+	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_COMPACTION=1 UX_LOCAL_SPEC=tests/web-regression/compaction.spec.mjs
 
 test-ux-context-meter:
-	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_METER=1 UX_LOCAL_SPEC=tests/ux/context-meter.spec.mjs
+	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_METER=1 UX_LOCAL_SPEC=tests/web-regression/context-meter.spec.mjs
 
 test-ux-context-fit:
-	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_CONTEXT=1 UX_LOCAL_SPEC=tests/ux/context-fit.spec.mjs
+	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_CONTEXT=1 UX_LOCAL_SPEC=tests/web-regression/context-fit.spec.mjs
 
 test-ux-index-config:
-	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_INDEX_CONFIG=1 UX_LOCAL_SPEC=tests/ux/workspace-index-config.spec.mjs
+	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_INDEX_CONFIG=1 UX_LOCAL_SPEC=tests/web-regression/workspace-index-config.spec.mjs
 
-test-ux-shared-copy-delete:
-	$(MAKE) --no-print-directory test-ux-steer UX_LOCAL_ENV=GI_UX_SHARED_COPY_DELETE=1 UX_LOCAL_SPEC=tests/ux/shared-copy-delete.spec.mjs
+test-ux-shared-copy-delete: fixtures-vibes
 
 test-ux-steer: build-web
 	@mkdir -p $(dir $(UX_LOCAL_BIN)) test-results/ux-parity/queue-gates
@@ -601,15 +599,20 @@ test-ux-steer: build-web
 	trap 'kill $$pid 2>/dev/null || true; wait $$pid 2>/dev/null || true' EXIT; \
 	ready=0; for i in $$(seq 1 100); do kill -0 $$pid || exit 1; if curl -fsS http://127.0.0.1:$(UX_LOCAL_PORT)/api/runtime/config >/dev/null 2>&1; then ready=1; break; fi; sleep .1; done; \
 	test $$ready -eq 1; \
-	$(UX_LOCAL_ENV) GI_TEST_URL=http://127.0.0.1:$(UX_LOCAL_PORT) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs $(UX_LOCAL_SPEC) $(UX_PARITY_ARGS); \
+	$(UX_LOCAL_ENV) GI_TEST_URL=http://127.0.0.1:$(UX_LOCAL_PORT) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs $(UX_LOCAL_SPEC) $(UX_PARITY_ARGS); \
 	if [ -n "$(UX_LOCAL_FUNCTIONAL)" ]; then $(UX_LOCAL_ENV) GI_TEST_URL=http://127.0.0.1:$(UX_LOCAL_PORT) $(PLAYWRIGHT) test --config=playwright.config.ts --output=test-results/local-functional-artifacts $(UX_LOCAL_FUNCTIONAL); fi
-ux-parity-inventory:
+test-web-adapters:
 	$(BUN) test tests/ux/support/
-	$(BUN) scripts/ux-parity-report.mjs
 
-.PHONY: ux-parity-report
-ux-parity-report:
-	$(BUN) scripts/ux-parity-report.mjs $(UX_PARITY_REPORT_ARGS)
+.PHONY: test-web-adapters test-web-regression test-web-regression-list test-ux-parity test-ux-parity-regression
+test-ux-parity: fixtures-vibes
+
+# Gi-only race/recovery regressions; no shared-scenario accounting.
+test-web-regression:
+	$(MAKE) test-ux-parity-regression
+
+test-web-regression-list:
+	$(PLAYWRIGHT) test -c playwright.web-regression.config.mjs --list $(UX_PARITY_ARGS)
 
 .PHONY: build-pane-host-fixture
 build-pane-host-fixture:
@@ -624,7 +627,7 @@ test-tool-activity:
 
 .PHONY: test-ux-tool-terminal
 test-ux-tool-terminal: test-tool-activity
-	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/tool-activity.spec.mjs'
+	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/tool-activity.spec.mjs'
 
 .PHONY: test-terminal-tool-identity test-tui-tool-timing
 .PHONY: test-terminal-links
@@ -657,53 +660,53 @@ test-web-skills:
 	$(GO) test $(RACE) -count=3 ./internal/web -run 'LoadedWebSkill|WebSkillOpen|QuickActions'
 
 test-ux-skills:
-	GI_UX_SKILLS=1 $(MAKE) test-ux-parity TEST_FIXTURES_DIR=tests/ux/fixtures/skills UX_PARITY_ARGS='tests/ux/skills.spec.mjs'
+	GI_UX_SKILLS=1 $(MAKE) test-ux-parity-regression TEST_FIXTURES_DIR=tests/ux/fixtures/skills UX_PARITY_ARGS='tests/web-regression/skills.spec.mjs'
 
 .PHONY: test-recovery-marker test-ux-outcomes
 test-recovery-marker:
 	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn -run 'RecoveryMarker|StartupRecoveryRequeuesCompactingTurn'
 .PHONY: test-ux-card-rejection
 test-ux-card-rejection:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_REJECTION=1 GI_UX_RECOVERY_PLACEHOLDERS=1' UX_LOCAL_SPEC='tests/ux/card-rejection.spec.mjs tests/ux/recovery-placeholders.spec.mjs tests/ux/speech.spec.mjs' UX_LOCAL_FUNCTIONAL='tests/functional/16-card-rejection.spec.ts tests/functional/15-recovery-placeholders.spec.ts'
-	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_REJECTION=1 GI_UX_RECOVERY_PLACEHOLDERS=1' UX_LOCAL_SPEC='tests/web-regression/card-rejection.spec.mjs tests/web-regression/recovery-placeholders.spec.mjs tests/web-regression/speech.spec.mjs' UX_LOCAL_FUNCTIONAL='tests/functional/16-card-rejection.spec.ts tests/functional/15-recovery-placeholders.spec.ts'
+
 
 .PHONY: test-ux-recovery-placeholders
 test-ux-recovery-placeholders:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_RECOVERY_CONTROLS=1 GI_UX_RECOVERY_PLACEHOLDERS=1' UX_LOCAL_SPEC='tests/ux/recovery-placeholders.spec.mjs tests/ux/recovery-controls.spec.mjs tests/ux/speech.spec.mjs' UX_LOCAL_FUNCTIONAL='tests/functional/14-recovery-controls.spec.ts tests/functional/15-recovery-placeholders.spec.ts'
-	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_RECOVERY_CONTROLS=1 GI_UX_RECOVERY_PLACEHOLDERS=1' UX_LOCAL_SPEC='tests/web-regression/recovery-placeholders.spec.mjs tests/web-regression/recovery-controls.spec.mjs tests/web-regression/speech.spec.mjs' UX_LOCAL_FUNCTIONAL='tests/functional/14-recovery-controls.spec.ts tests/functional/15-recovery-placeholders.spec.ts'
+
 
 .PHONY: test-ux-recovery-controls
 test-ux-recovery-controls:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_RECOVERY_CONTROLS=1' UX_LOCAL_SPEC='tests/ux/recovery-controls.spec.mjs tests/ux/message-copy.spec.mjs tests/ux/message-delete.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/14-recovery-controls.spec.ts
-	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_RECOVERY_CONTROLS=1' UX_LOCAL_SPEC='tests/web-regression/recovery-controls.spec.mjs tests/web-regression/message-copy.spec.mjs tests/web-regression/message-delete.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/14-recovery-controls.spec.ts
+
 
 test-ux-outcomes:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_OUTCOMES=1' UX_LOCAL_SPEC='tests/ux/outcomes.spec.mjs tests/ux/message-copy.spec.mjs tests/ux/speech.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/13-outcomes.spec.ts
-	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_OUTCOMES=1' UX_LOCAL_SPEC='tests/web-regression/outcomes.spec.mjs tests/web-regression/message-copy.spec.mjs tests/web-regression/speech.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/13-outcomes.spec.ts
+
 
 .PHONY: test-ux-card-identity
 test-ux-card-identity:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_IDENTITY=1' UX_LOCAL_SPEC='tests/ux/card-submission-identity.spec.mjs'
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_CARD_IDENTITY=1' UX_LOCAL_SPEC='tests/web-regression/card-submission-identity.spec.mjs'
 
 .PHONY: test-ux-btw-mount
 test-ux-btw-mount: build-web
 	@mkdir -p $(dir $(UX_LOCAL_BIN))
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_BTW_MOUNT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs
+	GI_UX_BTW_MOUNT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs
 
 .PHONY: test-ux-widget-persisted
 test-ux-widget-persisted:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_WIDGETS=1' UX_LOCAL_SPEC='tests/ux/widget-persisted.spec.mjs'
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_WIDGETS=1' UX_LOCAL_SPEC='tests/web-regression/widget-persisted.spec.mjs'
 
 .PHONY: test-ux-links
 test-ux-links:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_LINKS=1' UX_LOCAL_SPEC='tests/ux/remote-links.spec.mjs tests/ux/rendering.spec.mjs tests/ux/lightbox.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/12-remote-links.spec.ts
-	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_LINKS=1' UX_LOCAL_SPEC='tests/web-regression/remote-links.spec.mjs tests/web-regression/rendering.spec.mjs tests/web-regression/lightbox.spec.mjs' UX_LOCAL_FUNCTIONAL=tests/functional/12-remote-links.spec.ts
+
 
 .PHONY: test-ux-speech-contract
 test-ux-speech-contract:
-	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_SPEECH=1' UX_LOCAL_SPEC='tests/ux/speech-contract.spec.mjs tests/ux/speech.spec.mjs tests/ux/message-copy.spec.mjs tests/ux/rendering.spec.mjs'
-	$(MAKE) ux-parity-report UX_PARITY_REPORT_ARGS=test-results/ux-parity/results.json
+	$(MAKE) test-ux-steer UX_LOCAL_ENV='GI_UX_SPEECH=1' UX_LOCAL_SPEC='tests/web-regression/speech-contract.spec.mjs tests/web-regression/speech.spec.mjs tests/web-regression/message-copy.spec.mjs tests/web-regression/rendering.spec.mjs'
+
 
 .PHONY: capture-gi-chat-baseline
 capture-gi-chat-baseline:
@@ -743,7 +746,7 @@ test-piclaw-queue-return:
 
 test-ux-queue-return:
 	$(BUN) test tests/ux/support/drafts.test.ts tests/ux/support/queue-return.test.ts
-	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/queue-return.spec.mjs tests/ux/message-reference-labels.spec.mjs'
+	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/queue-return.spec.mjs tests/web-regression/message-reference-labels.spec.mjs'
 
 .PHONY: diagnose-webkit-unload
 diagnose-webkit-unload:
@@ -763,16 +766,12 @@ test-piclaw-oracle-matrix:
 	$(BUN) test tests/ux/oracle/piclaw-basic-contract.test.mjs
 	@set -e; for browser in chromium webkit; do for viewport in phone tablet desktop; do ORACLE_BROWSER=$$browser ORACLE_VIEWPORT=$$viewport $(BUN) tests/ux/oracle/piclaw-basic-probe.mjs > test-results/ux-oracle-$$browser-$$viewport.log; done; done
 
-test-ux-parity:
+test-ux-parity-regression:
 	@mkdir -p test-results/ux-parity/queue-gates
 	PATH="$(abspath tests/ux/shell):$$PATH" GI_UX_QUEUE_GATES="$(abspath test-results/ux-parity/queue-gates)" $(MAKE) --no-print-directory test-instance-start TEST_PORT=$(UX_PARITY_PORT) TEST_DIR=.gi-ux-parity TEST_ENABLED_MODELS='["test-model","bootstrap","test/unavailable-model"]'
 	@trap '$(MAKE) --no-print-directory test-instance-stop TEST_DIR=.gi-ux-parity' EXIT; \
 		$(MAKE) --no-print-directory build-pane-host-fixture || exit 1; \
-		rm -f test-results/ux-parity/results.json; \
-		GI_TEST_URL=http://127.0.0.1:$(UX_PARITY_PORT) $(PLAYWRIGHT) test -c playwright.ux.config.mjs $(UX_PARITY_ARGS); \
-		rc=$$?; \
-		$(BUN) scripts/ux-parity-report.mjs test-results/ux-parity/results.json || exit 1; \
-		exit $$rc
+		GI_TEST_URL=http://127.0.0.1:$(UX_PARITY_PORT) $(PLAYWRIGHT) test -c playwright.web-regression.config.mjs $(UX_PARITY_ARGS)
 
 test-tui-compaction:
 	@mkdir -p bin
@@ -951,7 +950,7 @@ test-notification-helpers:
 test-ux-notifications: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_NOTIFICATIONS=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/notifications.spec.mjs
+	GI_UX_NOTIFICATIONS=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/notifications.spec.mjs
 
 .PHONY: test-voice-input-helpers test-ux-voice-input
 test-voice-input-helpers:
@@ -960,7 +959,7 @@ test-voice-input-helpers:
 test-ux-voice-input: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_VOICE_INPUT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/voice-input.spec.mjs
+	GI_UX_VOICE_INPUT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/voice-input.spec.mjs
 
 .PHONY: test-ux-session-panel test-session-panel-helpers
 test-session-panel-helpers:
@@ -969,7 +968,7 @@ test-session-panel-helpers:
 test-ux-session-panel: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_SESSION_PANEL=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/session-panel.spec.mjs
+	GI_UX_SESSION_PANEL=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/session-panel.spec.mjs
 
 .PHONY: test-ux-model-panel test-model-panel-helpers
 test-model-panel-helpers:
@@ -1022,7 +1021,7 @@ test-piclaw-compose-escape:
 
 test-ux-compose-escape: build-web
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_COMPOSE_ESCAPE=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/compose-escape.spec.mjs $(UX_PARITY_ARGS)
+	GI_UX_COMPOSE_ESCAPE=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/compose-escape.spec.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-piclaw-picker-thinking
 test-piclaw-picker-thinking:
@@ -1032,12 +1031,12 @@ test-piclaw-picker-thinking:
 test-ux-picker-thinking: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_PICKER_THINKING=1 GI_UX_THINKING=1 GI_UX_THINKING_DEFAULT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/picker-thinking.spec.mjs $(UX_PARITY_ARGS)
+	GI_UX_PICKER_THINKING=1 GI_UX_THINKING=1 GI_UX_THINKING_DEFAULT=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/picker-thinking.spec.mjs $(UX_PARITY_ARGS)
 
 test-ux-model-panel: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_MODEL_PANEL=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/model-panel.spec.mjs
+	GI_UX_MODEL_PANEL=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/model-panel.spec.mjs
 
 .PHONY: test-ux-compose-surface test-compose-surface-helpers
 test-compose-surface-helpers:
@@ -1046,30 +1045,30 @@ test-compose-surface-helpers:
 test-ux-compose-surface: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_COMPOSE_SURFACE=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.ux.config.mjs tests/ux/compose-surface.spec.mjs
+	GI_UX_COMPOSE_SURFACE=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/compose-surface.spec.mjs
 
 .PHONY: test-ux-workspace-tabs
 test-ux-workspace-tabs:
-	$(MAKE) test-ux-parity UX_PARITY_ARGS='tests/ux/workspace-tabs.spec.mjs'
+	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/workspace-tabs.spec.mjs'
 	cp test-results/ux-parity/results.json test-results/ux-parity/workspace-tabs-results.json
 
 .PHONY: test-ux-slash
 test-ux-slash: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN)) test-results/ux-parity
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_SLASH=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(BUN) x playwright test --config=playwright.ux.config.mjs $(UX_PARITY_ARGS)
+	GI_UX_SLASH=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(BUN) x playwright test --config=playwright.web-regression.config.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-ux-picker-geometry
 test-ux-picker-geometry: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN)) test-results/ux-parity
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_PICKER_GEOMETRY=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(BUN) x playwright test --config=playwright.ux.config.mjs $(UX_PARITY_ARGS)
+	GI_UX_PICKER_GEOMETRY=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(BUN) x playwright test --config=playwright.web-regression.config.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-ux-journey
 test-ux-journey: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN)) test-results/ux-parity
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_JOURNEY=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(BUN) x playwright test --config=playwright.ux.config.mjs $(UX_PARITY_ARGS)
+	GI_UX_JOURNEY=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(BUN) x playwright test --config=playwright.web-regression.config.mjs $(UX_PARITY_ARGS)
 
 .PHONY: test-browser-auth test-ux-auth
 test-browser-auth:
@@ -1079,23 +1078,23 @@ test-browser-auth:
 .PHONY: test-passkey-cancel-repeat
 test-passkey-cancel-repeat: build-web test-passkey-criteria
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_PASSKEYS=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config playwright.ux.config.mjs tests/ux/passkeys.spec.mjs --project=chromium-phone --project=chromium-tablet --project=chromium-desktop --grep 'Settings enrolls two passkeys|passkey login cancellation owns' --repeat-each=3
+	GI_UX_PASSKEYS=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config playwright.web-regression.config.mjs tests/web-regression/passkeys.spec.mjs --project=chromium-phone --project=chromium-tablet --project=chromium-desktop --grep 'Settings enrolls two passkeys|passkey login cancellation owns' --repeat-each=3
 
 .PHONY: test-passkey-login-boundary
 test-passkey-login-boundary: build-web test-passkey-criteria
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_PASSKEYS=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config playwright.ux.config.mjs tests/ux/passkeys.spec.mjs --project=chromium-phone --project=chromium-tablet --project=chromium-desktop --grep 'passkey login cancellation owns'
+	GI_UX_PASSKEYS=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config playwright.web-regression.config.mjs tests/web-regression/passkeys.spec.mjs --project=chromium-phone --project=chromium-tablet --project=chromium-desktop --grep 'passkey login cancellation owns'
 
 test-passkey-criteria:
 	$(BUN) test tests/ux/support/passkey-criteria.test.ts tests/ux/support/passkey-lifecycle.test.ts
 
 test-ux-passkeys: build-web test-passkey-criteria
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_PASSKEYS=1 GI_UX_SERVER_BIN=$(UX_LOCAL_BIN) $(BUN) x playwright test --config playwright.ux.config.mjs tests/ux/passkeys.spec.mjs --project=chromium-phone --project=chromium-tablet --project=chromium-desktop
+	GI_UX_PASSKEYS=1 GI_UX_SERVER_BIN=$(UX_LOCAL_BIN) $(BUN) x playwright test --config playwright.web-regression.config.mjs tests/web-regression/passkeys.spec.mjs --project=chromium-phone --project=chromium-tablet --project=chromium-desktop
 
 test-ux-auth: build-web
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
-	GI_UX_AUTH=1 GI_UX_SERVER_BIN=$(UX_LOCAL_BIN) $(BUN) x playwright test --config playwright.ux.config.mjs tests/ux/auth.spec.mjs
+	GI_UX_AUTH=1 GI_UX_SERVER_BIN=$(UX_LOCAL_BIN) $(BUN) x playwright test --config playwright.web-regression.config.mjs tests/web-regression/auth.spec.mjs
 
 .PHONY: test-browser-auth-race
 test-browser-auth-race:

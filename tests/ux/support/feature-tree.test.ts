@@ -3,15 +3,15 @@ import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {generateMessages} from '@cucumber/gherkin';
 import {IdGenerator,SourceMediaType} from '@cucumber/messages';
-import {verifySources} from './catalogue.mjs';
+import {verifySources} from './provenance.mjs';
 
 test('every tracked Gherkin file is grouped in the single feature tree and parses',()=>{
  const paths=execFileSync('git',['ls-files','-z','--','*.feature','*.gherkin'],{encoding:'utf8'}).split('\0').filter(Boolean);
- expect(paths).toHaveLength(77);
+ expect(paths).toHaveLength(76);
  expect(paths.every(path=>path.startsWith('features/'))).toBe(true);
  const active=paths.filter(path=>path.endsWith('.feature'));
  const snapshots=paths.filter(path=>path.endsWith('.gherkin'));
- expect(active).toHaveLength(52);expect(snapshots).toHaveLength(25);
+ expect(active).toHaveLength(51);expect(snapshots).toHaveLength(25);
  expect(snapshots.every(path=>path.startsWith('features/ux/upstream/'))).toBe(true);
  expect(active.filter(path=>path.startsWith('features/ux/classic/'))).toHaveLength(25);
  expect(active.filter(path=>path.startsWith('features/gi/'))).toHaveLength(11);

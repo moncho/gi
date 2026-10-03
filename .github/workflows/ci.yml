@@ -55,6 +55,31 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
+  classic-compliance:
+    name: Shared Classic compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun x playwright install --with-deps chromium webkit
+      - run: make build-web
+      - run: make fixtures-vibes
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: shared-classic-compliance
+          path: references/fixtures-vibes/test-results/
+          retention-days: 3
+
   passkey-browser:
     name: Native passkey browser integration
     runs-on: ubuntu-latest
@@ -246,7 +271,7 @@ jobs:
       - run: bunx playwright install --with-deps chromium webkit
       - run: make test-web-http-helpers test-web-basic-send test-web-basic-controls
       - name: Verify captured Stop reconnect evidence without Shared36 parity credit
-        run: make test-shared-stop-evidence UX_PARITY_ARGS='--grep "Gi Stop reconnect retains draft"'
+        run: make test-ux-reconnect UX_PARITY_ARGS='--grep "Gi Stop reconnect retains draft"'
       - name: Preserve basic send evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -256,8 +281,6 @@ jobs:
             test-results/basic-http-send/
             test-results/ux-parity/basic-http-results.json
             test-results/ux-parity/reconnect-results.json
-            test-results/ux-parity/matrix.json
-            test-results/ux-parity/matrix.md
             test-results/ux-parity/artifacts/
           if-no-files-found: ignore
 
@@ -299,7 +322,7 @@ jobs:
       - run: go mod download
       - run: bun x playwright install --with-deps chromium webkit
       - name: Run native and six-project message retrieval gates
-        run: make test-shared-message-evidence
+        run: make test-ux-message-retrieval
       - name: Preserve message retrieval evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -324,7 +347,7 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium webkit
-      - run: make test-shared-capability-evidence
+      - run: make test-ux-thinking
       - name: Preserve thinking request evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -332,8 +355,6 @@ jobs:
           name: session-thinking-evidence
           path: |
             test-results/ux-parity/results.json
-            test-results/ux-parity/matrix.json
-            test-results/ux-parity/matrix.md
             test-results/ux-parity/artifacts/
           if-no-files-found: ignore
 

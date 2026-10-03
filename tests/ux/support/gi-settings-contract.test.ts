@@ -2,7 +2,6 @@ import { test, expect } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { Parser, AstBuilder, GherkinClassicTokenMatcher } from '@cucumber/gherkin';
 import { IdGenerator } from '@cucumber/messages';
-import { loadCorpus } from './catalogue.mjs';
 
 test('Gi settings scenarios stay separate from the active Piclaw parity corpus', () => {
   const source = readFileSync(new URL('../../../features/gi/settings/gi-settings.feature', import.meta.url), 'utf8');
@@ -13,6 +12,4 @@ test('Gi settings scenarios stay separate from the active Piclaw parity corpus',
   expect(new Set(ids).size).toBe(30);
   expect(cases.filter(row => row.tags.some(tag => tag.name === '@proposal'))).toHaveLength(1);
   expect(source).not.toMatch(/@ux-/);
-  expect(new Set(loadCorpus().map(row => row.id)).size).toBe(241);
-  expect(loadCorpus('shared')).toHaveLength(42);
 });

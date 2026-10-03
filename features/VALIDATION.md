@@ -1,8 +1,10 @@
 # Gherkin validation ledger
 
-All **77** tracked Gherkin files (52 active .feature, 25 historical .gherkin) are in this tree. This table is an audit queue, not a claim that every specification matches Piclaw. A file can be parsed, preserved and tested locally while its behaviour remains unverified. Historical source hashes protect fixture provenance only.
+All **76** tracked Gherkin files (51 active .feature, 25 historical .gherkin) are in this tree. The table preserves the historical audit queue; its local test paths and mapping counts describe the earlier owner suite. Historical source hashes protect fixture provenance only.
 
-The installed-reference checks and bounded Gi journeys currently established are in [the web UX oracle matrix](../docs/internal/web-ux-oracle-matrix-2026-09-28.md). The active Classic inventory has 97 mapped/144 unmapped scenario IDs; Shared has 29 mapped/13 unmapped. Full compliance requires independent Piclaw (or Pi for terminal) observations for each clause and failure path.
+Classic compliance now uses `references/fixtures-vibes` at the post-v0.1.0 patch `0874ea2` and its scenario report. Gi no longer maintains an active Classic catalogue here. Non-duplicated native browser probes moved from `tests/ux/` to `tests/web-regression/`; runtime, adapter and provenance checks remain under `tests/ux/`. See [the current browser guide](../tests/ux/README.md). Rows without a shared suite test have no shared browser evidence.
+
+The earlier installed-reference checks and bounded Gi journeys are in [the web UX oracle matrix](../docs/internal/web-ux-oracle-matrix-2026-09-28.md). Full acceptance requires independent Piclaw (or Pi for terminal) observations for each clause and failure path.
 
 | File | Group | Validation | Evidence / next gate |
 | --- | --- | --- | --- |

@@ -22,7 +22,8 @@ func init() {
 		goai.RegisterModel(&goai.Model{
 			ID: id, Name: "Fixture model " + id, Provider: "fixture-vibes",
 			Api: goai.ApiOpenAICompletions, BaseURL: base,
-			Input: []string{"text"}, ContextWindow: 32000, MaxTokens: 1024,
+			// Shared fixture contract: both advertised models have a 128K window.
+			Input: []string{"text"}, ContextWindow: 128000, MaxTokens: 1024,
 		})
 	}
 }

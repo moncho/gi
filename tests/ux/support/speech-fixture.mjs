@@ -1,5 +1,4 @@
 import {expect} from '@playwright/test';
-import {loadCorpus} from './catalogue.mjs';
 const inputName='Message (Enter to send, Shift+Enter for newline)...';
 // Only the OS speech boundary is deterministic. Posts, controls, selection,
 // ownership and persisted messages all use Gi's real browser/API paths.
@@ -28,4 +27,3 @@ export async function fixture(page,request,info){
  await page.locator('.compose-box input[type=file]').setInputFiles({name:'speech-ref.txt',mimeType:'text/plain',buffer:Buffer.from('unchanged speech attachment')});
  return{main,other:fork.branch.chat_jid.slice(3),messages,agents,input,post:id=>page.locator(`.timeline [id="post-${id}"]`)};
 }
-export async function evidence(info,id){const s=loadCorpus().find(s=>s.id===id);await info.attach('gherkin',{body:s.steps.join('\n'),contentType:'text/plain'});}

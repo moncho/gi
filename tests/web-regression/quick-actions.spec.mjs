@@ -68,7 +68,7 @@ test('Gi Quick Actions switches native sessions and gates unsupported actions',a
  const {main,child,input,palette,query,open,turns}=await fixture(page,request,info);
  await open('m');await query.fill('');
  await expect(page.locator('.timeline-quick-actions-item-workspace .timeline-quick-actions-item-title')).toHaveText(['Show workspace','Open explorer']);
- await expect(page.locator('.timeline-quick-actions-item-slash .timeline-quick-actions-item-title')).toHaveText(['/model','/compact']);
+ await expect(page.locator('.timeline-quick-actions-item-slash .timeline-quick-actions-item-title')).toHaveText(['/model','/compact','/mcp']);
  await page.screenshot({path:info.outputPath('quick-actions-groups.png')});
  await query.fill('Open explorer');await expect(page.locator('.timeline-quick-actions-item.active .timeline-quick-actions-item-title')).toHaveText('Open explorer');await page.waitForTimeout(150);await query.press('Enter');await expect(page.locator('.workspace-sidebar')).toBeVisible();await expect(palette).toHaveCount(0);
  // The supplied palette rebinds its capture listener in a passive effect after

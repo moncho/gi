@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -13,7 +12,7 @@ import (
 )
 
 // mcpUsage is Pi's /mcp usage line.
-const mcpUsage = "Usage: /mcp, /mcp login [server], /mcp logout [server], /mcp reconnect [server]"
+const mcpUsage = gimcp.CommandUsage
 
 // mcpCommand ports Pi's /mcp: the manager without arguments; sign-in,
 // sign-out and reconnect, with Pi's server picker when the name is omitted
@@ -33,11 +32,7 @@ func (c *chatTUI) mcpCommand(fields []string) []string {
 	}
 	switch action {
 	case "login", "logout", "reconnect":
-		pick := c.mcpOAuthPick()
-		if action == "reconnect" {
-			pick = mcpReconnectPick
-		}
-		server, candidates, message := c.pickMCPServer(name, pick)
+		server, candidates, message := c.engine.MCPPickServer(action, name)
 		switch {
 		case message != "":
 			return []string{message}
@@ -53,66 +48,6 @@ func (c *chatTUI) mcpCommand(fields []string) []string {
 	return []string{mcpUsage}
 }
 
-const mcpOAuthNone = "No enabled MCP server uses OAuth. Only HTTP servers without an Authorization header do."
-
-// mcpPick is Pi's pickServer options: which servers qualify, which one is
-// preferred when several do, and the message when none does.
-type mcpPick struct {
-	eligible  func(gimcp.Status) bool
-	preferred func(gimcp.Status) bool
-	none      string
-}
-
-var mcpReconnectPick = mcpPick{
-	eligible:  func(st gimcp.Status) bool { return st.State != gimcp.StateDisabled },
-	preferred: func(st gimcp.Status) bool { return st.State == gimcp.StateFailed || st.State == gimcp.StateDisconnected },
-	none:      "No enabled MCP server to reconnect.",
-}
-
-func (c *chatTUI) mcpOAuthPick() mcpPick {
-	return mcpPick{
-		eligible:  func(st gimcp.Status) bool { return c.engine.MCPUsesOAuth(st.Name) },
-		preferred: func(st gimcp.Status) bool { return st.State == gimcp.StateNeedsAuth },
-		none:      mcpOAuthNone,
-	}
-}
-
-// pickMCPServer ports Pi's pickServer: the named server, else the only
-// eligible one, else the only preferred one. Otherwise it returns the
-// candidates for a picker; a message means there is nothing to pick.
-func (c *chatTUI) pickMCPServer(name string, pick mcpPick) (server string, candidates []string, message string) {
-	statuses, _ := c.engine.MCPStatus()
-	if name != "" {
-		for _, st := range statuses {
-			if st.Name == name {
-				if !pick.eligible(st) {
-					return "", nil, pick.none
-				}
-				return name, nil, ""
-			}
-		}
-		return "", nil, fmt.Sprintf("No MCP server named %q.", name)
-	}
-	var preferred []string
-	for _, st := range statuses {
-		if pick.eligible(st) {
-			candidates = append(candidates, st.Name)
-			if pick.preferred(st) {
-				preferred = append(preferred, st.Name)
-			}
-		}
-	}
-	switch {
-	case len(candidates) == 0:
-		return "", nil, pick.none
-	case len(candidates) == 1:
-		return candidates[0], nil, ""
-	case len(preferred) == 1:
-		return preferred[0], nil, ""
-	}
-	return "", candidates, ""
-}
-
 // runMCPAction runs a /mcp action on a resolved server.
 func (c *chatTUI) runMCPAction(action, server string) []string {
 	switch action {
@@ -121,23 +56,11 @@ func (c *chatTUI) runMCPAction(action, server string) []string {
 	case "logout":
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		if c.engine.MCPSignOut(ctx, server) {
-			return []string{fmt.Sprintf("Signed out of MCP server %q.", server)}
-		}
-		return []string{fmt.Sprintf("No stored credentials for MCP server %q.", server)}
+		return []string{c.engine.MCPLogoutCommand(ctx, server)}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	if err := c.engine.MCPReconnect(ctx, server); err != nil {
-		return []string{err.Error()}
-	}
-	statuses, _ := c.engine.MCPStatus()
-	for _, st := range statuses {
-		if st.Name == server {
-			return []string{fmt.Sprintf("Reconnected to MCP server %q (%s).", server, gimcp.DescribeState(st))}
-		}
-	}
-	return []string{fmt.Sprintf("Reconnected to MCP server %q.", server)}
+	return []string{c.engine.MCPReconnectCommand(ctx, server)}
 }
 
 type mcpSignInState struct {
@@ -192,21 +115,7 @@ func (c *chatTUI) startMCPSignIn(server string) []string {
 				c.editorAskHandler = nil
 				c.exitEditorAsk()
 			}
-			switch {
-			case errors.Is(err, gimcp.ErrSignInCancelled):
-				c.appendTranscript("Sign-in cancelled.")
-			case err != nil:
-				c.appendTranscript(err.Error())
-			default:
-				tools := 0
-				statuses, _ := c.engine.MCPStatus()
-				for _, st := range statuses {
-					if st.Name == server {
-						tools = st.Tools
-					}
-				}
-				c.appendTranscript(fmt.Sprintf("Signed in to MCP server %q (%d tools).", server, tools))
-			}
+			c.appendTranscript(c.engine.MCPSignInResult(server, err))
 		})
 	}()
 	return nil

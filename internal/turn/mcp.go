@@ -735,3 +735,97 @@ func (e *Engine) MCPServerConfig(name string) (gimcp.ServerConfig, bool) {
 	sc, ok := e.mcp.manager.Config().Servers[name]
 	return sc, ok
 }
+
+// MCPPickServer ports Pi's pickServer for a /mcp action (login, logout,
+// reconnect): the named server, else the only eligible one, else the only
+// preferred one. Otherwise it returns the candidates to choose from; a
+// message means there is nothing to pick.
+func (e *Engine) MCPPickServer(action, name string) (server string, candidates []string, message string) {
+	eligible := func(st gimcp.Status) bool { return e.MCPUsesOAuth(st.Name) }
+	preferred := func(st gimcp.Status) bool { return st.State == gimcp.StateNeedsAuth }
+	none := "No enabled MCP server uses OAuth. Only HTTP servers without an Authorization header do."
+	if action == "reconnect" {
+		eligible = func(st gimcp.Status) bool { return st.State != gimcp.StateDisabled }
+		preferred = func(st gimcp.Status) bool {
+			return st.State == gimcp.StateFailed || st.State == gimcp.StateDisconnected
+		}
+		none = "No enabled MCP server to reconnect."
+	}
+	statuses, _ := e.MCPStatus()
+	if name != "" {
+		for _, st := range statuses {
+			if st.Name == name {
+				if !eligible(st) {
+					return "", nil, none
+				}
+				return name, nil, ""
+			}
+		}
+		return "", nil, fmt.Sprintf("No MCP server named %q.", name)
+	}
+	var wanted []string
+	for _, st := range statuses {
+		if eligible(st) {
+			candidates = append(candidates, st.Name)
+			if preferred(st) {
+				wanted = append(wanted, st.Name)
+			}
+		}
+	}
+	switch {
+	case len(candidates) == 0:
+		return "", nil, none
+	case len(candidates) == 1:
+		return candidates[0], nil, ""
+	case len(wanted) == 1:
+		return wanted[0], nil, ""
+	}
+	return "", candidates, ""
+}
+
+// MCPLogoutCommand and MCPReconnectCommand run /mcp logout and reconnect on
+// a resolved server and return the message to show.
+func (e *Engine) MCPLogoutCommand(ctx context.Context, server string) string {
+	if e.MCPSignOut(ctx, server) {
+		return fmt.Sprintf("Signed out of MCP server %q.", server)
+	}
+	return fmt.Sprintf("No stored credentials for MCP server %q.", server)
+}
+
+func (e *Engine) MCPReconnectCommand(ctx context.Context, server string) string {
+	if err := e.MCPReconnect(ctx, server); err != nil {
+		return err.Error()
+	}
+	statuses, _ := e.MCPStatus()
+	for _, st := range statuses {
+		if st.Name == server {
+			return fmt.Sprintf("Reconnected to MCP server %q (%s).", server, gimcp.DescribeState(st))
+		}
+	}
+	return fmt.Sprintf("Reconnected to MCP server %q.", server)
+}
+
+// MCPSignInResult is the message after a /mcp login sign-in finishes.
+func (e *Engine) MCPSignInResult(server string, err error) string {
+	switch {
+	case errors.Is(err, gimcp.ErrSignInCancelled):
+		return "Sign-in cancelled."
+	case err != nil:
+		return err.Error()
+	}
+	tools := 0
+	statuses, _ := e.MCPStatus()
+	if st, ok := findMCPStatus(statuses, server); ok {
+		tools = st.Tools
+	}
+	return fmt.Sprintf("Signed in to MCP server %q (%d tools).", server, tools)
+}
+
+func findMCPStatus(statuses []gimcp.Status, name string) (gimcp.Status, bool) {
+	for _, st := range statuses {
+		if st.Name == name {
+			return st, true
+		}
+	}
+	return gimcp.Status{}, false
+}

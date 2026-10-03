@@ -6,7 +6,7 @@ async function fixture(page,info){
  await page.goto(env.origin);const input=page.locator('.compose-box textarea');await expect(input).toBeFocused();const id=await page.evaluate(()=>localStorage.getItem('gi_session_id'));
  // Wait for actual catalogue readiness, not a timed delay or fabricated commands.
  await expect.poll(()=>page.evaluate(async()=>{const r=await fetch('/api/quick-actions');return r.status;})).toBe(200);
- await input.fill('/');await expect(page.locator('.slash-item')).toHaveCount(2);await input.press('Escape');await input.fill('');
+ await input.fill('/');await expect(page.locator('.slash-item')).toHaveCount(3);await input.press('Escape');await input.fill('');
  page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/prompt'))posts.push(r.postDataJSON());});
  return {env,input,id,posts,popup:page.locator('.slash-autocomplete'),palette:page.locator('.timeline-quick-actions'),turns:async()=>(await read(page,`/api/sessions/${id}/turns`)).turns||[]};
 }
@@ -14,7 +14,7 @@ async function fixture(page,info){
 test('Composer slash Tab completes without sending; Escape and Shift+Enter leave drafts owned by the composer',async({page},info)=>{
  const f=await fixture(page,info);
  try{
-  await page.keyboard.type('/');await expect(f.popup).toBeVisible();await expect(f.palette).toHaveCount(0);await expect(page.locator('.slash-item')).toHaveCount(2);await page.keyboard.press('Escape');await expect(f.popup).toHaveCount(0);await expect(f.input).toHaveValue('/');await expect(f.input).toBeFocused();
+  await page.keyboard.type('/');await expect(f.popup).toBeVisible();await expect(f.palette).toHaveCount(0);await expect(page.locator('.slash-item')).toHaveCount(3);await page.keyboard.press('Escape');await expect(f.popup).toHaveCount(0);await expect(f.input).toHaveValue('/');await expect(f.input).toBeFocused();
   await f.input.fill('/m argument Ω');await expect(f.popup).toBeVisible();await f.input.press('Tab');await expect(f.input).toHaveValue('/model argument Ω');await expect(f.input).toBeFocused();expect(await f.input.evaluate(e=>[e.selectionStart,e.selectionEnd])).toEqual([17,17]);await expect(f.popup).toHaveCount(0);expect(f.posts).toEqual([]);
   await f.input.fill('/m');await expect(f.popup).toBeVisible();await f.input.press('Shift+Enter');await expect(f.input).toHaveValue('/m\n');await expect(f.popup).toHaveCount(0);expect(f.posts).toEqual([]);expect(await f.turns()).toEqual([]);
  }finally{await page.close();await f.env.close();}
@@ -54,11 +54,11 @@ for(const fault of ['unavailable','malformed','delayed'])test(`Composer native c
   await page.route('**/api/quick-actions',async route=>{calls++;if(fault==='delayed'){const response=await route.fetch();await gate;return route.fulfill({response});}await route.fulfill({status:fault==='unavailable'?503:200,contentType:'application/json',body:fault==='unavailable'?'{"error":"Catalogue unavailable"}':'{"commands":[{"name":7}]}'});});
   await page.goto(env.origin);const input=page.locator('.compose-box textarea');await expect(input).toBeFocused();await expect.poll(()=>calls).toBeGreaterThan(0);await input.fill('/');await expect(page.locator('.slash-item')).toHaveCount(0);
   if(fault==='delayed'){
-   await page.keyboard.press('Control+,');const close=page.getByRole('button',{name:'Close settings',exact:true});await expect(close).toBeFocused();release();await page.unrouteAll({behavior:'wait'});await expect(close).toBeFocused();await expect(page.locator('.slash-item')).toHaveCount(0);await close.click();await input.focus();await input.press('End');await input.press('m');await expect(page.locator('.slash-name')).toHaveText(['/model']);await input.press('Backspace');
+   await page.keyboard.press('Control+,');const close=page.getByRole('button',{name:'Close settings',exact:true});await expect(close).toBeFocused();release();await page.unrouteAll({behavior:'wait'});await expect(close).toBeFocused();await expect(page.locator('.slash-item')).toHaveCount(0);await close.click();await input.focus();await input.press('End');await input.press('m');await expect(page.locator('.slash-name')).toHaveText(['/model','/mcp']);await input.press('Backspace');
   }else{
    await expect(page.getByRole('status').filter({hasText:'Command suggestions unavailable.'})).toBeVisible();await expect(page.locator('.slash-item')).toHaveCount(0);await page.unrouteAll({behavior:'wait'});await page.reload();await expect(input).toHaveValue('/');
   }
-  await expect(page.locator('.slash-item')).toHaveCount(2);await expect(page.locator('.slash-name')).toHaveText(['/model','/compact']);expect(obsolete).toEqual([]);
+  await expect(page.locator('.slash-item')).toHaveCount(3);await expect(page.locator('.slash-name')).toHaveText(['/model','/compact','/mcp']);expect(obsolete).toEqual([]);
  }finally{release();await page.unrouteAll({behavior:'wait'});await page.close();await env.close();}
 });
 
@@ -69,7 +69,7 @@ test('Delayed command catalogue respects current search mode',async({page},info)
   await page.route('**/api/quick-actions',async route=>{const response=await route.fetch();held=true;await gate;await route.fulfill({response});});
   await page.goto(env.origin);const input=page.locator('.compose-box textarea');await expect(input).toBeFocused();await input.fill('/');await expect.poll(()=>held).toBe(true);
   await page.getByRole('button',{name:'Search',exact:true}).click();await expect(input).toHaveAttribute('placeholder','Search (Enter to run)...');await input.fill('/m');release();await page.unrouteAll({behavior:'wait'});await expect(page.locator('.slash-item')).toHaveCount(0);await expect(input).toHaveValue('/m');
-  await page.getByRole('button',{name:'Close search',exact:true}).click();await input.fill('/m');await expect(page.locator('.slash-name')).toHaveText(['/model']);
+  await page.getByRole('button',{name:'Close search',exact:true}).click();await input.fill('/m');await expect(page.locator('.slash-name')).toHaveText(['/model','/mcp']);
  }finally{release();await page.unrouteAll({behavior:'wait'});await page.close();await env.close();}
 });
 

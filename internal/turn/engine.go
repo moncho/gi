@@ -4525,6 +4525,22 @@ func (r *sessionRunner) broadcastSystemPost(sessionID, turnID, msgID, content st
 	})
 }
 
+// PostSystemMessage stores a system message in a session's timeline and
+// shows it to connected clients. System messages are not model context.
+func (e *Engine) PostSystemMessage(ctx context.Context, sessionID, content string, payload map[string]any) (string, error) {
+	msgID := store.NowID("msg")
+	if err := e.store.AddMessage(ctx, msgID, sessionID, "system", content, payload); err != nil {
+		return "", err
+	}
+	e.broadcast(sessionID, map[string]any{
+		"type": "new_post", "id": msgID, "chat_jid": "gi:" + sessionID,
+		"content": content, "timestamp": time.Now().UTC().Format(time.RFC3339Nano),
+		"sender": "system",
+		"data":   map[string]any{"type": "system_message", "content": content},
+	})
+	return msgID, nil
+}
+
 func terminalPhaseForStatus(status string) string {
 	switch status {
 	case "completed":

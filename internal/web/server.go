@@ -36,6 +36,7 @@ var staticFS embed.FS
 type Server struct {
 	store                 *store.Store
 	turns                 *turn.Engine
+	mcpSignIns            webMCPSignIns // /mcp login sign-ins waiting for a redirect
 	cfg                   config.RuntimeConfig
 	mux                   *http.ServeMux
 	version               string
@@ -690,6 +691,9 @@ func (s *Server) handlePrompt(w http.ResponseWriter, r *http.Request, sessionID 
 		return
 	}
 	if s.handleModelCommand(w, r, sessionID, req.Prompt) {
+		return
+	}
+	if s.handleMCPCommand(w, r, sessionID, req.Prompt) {
 		return
 	}
 	expandedPrompt, skillMetadata, skillErr := s.expandWebSkill(req.Prompt)

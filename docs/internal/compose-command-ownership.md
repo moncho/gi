@@ -8,7 +8,8 @@ files unchanged.
 ## Catalogue
 
 `getAgentCommands()` reads `/api/quick-actions`, the same native capability source
-used by Quick Actions: `/model`, `/compact` and startup-loaded workspace skills.
+used by Quick Actions: `/model`, `/compact`, `/mcp` (when the server has a turn
+engine; see `docs/internal/mcp.md`) and startup-loaded workspace skills.
 The composer validates command names/descriptions, preserves server order and
 removes duplicate names. Empty catalogues are valid. Loading, malformed or failed
 responses expose no fallback suggestions.

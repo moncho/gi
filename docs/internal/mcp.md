@@ -247,7 +247,29 @@ Rules, as in Pi:
     Enter selects, Escape or Ctrl+C cancels. Golden:
     `scripts/golden-select-dialog.mjs`, `TestSelectDialogMatchesPi`. The
     dialog is shown where gi shows its other Pi selectors.
-- Not yet ported: `/mcp` in the web UI.
+
+## `/mcp` in the web UI (`internal/web/mcp_command.go`)
+
+Pi's `/mcp` without a TUI. The prompt endpoint intercepts it like `/model`;
+no turn runs. Replies are system messages in the session's timeline (kind
+`mcp`, shown through `new_post`), which are not model context.
+
+- `/mcp` replies with Pi's `formatStatus` (`mcp.FormatStatus`): one line per
+  server with state, tool count and exposure, connection errors indented
+  below, then config errors.
+- `/mcp login|logout|reconnect [server]` use the TUI's server choice
+  (`Engine.MCPPickServer`, Pi's `pickServer`) and messages. Reconnect and
+  sign-in reply when they finish.
+- Sign-in posts the authorization link (the server does not open a browser).
+  If the browser cannot reach gi's loopback callback, `/mcp login <server>
+  <redirect URL>` hands the URL it was sent to to the waiting sign-in.
+- Advertised in `/api/quick-actions` when the server has a turn engine.
+- Differences: Pi asks for a server with `ctx.ui.select` and for the redirect
+  URL with `ctx.ui.input`; the web UI has neither, so an ambiguous name
+  replies with the choices and the redirect URL is a `/mcp login` argument.
+  The manager is TUI-only, as in Pi.
+- Test: `TestWebMCPCommand` (status, sign-in with a pasted redirect,
+  reconnect, sign-out, model context untouched); `TestFormatStatusMatchesPi`.
 
 ## OAuth (`internal/mcp/oauth.go`)
 

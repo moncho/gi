@@ -15,6 +15,10 @@ func (s *Server) handleQuickActions(w http.ResponseWriter, r *http.Request) {
 		{"name": "/compact", "description": "Compact the current session context", "source": "native"},
 	}
 	slash := []string{"/model", "/compact"}
+	if s.turns != nil {
+		commands = append(commands, map[string]string{"name": "/mcp", "description": "MCP servers: status, sign in, sign out, reconnect", "source": "native"})
+		slash = append(slash, "/mcp")
+	}
 	for _, skill := range s.skillQuickActions() {
 		commands = append(commands, skill)
 		slash = append(slash, skill["name"])

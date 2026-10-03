@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -102,9 +104,7 @@ func TestLoginUIMatchesPi(t *testing.T) {
 			},
 			"device": func() *loginDialogState {
 				d := &loginDialogState{title: "Login to GitHub Copilot"}
-				d.showAuth("https://github.com/login/device", "")
-				d.spacer()
-				d.add(gotui.TextSpan{Text: "Enter code: ABCD-1234", Style: piFg(piWarning)})
+				d.showDeviceCode("https://github.com/login/device", "ABCD-1234")
 				d.showWaiting("Waiting for authentication...")
 				return d
 			},
@@ -311,5 +311,27 @@ func TestLoginArgumentCompletions(t *testing.T) {
 	}
 	if got("zzz") != "" {
 		t.Fatal("no match should be empty")
+	}
+}
+
+// Ctrl+X copies the sign-in URL (Pi's AuthUrlComponent): over OSC 52 when
+// there is no native clipboard and no display, and the copy hint becomes
+// the result.
+func TestLoginDialogCopiesAuthURL(t *testing.T) {
+	t.Setenv("DISPLAY", "")
+	t.Setenv("WAYLAND_DISPLAY", "")
+	t.Setenv("TERMUX_VERSION", "")
+	var osc bytes.Buffer
+	c := &chatTUI{osc52Writer: &osc, clipboardLookPath: func(string) (string, error) { return "", os.ErrNotExist }}
+	url := "https://claude.ai/oauth/authorize?code=true"
+	c.loginDialog = &loginDialogState{title: "Login to Anthropic"}
+	c.loginDialog.showAuth(url, "")
+	pressMenuKey(t, c.loginDialogKeys(), gotui.KeyEvent{Key: gotui.KeyRune, Rune: 'x', Mod: gotui.ModCtrl})
+	if want := "\x1b]52;c;" + base64.StdEncoding.EncodeToString([]byte(url)) + "\x07"; osc.String() != want {
+		t.Fatalf("OSC 52 %q, want %q", osc.String(), want)
+	}
+	rows := strings.Join(spanRowsText(c.piLoginDialogRows(80)), "\n")
+	if !strings.Contains(rows, "Ctrl+click to open • Copied URL to clipboard") && !strings.Contains(rows, "Cmd+click to open • Copied URL to clipboard") {
+		t.Fatalf("rows:\n%s", rows)
 	}
 }

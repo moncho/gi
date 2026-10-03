@@ -1,4 +1,4 @@
-// Vendored from @earendil-works/pi-codemode 1.0.0 (MIT) by scripts/vendor-codemode.mjs; do not edit.
+// Vendored from @earendil-works/pi-codemode 1.0.1 (MIT) by scripts/vendor-codemode.mjs; do not edit.
 (function (bridge, toolsJson, globalsJson, storeJson) {
 	"use strict";
 	const stringify = JSON.stringify;
@@ -6,6 +6,7 @@
 	const promiseThen = Promise.prototype.then;
 	const ErrorCtor = Error;
 	const TypeErrorCtor = TypeError;
+	const RangeErrorCtor = RangeError;
 	const pending = new Map();
 	let nextId = 1;
 	let finished = false;
@@ -191,6 +192,26 @@
 	Object.defineProperty(globalThis, "store", { value: store, enumerable: true });
 	Object.defineProperty(globalThis, "load", { value: load, enumerable: true });
 
+	let outputChars = 0;
+	let outputItems = 0;
+
+	// Past the output limits the script fails: done() reports the error, so catching it does not
+	// resume output, and the host ends the script.
+	function output(kind, data, mimeType) {
+		if (finished) return;
+		outputChars += data.length;
+		outputItems++;
+		if (outputChars > 16777216 || outputItems > 100000) {
+			const error = new RangeErrorCtor(
+				"script output exceeded the limit of 16777216 characters or 100000 text(), image(), and console calls. " +
+					"Print a summary instead, or write large data to a file with a tool.",
+			);
+			done(false, describeError(error));
+			throw error;
+		}
+		bridge("output", kind, data, mimeType);
+	}
+
 	// Primitives become their string form, everything else JSON.
 	function outputText(value) {
 		if (value === undefined || value === null || typeof value !== "object" && typeof value !== "function") {
@@ -207,7 +228,7 @@
 		} catch (error) {
 			throw new TypeErrorCtor(error instanceof ErrorCtor ? error.message : String(error));
 		}
-		if (!finished) bridge("output", "text", rendered);
+		output("text", rendered);
 	}
 
 	function imageUrl(value) {
@@ -262,7 +283,7 @@
 		if (!signature) {
 			throw new TypeErrorCtor("invalid image output. The image data is not a PNG, JPEG, GIF, or WebP image");
 		}
-		if (!finished) bridge("output", "image", data, signature[0]);
+		output("image", data, signature[0]);
 	}
 
 	function exit() {
@@ -280,7 +301,7 @@
 	const console = {};
 	for (const level of ["log", "info", "warn", "error", "debug"]) {
 		console[level] = (...args) => {
-			if (!finished) bridge("output", "text", args.map(format).join(" "));
+			output("text", args.map(format).join(" "));
 		};
 	}
 	Object.freeze(console);

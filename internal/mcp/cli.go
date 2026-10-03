@@ -668,6 +668,7 @@ type listReport struct {
 	Name              string            `json:"name"`
 	Scope             string            `json:"scope"`
 	Source            string            `json:"source"`
+	Override          string            `json:"override,omitempty"`
 	Enabled           bool              `json:"enabled"`
 	Exposure          string            `json:"exposure"`
 	Transport         string            `json:"transport"`
@@ -701,7 +702,11 @@ func cliList(cfg Config, asJSON bool, untrustedNote string, opts CLIOptions, log
 	var wg sync.WaitGroup
 	for i, name := range names {
 		s := cfg.Servers[name]
-		reports[i] = listReport{Name: name, Scope: "global", Source: s.Source, Enabled: s.Enabled, Exposure: s.Exposure,
+		scope := s.Scope
+		if scope == "" {
+			scope = "global"
+		}
+		reports[i] = listReport{Name: name, Scope: scope, Source: s.Source, Override: s.Override, Enabled: s.Enabled, Exposure: s.Exposure,
 			Transport: describeTransport(s), State: StateDisabled, Tools: []string{}}
 		if !s.Enabled {
 			continue
@@ -784,6 +789,9 @@ func cliList(cfg Config, asJSON bool, untrustedNote string, opts CLIOptions, log
 		}
 		logf(fmt.Sprintf("%s: %s (%s, %s)", r.Name, state, r.Exposure, r.Scope))
 		logf("  " + r.Transport)
+		if r.Override != "" {
+			logf("  project override: " + r.Override)
+		}
 		if r.State == StateNeedsAuth {
 			logf("  sign in with: gi mcp login " + r.Name)
 		}
@@ -815,29 +823,39 @@ func cliList(cfg Config, asJSON bool, untrustedNote string, opts CLIOptions, log
 }
 
 // UpdateServerConfig ports Pi's updateMcpServerConfig: change one server's
-// settings in the mcp.json that defines it. enabled true removes the key,
-// false writes "enabled": false; exposure "codemode" (the default) removes the
-// key, others are written. Other content is kept.
-func UpdateServerConfig(path, name string, patch ServerPatch) error {
+// settings in the mcp.json that defines or overrides it. enabled true removes
+// the key, false writes "enabled": false; exposure "codemode" (the default)
+// removes the key, others are written. An override entry keeps the default
+// values, since they replace the global server's; with override, a missing
+// entry is added as one. Other content is kept.
+func UpdateServerConfig(path, name string, patch ServerPatch, override bool) error {
 	var missing bool
 	err := editServers(path, func(servers *orderedObject) bool {
 		raw, ok := servers.values[name]
+		if !ok && override {
+			raw, ok = json.RawMessage("{}"), true
+		}
 		server, isObject := parseOrderedObject(raw)
 		if !ok || !isObject {
 			missing = true
 			return false
 		}
+		keepDefaults := isOverride(server.values)
 		if patch.Enabled != nil {
-			if *patch.Enabled {
+			if *patch.Enabled && !keepDefaults {
 				server.remove("enabled")
 			} else {
-				server.set("enabled", json.RawMessage("false"))
+				server.set("enabled", json.RawMessage(strconv.FormatBool(*patch.Enabled)))
 			}
 		}
 		switch patch.Exposure {
 		case "":
 		case ExposureCodemode:
-			server.remove("exposure")
+			if !keepDefaults {
+				server.remove("exposure")
+				break
+			}
+			fallthrough
 		default:
 			server.set("exposure", jsonValue(patch.Exposure))
 		}

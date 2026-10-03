@@ -205,11 +205,13 @@ type loginDialogState struct {
 	answer    chan string // set while a prompt waits
 	cancelled chan struct{}
 	onCancel  func()
+	authURL   *authURL // the shown sign-in URL, which Ctrl+X copies (Pi)
 }
 
 type loginLine struct {
 	spans []gotui.TextSpan
 	input bool // the live input
+	auth  bool // the sign-in URL
 }
 
 func (d *loginDialogState) add(spans ...gotui.TextSpan) {
@@ -224,16 +226,30 @@ func clickHint() string {
 	return "Ctrl+click to open"
 }
 
-// showAuth is Pi's: the URL, a click hint and any instructions.
+// showAuth is Pi's: the URL with its click and copy hints (AuthUrlComponent)
+// and any instructions.
 func (d *loginDialogState) showAuth(url, instructions string) {
 	d.content = nil
 	d.spacer()
-	d.add(gotui.TextSpan{Text: url, Style: piFg(piAccent), Link: url})
-	d.add(gotui.TextSpan{Text: clickHint(), Style: piFg(piDim), Link: url})
+	d.authURL = newAuthURL(url)
+	d.content = append(d.content, loginLine{auth: true})
 	if instructions != "" {
 		d.spacer()
 		d.add(gotui.TextSpan{Text: instructions, Style: piFg(piWarning)})
 	}
+}
+
+// showDeviceCode is Pi's: the verification URL with its click hint (no copy
+// key) and the code to enter. go-ai's device flows report through OnAuth
+// with "Enter code: …" instructions until it has device-code events.
+func (d *loginDialogState) showDeviceCode(url, code string) {
+	d.authURL = nil
+	d.content = nil
+	d.spacer()
+	d.add(gotui.TextSpan{Text: url, Style: piFg(piAccent), Link: url})
+	d.add(gotui.TextSpan{Text: clickHint(), Style: piFg(piDim), Link: url})
+	d.spacer()
+	d.add(gotui.TextSpan{Text: "Enter code: " + code, Style: piFg(piWarning)})
 }
 
 // showPrompt is Pi's: the message, an example, the input and its keys.
@@ -279,6 +295,10 @@ func (c *chatTUI) piLoginDialogRows(width int) spanRows {
 			rows = append(rows, piSearchRow(d.input, width))
 		case line.input:
 			rows = append(rows, []gotui.TextSpan{{Text: "> " + d.input}})
+		case line.auth && d.authURL != nil:
+			for _, spans := range d.authURL.spans() {
+				rows = append(rows, text(spans...)...)
+			}
 		case line.spans == nil:
 			rows = append(rows, nil)
 		default:
@@ -299,6 +319,11 @@ func (c *chatTUI) loginDialogKeys() gotui.KeyMap {
 	return gotui.KeyMap{
 		gotui.OnPreemptStop(gotui.KeyEscape, func(gotui.KeyEvent) { c.cancelLoginDialog() }),
 		gotui.OnPreemptStop(gotui.KeyCtrlC, func(gotui.KeyEvent) { c.cancelLoginDialog() }),
+		gotui.OnPreemptStop(gotui.KeyCtrlX, func(gotui.KeyEvent) {
+			if d.authURL != nil {
+				c.copyAuthURL(d.authURL)
+			}
+		}),
 		gotui.OnPreemptStop(gotui.KeyEnter, func(gotui.KeyEvent) {
 			if d.answer != nil {
 				answer := d.answer

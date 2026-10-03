@@ -3,7 +3,10 @@
 //   bun scripts/golden-file-tool-render.mjs
 import { writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-const root = `${homedir()}/.bun/install/global/node_modules/@earendil-works`;
+import { existsSync as piModulesExist } from "node:fs";
+// Pi's packages: PI_NODE_MODULES, the global bun install, or the reference install.
+const PI_MODULES = [process.env.PI_NODE_MODULES, `${homedir()}/.bun/install/global/node_modules`, "/workspace/.cache/pi-ref/node_modules"].find((dir) => dir && piModulesExist(`${dir}/@earendil-works/pi-coding-agent`));
+const root = `${PI_MODULES}/@earendil-works`;
 const { wrapTextWithAnsi } = await import(`${root}/pi-tui/dist/utils.js`);
 const { initTheme } = await import(`${root}/pi-coding-agent/dist/modes/interactive/theme/theme.js`);
 const { renderDiff } = await import(`${root}/pi-coding-agent/dist/modes/interactive/components/diff.js`);

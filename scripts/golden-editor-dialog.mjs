@@ -17,7 +17,7 @@ initTheme("dark");
 const keybindings = new KeybindingsManager();
 setKeybindings(keybindings);
 
-const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/\x1b_[^\x07]*\x07/g, "").replace(/\x1b\]8;;[^\x07]*\x07/g, "");
+const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/\x1b_[^\x07]*\x07/g, "").replace(/\x1b\]8;;[^\x07\x1b]*(?:\x07|\x1b\\)/g, "");
 const keys = { enter: "\r", esc: "\x1b", backspace: "\x7f", "shift+enter": "\x1b[13;2u" };
 const tui = { requestRender() {}, terminal: { rows: 24, columns: 80 } };
 const scenarios = {

@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,5 +45,27 @@ func TestOAuthScopesAndTokenParsing(t *testing.T) {
 	}
 	if withScope(tokens, "read").Scope != "read" || withScope(&oauthTokens{Scope: "x"}, "read").Scope != "x" {
 		t.Fatal("withScope")
+	}
+}
+
+// A pasted redirect URL must match the sign-in's redirect URI (Pi 1.0.1):
+// a server-specific path tells authorization servers apart.
+func TestPastedRedirectMustMatchRedirectURI(t *testing.T) {
+	redirect, _ := url.Parse("http://127.0.0.1:8123/callback/abc")
+	for input, want := range map[string]string{
+		"http://127.0.0.1:8123/callback/abc?code=c&state=s": "",
+		"http://127.0.0.1:8123/callback?code=c&state=s":     "The redirect URL does not match this sign-in's redirect URI",
+		"http://127.0.0.1:9000/callback/abc?code=c&state=s": "The redirect URL does not match this sign-in's redirect URI",
+		"http://127.0.0.1:8123/callback/abc?code=c&state=x": "The redirect URL belongs to a different sign-in",
+		"not a url": "Expected the full redirect URL from the browser address bar",
+	} {
+		code, _, err := codeFromRedirectURL(input, "s", redirect)
+		got := ""
+		if err != nil {
+			got = err.Error()
+		}
+		if got != want || (want == "" && code != "c") {
+			t.Errorf("%s: %q %q, want %q", input, code, got, want)
+		}
 	}
 }

@@ -9,7 +9,7 @@ import (
 
 // The callback serves Pi's sign-in pages with gi's logo.
 func TestOAuthCallbackPages(t *testing.T) {
-	cs, err := listenForCallback("127.0.0.1", "127.0.0.1", "/callback", nil, false)
+	cs, err := listenForCallback("127.0.0.1", "127.0.0.1", "/callback", nil, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}

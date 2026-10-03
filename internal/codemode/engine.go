@@ -285,29 +285,34 @@ func (e *Engine) Execute(ctx context.Context, code string, opts Options) Result 
 	if exc != nil {
 		return finish(exc)
 	}
+	// failed is a run that stopped with err: the script's own result once it
+	// reported one (done interrupts the script), else err classified.
+	failed := func(err error) Result {
+		if v.done {
+			return finish(v.result.Error)
+		}
+		return finish(v.contextError(runCtx, ctx, err.Error()))
+	}
 	handles := v.apiHandles
 	if _, err := v.callFn(wasmCtx, handles.run, handles.obj, fnHandle); err != nil {
-		return finish(v.contextError(runCtx, ctx, err.Error()))
+		return failed(err)
 	}
 	v.free(fnHandle)
 	if err := v.drain(wasmCtx); err != nil {
-		return finish(v.contextError(runCtx, ctx, err.Error()))
+		return failed(err)
 	}
 	for !v.done {
 		select {
 		case r := <-v.events:
 			v.recordCall(r)
 			if err := v.settle(wasmCtx, r); err != nil {
-				return finish(v.contextError(runCtx, ctx, err.Error()))
+				return failed(err)
 			}
 		case <-runCtx.Done():
 			return finish(v.contextError(runCtx, ctx, ""))
 		}
 	}
-	if v.result.Error != nil {
-		return finish(v.result.Error)
-	}
-	return finish(nil)
+	return finish(v.result.Error)
 }
 
 // contextError classifies a failure: timeout, abort (caller cancelled) or a
@@ -710,7 +715,9 @@ func (v *vm) hostCall(ctx context.Context, namePtr, nameLen, argc, argvPtr uint3
 		}
 	case "done":
 		ok := args[1] != 0 && v.truthy(ctx, args[1])
-		v.done = true
+		// The result is final: the host ends the script (Pi), so a script
+		// that catches the output-limit error cannot keep running.
+		v.done, v.interrupt = true, true
 		if ok {
 			value, has := arg(2)
 			writes, _ := arg(3)

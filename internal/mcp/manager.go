@@ -48,6 +48,7 @@ type Status struct {
 	Exposure     string
 	Source       string
 	Scope        string // "global" or "project"
+	Override     string // the project mcp.json overriding a global server
 	Endpoint     string // Pi's describeTransport: the URL, or the command and arguments
 	Instructions string
 	StderrTail   string
@@ -125,26 +126,37 @@ func (m *Manager) Config() Config {
 }
 
 // ServerPatch is a change to one server's settings (Pi's saveConfig patch):
-// Enabled when non-nil, Exposure when non-empty.
+// Enabled when non-nil, Exposure when non-empty. InProject saves it as a
+// project override of a global server (Pi's inProject).
 type ServerPatch struct {
-	Enabled  *bool
-	Exposure string
+	Enabled   *bool
+	Exposure  string
+	InProject bool
 }
 
 // UpdateServer ports Pi's saveConfig: the change is written to the mcp.json
-// that defines the server (other content kept, see UpdateServerConfig), then
-// applied here. Disabling closes the server's connection; enabling leaves it
-// to connect on next use.
+// that defines the server, or to the project mcp.json that overrides it
+// (other content kept, see UpdateServerConfig), then applied here. Disabling
+// closes the server's connection; enabling leaves it to connect on next use.
 func (m *Manager) UpdateServer(name string, patch ServerPatch) error {
 	s, err := m.server(name)
 	if err != nil {
 		return err
 	}
-	if err := UpdateServerConfig(s.cfg.Source, name, patch); err != nil {
-		return err
-	}
 	m.mu.Lock()
 	sc := m.cfg.Servers[name]
+	if patch.InProject {
+		sc.Override = m.cfg.ProjectConfig
+	}
+	m.mu.Unlock()
+	path := sc.Source
+	if sc.Override != "" {
+		path = sc.Override
+	}
+	if err := UpdateServerConfig(path, name, patch, sc.Override != ""); err != nil {
+		return fmt.Errorf("Could not update %s: %w", path, err)
+	}
+	m.mu.Lock()
 	if patch.Enabled != nil {
 		sc.Enabled = *patch.Enabled
 	}
@@ -200,7 +212,7 @@ func (m *Manager) Status() []Status {
 		}
 		s.mu.Lock()
 		st := Status{Name: name, Transport: s.cfg.Transport, State: s.state, Tools: len(s.tools), Exposure: s.cfg.Exposure,
-			Source: s.cfg.Source, Scope: s.cfg.Scope, Endpoint: describeTransport(s.cfg), Instructions: s.instructions, StderrTail: s.stderr.String()}
+			Source: s.cfg.Source, Scope: s.cfg.Scope, Override: s.cfg.Override, Endpoint: describeTransport(s.cfg), Instructions: s.instructions, StderrTail: s.stderr.String()}
 		if s.err != nil {
 			st.Error = s.err.Error()
 		}

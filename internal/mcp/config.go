@@ -9,12 +9,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +58,10 @@ type ServerConfig struct {
 	toolExposureOrder []string
 	Source            string `json:"-"` // file that defined the entry
 	Scope             string `json:"-"` // "global" (user mcp.json) or "project", as Pi labels them
+	// Override is the project mcp.json whose entry overrides enabled,
+	// exposure or toolExposure of this global server (Pi's override).
+	Override string          `json:"-"`
+	raw      json.RawMessage // the entry as written, for overrides
 }
 
 // Config is the merged user and (trusted) project configuration.
@@ -62,6 +70,22 @@ type Config struct {
 	AutoEnableCodemode bool
 	// Errors lists invalid entries; they are skipped, never fatal (Pi).
 	Errors []error
+	// ProjectConfig is the trusted project's mcp.json, where /mcp saves
+	// project overrides of global servers; "" when the project is not read.
+	ProjectConfig string
+}
+
+// overrideKeys are what a project entry without command, url or type may
+// set on the global server of the same name (Pi's OVERRIDE_KEYS).
+var overrideKeys = []string{"enabled", "exposure", "toolExposure"}
+
+// isOverride is Pi's isOverride: an entry without command, url or type
+// overrides a server defined elsewhere instead of defining one.
+func isOverride(entry map[string]json.RawMessage) bool {
+	_, command := entry["command"]
+	_, url := entry["url"]
+	_, typ := entry["type"]
+	return !command && !url && !typ
 }
 
 // Names returns server names in sorted order.
@@ -116,6 +140,7 @@ func LoadConfig(userPath, projectPath string, projectTrusted bool) Config {
 	sources := []string{userPath}
 	if projectTrusted && projectPath != "" {
 		sources = append(sources, projectPath)
+		cfg.ProjectConfig = projectPath
 	}
 	for _, path := range sources {
 		data, err := os.ReadFile(path)
@@ -140,6 +165,11 @@ func LoadConfig(userPath, projectPath string, projectTrusted bool) Config {
 		sort.Strings(names)
 		seen := map[string]string{} // canonical name -> name, within this file
 		for _, name := range names {
+			var entry map[string]json.RawMessage
+			if path != userPath && json.Unmarshal(file.MCPServers[name], &entry) == nil && entry != nil && isOverride(entry) {
+				cfg.applyOverride(path, name, file.MCPServers[name])
+				continue
+			}
 			server, err := parseServer(name, file.MCPServers[name], path)
 			if err != nil {
 				cfg.Errors = append(cfg.Errors, fmt.Errorf("%s: server %q: %w", path, name, err))
@@ -168,6 +198,37 @@ func LoadConfig(userPath, projectPath string, projectTrusted bool) Config {
 	return cfg
 }
 
+// applyOverride is Pi's project override: the global server keeps its
+// definition (and credentials the project could not set) and takes
+// enabled, exposure and toolExposure from the project entry, validated as
+// one merged entry.
+func (c *Config) applyOverride(path, name string, raw json.RawMessage) {
+	base, ok := c.Servers[name]
+	if !ok {
+		c.Errors = append(c.Errors, fmt.Errorf("%s: server %q needs \"command\" or \"url\", or a global server to override", path, name))
+		return
+	}
+	entry, _ := parseOrderedObject(raw)
+	for _, key := range entry.keys {
+		if !slices.Contains(overrideKeys, key) {
+			c.Errors = append(c.Errors, fmt.Errorf("%s: server %q: an override can only set %s", path, name, strings.Join(overrideKeys, ", ")))
+			return
+		}
+	}
+	merged, _ := parseOrderedObject(base.raw)
+	for _, key := range entry.keys {
+		merged.set(key, entry.values[key])
+	}
+	encoded, _ := merged.MarshalJSON()
+	server, err := parseServer(name, encoded, base.Source)
+	if err != nil {
+		c.Errors = append(c.Errors, fmt.Errorf("%s: server %q: %w", path, name, err))
+		return
+	}
+	server.Scope, server.Override = base.Scope, path
+	c.Servers[name] = server
+}
+
 // canonicalName treats names that differ only in - and _ as the same server.
 func canonicalName(name string) string { return strings.ReplaceAll(name, "-", "_") }
 
@@ -182,7 +243,7 @@ func parseServer(name string, raw json.RawMessage, source string) (ServerConfig,
 	}
 	s := ServerConfig{Name: name, Command: r.Command, Args: r.Args, Env: r.Env, Cwd: r.Cwd, URL: r.URL,
 		Headers: r.Headers, OAuth: r.OAuth, Description: strings.TrimSpace(r.Description), ToolExposure: r.ToolExposure,
-		Timeout: DefaultTimeout, Enabled: true, Source: source}
+		Timeout: DefaultTimeout, Enabled: true, Source: source, raw: raw}
 	switch strings.ToLower(strings.TrimSpace(r.Type)) {
 	case "":
 	case "stdio":
@@ -218,6 +279,9 @@ func parseServer(name string, raw json.RawMessage, source string) (ServerConfig,
 		}
 		if len(r.Args) > 0 || len(r.Env) > 0 || r.Cwd != "" {
 			return ServerConfig{}, fmt.Errorf("args, env and cwd apply only to command servers")
+		}
+		if err := validateOAuth(r.OAuth); err != nil {
+			return ServerConfig{}, err
 		}
 	}
 	if r.Timeout != nil {
@@ -358,4 +422,101 @@ func orderedKeys(raw json.RawMessage, field string) []string {
 		}
 	}
 	return keys
+}
+
+var loopbackHosts = []string{"localhost", "127.0.0.1", "[::1]"}
+
+// isLoopbackRedirectURI is Pi's isLoopbackRedirectUri: an http URI that the
+// loopback callback server can serve.
+func isLoopbackRedirectURI(value string) bool {
+	u, err := url.Parse(value)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	if strings.Contains(host, ":") {
+		host = "[" + host + "]"
+	}
+	return u.Scheme == "http" && slices.Contains(loopbackHosts, strings.ToLower(host)) && u.RawQuery == "" && u.Fragment == ""
+}
+
+// validateOAuth is Pi's validateOAuth (core/mcp-servers.js): the "oauth"
+// settings of a url server, with Pi's messages.
+func validateOAuth(raw json.RawMessage) error {
+	if len(raw) == 0 {
+		return nil
+	}
+	var v map[string]json.RawMessage
+	if json.Unmarshal(raw, &v) != nil || v == nil {
+		return errors.New("oauth must be an object")
+	}
+	str := func(key string) (string, bool, bool) { // value, present, is a string
+		field, ok := v[key]
+		if !ok {
+			return "", false, true
+		}
+		var s string
+		err := json.Unmarshal(field, &s)
+		return s, true, err == nil
+	}
+	if _, _, ok := str("clientId"); !ok {
+		return errors.New("oauth.clientId must be a string")
+	}
+	if _, _, ok := str("clientSecret"); !ok {
+		return errors.New("oauth.clientSecret must be a string")
+	}
+	var port *float64
+	if field, ok := v["callbackPort"]; ok {
+		var n float64
+		if json.Unmarshal(field, &n) != nil || n != float64(int(n)) || n < 1 || n > 65535 {
+			return errors.New("oauth.callbackPort must be a port number")
+		}
+		port = &n
+	}
+	callbackURL, hasCallback, ok := str("callbackUrl")
+	if hasCallback {
+		if !ok || !isLoopbackRedirectURI(callbackURL) {
+			return errors.New("oauth.callbackUrl must be an http URI on localhost, 127.0.0.1, or [::1] without query or fragment")
+		}
+		u, _ := url.Parse(callbackURL)
+		if p := u.Port(); p != "" && port != nil && p != strconv.Itoa(int(*port)) {
+			return errors.New("oauth.callbackUrl and oauth.callbackPort name different ports")
+		}
+	}
+	if _, _, ok := str("scope"); !ok {
+		return errors.New("oauth.scope must be a string")
+	}
+	if name, present, ok := str("clientName"); present && (!ok || strings.TrimSpace(name) == "") {
+		return errors.New("oauth.clientName must be a non-empty string")
+	}
+	if registration, present, ok := str("clientRegistration"); present && !(ok && registration == "dcr") {
+		if !ok || registration != "cimd" {
+			return errors.New(`oauth.clientRegistration must be "dcr" or "cimd"`)
+		}
+		_, hasID := v["clientId"]
+		_, hasName := v["clientName"]
+		if hasID || hasName {
+			return errors.New(`oauth.clientRegistration "cimd" cannot be combined with oauth.clientId or oauth.clientName`)
+		}
+		if hasCallback {
+			u, _ := url.Parse(callbackURL)
+			if u.Hostname() == "::1" || urlPath(u) != "/callback" {
+				return errors.New(`oauth.clientRegistration "cimd" requires oauth.callbackUrl on localhost or 127.0.0.1 with path /callback`)
+			}
+		}
+	}
+	if metadataURL, present, ok := str("authServerMetadataUrl"); present {
+		u, err := url.Parse(metadataURL)
+		host := ""
+		if err == nil {
+			host = u.Hostname()
+			if strings.Contains(host, ":") {
+				host = "[" + host + "]"
+			}
+		}
+		if !ok || err != nil || u.Host == "" || !(u.Scheme == "https" || (u.Scheme == "http" && slices.Contains(loopbackHosts, host))) {
+			return errors.New("oauth.authServerMetadataUrl must be an https URL, or http on localhost, 127.0.0.1, or [::1]")
+		}
+	}
+	return nil
 }

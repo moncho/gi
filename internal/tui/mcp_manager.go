@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	gotui "github.com/grindlemire/go-tui"
 	gimcp "github.com/rcarmo/gi/internal/mcp"
+	gitools "github.com/rcarmo/gi/internal/tools"
 )
 
 // Pi's /mcp manager (pi-coding-agent extensions/mcp/ui.js McpManagerView and
@@ -41,6 +43,17 @@ type mcpManagerState struct {
 	selected map[string]string // screen -> selected value, kept across rebuilds (Pi)
 	messages map[string]string // server -> last action's message (Pi's server.message)
 	status   [2]string         // title and text of Pi's status screen while an action runs
+	signin   *mcpSignInScreen  // Pi's sign-in screen while it waits for the browser
+}
+
+// mcpSignInScreen is McpManagerView.redirectUrl: the authorization URL
+// (Ctrl+X copies it) and an input for the URL the browser was redirected
+// to, when the browser runs on another machine.
+type mcpSignInScreen struct {
+	title string
+	url   *authURL
+	input string
+	paste chan string // receives the pasted URL, or "" to cancel
 }
 
 func (c *chatTUI) openMCPManager() {
@@ -131,7 +144,7 @@ func (c *chatTUI) mcpManagerMenu() mcpMenu {
 	case "exposure":
 		st, _ := mcpStatusOf(statuses, m.server)
 		current := mcpExposureOf(st)
-		menu := mcpMenu{title: "Exposure of " + m.server, details: "Saved to " + st.Source + ".", selected: current, confirmLabel: "save", cancelLabel: "back"}
+		menu := mcpMenu{title: "Exposure of " + m.server, details: "Saved to " + gitools.FirstNonEmpty(st.Override, st.Source) + ".", selected: current, confirmLabel: "save", cancelLabel: "back"}
 		for _, e := range mcpExposureDescriptions {
 			mark := "  "
 			if e.name == current {
@@ -157,7 +170,10 @@ func (c *chatTUI) mcpManagerMenu() mcpMenu {
 		confirmLabel: "manage", cancelLabel: "close"}
 	for _, st := range sorted {
 		scope := st.Scope
-		if scope == "" {
+		switch {
+		case st.Override != "":
+			scope = "global, project override"
+		case scope == "":
 			scope = st.Source
 		}
 		menu.items = append(menu.items, slashItem{name: st.Name, value: st.Name,
@@ -172,15 +188,25 @@ func (c *chatTUI) mcpServerMenu(statuses []gimcp.Status, name string) mcpMenu {
 		return mcpMenu{title: name, empty: "This server is no longer configured.", cancelLabel: "back"}
 	}
 	saved := "saved to mcp.json"
-	if st.Scope != "" {
+	switch {
+	case st.Override != "":
+		saved = "saved to the project mcp.json"
+	case st.Scope != "":
 		saved = "saved to the " + st.Scope + " mcp.json"
 	}
+	// Global servers without an override can be turned on or off for the
+	// trusted project alone.
+	inProject := st.Scope == "global" && st.Override == "" && c.engine.MCPProjectConfig() != ""
+	const inProjectSaved = "saved to the project mcp.json"
 	var items []slashItem
 	add := func(value, label, description string) {
 		items = append(items, slashItem{name: label, value: value, description: description})
 	}
 	if st.State == gimcp.StateDisabled {
 		add("enable", "Enable", saved)
+		if inProject {
+			add("enable-project", "Enable in this project", inProjectSaved)
+		}
 	} else {
 		if st.State == gimcp.StateNeedsAuth {
 			add("signin", "Sign in", "opens the browser")
@@ -197,6 +223,9 @@ func (c *chatTUI) mcpServerMenu(statuses []gimcp.Status, name string) mcpMenu {
 		}
 		add("exposure", "Exposure", mcpExposureOf(st))
 		add("disable", "Disable", saved)
+		if inProject {
+			add("disable-project", "Disable in this project", inProjectSaved)
+		}
 	}
 	scope := st.Scope
 	if scope == "" {
@@ -213,7 +242,11 @@ func (c *chatTUI) mcpServerMenu(statuses []gimcp.Status, name string) mcpMenu {
 	if st.State != gimcp.StateConnected && st.Error != "" {
 		errLines = append(errLines, st.Error)
 	}
-	menu := mcpMenu{title: "MCP server " + name, details: strings.Join([]string{st.Endpoint, scope + ": " + st.Source, "State: " + state}, "\n"),
+	details := []string{st.Endpoint, scope + ": " + st.Source}
+	if st.Override != "" {
+		details = append(details, "project override: "+st.Override)
+	}
+	menu := mcpMenu{title: "MCP server " + name, details: strings.Join(append(details, "State: "+state), "\n"),
 		errorText: strings.Join(errLines, "\n"), items: items, confirmLabel: "select", cancelLabel: "back"}
 	if len(items) > 0 {
 		menu.selected = items[0].value
@@ -237,6 +270,9 @@ func (c *chatTUI) mcpManagerSelection(menu mcpMenu) int {
 }
 
 func (c *chatTUI) mcpManagerKeys() gotui.KeyMap {
+	if s := c.mcpManager.signin; s != nil {
+		return c.mcpSignInKeys(s)
+	}
 	move := func(delta int) {
 		if c.mcpManager.status[0] != "" {
 			return
@@ -257,6 +293,96 @@ func (c *chatTUI) mcpManagerKeys() gotui.KeyMap {
 		gotui.OnPreemptStop(gotui.KeyEscape, func(gotui.KeyEvent) { c.mcpManagerBack() }),
 		gotui.OnPreemptStop(gotui.KeyCtrlC, func(gotui.KeyEvent) { c.mcpManagerBack() }),
 	}
+}
+
+// mcpSignInKeys are the sign-in screen's: Enter submits a non-empty URL,
+// Escape cancels the sign-in, Ctrl+X copies the authorization URL and the
+// rest edits the input.
+func (c *chatTUI) mcpSignInKeys(s *mcpSignInScreen) gotui.KeyMap {
+	finish := func(value string) {
+		if c.mcpManager.signin == s {
+			c.mcpManager.signin = nil
+			s.paste <- value
+			c.markDirty()
+		}
+	}
+	return gotui.KeyMap{
+		gotui.OnPreemptStop(gotui.KeyEnter, func(gotui.KeyEvent) {
+			if value := strings.TrimSpace(s.input); value != "" {
+				finish(value)
+			}
+		}),
+		gotui.OnPreemptStop(gotui.KeyEscape, func(gotui.KeyEvent) { finish("") }),
+		gotui.OnPreemptStop(gotui.KeyCtrlC, func(gotui.KeyEvent) { finish("") }),
+		gotui.OnPreemptStop(gotui.KeyCtrlX, func(gotui.KeyEvent) { c.copyAuthURL(s.url) }),
+		gotui.OnPreemptStop(gotui.KeyBackspace, func(gotui.KeyEvent) {
+			if r := []rune(s.input); len(r) > 0 {
+				s.input = string(r[:len(r)-1])
+				c.markDirty()
+			}
+		}),
+		gotui.OnFocused(gotui.AnyRune, func(ke gotui.KeyEvent) {
+			s.input += string(ke.Rune)
+			c.markDirty()
+		}),
+	}
+}
+
+// mcpManagerSignIn is Pi's signInWithUi: a status screen while the
+// authorization server is contacted, the sign-in screen while the browser
+// is out, and a status screen while connecting. done gets the result on the
+// UI goroutine.
+func (c *chatTUI) mcpManagerSignIn(name string, done func(err error)) {
+	m := c.mcpManager
+	title := "Sign in to " + name
+	m.status = [2]string{title, "Contacting the authorization server…"}
+	var mu sync.Mutex
+	authorization := ""
+	prompt := gimcp.SignInPrompt{
+		ShowAuthorizationURL: func(u string) {
+			mu.Lock()
+			authorization = u
+			mu.Unlock()
+			openBrowser(u)
+		},
+		PromptForRedirectURL: func(ctx context.Context) string {
+			mu.Lock()
+			u := authorization
+			mu.Unlock()
+			s := &mcpSignInScreen{title: title, url: newAuthURL(u), paste: make(chan string, 1)}
+			c.runOnUI(func() {
+				if c.mcpManager != m {
+					s.paste <- ""
+					return
+				}
+				m.status = [2]string{}
+				m.signin = s
+			})
+			value := ""
+			select {
+			case value = <-s.paste:
+			case <-ctx.Done(): // the browser reached the callback
+			}
+			c.runOnUI(func() {
+				if c.mcpManager == m {
+					if m.signin == s {
+						m.signin = nil
+					}
+					m.status = [2]string{title, "Connecting…"}
+				}
+			})
+			return value
+		},
+	}
+	go func() {
+		err := c.engine.MCPSignIn(context.Background(), name, prompt)
+		c.runOnUI(func() {
+			if c.mcpManager == m {
+				m.signin, m.status = nil, [2]string{}
+			}
+			done(err)
+		})
+	}()
 }
 
 // mcpManagerBack is Pi's cancel: the inner screens return to the server,
@@ -322,13 +448,15 @@ func (c *chatTUI) runMCPManagerAction(name, action string) {
 		delete(m.selected, "exposure")
 		return
 	case "signin":
-		// Pi signs in inside the manager; gi uses its in-session sign-in
-		// (link, browser, pasted redirect URL in the editor).
-		c.closeMCPManager()
-		c.appendTranscript(c.startMCPSignIn(name)...)
+		c.mcpManagerSignIn(name, func(err error) {
+			if err != nil && c.mcpManager == m {
+				m.messages[name] = c.engine.MCPSignInResult(name, err)
+			}
+		})
 		return
 	}
-	status := map[string]string{"reconnect": "Reconnecting…", "enable": "Connecting…", "disable": "Disconnecting…"}[action]
+	status := map[string]string{"reconnect": "Reconnecting…", "enable": "Connecting…", "disable": "Disconnecting…",
+		"enable-project": "Connecting…", "disable-project": "Disconnecting…"}[action]
 	if status != "" {
 		m.status = [2]string{"MCP server " + name, status}
 	}
@@ -341,8 +469,8 @@ func (c *chatTUI) runMCPManagerAction(name, action string) {
 			_ = c.engine.MCPReconnect(ctx, name) // a failure shows as the server's state and error
 		case action == "signout":
 			c.engine.MCPSignOut(ctx, name)
-		case action == "enable" || action == "disable":
-			err = c.engine.MCPSetEnabled(ctx, name, action == "enable")
+		case action == "enable" || action == "disable" || action == "enable-project" || action == "disable-project":
+			err = c.engine.MCPSetEnabled(ctx, name, strings.HasPrefix(action, "enable"), strings.HasSuffix(action, "-project"))
 		case strings.HasPrefix(action, "exposure:"):
 			err = c.engine.MCPSetExposure(ctx, name, strings.TrimPrefix(action, "exposure:"))
 		}
@@ -405,11 +533,28 @@ func mcpFooter(confirm, cancel string) []gotui.TextSpan {
 // piMCPManagerRows renders the manager's current screen.
 func (c *chatTUI) piMCPManagerRows(width int) spanRows {
 	m := c.mcpManager
+	if m.signin != nil {
+		return m.signin.rows(width)
+	}
 	if m.status[0] != "" {
 		return mcpStatusRows(width, m.status[0], m.status[1])
 	}
 	menu := c.mcpManagerMenu()
 	return mcpMenuRows(width, menu, c.mcpManagerSelection(menu))
+}
+
+// rows is the sign-in screen as McpManagerView.redirectUrl renders it.
+func (s *mcpSignInScreen) rows(width int) spanRows {
+	muted := func(text string) spanRows {
+		return piPaddedText(width, gotui.TextSpan{Text: text, Style: piFg(piMuted)})
+	}
+	body := append(spanRows{nil}, muted("Approve access in your browser. If it did not open, visit:")...)
+	for _, spans := range s.url.spans() {
+		body = append(body, piPaddedText(width, spans...)...)
+	}
+	body = append(append(body, nil), muted("If the browser runs on another machine, paste the URL it was redirected to:")...)
+	body = append(body, piSearchRow(s.input, width))
+	return mcpFrame(width, s.title, body, mcpFooter("submit", "cancel"))
 }
 
 // mcpStatusRows is McpManagerView.status: a title and a muted message.

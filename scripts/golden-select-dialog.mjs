@@ -13,7 +13,7 @@ const { initTheme } = await import(`${base}/theme/theme.js`);
 const { ExtensionSelectorComponent } = await import(`${base}/components/extension-selector.js`);
 initTheme("dark");
 
-const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/\x1b\]8;;[^\x07]*\x07/g, "");
+const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/\x1b\]8;;[^\x07\x1b]*(?:\x07|\x1b\\)/g, "");
 const keys = { up: "\x1b[A", down: "\x1b[B", j: "j", k: "k", enter: "\r", escape: "\x1b" };
 const width = 40;
 const steps = ["start", "down", "down", "down", "k", "up", "up", "j", "enter"];

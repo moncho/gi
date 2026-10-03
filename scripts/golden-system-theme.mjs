@@ -3,7 +3,10 @@
 //   bun scripts/golden-system-theme.mjs
 import { writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-const root = `${homedir()}/.bun/install/global/node_modules/@earendil-works`;
+import { existsSync as piModulesExist } from "node:fs";
+// Pi's packages: PI_NODE_MODULES, the global bun install, or the reference install.
+const PI_MODULES = [process.env.PI_NODE_MODULES, `${homedir()}/.bun/install/global/node_modules`, "/workspace/.cache/pi-ref/node_modules"].find((dir) => dir && piModulesExist(`${dir}/@earendil-works/pi-coding-agent`));
+const root = `${PI_MODULES}/@earendil-works`;
 const { generateSystemThemeColors } = await import(`${root}/pi-coding-agent/dist/modes/interactive/theme/system-theme.js`);
 const hex = (h) => ({ r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16) });
 const frappe = ["#51576d", "#e78284", "#a6d189", "#e5c890", "#8caaee", "#f4b8e4", "#81c8be", "#b5bfe2", "#626880", "#e78284", "#a6d189", "#e5c890", "#8caaee", "#f4b8e4", "#81c8be", "#a5adce"];

@@ -334,8 +334,7 @@ type chatTUI struct {
 	extensionToolModes          map[string]string
 	editorAskActive             bool
 	editorAskHandler            func(answer string, cancelled bool) // internal asks (e.g. /mcp login); nil: extension asks
-	mcpSignIn                   *mcpSignInState
-	uiQueue                     chan func() // background UI updates when there is no app (tests)
+	uiQueue                     chan func()                         // background UI updates when there is no app (tests)
 	editorAskKey                string
 	editorAskPrompt             string
 	editorAskPrevPlaceholder    string

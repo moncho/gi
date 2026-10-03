@@ -1,4 +1,4 @@
-// Vendored from @earendil-works/pi-codemode 1.0.0 (MIT): identifier.js + declarations.js
+// Vendored from @earendil-works/pi-codemode 1.0.1 (MIT): identifier.js + declarations.js
 // as a plain script, by scripts/vendor-codemode.mjs; do not edit.
 /**
  * The identifier a script uses for a tool: characters that are not valid in a JavaScript

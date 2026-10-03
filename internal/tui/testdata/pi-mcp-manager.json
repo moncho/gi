@@ -425,5 +425,83 @@
    " Reconnecting…",
    "──────────────────────────────────────────────────────────────────────"
   ]
+ },
+ "signin": {
+  "40": {
+   "url": "https://auth.example.com/authorize?client_id=gi&state=abc123&code_challenge=xyz",
+   "empty": [
+    "────────────────────────────────────────",
+    " Sign in to github",
+    "",
+    " Approve access in your browser. If it",
+    " did not open, visit:",
+    " https://auth.example.com/authorize?cli",
+    " ent_id=gi&state=abc123&code_challenge=",
+    " xyz",
+    " Ctrl+click to open • ctrl+x to copy",
+    "",
+    " If the browser runs on another",
+    " machine, paste the URL it was",
+    " redirected to:",
+    ">",
+    "",
+    " enter submit • escape/ctrl+c cancel",
+    "────────────────────────────────────────"
+   ],
+   "typed": [
+    "────────────────────────────────────────",
+    " Sign in to github",
+    "",
+    " Approve access in your browser. If it",
+    " did not open, visit:",
+    " https://auth.example.com/authorize?cli",
+    " ent_id=gi&state=abc123&code_challenge=",
+    " xyz",
+    " Ctrl+click to open • ctrl+x to copy",
+    "",
+    " If the browser runs on another",
+    " machine, paste the URL it was",
+    " redirected to:",
+    "> http://x",
+    "",
+    " enter submit • escape/ctrl+c cancel",
+    "────────────────────────────────────────"
+   ]
+  },
+  "70": {
+   "url": "https://auth.example.com/authorize?client_id=gi&state=abc123&code_challenge=xyz",
+   "empty": [
+    "──────────────────────────────────────────────────────────────────────",
+    " Sign in to github",
+    "",
+    " Approve access in your browser. If it did not open, visit:",
+    " https://auth.example.com/authorize?client_id=gi&state=abc123&code_ch",
+    " allenge=xyz",
+    " Ctrl+click to open • ctrl+x to copy",
+    "",
+    " If the browser runs on another machine, paste the URL it was",
+    " redirected to:",
+    ">",
+    "",
+    " enter submit • escape/ctrl+c cancel",
+    "──────────────────────────────────────────────────────────────────────"
+   ],
+   "typed": [
+    "──────────────────────────────────────────────────────────────────────",
+    " Sign in to github",
+    "",
+    " Approve access in your browser. If it did not open, visit:",
+    " https://auth.example.com/authorize?client_id=gi&state=abc123&code_ch",
+    " allenge=xyz",
+    " Ctrl+click to open • ctrl+x to copy",
+    "",
+    " If the browser runs on another machine, paste the URL it was",
+    " redirected to:",
+    "> http://x",
+    "",
+    " enter submit • escape/ctrl+c cancel",
+    "──────────────────────────────────────────────────────────────────────"
+   ]
+  }
  }
 }

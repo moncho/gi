@@ -21,7 +21,10 @@ code is in `internal/tui/login.go` and `internal/inference/login.go`.
   - `✓ environment`, when an environment variable provides the key
 - The login runs in Pi's login dialog (`LoginDialogComponent`):
   - **Account:** the dialog runs go-ai's OAuth flow for the provider. It shows
-    the sign-in URL with a click hint and opens the browser. The flow's
+    the sign-in URL with click and copy hints (Pi 1.0.1's `AuthUrlComponent`,
+    `internal/tui/auth_url.go`) and opens the browser. Ctrl+X copies the URL
+    (native clipboard, else OSC 52 over SSH or without a display) and the
+    hint shows the result. The flow's
     prompts take the pasted code or redirect URL, its menus appear over the
     dialog, and its progress messages are listed.
   - **API key:** the dialog asks for the key.
@@ -84,6 +87,10 @@ its earlier `apiKey` field. gi's web settings now write `key`.
 - Stored keys are used literally. Pi's command (`!…`) and template values are
   not resolved.
 - The provider search text leaves out Pi's method name.
+- go-ai reports device-code flows (GitHub Copilot, Kimi) through its auth URL
+  callback with "Enter code: …" instructions, so they show the copy hint that
+  Pi's device-code screen (`showDeviceCode`) leaves out. The port of that
+  screen is ready for go-ai's device-code events.
 
 Golden tests: `scripts/golden-login.mjs` → `TestLoginUIMatchesPi`. The flows
 are covered by `TestLoginAPIKeyAndLogoutFlow` and `TestLoginOAuthFlow`.

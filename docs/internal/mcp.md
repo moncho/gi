@@ -20,6 +20,22 @@ For each file the first existing location wins; the `.gi` and `.pi` files are
 not merged (#26). A project entry replaces a user entry with the same name, and
 a project `autoEnableCodemode` overrides the user value.
 
+A project entry without `command`, `url` or `type` is a **project override**
+(Pi 1.0.1): it sets only `enabled`, `exposure` and `toolExposure` of the user
+server with the same name, and the rest of the user entry (including
+credentials the project could not set) is kept. `toolExposure` replaces the
+user map. An override without a user server, or with another key, is an
+error. The server keeps scope `global` and records the override file
+(`ServerConfig.Override`); `Config.ProjectConfig` is the trusted project's
+mcp.json. Golden: `scripts/golden-mcp-overrides.mjs` runs Pi's own
+`loadMcpConfig` and `updateMcpServerConfig`; `TestProjectOverridesMatchPi`.
+Until project trust exists (#16) no project file is read, so overrides and the
+manager's per-project actions stay inactive in practice.
+
+```json
+{ "mcpServers": { "internal-tools": { "enabled": false } } }
+```
+
 ```json
 {
   "autoEnableCodemode": true,
@@ -50,6 +66,12 @@ Rules, as in Pi:
   wholly `!command` runs the command and uses its trimmed output. Expansion
   happens only when connecting. A leading `~/` expands in `command`, `args`
   and `cwd`, and a relative `cwd` resolves from the workspace.
+- **`oauth`** (url servers) is validated as Pi's `validateOAuth`, with Pi's
+  messages: `clientId`, `clientSecret`, `scope` strings, `callbackPort`,
+  a loopback `callbackUrl`, a non-empty `clientName`, `clientRegistration`
+  (`dcr` or `cimd`; `cimd` excludes `clientId` and `clientName` and needs
+  a `/callback` path on localhost or 127.0.0.1) and `authServerMetadataUrl`.
+  Golden: `scripts/golden-mcp-cimd.mjs`, `TestOAuthSettingsAndCIMDMatchPi`.
 - **Invalid entries** are reported (`Config.Errors`) and skipped; the other
   servers still connect.
 
@@ -187,6 +209,7 @@ Rules, as in Pi:
 - **`remove`:** deletes an entry. When the server is defined in the other scope, the error says so.
 - **`list`:**
   - Connects to every enabled server and prints its state, its tools (marking tools whose exposure differs from the server's), its resource counts and any errors.
+  - A server with a project override shows `project override: <file>` (Pi 1.0.1).
   - Exits 1 when an entry is invalid or an enabled server does not connect.
 - **Project config:** gi does not read project MCP configuration until it has project trust (#16), so the project file is reported as ignored.
 - **Sign-in:** `login` and `logout` report that OAuth is not supported yet (#25 phase 6c).
@@ -205,10 +228,18 @@ Rules, as in Pi:
   - Tools: the server's tools with their first description line, marked
     `[exposure]` when `toolExposure` overrides the server's exposure.
   - Exposure: codemode, deferred or direct, saved to the mcp.json that defines
-    the server (other content and indentation kept, `Manager.UpdateServer`,
-    `UpdateServerConfig`); a connected server's tools are registered again.
+    the server, or to the project file that overrides it (other content and
+    indentation kept, `Manager.UpdateServer`, `UpdateServerConfig`); a
+    connected server's tools are registered again.
   - Enable/Disable are saved the same way; disabling closes the connection and
     withdraws the tools, enabling connects.
+  - In a trusted project, a user server without an override also offers
+    "Enable in this project"/"Disable in this project", which add an override
+    to the project mcp.json (Pi 1.0.1). An override keeps the default values
+    it writes (`"enabled": true`, `"exposure": "codemode"`), since they
+    replace the user server's. Overridden servers show as `global, project
+    override`, with `project override: <file>` in their details. Test:
+    `TestMCPManagerProjectOverride`.
   - Menus are rebuilt from the engine's state on every frame and redraw when
     a server changes (`Engine.SetMCPChangeListener`); slow actions show Pi's
     status screen ("Reconnecting…") until they finish.
@@ -216,9 +247,13 @@ Rules, as in Pi:
   - Golden: `scripts/golden-mcp-manager.mjs` renders Pi's own
     `McpManagerView`; `TestMCPManagerRenderMatchesPi`, and
     `TestMCPManagerManagesServers` against real servers.
-  - Difference: Pi signs in inside the manager (link and redirect-URL input);
-    gi closes the manager and runs its in-session sign-in (`/mcp login`).
-    Pi's `overridden:` notices (extension-registered servers) do not apply.
+  - Sign in runs Pi's `signInWithUi` in the manager: "Contacting the
+    authorization server…", then the sign-in screen (the authorization URL
+    with Pi's `AuthUrlComponent` hints, Ctrl+X copies it, and an input for
+    the URL the browser was redirected to), then "Connecting…". Escape cancels;
+    a failure shows on the server's screen. Golden: the sign-in screen in
+    `scripts/golden-mcp-manager.mjs`.
+  - Pi's `overridden:` notices (extension-registered servers) do not apply.
 - `/mcp reconnect [server]` drops the connection, connects again and re-registers the server's tools (`Manager.Reconnect`, `Engine.MCPReconnect`).
   - Without a name it picks the only enabled server, or the only failed or disconnected one; otherwise it asks for a name.
 - Argument completion (Pi's `getArgumentCompletions` for `/mcp`): after `/mcp `
@@ -282,18 +317,18 @@ This is a port of Pi's MCP OAuth (pi-coding-agent `extensions/mcp/oauth.js`, pi-
   - After a 401 (or a 403 `insufficient_scope`), one refresh is shared by concurrent requests, then the request is retried once.
   - When the user must sign in, the server's state becomes `needs-auth`; connections never open a browser.
 - **Sign-in** (`gi mcp login`): discovery (protected resource metadata, authorization server metadata with issuer check), dynamic client registration, PKCE S256 and a loopback callback on `127.0.0.1/callback`.
-  - In a terminal, the redirect URL can also be pasted.
+  - In a terminal, the redirect URL can also be pasted. It must match the sign-in's redirect URI (origin and path), and so must the callback's path.
+  - **`oauth.clientRegistration: "cimd"`** (Pi 1.0.1): no registration; the client ID is pi's Client ID Metadata Document on pi.dev (gi identifies as pi, whose documents list its loopback callback). The authorization server must advertise `client_id_metadata_document_supported` and the `none` token endpoint auth method. With RFC 9207 `iss` support the document is `https://pi.dev/oauth/client.json` with the usual redirect URI; without it, `https://pi.dev/oauth/<id>/client.json` and `/callback/<id>`, where `<id>` is 12 base64url characters of SHA-256 of the server URL (Pi's `callbackId`), so responses from different authorization servers cannot be mixed up. The document is not stored, and a previously registered client is replaced. Test: `TestCLIOAuthClientIDMetadataDocument`.
   - `invalid_client` and `invalid_grant` errors reset credentials and retry, as in Pi.
   - **Issuer check (RFC 9207):** an authorization response whose `iss` does not name the authorization server, or that lacks `iss` when the server advertises it, is rejected before the code exchange.
   - **`oauth.authServerMetadataUrl`:** replaces discovery for servers that advertise a wrong authorization server or none. The document is trusted as configured and not cached.
   - **Step-up sign-in** (`insufficient_scope`): requests the granted scopes plus the challenged ones. Saved tokens record their scope (the requested scope when the response omits it, the grant's scope after a refresh).
   - **Empty or `null` optional token fields** count as absent, and `expires_in` may be a numeric string.
 - **Sign-out** (`gi mcp logout`) deletes the stored credentials.
-- **TUI** (`/mcp login|logout [server]`, Pi's in-session sign-in):
+- **TUI** (`/mcp login|logout [server]`):
   - **Picking the server:** as in Pi: the named server, else the only OAuth server, else the only one needing sign-in.
-  - **Signing in:**
-    - The authorization link is printed as a link that stays clickable when it wraps, and the browser opens.
-    - The editor asks for the redirect URL in case the browser cannot reach this machine; Esc cancels (`Sign-in cancelled.`).
+  - **Signing in** (Pi 1.0.1): the manager opens on its sign-in flow (above) and the browser opens; it closes with the result.
+    - Escape on the sign-in screen cancels (`Sign-in cancelled.`).
     - Success reconnects the server (`Signed in to MCP server "x" (N tools).`).
   - **Logout** deletes the credentials and leaves the server in `needs-auth`.
   - **`/mcp`** lists such servers as `x: needs sign-in, run /mcp login x`.

@@ -18,7 +18,7 @@ initTheme("dark");
 setKeybindings(new KeybindingsManager());
 process.env.PATH = ""; // showAuth opens a browser; leave none to find
 
-const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/\x1b\]8;;[^\x07]*\x07/g, "").replace(/\x1b_[^\x07]*\x07/g, "");
+const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/\x1b\]8;;[^\x07\x1b]*(?:\x07|\x1b\\)/g, "").replace(/\x1b_[^\x07]*\x07/g, "");
 const rows = (component, width) => component.render(width).map((line) => strip(line).trimEnd());
 const login = [
 	{ id: "anthropic", name: "Anthropic", authType: "oauth", subscription: true, status: { type: "oauth", source: "stored credential" } },

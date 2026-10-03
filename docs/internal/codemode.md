@@ -27,7 +27,7 @@ Model-written **JavaScript**, with Pi's codemode semantics.
 - **Runtime:** QuickJS-ng compiled to WASI (`quickjs-wasi` 3.6.2, MIT) runs
   under wazero.
 - **Guest side:** Pi's codemode prelude (`@earendil-works/pi-codemode`
-  0.99.2, MIT), vendored verbatim, so script behaviour matches Pi by
+  1.0.1, MIT), vendored verbatim, so script behaviour matches Pi by
   construction. `scripts/vendor-codemode.mjs` refreshes both from the
   installed Pi packages (`internal/codemode/vendor`, with licences and
   `VERSIONS`).
@@ -46,6 +46,10 @@ Model-written **JavaScript**, with Pi's codemode semantics.
   - caller cancellation is reported as `aborted`;
   - QuickJS stack 512 KiB, so deep recursion throws a catchable `RangeError`;
   - linear memory capped at 256 MiB, plus an optional QuickJS heap limit;
+  - script output: past 16 Mi characters or 100000 `text()`, `image()` and
+    `console` calls the prelude fails the script (pi-codemode 1.0.1); `done`
+    ends the script at once, as Pi's host does, so catching the error does not
+    keep it running;
   - WASI gets no filesystem, environment or arguments, and its stdout and
     stderr are discarded.
 - **Errors** use Pi's kinds: `script` (with name, message and stack),

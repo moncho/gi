@@ -1,0 +1,260 @@
+{
+ "validation": [
+  {
+   "oauth": {},
+   "error": null
+  },
+  {
+   "oauth": {
+    "clientRegistration": "dcr",
+    "clientName": "x"
+   },
+   "error": null
+  },
+  {
+   "oauth": {
+    "clientRegistration": "cimd"
+   },
+   "error": null
+  },
+  {
+   "oauth": {
+    "clientRegistration": "cimd",
+    "callbackUrl": "http://127.0.0.1:8123/callback"
+   },
+   "error": null
+  },
+  {
+   "oauth": {
+    "clientRegistration": "cimd",
+    "callbackUrl": "http://localhost/callback"
+   },
+   "error": null
+  },
+  {
+   "oauth": {
+    "clientRegistration": "cimd",
+    "callbackUrl": "http://[::1]:8123/callback"
+   },
+   "error": "server \"s\": oauth.clientRegistration \"cimd\" requires oauth.callbackUrl on localhost or 127.0.0.1 with path /callback"
+  },
+  {
+   "oauth": {
+    "clientRegistration": "cimd",
+    "callbackUrl": "http://127.0.0.1:8123/cb"
+   },
+   "error": "server \"s\": oauth.clientRegistration \"cimd\" requires oauth.callbackUrl on localhost or 127.0.0.1 with path /callback"
+  },
+  {
+   "oauth": {
+    "clientRegistration": "cimd",
+    "clientId": "abc"
+   },
+   "error": "server \"s\": oauth.clientRegistration \"cimd\" cannot be combined with oauth.clientId or oauth.clientName"
+  },
+  {
+   "oauth": {
+    "clientRegistration": "cimd",
+    "clientName": "gi"
+   },
+   "error": "server \"s\": oauth.clientRegistration \"cimd\" cannot be combined with oauth.clientId or oauth.clientName"
+  },
+  {
+   "oauth": {
+    "clientRegistration": "auto"
+   },
+   "error": "server \"s\": oauth.clientRegistration must be \"dcr\" or \"cimd\""
+  },
+  {
+   "oauth": {
+    "clientRegistration": 1
+   },
+   "error": "server \"s\": oauth.clientRegistration must be \"dcr\" or \"cimd\""
+  },
+  {
+   "oauth": {
+    "clientId": 3
+   },
+   "error": "server \"s\": oauth.clientId must be a string"
+  },
+  {
+   "oauth": {
+    "clientSecret": false
+   },
+   "error": "server \"s\": oauth.clientSecret must be a string"
+  },
+  {
+   "oauth": {
+    "callbackPort": 0
+   },
+   "error": "server \"s\": oauth.callbackPort must be a port number"
+  },
+  {
+   "oauth": {
+    "callbackPort": 8123.5
+   },
+   "error": "server \"s\": oauth.callbackPort must be a port number"
+  },
+  {
+   "oauth": {
+    "callbackPort": 8123,
+    "callbackUrl": "http://127.0.0.1:9000/callback"
+   },
+   "error": "server \"s\": oauth.callbackUrl and oauth.callbackPort name different ports"
+  },
+  {
+   "oauth": {
+    "callbackPort": 8123,
+    "callbackUrl": "http://127.0.0.1/callback"
+   },
+   "error": null
+  },
+  {
+   "oauth": {
+    "callbackUrl": "https://127.0.0.1/callback"
+   },
+   "error": "server \"s\": oauth.callbackUrl must be an http URI on localhost, 127.0.0.1, or [::1] without query or fragment"
+  },
+  {
+   "oauth": {
+    "callbackUrl": "http://example.com/callback"
+   },
+   "error": "server \"s\": oauth.callbackUrl must be an http URI on localhost, 127.0.0.1, or [::1] without query or fragment"
+  },
+  {
+   "oauth": {
+    "callbackUrl": "http://127.0.0.1/callback?x=1"
+   },
+   "error": "server \"s\": oauth.callbackUrl must be an http URI on localhost, 127.0.0.1, or [::1] without query or fragment"
+  },
+  {
+   "oauth": {
+    "callbackUrl": "http://127.0.0.1/callback#f"
+   },
+   "error": "server \"s\": oauth.callbackUrl must be an http URI on localhost, 127.0.0.1, or [::1] without query or fragment"
+  },
+  {
+   "oauth": {
+    "callbackUrl": "http://[::1]/callback"
+   },
+   "error": null
+  },
+  {
+   "oauth": {
+    "scope": [
+     "a"
+    ]
+   },
+   "error": "server \"s\": oauth.scope must be a string"
+  },
+  {
+   "oauth": {
+    "clientName": "  "
+   },
+   "error": "server \"s\": oauth.clientName must be a non-empty string"
+  },
+  {
+   "oauth": {
+    "authServerMetadataUrl": "https://auth.example.com/.well-known/oauth-authorization-server"
+   },
+   "error": null
+  },
+  {
+   "oauth": {
+    "authServerMetadataUrl": "http://localhost:9000/meta"
+   },
+   "error": null
+  },
+  {
+   "oauth": {
+    "authServerMetadataUrl": "http://auth.example.com/meta"
+   },
+   "error": "server \"s\": oauth.authServerMetadataUrl must be an https URL, or http on localhost, 127.0.0.1, or [::1]"
+  },
+  {
+   "oauth": {
+    "authServerMetadataUrl": "not a url"
+   },
+   "error": "server \"s\": oauth.authServerMetadataUrl must be an https URL, or http on localhost, 127.0.0.1, or [::1]"
+  }
+ ],
+ "callbackIds": [
+  {
+   "url": "https://mcp.example.com/mcp",
+   "id": "epMNJ6P1xGQ9"
+  },
+  {
+   "url": "https://MCP.Example.com:443/mcp#frag",
+   "id": "epMNJ6P1xGQ9"
+  },
+  {
+   "url": "https://mcp.example.com",
+   "id": "YEwySW5xKb8M"
+  },
+  {
+   "url": "http://localhost:8080/a/b?x=1",
+   "id": "dsozR8Lu8bgz"
+  }
+ ],
+ "documents": [
+  {
+   "metadata": null,
+   "document": null,
+   "error": "The authorization server does not support Client ID Metadata Documents for public clients; remove oauth.clientRegistration \"cimd\""
+  },
+  {
+   "metadata": {
+    "client_id_metadata_document_supported": true
+   },
+   "document": null,
+   "error": "The authorization server does not support Client ID Metadata Documents for public clients; remove oauth.clientRegistration \"cimd\""
+  },
+  {
+   "metadata": {
+    "client_id_metadata_document_supported": true,
+    "token_endpoint_auth_methods_supported": [
+     "client_secret_post"
+    ]
+   },
+   "document": null,
+   "error": "The authorization server does not support Client ID Metadata Documents for public clients; remove oauth.clientRegistration \"cimd\""
+  },
+  {
+   "metadata": {
+    "client_id_metadata_document_supported": false,
+    "token_endpoint_auth_methods_supported": [
+     "none"
+    ]
+   },
+   "document": null,
+   "error": "The authorization server does not support Client ID Metadata Documents for public clients; remove oauth.clientRegistration \"cimd\""
+  },
+  {
+   "metadata": {
+    "client_id_metadata_document_supported": true,
+    "token_endpoint_auth_methods_supported": [
+     "none"
+    ]
+   },
+   "document": {
+    "url": "https://pi.dev/oauth/epMNJ6P1xGQ9/client.json",
+    "redirectUrl": "http://127.0.0.1:8123/callback/epMNJ6P1xGQ9"
+   },
+   "error": null
+  },
+  {
+   "metadata": {
+    "client_id_metadata_document_supported": true,
+    "token_endpoint_auth_methods_supported": [
+     "none"
+    ],
+    "authorization_response_iss_parameter_supported": true
+   },
+   "document": {
+    "url": "https://pi.dev/oauth/client.json",
+    "redirectUrl": "http://127.0.0.1:8123/callback"
+   },
+   "error": null
+  }
+ ]
+}

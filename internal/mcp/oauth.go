@@ -85,6 +85,10 @@ type OAuthSettings struct {
 	CallbackURL  string `json:"callbackUrl,omitempty"`
 	Scope        string `json:"scope,omitempty"`
 	ClientName   string `json:"clientName,omitempty"`
+	// ClientRegistration is "dcr" (dynamic client registration, the
+	// default) or "cimd": gi identifies with pi's Client ID Metadata
+	// Document instead of registering (Pi 1.0.1).
+	ClientRegistration string `json:"clientRegistration,omitempty"`
 	// AuthServerMetadataURL is an authorization server metadata document
 	// used instead of discovery (servers that advertise a wrong one or none).
 	AuthServerMetadataURL string `json:"authServerMetadataUrl,omitempty"`
@@ -294,6 +298,63 @@ type oauthProvider struct {
 	configured     json.RawMessage // configured client (clientId/clientSecret)
 	store          *CredentialStore
 	onRedirect     func(*url.URL)
+	// clientMetadataDocument picks the Client ID Metadata Document for
+	// clientRegistration "cimd"; nil otherwise.
+	clientMetadataDocument func(*authServerMeta) (clientDocument, error)
+}
+
+// clientDocument is a Client ID Metadata Document: its URL is the client
+// ID, and its redirect URI may be specific to the MCP server.
+type clientDocument struct{ url, redirectURL string }
+
+// clientMetadataBaseURL is where pi.dev serves pi's Client ID Metadata
+// Documents: client.json and <callback ID>/client.json. gi identifies as pi.
+const clientMetadataBaseURL = "https://pi.dev/oauth"
+
+// callbackID is Pi's: 12 characters identifying an MCP server URL in
+// callback paths (computed like Codex does).
+func callbackID(serverURL string) string {
+	sum := sha256.Sum256([]byte(urlHref(serverURL)))
+	return base64.RawURLEncoding.EncodeToString(sum[:9])
+}
+
+// urlHref is a URL without its fragment, normalized as WHATWG URL's href:
+// lowercase scheme and host, no default port, "/" for an empty path.
+func urlHref(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	u.Fragment, u.RawFragment = "", ""
+	u.Scheme, u.Host = strings.ToLower(u.Scheme), strings.ToLower(u.Host)
+	if port := u.Port(); (u.Scheme == "https" && port == "443") || (u.Scheme == "http" && port == "80") {
+		u.Host = u.Hostname()
+	}
+	if u.Path == "" && u.RawPath == "" {
+		u.Path = "/"
+	}
+	return u.String()
+}
+
+// pickClientMetadataDocument is Pi's clientMetadataDocument, chosen like
+// Codex chooses its own. Without the iss parameter in authorization
+// responses (RFC 9207), the redirect URI and the document are specific to
+// the MCP server, so a response cannot be mixed up with one from another
+// authorization server (RFC 9700 section 4.4.2.2).
+func pickClientMetadataDocument(serverURL, redirectURL string, meta *authServerMeta) (clientDocument, error) {
+	if meta == nil || !meta.ClientIDMetadataDocumentSupported || !contains(meta.TokenEndpointAuthMethodsSupported, "none") {
+		return clientDocument{}, errors.New(`The authorization server does not support Client ID Metadata Documents for public clients; remove oauth.clientRegistration "cimd"`)
+	}
+	if meta.IssParameterSupported {
+		return clientDocument{url: clientMetadataBaseURL + "/client.json", redirectURL: redirectURL}, nil
+	}
+	id := callbackID(serverURL)
+	redirect, err := url.Parse(redirectURL)
+	if err != nil {
+		return clientDocument{}, err
+	}
+	redirect.Path, redirect.RawPath = oauthCallbackPath+"/"+id, ""
+	return clientDocument{url: clientMetadataBaseURL + "/" + id + "/client.json", redirectURL: redirect.String()}, nil
 }
 
 func newOAuthProvider(name, serverURL string, store *CredentialStore, settings OAuthSettings, redirectURL string, onRedirect func(*url.URL)) *oauthProvider {
@@ -312,6 +373,11 @@ func newOAuthProvider(name, serverURL string, store *CredentialStore, settings O
 	meta.set("response_types", jsonValue([]string{"code"}))
 	meta.set("token_endpoint_auth_method", jsonValue(method))
 	p := &oauthProvider{name: name, serverURL: normalizeServerURL(serverURL), redirectURL: redirectURL, clientMetadata: meta, store: store, onRedirect: onRedirect}
+	if settings.ClientRegistration == "cimd" {
+		p.clientMetadataDocument = func(meta *authServerMeta) (clientDocument, error) {
+			return pickClientMetadataDocument(serverURL, redirectURL, meta)
+		}
+	}
 	if settings.ClientID != "" {
 		client := map[string]string{"client_id": settings.ClientID}
 		if settings.ClientSecret != "" {
@@ -510,6 +576,7 @@ func discoverResourceMetadata(ctx context.Context, client *http.Client, serverUR
 
 type authServerMeta struct {
 	Issuer                            string   `json:"issuer"`
+	ClientIDMetadataDocumentSupported bool     `json:"client_id_metadata_document_supported"`
 	AuthorizationEndpoint             string   `json:"authorization_endpoint"`
 	TokenEndpoint                     string   `json:"token_endpoint"`
 	RegistrationEndpoint              string   `json:"registration_endpoint"`
@@ -851,6 +918,26 @@ func runFlow(ctx context.Context, p *oauthProvider, opts flowOptions) (bool, err
 		scope = strings.Join(rm.ScopesSupported, " ")
 	}
 	rawClient := p.clientInformation()
+	// A Client ID Metadata Document is not stored: its URL is the client ID
+	// of every sign-in.
+	var doc *clientDocument
+	if len(rawClient) == 0 && p.clientMetadataDocument != nil {
+		d, err := p.clientMetadataDocument(meta)
+		if err != nil {
+			return false, err
+		}
+		if u, err := url.Parse(d.url); err != nil || u.Scheme != "https" || u.Path == "/" {
+			return false, errors.New("Invalid OAuth client metadata URL")
+		}
+		doc = &d
+		rawClient, _ = json.Marshal(map[string]string{"client_id": d.url})
+	}
+	// The document's redirect URI may differ from the provider's, for
+	// example by a server-specific path.
+	redirectURL := p.redirectURL
+	if doc != nil {
+		redirectURL = doc.redirectURL
+	}
 	if len(rawClient) == 0 {
 		if opts.authorizationCode != "" {
 			return false, errors.New("OAuth client information is missing during code exchange")
@@ -878,7 +965,7 @@ func runFlow(ctx context.Context, p *oauthProvider, opts flowOptions) (bool, err
 			return false, errors.New("No OAuth PKCE code verifier is stored")
 		}
 		tokens, err := tokenRequest(ctx, client, disc.AuthorizationServerURL, meta, info, resource, url.Values{
-			"grant_type": {"authorization_code"}, "code": {opts.authorizationCode}, "code_verifier": {verifier}, "redirect_uri": {p.redirectURL},
+			"grant_type": {"authorization_code"}, "code": {opts.authorizationCode}, "code_verifier": {verifier}, "redirect_uri": {redirectURL},
 		})
 		if err != nil {
 			return false, err
@@ -932,7 +1019,7 @@ func runFlow(ctx context.Context, p *oauthProvider, opts flowOptions) (bool, err
 	q.Set("client_id", info.ClientID)
 	q.Set("code_challenge", base64.RawURLEncoding.EncodeToString(digest[:]))
 	q.Set("code_challenge_method", "S256")
-	q.Set("redirect_uri", p.redirectURL)
+	q.Set("redirect_uri", redirectURL)
 	if oauthStateValue != "" {
 		q.Set("state", oauthStateValue)
 	}
@@ -1205,10 +1292,15 @@ func mergeScopes(scopes ...string) string {
 	return strings.Join(out, " ")
 }
 
-func codeFromRedirectURL(input, state string) (string, *string, error) {
+func codeFromRedirectURL(input, state string, redirect *url.URL) (string, *string, error) {
 	u, err := url.Parse(strings.TrimSpace(input))
 	if err != nil || u.Scheme == "" {
 		return "", nil, errors.New("Expected the full redirect URL from the browser address bar")
+	}
+	// A server-specific redirect URI tells authorization servers apart, so
+	// it must match exactly.
+	if origin(u) != origin(redirect) || urlPath(u) != urlPath(redirect) {
+		return "", nil, errors.New("The redirect URL does not match this sign-in's redirect URI")
 	}
 	q := u.Query()
 	if e := q.Get("error"); e != "" {
@@ -1239,6 +1331,8 @@ type callbackServer struct {
 	server      *http.Server
 	redirectURL string
 	results     chan callbackResult
+	mu          sync.Mutex
+	expected    map[string]string // state -> the redirect URI path its response must arrive on
 }
 
 type callbackResult struct {
@@ -1247,7 +1341,28 @@ type callbackResult struct {
 	err         error
 }
 
-func listenForCallback(host, redirectHost, path string, port *int, required bool) (*callbackServer, error) {
+// expect records the path the response with state must arrive on (Pi's
+// waitForCallback with a path).
+func (c *callbackServer) expect(state, path string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.expected == nil {
+		c.expected = map[string]string{}
+	}
+	c.expected[state] = path
+}
+
+// urlPath is a URL's path as WHATWG URL's pathname: "/" when empty.
+func urlPath(u *url.URL) string {
+	if u.EscapedPath() == "" {
+		return "/"
+	}
+	return u.EscapedPath()
+}
+
+// listenForCallback serves the callback on path and on extraPaths (the
+// server-specific redirect URI of a Client ID Metadata Document).
+func listenForCallback(host, redirectHost, path string, extraPaths []string, port *int, required bool) (*callbackServer, error) {
 	listen := func(p int) (net.Listener, error) { return net.Listen("tcp", net.JoinHostPort(host, strconv.Itoa(p))) }
 	want := 0
 	if port != nil {
@@ -1269,7 +1384,7 @@ func listenForCallback(host, redirectHost, path string, port *int, required bool
 	}
 	cs := &callbackServer{listener: ln, redirectURL: fmt.Sprintf("http://%s:%d%s", hostPart, actual, path), results: make(chan callbackResult, 1)}
 	mux := http.NewServeMux()
-	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+	handle := func(w http.ResponseWriter, r *http.Request) {
 		// Pi's callback replies (pi-mcp oauth/callback.js) and pages.
 		q := r.URL.Query()
 		reply := func(status int, page string) {
@@ -1279,7 +1394,13 @@ func listenForCallback(host, redirectHost, path string, port *int, required bool
 			_, _ = w.Write([]byte(page))
 		}
 		res := callbackResult{code: q.Get("code"), state: q.Get("state"), iss: issParam(q)}
-		if e := q.Get("error"); e != "" {
+		cs.mu.Lock()
+		want, expected := cs.expected[res.state]
+		cs.mu.Unlock()
+		if expected && urlPath(r.URL) != want {
+			res.err = errors.New("The authorization response arrived on another redirect URI")
+			reply(http.StatusBadRequest, oauthErrorHTML("Unexpected redirect URI", ""))
+		} else if e := q.Get("error"); e != "" {
 			desc := q.Get("error_description")
 			if desc == "" {
 				desc = e
@@ -1296,7 +1417,10 @@ func listenForCallback(host, redirectHost, path string, port *int, required bool
 		case cs.results <- res:
 		default:
 		}
-	})
+	}
+	for _, p := range append([]string{path}, extraPaths...) {
+		mux.HandleFunc(p, handle)
+	}
 	cs.server = &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	go func() { _ = cs.server.Serve(ln) }()
 	return cs, nil
@@ -1343,7 +1467,12 @@ func signIn(ctx context.Context, name, serverURL string, store *CredentialStore,
 			}
 		}
 	}
-	callback, err := listenForCallback(host, redirectHost, path, preferred, port != nil)
+	cimd := settings.ClientRegistration == "cimd"
+	var extraPaths []string
+	if cimd { // the redirect URI of a server-specific Client ID Metadata Document
+		extraPaths = []string{oauthCallbackPath + "/" + callbackID(serverURL)}
+	}
+	callback, err := listenForCallback(host, redirectHost, path, extraPaths, preferred, port != nil)
 	if err != nil {
 		return err
 	}
@@ -1357,7 +1486,11 @@ func signIn(ctx context.Context, name, serverURL string, store *CredentialStore,
 		next.OAuthState = "" // every sign-in gets a fresh state
 		var info clientInfo
 		_ = json.Unmarshal(stored.ClientInformation, &info)
-		if settings.ClientID == "" && !contains(info.RedirectURIs, redirectURL) {
+		// A registered client cannot use another redirect URI, and its tokens
+		// belong to it. A Client ID Metadata Document is not stored, so with
+		// one, a stored client was registered before and is replaced.
+		keepClient := settings.ClientID != "" || (!cimd && contains(info.RedirectURIs, redirectURL)) || (cimd && len(stored.ClientInformation) == 0)
+		if !keepClient {
 			next.ClientInformation, next.Tokens, next.TokensExpireAt = nil, nil, nil
 		}
 		if err := store.save(name, serverURL, &next); err != nil {
@@ -1392,8 +1525,16 @@ func signIn(ctx context.Context, name, serverURL string, store *CredentialStore,
 	if err != nil {
 		return err
 	}
+	// The flow picks the redirect URI, which may be specific to the MCP server.
+	authorizationRedirect, err := url.Parse(redirectURL)
+	if r := authorizationURL.Query().Get("redirect_uri"); r != "" {
+		authorizationRedirect, err = url.Parse(r)
+	}
+	if err != nil {
+		return err
+	}
 	prompt.ShowAuthorizationURL(authorizationURL.String())
-	code, iss, err := waitForAuthorizationCode(ctx, callback, state, prompt)
+	code, iss, err := waitForAuthorizationCode(ctx, callback, state, authorizationRedirect, prompt)
 	if err != nil {
 		return err
 	}
@@ -1402,9 +1543,10 @@ func signIn(ctx context.Context, name, serverURL string, store *CredentialStore,
 	return err
 }
 
-func waitForAuthorizationCode(ctx context.Context, callback *callbackServer, state string, prompt SignInPrompt) (string, *string, error) {
+func waitForAuthorizationCode(ctx context.Context, callback *callbackServer, state string, redirect *url.URL, prompt SignInPrompt) (string, *string, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	callback.expect(state, urlPath(redirect))
 	pasted := make(chan callbackResult, 1)
 	if prompt.PromptForRedirectURL != nil {
 		go func() {
@@ -1415,7 +1557,7 @@ func waitForAuthorizationCode(ctx context.Context, callback *callbackServer, sta
 				}
 				return
 			}
-			code, iss, err := codeFromRedirectURL(input, state)
+			code, iss, err := codeFromRedirectURL(input, state, redirect)
 			pasted <- callbackResult{code: code, state: state, iss: iss, err: err}
 		}()
 	}

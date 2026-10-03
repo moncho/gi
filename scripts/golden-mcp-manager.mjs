@@ -11,10 +11,12 @@ if (!root) throw new Error("pi-coding-agent not found");
 const agent = `${root}/@earendil-works/pi-coding-agent/dist`;
 const { initTheme, theme } = await import(`${agent}/modes/interactive/theme/theme.js`);
 const { McpManagerView } = await import(`${agent}/extensions/mcp/ui.js`);
-const { getKeybindings } = await import(`${root}/@earendil-works/pi-tui/dist/index.js`);
+const { getKeybindings, setKeybindings } = await import(`${root}/@earendil-works/pi-tui/dist/index.js`);
+const { KeybindingsManager } = await import(`${agent}/core/keybindings.js`);
 initTheme("dark");
+setKeybindings(new KeybindingsManager()); // the app's keys too, as in Pi (app.message.copy)
 
-const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/\x1b\]8;;[^\x07]*\x07/g, "");
+const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/\x1b\]8;;[^\x07\x1b]*(?:\x07|\x1b\\)/g, "").replace(/\x1b_[^\x07]*\x07/g, "");
 const many = Array.from({ length: 14 }, (_, i) => ({ value: `tool_${i}`, label: `tool_${i}`, description: `Tool number ${i}` }));
 const menus = {
 	servers: {
@@ -44,7 +46,7 @@ const menus = {
 	gone: { title: "gone", items: [], empty: "This server is no longer configured.", confirmLabel: "", cancelLabel: "back" },
 	scrolled: { title: "Tools of big", details: "Exposure direct: declared to the model like built-in tools", items: many, selected: "tool_13", confirmLabel: "back", cancelLabel: "back" },
 };
-const out = { menus: {}, status: {} };
+const out = { menus: {}, status: {}, signin: {} };
 for (const width of [70, 40]) {
 	for (const [name, menu] of Object.entries(menus)) {
 		const view = new McpManagerView({ requestRender() {} }, theme, getKeybindings());
@@ -54,5 +56,15 @@ for (const width of [70, 40]) {
 	const view = new McpManagerView({ requestRender() {} }, theme, getKeybindings());
 	view.status("MCP server github", "Reconnecting…");
 	out.status[width] = view.render(width).map((line) => strip(line).trimEnd());
+	// The sign-in screen (Pi 1.0.1): the URL with click and copy hints, and
+	// the redirect URL input, before and after typing.
+	const signin = new McpManagerView({ requestRender() {} }, theme, getKeybindings());
+	signin.focused = true;
+	const url = "https://auth.example.com/authorize?client_id=gi&state=abc123&code_challenge=xyz";
+	void signin.redirectUrl("Sign in to github", url, new AbortController().signal);
+	const rows = () => signin.render(width).map((line) => strip(line).trimEnd());
+	out.signin[width] = { url, empty: rows() };
+	for (const ch of "http://x") signin.handleInput(ch);
+	out.signin[width].typed = rows();
 }
 writeFileSync("internal/tui/testdata/pi-mcp-manager.json", JSON.stringify(out, null, 1) + "\n");

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -113,5 +114,61 @@ func TestCLIOAuthConfiguredMetadataURL(t *testing.T) {
 	}
 	if r := runCLI(t, opts, "login", "remote"); r.code != 0 || !strings.HasSuffix(r.out, `Signed in to MCP server "remote" (4 tools).`) {
 		t.Fatalf("%+v", r)
+	}
+}
+
+// oauth.clientRegistration "cimd" (Pi 1.0.1) identifies with pi's Client ID
+// Metadata Document instead of registering: a server-specific document and
+// redirect URI without RFC 9207 iss support, the shared ones with it, and an
+// error when the authorization server does not support documents.
+func TestCLIOAuthClientIDMetadataDocument(t *testing.T) {
+	for _, c := range []struct {
+		name          string
+		cimd, iss     bool
+		client, error string
+	}{
+		{name: "server-specific", cimd: true, client: `^https://pi\.dev/oauth/([A-Za-z0-9_-]{12})/client\.json$`},
+		{name: "with iss", cimd: true, iss: true, client: `^https://pi\.dev/oauth/client\.json$`},
+		{name: "unsupported", error: `The authorization server does not support Client ID Metadata Documents for public clients; remove oauth.clientRegistration "cimd"`},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := mcptest.NewOAuth(t)
+			f.CIMD = c.cimd
+			if c.iss {
+				f.Iss = f.URL
+			}
+			opts := loginOptions(t)
+			opts.CredentialsPath = filepath.Join(filepath.Dir(opts.UserPath), "mcp-auth.json")
+			config := fmt.Sprintf(`{"mcpServers": {"remote": {"url": %q, "oauth": {"clientRegistration": "cimd"}}}}`, f.URL+"/mcp")
+			_ = os.MkdirAll(filepath.Dir(opts.UserPath), 0o755)
+			if err := os.WriteFile(opts.UserPath, []byte(config), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			r := runCLI(t, opts, "login", "remote")
+			if c.error != "" {
+				if r.code != 1 || !strings.Contains(r.err, c.error) || f.Registrations != 0 {
+					t.Fatalf("%+v registrations=%d", r, f.Registrations)
+				}
+				return
+			}
+			if r.code != 0 || !strings.HasSuffix(r.out, `Signed in to MCP server "remote" (4 tools).`) || f.Registrations != 0 || len(f.ClientIDs) != 1 {
+				t.Fatalf("%+v registrations=%d clients=%v", r, f.Registrations, f.ClientIDs)
+			}
+			m := regexp.MustCompile(c.client).FindStringSubmatch(f.ClientIDs[0])
+			if m == nil {
+				t.Fatalf("client ID %s", f.ClientIDs[0])
+			}
+			wantPath := "/callback"
+			if len(m) > 1 {
+				wantPath += "/" + m[1]
+			}
+			if !strings.HasPrefix(f.RedirectURIs[0], "http://127.0.0.1:") || !strings.HasSuffix(f.RedirectURIs[0], wantPath) {
+				t.Fatalf("redirect URI %s, want path %s", f.RedirectURIs[0], wantPath)
+			}
+			// A document is not stored: the next sign-in uses it again.
+			if data, _ := os.ReadFile(opts.CredentialsPath); strings.Contains(string(data), "clientInformation") {
+				t.Fatalf("stored client: %s", data)
+			}
+		})
 	}
 }

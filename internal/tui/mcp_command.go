@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -63,61 +62,17 @@ func (c *chatTUI) runMCPAction(action, server string) []string {
 	return []string{c.engine.MCPReconnectCommand(ctx, server)}
 }
 
-type mcpSignInState struct {
-	server string
-	cancel context.CancelFunc
-	paste  chan string
-}
-
-// startMCPSignIn runs Pi's in-session sign-in: it shows the authorization
-// link, opens the browser, and asks in the editor for the redirect URL in
-// case the browser cannot reach this machine (Esc cancels).
+// startMCPSignIn is Pi's /mcp login in the TUI: the manager view opens on
+// the sign-in flow (signInWithUi) and closes with its result.
 func (c *chatTUI) startMCPSignIn(server string) []string {
-	if c.mcpSignIn != nil {
-		return []string{fmt.Sprintf("Already signing in to MCP server %q; Esc cancels it.", c.mcpSignIn.server)}
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	state := &mcpSignInState{server: server, cancel: cancel, paste: make(chan string, 1)}
-	c.mcpSignIn = state
-	ui := c.runOnUI
-	prompt := gimcp.SignInPrompt{
-		ShowAuthorizationURL: func(u string) {
-			ui(func() {
-				c.appendTranscript(fmt.Sprintf("Sign in to MCP server %q in your browser:", server), "("+u+")")
-				c.editorAskHandler = func(answer string, cancelled bool) {
-					if cancelled {
-						state.cancel()
-						return
-					}
-					select {
-					case state.paste <- answer:
-					default:
-					}
-				}
-				c.setEditorAsk("mcp-login", fmt.Sprintf("Waiting for sign-in to %q. If the browser cannot reach this machine, paste the URL it was redirected to.", server), "")
-			})
-			openBrowser(u)
-		},
-		PromptForRedirectURL: func(ctx context.Context) string {
-			select {
-			case s := <-state.paste:
-				return s
-			case <-ctx.Done():
-				return ""
-			}
-		},
-	}
-	go func() {
-		err := c.engine.MCPSignIn(ctx, server, prompt)
-		ui(func() {
-			c.mcpSignIn = nil
-			if c.editorAskActive && c.editorAskKey == "mcp-login" {
-				c.editorAskHandler = nil
-				c.exitEditorAsk()
-			}
-			c.appendTranscript(c.engine.MCPSignInResult(server, err))
-		})
-	}()
+	c.openMCPManager()
+	m := c.mcpManager
+	c.mcpManagerSignIn(server, func(err error) {
+		if c.mcpManager == m {
+			c.closeMCPManager()
+		}
+		c.appendTranscript(c.engine.MCPSignInResult(server, err))
+	})
 	return nil
 }
 

@@ -204,3 +204,17 @@ func TestMissingToolNamesCloseMatches(t *testing.T) {
 		t.Fatalf("%+v %+v", res, res.Error)
 	}
 }
+
+// A script that prints in a loop fails once its output passes Pi's limits
+// (pi-codemode 1.0.1: 16 Mi characters or 100000 items), even if it catches
+// the error, instead of exhausting memory.
+func TestOutputLimit(t *testing.T) {
+	start := time.Now()
+	r := run(t, `for (;;) { try { text("x"); } catch (e) {} }`, Options{Timeout: 20 * time.Second})
+	if r.OK || r.Error == nil || !strings.Contains(r.Error.Message, "script output exceeded the limit of 16777216 characters or 100000 text(), image(), and console calls.") {
+		t.Fatalf("result OK=%v error %+v", r.OK, r.Error)
+	}
+	if len(r.Output) > 100000 || time.Since(start) > 15*time.Second {
+		t.Fatalf("%d outputs after %s", len(r.Output), time.Since(start))
+	}
+}

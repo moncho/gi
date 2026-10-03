@@ -1,0 +1,259 @@
+{
+ "global": {
+  "mcpServers": {
+   "docs": {
+    "url": "https://example.com/mcp",
+    "headers": {
+     "Authorization": "Bearer ${TOKEN}"
+    },
+    "exposure": "direct",
+    "toolExposure": {
+     "search": "deferred"
+    }
+   },
+   "fs": {
+    "command": "srv",
+    "args": [
+     "."
+    ]
+   },
+   "off": {
+    "command": "srv",
+    "enabled": false
+   },
+   "other": {
+    "command": "srv"
+   }
+  }
+ },
+ "project": {
+  "mcpServers": {
+   "docs": {
+    "exposure": "codemode",
+    "toolExposure": {
+     "get_*": "hidden"
+    }
+   },
+   "fs": {
+    "enabled": false
+   },
+   "off": {
+    "enabled": true
+   },
+   "ghost": {
+    "enabled": false
+   },
+   "other": {
+    "enabled": false,
+    "args": [
+     "x"
+    ]
+   },
+   "bad": {
+    "command": "srv",
+    "exposure": "public"
+   }
+  }
+ },
+ "cases": [
+  {
+   "name": "overrides",
+   "project": {
+    "mcpServers": {
+     "docs": {
+      "exposure": "codemode",
+      "toolExposure": {
+       "get_*": "hidden"
+      }
+     },
+     "fs": {
+      "enabled": false
+     },
+     "off": {
+      "enabled": true
+     },
+     "ghost": {
+      "enabled": false
+     },
+     "other": {
+      "enabled": false,
+      "args": [
+       "x"
+      ]
+     },
+     "bad": {
+      "command": "srv",
+      "exposure": "public"
+     }
+    }
+   },
+   "servers": [
+    {
+     "name": "docs",
+     "scope": "global",
+     "source": "<dir>/agent/mcp.json",
+     "override": "<dir>/work/.pi/mcp.json",
+     "enabled": true,
+     "exposure": "codemode",
+     "toolExposure": {
+      "get_*": "hidden"
+     }
+    },
+    {
+     "name": "fs",
+     "scope": "global",
+     "source": "<dir>/agent/mcp.json",
+     "override": "<dir>/work/.pi/mcp.json",
+     "enabled": false,
+     "exposure": "codemode",
+     "toolExposure": null
+    },
+    {
+     "name": "off",
+     "scope": "global",
+     "source": "<dir>/agent/mcp.json",
+     "override": "<dir>/work/.pi/mcp.json",
+     "enabled": true,
+     "exposure": "codemode",
+     "toolExposure": null
+    },
+    {
+     "name": "other",
+     "scope": "global",
+     "source": "<dir>/agent/mcp.json",
+     "enabled": true,
+     "exposure": "codemode",
+     "toolExposure": null
+    }
+   ],
+   "errors": [
+    "<dir>/work/.pi/mcp.json: server \"bad\": exposure must be one of \"codemode\", \"deferred\", \"direct\", \"hidden\"",
+    "<dir>/work/.pi/mcp.json: server \"ghost\" needs \"command\" or \"url\", or a global server to override",
+    "<dir>/work/.pi/mcp.json: server \"other\": an override can only set enabled, exposure, toolExposure"
+   ],
+   "projectConfig": "<dir>/work/.pi/mcp.json"
+  },
+  {
+   "name": "bad-exposure",
+   "project": {
+    "mcpServers": {
+     "other": {
+      "exposure": "loud"
+     }
+    }
+   },
+   "servers": [
+    {
+     "name": "docs",
+     "scope": "global",
+     "source": "<dir>/agent/mcp.json",
+     "enabled": true,
+     "exposure": "direct",
+     "toolExposure": {
+      "search": "deferred"
+     }
+    },
+    {
+     "name": "fs",
+     "scope": "global",
+     "source": "<dir>/agent/mcp.json",
+     "enabled": true,
+     "exposure": "codemode",
+     "toolExposure": null
+    },
+    {
+     "name": "off",
+     "scope": "global",
+     "source": "<dir>/agent/mcp.json",
+     "enabled": false,
+     "exposure": "codemode",
+     "toolExposure": null
+    },
+    {
+     "name": "other",
+     "scope": "global",
+     "source": "<dir>/agent/mcp.json",
+     "enabled": true,
+     "exposure": "codemode",
+     "toolExposure": null
+    }
+   ],
+   "errors": [
+    "<dir>/work/.pi/mcp.json: server \"other\": exposure must be one of \"codemode\", \"deferred\", \"direct\", \"hidden\""
+   ],
+   "projectConfig": "<dir>/work/.pi/mcp.json"
+  }
+ ],
+ "updates": [
+  {
+   "label": "new override in a missing file",
+   "name": "fs",
+   "patch": {
+    "enabled": false
+   },
+   "override": true,
+   "error": null,
+   "text": "{\n  \"mcpServers\": {\n    \"fs\": {\n      \"enabled\": false\n    }\n  }\n}\n"
+  },
+  {
+   "label": "enable an override keeps the key",
+   "name": "fs",
+   "patch": {
+    "enabled": true
+   },
+   "override": true,
+   "error": null,
+   "text": "{\n  \"mcpServers\": {\n    \"fs\": {\n      \"enabled\": true\n    }\n  }\n}\n"
+  },
+  {
+   "label": "codemode on an override keeps the key",
+   "name": "fs",
+   "patch": {
+    "exposure": "codemode"
+   },
+   "override": true,
+   "error": null,
+   "text": "{\n  \"mcpServers\": {\n    \"fs\": {\n      \"enabled\": true,\n      \"exposure\": \"codemode\"\n    }\n  }\n}\n"
+  },
+  {
+   "label": "missing without override",
+   "name": "docs",
+   "patch": {
+    "enabled": false
+   },
+   "override": false,
+   "error": "<dir>/mcp.json does not define MCP server \"docs\"",
+   "text": "{\n  \"mcpServers\": {\n    \"fs\": {\n      \"enabled\": true,\n      \"exposure\": \"codemode\"\n    }\n  }\n}\n"
+  },
+  {
+   "label": "enable a definition removes the key",
+   "name": "def",
+   "patch": {
+    "enabled": true
+   },
+   "override": false,
+   "error": null,
+   "text": "{\n\t\"mcpServers\": {\n\t\t\"fs\": {\n\t\t\t\"enabled\": true\n\t\t},\n\t\t\"def\": {\n\t\t\t\"command\": \"srv\",\n\t\t\t\"exposure\": \"direct\"\n\t\t}\n\t}\n}\n"
+  },
+  {
+   "label": "codemode on a definition removes the key",
+   "name": "def",
+   "patch": {
+    "exposure": "codemode"
+   },
+   "override": false,
+   "error": null,
+   "text": "{\n\t\"mcpServers\": {\n\t\t\"fs\": {\n\t\t\t\"enabled\": true\n\t\t},\n\t\t\"def\": {\n\t\t\t\"command\": \"srv\"\n\t\t}\n\t}\n}\n"
+  },
+  {
+   "label": "second override appended",
+   "name": "docs",
+   "patch": {
+    "exposure": "deferred"
+   },
+   "override": true,
+   "error": null,
+   "text": "{\n\t\"mcpServers\": {\n\t\t\"fs\": {\n\t\t\t\"enabled\": true\n\t\t},\n\t\t\"def\": {\n\t\t\t\"command\": \"srv\"\n\t\t},\n\t\t\"docs\": {\n\t\t\t\"exposure\": \"deferred\"\n\t\t}\n\t}\n}\n"
+  }
+ ]
+}

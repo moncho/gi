@@ -662,13 +662,14 @@ func (e *Engine) MCPSignOut(ctx context.Context, name string) bool {
 }
 
 // MCPSetEnabled ports Pi's setEnabled: the change is saved to the mcp.json
-// that defines the server. A disabled server's tools are withdrawn; an
-// enabled one connects now (its connection error shows in its state).
-func (e *Engine) MCPSetEnabled(ctx context.Context, name string, enabled bool) error {
+// that defines or overrides the server (inProject: as a new override in the
+// project mcp.json). A disabled server's tools are withdrawn; an enabled one
+// connects now (its connection error shows in its state).
+func (e *Engine) MCPSetEnabled(ctx context.Context, name string, enabled, inProject bool) error {
 	if e.mcp == nil {
 		return fmt.Errorf("No MCP servers configured.")
 	}
-	if err := e.mcp.manager.UpdateServer(name, gimcp.ServerPatch{Enabled: &enabled}); err != nil {
+	if err := e.mcp.manager.UpdateServer(name, gimcp.ServerPatch{Enabled: &enabled, InProject: inProject}); err != nil {
 		return err
 	}
 	if enabled {
@@ -679,6 +680,15 @@ func (e *Engine) MCPSetEnabled(ctx context.Context, name string, enabled bool) e
 	}
 	e.mcpNotices.changed()
 	return nil
+}
+
+// MCPProjectConfig is the trusted project's mcp.json, where project
+// overrides of global servers are saved; "" when the project is not read.
+func (e *Engine) MCPProjectConfig() string {
+	if e.mcp == nil {
+		return ""
+	}
+	return e.mcp.manager.Config().ProjectConfig
 }
 
 // MCPSetExposure ports Pi's setExposure: saved to the server's mcp.json, and

@@ -10,7 +10,8 @@ const root = candidates.find((dir) => dir && existsSync(`${dir}/@earendil-works/
 if (!root) throw new Error("pi-coding-agent not found");
 const b = await import(`${root}/@earendil-works/pi-coding-agent/dist/core/compaction/branch-summarization.js`);
 
-const message = (m) => ({ type: "message", id: `e${Math.random()}`, parentId: null, timestamp: "2026-10-03T21:12:00.000Z", message: { timestamp: 1, ...m } });
+let entryId = 0;
+const message = (m) => ({ type: "message", id: `e${++entryId}`, parentId: null, timestamp: "2026-10-03T21:12:00.000Z", message: { timestamp: 1, ...m } });
 const user = (text) => message({ role: "user", content: [{ type: "text", text }] });
 const assistant = (blocks) => message({ role: "assistant", content: blocks, stopReason: "stop" });
 const toolResult = (text) => message({ role: "toolResult", toolCallId: "t", toolName: "read", content: [{ type: "text", text }], isError: false });

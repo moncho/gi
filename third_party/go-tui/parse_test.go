@@ -427,8 +427,9 @@ func TestControlToKey(t *testing.T) {
 		"0x09 tab":        {input: 0x09, wantKey: KeyTab, wantRune: 0, wantMod: ModNone},
 		"0x0d enter":      {input: 0x0d, wantKey: KeyEnter, wantRune: 0, wantMod: ModNone},
 		"0x1b escape":     {input: 0x1b, wantKey: KeyEscape, wantRune: 0, wantMod: ModNone},
-		"0x1c none":       {input: 0x1c, wantKey: KeyNone, wantRune: 0, wantMod: ModNone},
-		"0x1f none":       {input: 0x1f, wantKey: KeyNone, wantRune: 0, wantMod: ModNone},
+		"0x1c ctrl+\\":    {input: 0x1c, wantKey: KeyRune, wantRune: '\\', wantMod: ModCtrl},
+		"0x1d ctrl+]":     {input: 0x1d, wantKey: KeyRune, wantRune: ']', wantMod: ModCtrl},
+		"0x1f ctrl+-":     {input: 0x1f, wantKey: KeyRune, wantRune: '-', wantMod: ModCtrl},
 	}
 
 	for name, tt := range tests {

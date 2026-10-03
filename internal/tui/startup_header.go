@@ -133,35 +133,50 @@ func (c *chatTUI) renderStartupHeader(expanded bool) *gotui.Element {
 		gotui.TextSpan{Text: " " + version.String(), Style: piFg(piDim)})
 	details := c.startupDetailsShown()
 	if expanded {
+		// Pi's expandedInstructions: Pi's keyText for this platform.
+		keys := defaultPiKeys
+		suspend := "Ctrl+Z"
+		if keys.windows {
+			suspend = ""
+		}
+		_, cycleBack := keys.cycleModelBackward()
+		_, followUp := keys.followUp()
+		_, dequeue := keys.dequeue()
+		_, paste := keys.pasteImage()
 		for _, h := range [][2]string{
-			{"Esc", "to interrupt"},
-			{"Ctrl+C", "to quit"},
-			{"Ctrl+D", "to exit (empty)"},
-			{"Ctrl+T", "to cycle thinking level"},
-			{"Ctrl+L/Alt+L", "to cycle models"},
-			{"Alt+M", "to select model"},
-			{"Alt+S", "to switch sessions"},
-			{"Ctrl+O", "to expand tools"},
-			{"Ctrl+Shift+F", "to search the transcript"},
-			{"Alt+Enter", "to queue follow-up"},
-			{"Alt+Up", "to restore queued messages"},
+			{keys.keyText("Escape"), "to interrupt"},
+			{keys.keyText("Ctrl+C"), "to clear"},
+			{keys.keyText("Ctrl+C") + " twice", "to exit"},
+			{keys.keyText("Ctrl+D"), "to exit (empty)"},
+			{keys.keyText(suspend), "to suspend"},
+			{keys.keyText("Ctrl+K"), "to delete to end"},
+			{keys.keyText("Shift+Tab"), "to cycle thinking level"},
+			{keys.keyText("Ctrl+P/" + cycleBack), "to cycle models"},
+			{keys.keyText("Ctrl+L"), "to select model"},
+			{keys.keyText("Ctrl+O"), "to expand tools"},
+			{keys.keyText("Ctrl+T"), "to expand thinking"},
+			{keys.keyText("Ctrl+G"), "for external editor"},
 			{"/", "for commands"},
 			{"!", "to run bash"},
 			{"!!", "to run bash (no context)"},
+			{keys.keyText(followUp), "to queue follow-up"},
+			{keys.keyText(dequeue), "to edit all queued messages"},
+			{keys.keyText(paste), "to paste files on macOS, images, or text"},
+			{"drop files", "to attach"},
 		} {
 			line(keyHintSpans(h[0], h[1])...)
 		}
 	} else {
 		sep := gotui.TextSpan{Text: " · ", Style: piFg(piMuted)}
 		var spans []gotui.TextSpan
-		for i, h := range [][2]string{{"Esc", "interrupt"}, {"Ctrl+C", "quit"}, {"/", "commands"}, {"!", "bash"}, {"Ctrl+O", "more"}} {
+		for i, h := range [][2]string{{"escape", "interrupt"}, {"ctrl+c/ctrl+d", "clear/exit"}, {"/", "commands"}, {"!", "bash"}, {"ctrl+o", "more"}} {
 			if i > 0 {
 				spans = append(spans, sep)
 			}
 			spans = append(spans, keyHintSpans(h[0], h[1])...)
 		}
 		line(spans...)
-		press := "Press Ctrl+O to show full startup help"
+		press := "Press ctrl+o to show full startup help"
 		if details {
 			press += " and loaded resources"
 		}
@@ -173,7 +188,7 @@ func (c *chatTUI) renderStartupHeader(expanded bool) *gotui.Element {
 		if models := c.cfg.EnabledModels; len(models) > 0 {
 			blank()
 			line(gotui.TextSpan{Text: "Model scope: " + strings.Join(models, ", "), Style: piFg(piDim)},
-				gotui.TextSpan{Text: " (Ctrl+L to cycle)", Style: piFg(piMuted)})
+				gotui.TextSpan{Text: " (Ctrl+P to cycle)", Style: piFg(piMuted)})
 		}
 		for _, s := range c.startupSections() {
 			blank()

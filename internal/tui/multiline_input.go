@@ -38,17 +38,36 @@ type multilineInput struct {
 	onEdit       func()
 	text         string
 	cursorPos    int
-	undoText     string
-	undoCursor   int
-	undoPastes   map[int]string
-	undoCounter  int
-	hasUndo      bool
+	// Pi's undo stack: undoText/undoCursor/undoPastes/undoCounter are the
+	// newest snapshot (hasUndo), undoOlder the older ones, oldest first.
+	undoText    string
+	undoCursor  int
+	undoPastes  map[int]string
+	undoCounter int
+	hasUndo     bool
+	undoOlder   []inputSnapshot
 	// pastes holds the content behind paste markers (Pi's large-paste
 	// markers); pasteCounter numbers them.
 	pastes       map[int]string
 	pasteCounter int
-	yankText     string
-	focused      bool
+	// Pi's kill ring: yankText is the newest entry ("" when empty),
+	// killOlder the older ones, oldest first.
+	yankText  string
+	killOlder []string
+	// lastAction is Pi's: "kill" (kills accumulate), "yank" (yank-pop
+	// allowed), "type-word" (typing coalesces undo) or "".
+	lastAction string
+	// jumpMode is Pi's character jump awaiting its target: "forward",
+	// "backward" or "".
+	jumpMode string
+	focused  bool
+}
+
+type inputSnapshot struct {
+	text    string
+	cursor  int
+	pastes  map[int]string
+	counter int
 }
 
 func newMultilineInput(width int, placeholder string, onSubmit func(string), onChange func(string)) *multilineInput {
@@ -66,13 +85,27 @@ func newMultilineInput(width int, placeholder string, onSubmit func(string), onC
 
 func (m *multilineInput) BindApp(app *gotui.App) { m.app = app }
 func (m *multilineInput) Text() string           { return m.text }
+
+// SetText is Pi's setText: undoable when the text changes; the cursor goes
+// to the end.
 func (m *multilineInput) SetText(s string) {
+	m.jumpMode, m.lastAction = "", ""
+	if s != m.text {
+		m.snapshotUndo()
+	}
 	m.clearPastes()
 	m.text = s
 	m.cursorPos = utf8.RuneCountInString(s)
 	m.notifyChanged()
 }
-func (m *multilineInput) Clear()            { m.SetText("") }
+func (m *multilineInput) Clear() { m.SetText("") }
+
+// Reset replaces the text with no undo history, as Pi's submit leaves the
+// editor (gi also uses it when switching sessions' drafts).
+func (m *multilineInput) Reset(s string) {
+	m.SetText(s)
+	m.undoText, m.undoCursor, m.undoPastes, m.undoCounter, m.hasUndo, m.undoOlder = "", 0, nil, 0, false, nil
+}
 func (m *multilineInput) IsFocusable() bool { return !m.suspended }
 func (m *multilineInput) IsTabStop() bool   { return !m.suspended }
 func (m *multilineInput) IsFocused() bool   { return m.focused }
@@ -89,39 +122,61 @@ func (m *multilineInput) KeyMap() gotui.KeyMap {
 	if m.suspended {
 		return nil
 	}
+	// Pi's tui.editor bindings. reset runs an action that ends kill/yank/
+	// typing sequences; keep one that manages lastAction itself. Any key
+	// but a printable one cancels a pending jump.
+	reset := func(fn func()) func(gotui.KeyEvent) {
+		return func(gotui.KeyEvent) { m.jumpMode, m.lastAction = "", ""; fn() }
+	}
+	keep := func(fn func()) func(gotui.KeyEvent) {
+		return func(gotui.KeyEvent) { m.jumpMode = ""; fn() }
+	}
+	undoKey, _ := defaultPiKeys.undo()
+	followUpKey, _ := defaultPiKeys.followUp()
+	dequeueKey, _ := defaultPiKeys.dequeue()
 	return gotui.KeyMap{
 		gotui.OnFocused(gotui.AnyRune, m.insertRune),
-		gotui.OnFocused(gotui.KeyBackspace, func(ke gotui.KeyEvent) { m.backspace() }),
-		gotui.OnFocused(gotui.KeyDelete, func(ke gotui.KeyEvent) { m.delete() }),
-		gotui.OnFocused(gotui.KeyLeft, func(ke gotui.KeyEvent) { m.moveLeft() }),
-		gotui.OnFocused(gotui.KeyLeft.Alt(), func(ke gotui.KeyEvent) { m.moveWordLeft() }),
-		gotui.OnFocused(gotui.KeyRight, func(ke gotui.KeyEvent) { m.moveRight() }),
-		gotui.OnFocused(gotui.KeyRight.Alt(), func(ke gotui.KeyEvent) { m.moveWordRight() }),
-		gotui.OnFocused(gotui.KeyHome, func(ke gotui.KeyEvent) {
+		gotui.OnFocused(gotui.KeyBackspace, reset(m.backspace)),
+		gotui.OnFocused(gotui.KeyDelete, reset(m.delete)),
+		gotui.OnFocused(gotui.KeyLeft, reset(m.moveLeft)),
+		gotui.OnFocused(gotui.KeyCtrlB, reset(m.moveLeft)),
+		gotui.OnFocused(gotui.KeyRight, reset(m.moveRight)),
+		gotui.OnFocused(gotui.KeyCtrlF, reset(m.moveRight)),
+		gotui.OnFocused(gotui.KeyLeft.Alt(), reset(m.moveWordLeft)),
+		gotui.OnFocused(gotui.KeyLeft.Ctrl(), reset(m.moveWordLeft)),
+		gotui.OnFocused(gotui.Rune('b').Alt(), reset(m.moveWordLeft)),
+		gotui.OnFocused(gotui.KeyRight.Alt(), reset(m.moveWordRight)),
+		gotui.OnFocused(gotui.KeyRight.Ctrl(), reset(m.moveWordRight)),
+		gotui.OnFocused(gotui.Rune('f').Alt(), reset(m.moveWordRight)),
+		gotui.OnFocused(gotui.KeyHome, reset(func() {
 			if m.onTranscriptTop != nil {
 				m.onTranscriptTop()
 			} else {
 				m.moveHome()
 			}
-		}),
-		gotui.OnFocused(gotui.KeyEnd, func(ke gotui.KeyEvent) {
+		})),
+		gotui.OnFocused(gotui.KeyEnd, reset(func() {
 			if m.onTranscriptEnd != nil {
 				m.onTranscriptEnd()
 			} else {
 				m.moveEnd()
 			}
-		}),
-		gotui.OnFocused(gotui.KeyHome.Ctrl(), func(ke gotui.KeyEvent) { m.moveHome() }),
-		gotui.OnFocused(gotui.KeyEnd.Ctrl(), func(ke gotui.KeyEvent) { m.moveEnd() }),
-		gotui.OnFocused(gotui.KeyCtrlA, func(ke gotui.KeyEvent) { m.moveHome() }),
-		gotui.OnFocused(gotui.KeyCtrlE, func(ke gotui.KeyEvent) { m.moveEnd() }),
-		gotui.OnFocused(gotui.KeyCtrlU, func(ke gotui.KeyEvent) { m.deleteToLineStart() }),
-		gotui.OnFocused(gotui.KeyCtrlK, func(ke gotui.KeyEvent) { m.deleteToLineEnd() }),
-		gotui.OnFocused(gotui.KeyCtrlW, func(ke gotui.KeyEvent) { m.deleteWordBackward() }),
-		gotui.OnFocused(gotui.KeyBackspace.Alt(), func(ke gotui.KeyEvent) { m.deleteWordBackward() }),
-		gotui.OnFocused(gotui.KeyDelete.Alt(), func(ke gotui.KeyEvent) { m.deleteWordForward() }),
-		gotui.OnFocused(gotui.KeyCtrlZ, func(ke gotui.KeyEvent) { m.undo() }),
-		gotui.OnFocused(gotui.KeyCtrlY, func(ke gotui.KeyEvent) { m.yank() }),
+		})),
+		gotui.OnFocused(gotui.KeyHome.Ctrl(), reset(m.moveHome)),
+		gotui.OnFocused(gotui.KeyEnd.Ctrl(), reset(m.moveEnd)),
+		gotui.OnFocused(gotui.KeyCtrlA, reset(m.moveHome)),
+		gotui.OnFocused(gotui.KeyCtrlE, reset(m.moveEnd)),
+		gotui.OnFocused(gotui.KeyCtrlU, keep(m.deleteToLineStart)),
+		gotui.OnFocused(gotui.KeyCtrlK, keep(m.deleteToLineEnd)),
+		gotui.OnFocused(gotui.KeyCtrlW, keep(m.deleteWordBackward)),
+		gotui.OnFocused(gotui.KeyBackspace.Alt(), keep(m.deleteWordBackward)),
+		gotui.OnFocused(gotui.Rune('d').Alt(), keep(m.deleteWordForward)),
+		gotui.OnFocused(gotui.KeyDelete.Alt(), keep(m.deleteWordForward)),
+		gotui.OnFocused(undoKey, reset(m.undo)),
+		gotui.OnFocused(gotui.KeyCtrlY, keep(m.yank)),
+		gotui.OnFocused(gotui.Rune('y').Alt(), keep(m.yankPop)),
+		gotui.OnFocused(gotui.Rune(']').Ctrl(), func(gotui.KeyEvent) { m.toggleJump("forward") }),
+		gotui.OnFocused(gotui.Rune(']').Ctrl().Alt(), func(gotui.KeyEvent) { m.toggleJump("backward") }),
 		gotui.OnFocused(gotui.KeyTab, func(ke gotui.KeyEvent) {
 			if m.interceptKey != nil && m.interceptKey(gotui.KeyTab) {
 				return
@@ -142,13 +197,15 @@ func (m *multilineInput) KeyMap() gotui.KeyMap {
 				m.insertLiteral('\n')
 			}
 		}),
-		gotui.OnFocused(gotui.KeyEnter.Alt(), m.enter),
-		gotui.OnFocused(gotui.KeyUp.Alt(), func(ke gotui.KeyEvent) {
+		gotui.OnFocused(followUpKey, func(gotui.KeyEvent) { m.enter(gotui.KeyEvent{Key: gotui.KeyEnter, Mod: gotui.ModAlt}) }),
+		gotui.OnFocused(dequeueKey, func(ke gotui.KeyEvent) {
+			m.jumpMode, m.lastAction = "", ""
 			if m.onRestoreQueued != nil {
 				m.onRestoreQueued()
 			}
 		}),
 		gotui.OnFocused(gotui.KeyEscape, func(_ gotui.KeyEvent) {
+			m.jumpMode, m.lastAction = "", ""
 			if m.interceptKey != nil && m.interceptKey(gotui.KeyEscape) {
 				return
 			}
@@ -445,7 +502,18 @@ func (m *multilineInput) helpLine() string {
 }
 
 func (m *multilineInput) insertRune(ke gotui.KeyEvent) {
-	m.snapshotUndo()
+	if m.jumpMode != "" { // Pi: a printable key is the jump target
+		direction := m.jumpMode
+		m.jumpMode, m.lastAction = "", ""
+		m.jumpToChar(ke.Rune, direction)
+		return
+	}
+	// Pi's fish-style undo coalescing: a word typed is one undo unit, each
+	// whitespace its own.
+	if unicode.IsSpace(ke.Rune) || m.lastAction != "type-word" {
+		m.snapshotUndo()
+	}
+	m.lastAction = "type-word"
 	runes := []rune(m.text)
 	pos := m.clampCursor()
 	runes = append(runes[:pos], append([]rune{ke.Rune}, runes[pos:]...)...)
@@ -469,7 +537,6 @@ func (m *multilineInput) backspace() {
 		m.notifyEdited()
 		return
 	}
-	m.yankText = string(runes[pos-1 : pos])
 	runes = append(runes[:pos-1], runes[pos:]...)
 	m.text = string(runes)
 	m.cursorPos = pos - 1
@@ -490,7 +557,6 @@ func (m *multilineInput) delete() {
 		m.notifyEdited()
 		return
 	}
-	m.yankText = string(runes[pos : pos+1])
 	runes = append(runes[:pos], runes[pos+1:]...)
 	m.text = string(runes)
 	m.notifyEdited()
@@ -516,102 +582,227 @@ func (m *multilineInput) moveRight() {
 		m.markDirty()
 	}
 }
-func (m *multilineInput) moveHome() { m.cursorPos = 0; m.markDirty() }
-func (m *multilineInput) moveEnd()  { m.cursorPos = utf8.RuneCountInString(m.text); m.markDirty() }
 
-func (m *multilineInput) moveWordLeft() {
+// moveHome and moveEnd go to the start and end of the cursor's line (Pi's
+// cursorLineStart/cursorLineEnd).
+func (m *multilineInput) moveHome() { m.cursorPos = m.lineStart(m.clampCursor()); m.markDirty() }
+func (m *multilineInput) moveEnd()  { m.cursorPos = m.lineEnd(m.clampCursor()); m.markDirty() }
+
+func (m *multilineInput) lineStart(pos int) int {
 	runes := []rune(m.text)
-	pos := m.clampCursor()
-	for pos > 0 && isWordSpace(runes[pos-1]) {
+	for pos > 0 && runes[pos-1] != '\n' {
 		pos--
 	}
-	for pos > 0 && !isWordSpace(runes[pos-1]) {
-		pos--
+	return pos
+}
+
+func (m *multilineInput) lineEnd(pos int) int {
+	runes := []rune(m.text)
+	for pos < len(runes) && runes[pos] != '\n' {
+		pos++
 	}
-	m.cursorPos = pos
+	return pos
+}
+
+// moveWordLeft and moveWordRight are Pi's moveWordBackwards/Forwards: at a
+// line edge they cross the line break; otherwise Pi's findWordBackward/
+// findWordForward within the line.
+func (m *multilineInput) moveWordLeft() {
+	m.cursorPos = m.wordBackward(m.clampCursor())
 	m.markDirty()
 }
 
 func (m *multilineInput) moveWordRight() {
-	runes := []rune(m.text)
-	pos := m.clampCursor()
-	for pos < len(runes) && !isWordSpace(runes[pos]) {
-		pos++
-	}
-	for pos < len(runes) && isWordSpace(runes[pos]) {
-		pos++
-	}
-	m.cursorPos = pos
+	m.cursorPos = m.wordForward(m.clampCursor())
 	m.markDirty()
 }
 
-func (m *multilineInput) deleteWordBackward() {
+func (m *multilineInput) wordBackward(pos int) int {
+	if start := m.lineStart(pos); pos == start {
+		return max(0, pos-1)
+	}
+	return findWordBackward([]rune(m.text), m.lineStart(pos), pos, m.markerSpans())
+}
+
+func (m *multilineInput) wordForward(pos int) int {
 	runes := []rune(m.text)
+	if end := m.lineEnd(pos); pos == end {
+		return min(len(runes), pos+1)
+	}
+	return findWordForward(runes, m.lineEnd(pos), pos, m.markerSpans())
+}
+
+// piPunctuation is pi-tui's PUNCTUATION_REGEX.
+const piPunctuation = "(){}[]<>.,;:'\"!?+-=*/\\|&%^$#@~`"
+
+// wordLike approximates Intl.Segmenter's word-like segments split at Pi's
+// punctuation, which is what Pi's word navigation stops at.
+func wordLike(r rune) bool {
+	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsMark(r)
+}
+
+// findWordBackward is pi-tui's findWordBackward over runes[lo:pos]: skip
+// whitespace, then one paste marker (atomic), a word, or a run of other
+// characters.
+func findWordBackward(runes []rune, lo, pos int, markers [][2]int) int {
+	markerEnding := func(i int) (int, bool) {
+		for _, s := range markers {
+			if s[1] == i {
+				return s[0], true
+			}
+		}
+		return 0, false
+	}
+	for pos > lo && unicode.IsSpace(runes[pos-1]) {
+		pos--
+	}
+	if pos == lo {
+		return pos
+	}
+	if start, ok := markerEnding(pos); ok {
+		return start
+	}
+	if wordLike(runes[pos-1]) {
+		for pos > lo && wordLike(runes[pos-1]) {
+			pos--
+		}
+		return pos
+	}
+	for pos > lo && !wordLike(runes[pos-1]) && !unicode.IsSpace(runes[pos-1]) {
+		if _, ok := markerEnding(pos); ok {
+			break
+		}
+		pos--
+	}
+	return pos
+}
+
+// findWordForward is pi-tui's findWordForward over runes[pos:hi].
+func findWordForward(runes []rune, hi, pos int, markers [][2]int) int {
+	markerStarting := func(i int) (int, bool) {
+		for _, s := range markers {
+			if s[0] == i {
+				return s[1], true
+			}
+		}
+		return 0, false
+	}
+	for pos < hi && unicode.IsSpace(runes[pos]) {
+		pos++
+	}
+	if pos == hi {
+		return pos
+	}
+	if end, ok := markerStarting(pos); ok {
+		return end
+	}
+	if wordLike(runes[pos]) {
+		for pos < hi && wordLike(runes[pos]) {
+			pos++
+		}
+		return pos
+	}
+	for pos < hi && !wordLike(runes[pos]) && !unicode.IsSpace(runes[pos]) {
+		if _, ok := markerStarting(pos); ok {
+			break
+		}
+		pos++
+	}
+	return pos
+}
+
+// The kills are Pi's: within the cursor's line, removing the line break at
+// its edge; the text goes to the kill ring, accumulating while the previous
+// action was a kill (backward kills prepend, forward kills append).
+
+func (m *multilineInput) deleteWordBackward() {
 	end := m.clampCursor()
-	start := end
-	for start > 0 && isWordSpace(runes[start-1]) {
-		start--
+	if lineStart := m.lineStart(end); end == lineStart {
+		m.killRange(end-1, end, true)
+	} else {
+		m.killRange(findWordBackward([]rune(m.text), lineStart, end, m.markerSpans()), end, true)
 	}
-	for start > 0 && !isWordSpace(runes[start-1]) {
-		start--
+}
+
+func (m *multilineInput) deleteWordForward() {
+	start := m.clampCursor()
+	if lineEnd := m.lineEnd(start); start == lineEnd {
+		m.killRange(start, start+1, false)
+	} else {
+		m.killRange(start, findWordForward([]rune(m.text), lineEnd, start, m.markerSpans()), false)
 	}
-	if start == end {
+}
+
+func (m *multilineInput) deleteToLineStart() {
+	pos := m.clampCursor()
+	if start := m.lineStart(pos); start < pos {
+		m.killRange(start, pos, true)
+	} else {
+		m.killRange(pos-1, pos, true)
+	}
+}
+
+func (m *multilineInput) deleteToLineEnd() {
+	pos := m.clampCursor()
+	if end := m.lineEnd(pos); end > pos {
+		m.killRange(pos, end, false)
+	} else {
+		m.killRange(pos, pos+1, false)
+	}
+}
+
+// killRange deletes [start,end) into the kill ring.
+func (m *multilineInput) killRange(start, end int, backward bool) {
+	runes := []rune(m.text)
+	if start < 0 || end > len(runes) || start >= end {
 		return
 	}
 	m.snapshotUndo()
-	m.yankText = string(runes[start:end])
-	m.text = string(append(runes[:start], runes[end:]...))
+	m.pushKill(string(runes[start:end]), backward, m.lastAction == "kill")
+	m.lastAction = "kill"
+	m.text = string(append(runes[:start:start], runes[end:]...))
 	m.cursorPos = start
 	m.notifyEdited()
 }
 
-func (m *multilineInput) deleteWordForward() {
-	runes := []rune(m.text)
-	start := m.clampCursor()
-	end := start
-	for end < len(runes) && isWordSpace(runes[end]) {
-		end++
-	}
-	for end < len(runes) && !isWordSpace(runes[end]) {
-		end++
-	}
-	if start == end {
+// pushKill is Pi's KillRing.push.
+func (m *multilineInput) pushKill(text string, prepend, accumulate bool) {
+	if text == "" {
 		return
 	}
-	m.snapshotUndo()
-	m.yankText = string(runes[start:end])
-	m.text = string(append(runes[:start], runes[end:]...))
-	m.notifyEdited()
+	switch {
+	case accumulate && m.yankText != "" && prepend:
+		m.yankText = text + m.yankText
+	case accumulate && m.yankText != "":
+		m.yankText += text
+	default:
+		if m.yankText != "" {
+			m.killOlder = append(m.killOlder, m.yankText)
+		}
+		m.yankText = text
+	}
 }
 
-func (m *multilineInput) deleteToLineStart() {
-	runes := []rune(m.text)
-	pos := m.clampCursor()
-	if pos == 0 {
-		return
+func (m *multilineInput) killRingLen() int {
+	if m.yankText == "" {
+		return 0
 	}
-	m.snapshotUndo()
-	m.yankText = string(runes[:pos])
-	m.text = string(runes[pos:])
-	m.cursorPos = 0
-	m.notifyEdited()
+	return len(m.killOlder) + 1
 }
 
-func (m *multilineInput) deleteToLineEnd() {
-	runes := []rune(m.text)
-	pos := m.clampCursor()
-	if pos >= len(runes) {
+// rotateKills is Pi's KillRing.rotate: the newest entry moves to the front.
+func (m *multilineInput) rotateKills() {
+	if len(m.killOlder) == 0 {
 		return
 	}
-	m.snapshotUndo()
-	m.yankText = string(runes[pos:])
-	m.text = string(runes[:pos])
-	m.notifyEdited()
+	ring := append([]string{m.yankText}, m.killOlder...)
+	m.yankText, m.killOlder = ring[len(ring)-1], ring[:len(ring)-1]
 }
 
 func isWordSpace(r rune) bool { return r == ' ' || r == '\t' || r == '\n' || r == '\r' }
 
 func (m *multilineInput) complete() {
+	m.jumpMode, m.lastAction = "", ""
 	if m.onComplete == nil {
 		return
 	}
@@ -626,6 +817,7 @@ func (m *multilineInput) complete() {
 }
 
 func (m *multilineInput) enter(ke gotui.KeyEvent) {
+	m.jumpMode, m.lastAction = "", ""
 	if ke.Mod&gotui.ModShift != 0 {
 		if m.onShiftEnter != nil {
 			m.onShiftEnter()
@@ -644,6 +836,7 @@ func (m *multilineInput) enter(ke gotui.KeyEvent) {
 }
 
 func (m *multilineInput) insertLiteral(r rune) {
+	m.jumpMode, m.lastAction = "", ""
 	m.snapshotUndo()
 	runes := []rune(m.text)
 	pos := m.clampCursor()
@@ -654,35 +847,101 @@ func (m *multilineInput) insertLiteral(r rune) {
 }
 
 func (m *multilineInput) snapshotUndo() {
+	if m.hasUndo {
+		m.undoOlder = append(m.undoOlder, inputSnapshot{m.undoText, m.undoCursor, m.undoPastes, m.undoCounter})
+	}
 	m.undoText = m.text
 	m.undoCursor = m.clampCursor()
 	m.undoPastes, m.undoCounter = copyPastes(m.pastes), m.pasteCounter
 	m.hasUndo = true
 }
 
+// undo is Pi's: restore the newest snapshot and drop it.
 func (m *multilineInput) undo() {
 	if !m.hasUndo {
 		return
 	}
-	m.text, m.undoText = m.undoText, m.text
-	m.cursorPos, m.undoCursor = m.undoCursor, m.clampCursor()
-	m.pastes, m.undoPastes = m.undoPastes, m.pastes
-	m.pasteCounter, m.undoCounter = m.undoCounter, m.pasteCounter
+	m.text, m.cursorPos, m.pastes, m.pasteCounter = m.undoText, m.undoCursor, m.undoPastes, m.undoCounter
+	if n := len(m.undoOlder); n > 0 {
+		top := m.undoOlder[n-1]
+		m.undoText, m.undoCursor, m.undoPastes, m.undoCounter = top.text, top.cursor, top.pastes, top.counter
+		m.undoOlder = m.undoOlder[:n-1]
+	} else {
+		m.undoText, m.undoCursor, m.undoPastes, m.undoCounter, m.hasUndo = "", 0, nil, 0, false
+	}
+	m.lastAction = ""
 	m.notifyEdited()
 }
 
+// yank is Pi's: insert the newest kill.
 func (m *multilineInput) yank() {
 	if m.yankText == "" {
 		return
 	}
 	m.snapshotUndo()
+	m.insertText(m.yankText)
+	m.lastAction = "yank"
+}
+
+// yankPop is Pi's: right after a yank, replace the yanked text with the
+// previous kill.
+func (m *multilineInput) yankPop() {
+	if m.lastAction != "yank" || m.killRingLen() <= 1 {
+		return
+	}
+	m.snapshotUndo()
 	runes := []rune(m.text)
 	pos := m.clampCursor()
-	yankRunes := []rune(m.yankText)
-	runes = append(runes[:pos], append(yankRunes, runes[pos:]...)...)
-	m.text = string(runes)
-	m.cursorPos = pos + len(yankRunes)
+	start := max(0, pos-utf8.RuneCountInString(m.yankText))
+	m.text = string(append(runes[:start:start], runes[pos:]...))
+	m.cursorPos = start
+	m.rotateKills()
+	m.insertText(m.yankText)
+	m.lastAction = "yank"
+}
+
+func (m *multilineInput) insertText(text string) {
+	runes := []rune(m.text)
+	pos := m.clampCursor()
+	inserted := []rune(text)
+	m.text = string(append(runes[:pos:pos], append(inserted, runes[pos:]...)...))
+	m.cursorPos = pos + len(inserted)
 	m.notifyEdited()
+}
+
+// toggleJump starts Pi's character jump (the next printable key is the
+// target), or cancels it when its key is pressed again.
+func (m *multilineInput) toggleJump(direction string) {
+	m.lastAction = ""
+	if m.jumpMode != "" {
+		m.jumpMode = ""
+		return
+	}
+	m.jumpMode = direction
+}
+
+// jumpToChar is Pi's: the first occurrence after (or before) the cursor,
+// across lines; the cursor stays when there is none.
+func (m *multilineInput) jumpToChar(target rune, direction string) {
+	runes := []rune(m.text)
+	pos := m.clampCursor()
+	if direction == "forward" {
+		for i := pos + 1; i < len(runes); i++ {
+			if runes[i] == target {
+				m.cursorPos = i
+				m.markDirty()
+				return
+			}
+		}
+		return
+	}
+	for i := pos - 1; i >= 0; i-- {
+		if runes[i] == target {
+			m.cursorPos = i
+			m.markDirty()
+			return
+		}
+	}
 }
 
 func (m *multilineInput) clampCursor() int {

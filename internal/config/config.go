@@ -42,6 +42,11 @@ type RuntimeConfig struct {
 	// Pi's model catalogue service (Pi always uses https://pi.dev); empty: gi
 	// does not refresh models-store.json.
 	ModelCatalogURL string `json:"model_catalog_url,omitempty"`
+	// ExternalEditor is Pi's externalEditor setting (project, else user).
+	ExternalEditor string `json:"external_editor,omitempty"`
+	// HideThinkingBlock is Pi's hideThinkingBlock: thinking shows as a
+	// "Thinking..." label (project setting, else user).
+	HideThinkingBlock bool `json:"hide_thinking_block,omitempty"`
 	// QuietStartup is Pi's quietStartup: "" (false: header and loaded
 	// resources), "true" (neither) or "header" (header only).
 	QuietStartup string `json:"quiet_startup,omitempty"`
@@ -63,8 +68,8 @@ type RuntimeConfig struct {
 	SystemPrompt string `json:"-"`
 	// ContextFiles are the instructions files for the prompt (Pi's
 	// loadProjectContextFiles).
-	ContextFiles []ContextFile `json:"-"`
-	Discovery      skills.Discovery       `json:"-"`
+	ContextFiles []ContextFile    `json:"-"`
+	Discovery    skills.Discovery `json:"-"`
 }
 
 type piclawConfig struct {
@@ -130,21 +135,25 @@ type piSettings struct {
 	Codemode     *CodemodeSettings `json:"codemode"`
 	// Theme is Pi's theme setting: a theme name ("dark", "light", custom) or
 	// an auto pair "light/dark" resolved by the terminal's detected scheme.
-	Theme                string   `json:"theme"`
+	Theme string `json:"theme"`
 	// TUIMode is Pi's tuiMode: "fullscreen" (default) or "regular".
 	TUIMode string `json:"tuiMode"`
+	// ExternalEditor is Pi's externalEditor (Ctrl+G).
+	ExternalEditor string `json:"externalEditor"`
+	// HideThinkingBlock is Pi's hideThinkingBlock (Ctrl+T toggles it).
+	HideThinkingBlock *bool `json:"hideThinkingBlock"`
 	// ModelCatalogURL is gi's modelCatalogUrl (user settings only).
 	ModelCatalogURL string `json:"modelCatalogUrl"`
 	// QuietStartup is Pi's quietStartup: false, true or "header".
-	QuietStartup json.RawMessage `json:"quietStartup"`
-	DefaultProvider      string   `json:"defaultProvider"`
-	DefaultModel         string   `json:"defaultModel"`
-	DefaultThinkingLevel string   `json:"defaultThinkingLevel"`
-	EnabledModels        []string `json:"enabledModels"`
-	MaxIterations        int      `json:"maxIterations"`
-	TUIScrollbackLimit   int      `json:"tuiScrollbackLimit"`
-	TUIHistoryLimit      int      `json:"tuiHistoryLimit"`
-	TUIClipboardMode     string   `json:"tuiClipboardMode"`
+	QuietStartup         json.RawMessage `json:"quietStartup"`
+	DefaultProvider      string          `json:"defaultProvider"`
+	DefaultModel         string          `json:"defaultModel"`
+	DefaultThinkingLevel string          `json:"defaultThinkingLevel"`
+	EnabledModels        []string        `json:"enabledModels"`
+	MaxIterations        int             `json:"maxIterations"`
+	TUIScrollbackLimit   int             `json:"tuiScrollbackLimit"`
+	TUIHistoryLimit      int             `json:"tuiHistoryLimit"`
+	TUIClipboardMode     string          `json:"tuiClipboardMode"`
 	// Pi's fullscreenWheelScrollLines: a number of lines, or "auto".
 	FullscreenWheelScrollLines any                    `json:"fullscreenWheelScrollLines"`
 	Compaction                 CompactionSettings     `json:"compaction"`
@@ -167,6 +176,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 	cfg := RuntimeConfig{WorkspaceRoot: workspaceRoot, Compaction: CompactionSettings{Enabled: true}, InboundWork: InboundWorkSettings{Enabled: true}}
 	var projectTools, projectExtensions []string
 	var projectCodemode *CodemodeSettings
+	var projectHideThinking *bool
 	var pc piclawConfig
 	if err := readJSON(filepath.Join(workspaceRoot, ".piclaw", "config.json"), &pc); err == nil {
 		cfg.AssistantName = pc.Assistant.AssistantName
@@ -200,10 +210,15 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.WorkspaceIndex = ps.WorkspaceIndex
 		cfg.Theme = strings.TrimSpace(ps.Theme)
 		cfg.TUIMode = strings.TrimSpace(ps.TUIMode)
+		cfg.ExternalEditor = strings.TrimSpace(ps.ExternalEditor)
 		cfg.QuietStartup = parseQuietStartup(ps.QuietStartup)
 		projectTools, projectExtensions, projectCodemode = ps.DefaultTools, ps.Extensions, ps.Codemode
+		projectHideThinking = ps.HideThinkingBlock
 	}
 	applyGlobalPiSettings(&cfg)
+	if projectHideThinking != nil {
+		cfg.HideThinkingBlock = *projectHideThinking
+	}
 	// Project settings apply on top of the user's (Pi).
 	if projectTools != nil {
 		cfg.DefaultToolsLayers = append(cfg.DefaultToolsLayers, projectTools)
@@ -288,6 +303,11 @@ func PersistModelSelection(workspaceRoot, provider, model, thinking string, enab
 	return persistPiFields(workspaceRoot, fields)
 }
 
+// PersistHideThinkingBlock saves Pi's hideThinkingBlock.
+func PersistHideThinkingBlock(workspaceRoot string, hide bool) error {
+	return persistPiFields(workspaceRoot, map[string]any{"hideThinkingBlock": hide})
+}
+
 func PersistClipboardMode(workspaceRoot, mode string) error {
 	return persistPiFields(workspaceRoot, map[string]any{"tuiClipboardMode": normalizeClipboardMode(mode)})
 }
@@ -361,6 +381,9 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 		return
 	}
 	cfg.ModelCatalogURL = strings.TrimSpace(global.ModelCatalogURL)
+	if global.HideThinkingBlock != nil {
+		cfg.HideThinkingBlock = *global.HideThinkingBlock
+	}
 	if strings.TrimSpace(cfg.DefaultProvider) == "" && strings.TrimSpace(cfg.DefaultModel) == "" {
 		cfg.DefaultProvider = global.DefaultProvider
 		cfg.DefaultModel = global.DefaultModel
@@ -376,6 +399,9 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	}
 	if cfg.TUIMode == "" {
 		cfg.TUIMode = strings.TrimSpace(global.TUIMode)
+	}
+	if cfg.ExternalEditor == "" {
+		cfg.ExternalEditor = strings.TrimSpace(global.ExternalEditor)
 	}
 	if cfg.QuietStartup == "" {
 		cfg.QuietStartup = parseQuietStartup(global.QuietStartup)

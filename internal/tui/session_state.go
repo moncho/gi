@@ -140,7 +140,7 @@ func (c *chatTUI) restoreSessionEditor() {
 		state = sessionEditorState{history: c.loadCommandHistory(), histIdx: -1, historySearchIdx: -1}
 	}
 	c.draftApplying = true
-	c.input.SetText(state.text)
+	c.input.Reset(state.text)
 	c.input.cursorPos = min(max(0, state.cursor), utf8.RuneCountInString(c.input.Text()))
 	c.input.undoText, c.input.undoCursor, c.input.hasUndo = state.undoText, state.undoCursor, state.hasUndo
 	c.input.yankText = state.yank

@@ -134,7 +134,8 @@ func (c *chatTUI) renderSessionRename(width int) *gotui.Element {
 	if m := c.sessionActions.renameInput; m != nil {
 		add(sessionRenameLine(m, width), gotui.NewStyle())
 	}
-	notice := "1–160 characters · Ctrl-A/E · Ctrl-U/K · Ctrl-Z undo"
+	_, undo := defaultPiKeys.undo()
+	notice := "1–160 characters · Ctrl-A/E · Ctrl-U/K · " + defaultPiKeys.display(undo) + " undo"
 	if c.modelMenuError != "" {
 		notice = "error: " + c.modelMenuError
 	}

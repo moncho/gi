@@ -41,7 +41,8 @@ func TestEditorViewportTracksCursorWithoutChangingDraft(t *testing.T) {
 					t.Fatal("editor state changed")
 				}
 			}
-			m.moveHome()
+			m.cursorPos = 0 // the draft's start (Home is line start)
+			m.markDirty()
 			if m.scrollRow == 0 {
 				t.Fatal("expected old viewport until render")
 			}
@@ -49,7 +50,8 @@ func TestEditorViewportTracksCursorWithoutChangingDraft(t *testing.T) {
 			if m.scrollRow != 0 {
 				t.Fatal("home not shown")
 			}
-			m.moveEnd()
+			m.cursorPos = len([]rune(m.text))
+			m.markDirty()
 			m.renderLines()
 			if m.scrollRow == 0 {
 				t.Fatal("end not shown")

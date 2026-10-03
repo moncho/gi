@@ -159,6 +159,12 @@ func controlToKey(b byte) (Key, rune, Modifier) {
 		return KeyEscape, 0, ModNone
 	case 0x00:
 		return KeyRune, ' ', ModCtrl // Ctrl+Space
+	case 0x1c:
+		return KeyRune, '\\', ModCtrl // as pi-tui: Ctrl+\
+	case 0x1d:
+		return KeyRune, ']', ModCtrl // Ctrl+]
+	case 0x1f:
+		return KeyRune, '-', ModCtrl // Ctrl+- (and Ctrl+_)
 	default:
 		if b >= 0x01 && b <= 0x1a {
 			return KeyRune, rune('a' + b - 1), ModCtrl

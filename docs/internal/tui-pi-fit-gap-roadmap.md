@@ -78,20 +78,13 @@ Implemented in `internal/tui/multiline_input.go` and `internal/tui/chat.go`:
 - Shift+Enter inserts newline;
 - Escape blurs input;
 - Backspace/Delete delete characters;
-- Left/Right move by character;
-- Alt+Left/Alt+Right move by word;
-- Ctrl+W and Alt+Backspace delete word backward;
-- Alt+Delete deletes word forward;
-- Ctrl+A/Ctrl+E move to input start/end;
-- Ctrl+U/Ctrl+K delete to input start/end;
-- Ctrl+Z/Ctrl+Y provide minimal one-step undo/yank;
+- Pi's default `tui.editor.*` and `app.*` keys, including the kill ring,
+  yank-pop, undo stack and character jump (see `keybindings.md`);
 - Tab completes workspace-relative paths;
 - textual `@path` completion uses the same Tab fallback;
-- Alt+Up restores the most recent locally queued draft;
-- Up/Down, F2/F3, Ctrl+P/Ctrl+N history paths are covered;
+- Up/Down and F2/F3 history paths are covered;
 - PgUp/PgDn and Home/End transcript scrolling are covered;
-- Ctrl+L/Alt+L cycle enabled models;
-- Ctrl+T/Alt+T cycle thinking levels;
+- Alt+L/Alt+T cycle models/thinking backwards (gi);
 - focus/blur, mouse focus, resize, and quit behavior have tests/features.
 
 Deferred/adapted editor items:

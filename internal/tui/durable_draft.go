@@ -65,7 +65,7 @@ func (c *chatTUI) loadDurableDraft() {
 }
 func (c *chatTUI) applyDraftSnapshot(snapshot store.TUITextSnapshot) {
 	c.draftApplying = true
-	c.input.SetText(snapshot.Text)
+	c.input.Reset(snapshot.Text)
 	c.input.cursorPos = snapshot.Cursor
 	c.draftApplying = false
 }

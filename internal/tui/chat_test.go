@@ -1279,16 +1279,6 @@ func TestHelpLinesAreGroupedAndDiscoverCoreCommands(t *testing.T) {
 	}
 }
 
-func TestHotkeyLinesCoverKeyGroups(t *testing.T) {
-	c := &chatTUI{}
-	joined := strings.Join(c.hotkeyLines(), "\n")
-	for _, want := range []string{"hotkeys", "editor:", "runtime:", "transcript:", "F6/F7 select block", "F8 expand/collapse", "Ctrl+L/Alt+L cycle model", "!!cmd run locally"} {
-		if !strings.Contains(joined, want) {
-			t.Fatalf("hotkeys missing %q:\n%s", want, joined)
-		}
-	}
-}
-
 func TestNewSessionCommandCreatesAndSwitchesMainSession(t *testing.T) {
 	s, err := store.Open("file::memory:?cache=shared")
 	if err != nil {
@@ -2188,12 +2178,12 @@ func TestMultilineInputWordMovementAndDeletion(t *testing.T) {
 	if inp.cursorPos != len([]rune("alpha ")) {
 		t.Fatalf("second word-left cursor=%d", inp.cursorPos)
 	}
-	inp.moveWordRight()
-	if inp.cursorPos != len([]rune("alpha beta  ")) {
+	inp.moveWordRight() // Pi: to the end of the word
+	if inp.cursorPos != len([]rune("alpha beta")) {
 		t.Fatalf("word-right cursor=%d", inp.cursorPos)
 	}
 	inp.deleteWordBackward()
-	if got := inp.Text(); got != "alpha gamma" {
+	if got := inp.Text(); got != "alpha   gamma" {
 		t.Fatalf("delete word backward = %q", got)
 	}
 	inp.deleteWordForward()

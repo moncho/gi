@@ -1,0 +1,905 @@
+{
+ "word_moves_punctuation": {
+  "steps": [
+   [
+    "set",
+    "foo.bar(baz)  qux_1 é"
+   ],
+   "alt+b",
+   "alt+b",
+   "alt+b",
+   "alt+b",
+   "alt+b",
+   "alt+b",
+   "alt+b",
+   "ctrl+left",
+   "ctrl+left",
+   "alt+f",
+   "alt+f",
+   "ctrl+right",
+   "alt+right",
+   "alt+f",
+   "alt+f",
+   "alt+f"
+  ],
+  "states": [
+   {
+    "step": "set:foo.bar(baz)  qux_1 é",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 21
+   },
+   {
+    "step": "alt+b",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 20
+   },
+   {
+    "step": "alt+b",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 14
+   },
+   {
+    "step": "alt+b",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 11
+   },
+   {
+    "step": "alt+b",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 8
+   },
+   {
+    "step": "alt+b",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 7
+   },
+   {
+    "step": "alt+b",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 4
+   },
+   {
+    "step": "alt+b",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 3
+   },
+   {
+    "step": "ctrl+left",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+left",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 0
+   },
+   {
+    "step": "alt+f",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 3
+   },
+   {
+    "step": "alt+f",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 4
+   },
+   {
+    "step": "ctrl+right",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 7
+   },
+   {
+    "step": "alt+right",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 8
+   },
+   {
+    "step": "alt+f",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 11
+   },
+   {
+    "step": "alt+f",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 12
+   },
+   {
+    "step": "alt+f",
+    "text": "foo.bar(baz)  qux_1 é",
+    "cursor": 19
+   }
+  ]
+ },
+ "word_moves_across_lines": {
+  "steps": [
+   [
+    "set",
+    "one two\nthree"
+   ],
+   "alt+b",
+   "alt+b",
+   "alt+b",
+   "alt+f",
+   "alt+f",
+   "alt+left"
+  ],
+  "states": [
+   {
+    "step": "set:one two\nthree",
+    "text": "one two\nthree",
+    "cursor": 13
+   },
+   {
+    "step": "alt+b",
+    "text": "one two\nthree",
+    "cursor": 8
+   },
+   {
+    "step": "alt+b",
+    "text": "one two\nthree",
+    "cursor": 7
+   },
+   {
+    "step": "alt+b",
+    "text": "one two\nthree",
+    "cursor": 4
+   },
+   {
+    "step": "alt+f",
+    "text": "one two\nthree",
+    "cursor": 7
+   },
+   {
+    "step": "alt+f",
+    "text": "one two\nthree",
+    "cursor": 8
+   },
+   {
+    "step": "alt+left",
+    "text": "one two\nthree",
+    "cursor": 7
+   }
+  ]
+ },
+ "kills_accumulate": {
+  "steps": [
+   [
+    "set",
+    "one two three four"
+   ],
+   "ctrl+w",
+   "alt+backspace",
+   "ctrl+y",
+   "ctrl+-",
+   "ctrl+-",
+   "ctrl+-"
+  ],
+  "states": [
+   {
+    "step": "set:one two three four",
+    "text": "one two three four",
+    "cursor": 18
+   },
+   {
+    "step": "ctrl+w",
+    "text": "one two three ",
+    "cursor": 14
+   },
+   {
+    "step": "alt+backspace",
+    "text": "one two ",
+    "cursor": 8
+   },
+   {
+    "step": "ctrl+y",
+    "text": "one two three four",
+    "cursor": 18
+   },
+   {
+    "step": "ctrl+-",
+    "text": "one two ",
+    "cursor": 8
+   },
+   {
+    "step": "ctrl+-",
+    "text": "one two three ",
+    "cursor": 14
+   },
+   {
+    "step": "ctrl+-",
+    "text": "one two three four",
+    "cursor": 18
+   }
+  ]
+ },
+ "kill_ring_yank_pop": {
+  "steps": [
+   [
+    "set",
+    "alpha beta gamma"
+   ],
+   "ctrl+w",
+   "alt+b",
+   "ctrl+w",
+   "ctrl+e",
+   "ctrl+y",
+   "alt+y",
+   "alt+y",
+   "alt+y",
+   "ctrl+y"
+  ],
+  "states": [
+   {
+    "step": "set:alpha beta gamma",
+    "text": "alpha beta gamma",
+    "cursor": 16
+   },
+   {
+    "step": "ctrl+w",
+    "text": "alpha beta ",
+    "cursor": 11
+   },
+   {
+    "step": "alt+b",
+    "text": "alpha beta ",
+    "cursor": 6
+   },
+   {
+    "step": "ctrl+w",
+    "text": "beta ",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+e",
+    "text": "beta ",
+    "cursor": 5
+   },
+   {
+    "step": "ctrl+y",
+    "text": "beta alpha ",
+    "cursor": 11
+   },
+   {
+    "step": "alt+y",
+    "text": "beta gamma",
+    "cursor": 10
+   },
+   {
+    "step": "alt+y",
+    "text": "beta alpha ",
+    "cursor": 11
+   },
+   {
+    "step": "alt+y",
+    "text": "beta gamma",
+    "cursor": 10
+   },
+   {
+    "step": "ctrl+y",
+    "text": "beta gammagamma",
+    "cursor": 15
+   }
+  ]
+ },
+ "yank_pop_needs_yank": {
+  "steps": [
+   [
+    "set",
+    "a b c"
+   ],
+   "ctrl+w",
+   "left",
+   "ctrl+w",
+   "alt+y",
+   "ctrl+y",
+   "right",
+   "alt+y"
+  ],
+  "states": [
+   {
+    "step": "set:a b c",
+    "text": "a b c",
+    "cursor": 5
+   },
+   {
+    "step": "ctrl+w",
+    "text": "a b ",
+    "cursor": 4
+   },
+   {
+    "step": "left",
+    "text": "a b ",
+    "cursor": 3
+   },
+   {
+    "step": "ctrl+w",
+    "text": "a  ",
+    "cursor": 2
+   },
+   {
+    "step": "alt+y",
+    "text": "a  ",
+    "cursor": 2
+   },
+   {
+    "step": "ctrl+y",
+    "text": "a b ",
+    "cursor": 3
+   },
+   {
+    "step": "right",
+    "text": "a b ",
+    "cursor": 4
+   },
+   {
+    "step": "alt+y",
+    "text": "a b ",
+    "cursor": 4
+   }
+  ]
+ },
+ "forward_kills": {
+  "steps": [
+   [
+    "set",
+    "one two three"
+   ],
+   "ctrl+a",
+   "alt+d",
+   "alt+d",
+   "ctrl+e",
+   "ctrl+y"
+  ],
+  "states": [
+   {
+    "step": "set:one two three",
+    "text": "one two three",
+    "cursor": 13
+   },
+   {
+    "step": "ctrl+a",
+    "text": "one two three",
+    "cursor": 0
+   },
+   {
+    "step": "alt+d",
+    "text": " two three",
+    "cursor": 0
+   },
+   {
+    "step": "alt+d",
+    "text": " three",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+e",
+    "text": " three",
+    "cursor": 6
+   },
+   {
+    "step": "ctrl+y",
+    "text": " threeone two",
+    "cursor": 13
+   }
+  ]
+ },
+ "line_kills": {
+  "steps": [
+   [
+    "set",
+    "first line\nsecond line"
+   ],
+   "left",
+   "left",
+   "left",
+   "ctrl+u",
+   "ctrl+u",
+   "ctrl+u",
+   "ctrl+y",
+   "ctrl+a",
+   "ctrl+k",
+   "ctrl+k",
+   "ctrl+k",
+   "ctrl+y"
+  ],
+  "states": [
+   {
+    "step": "set:first line\nsecond line",
+    "text": "first line\nsecond line",
+    "cursor": 22
+   },
+   {
+    "step": "left",
+    "text": "first line\nsecond line",
+    "cursor": 21
+   },
+   {
+    "step": "left",
+    "text": "first line\nsecond line",
+    "cursor": 20
+   },
+   {
+    "step": "left",
+    "text": "first line\nsecond line",
+    "cursor": 19
+   },
+   {
+    "step": "ctrl+u",
+    "text": "first line\nine",
+    "cursor": 11
+   },
+   {
+    "step": "ctrl+u",
+    "text": "first lineine",
+    "cursor": 10
+   },
+   {
+    "step": "ctrl+u",
+    "text": "ine",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+y",
+    "text": "first line\nsecond line",
+    "cursor": 19
+   },
+   {
+    "step": "ctrl+a",
+    "text": "first line\nsecond line",
+    "cursor": 11
+   },
+   {
+    "step": "ctrl+k",
+    "text": "first line\n",
+    "cursor": 11
+   },
+   {
+    "step": "ctrl+k",
+    "text": "first line\n",
+    "cursor": 11
+   },
+   {
+    "step": "ctrl+k",
+    "text": "first line\n",
+    "cursor": 11
+   },
+   {
+    "step": "ctrl+y",
+    "text": "first line\nsecond line",
+    "cursor": 22
+   }
+  ]
+ },
+ "line_edge_word_kills": {
+  "steps": [
+   [
+    "set",
+    "ab\ncd"
+   ],
+   "ctrl+a",
+   "ctrl+w",
+   "ctrl+e",
+   "alt+d",
+   "ctrl+-",
+   "ctrl+-"
+  ],
+  "states": [
+   {
+    "step": "set:ab\ncd",
+    "text": "ab\ncd",
+    "cursor": 5
+   },
+   {
+    "step": "ctrl+a",
+    "text": "ab\ncd",
+    "cursor": 3
+   },
+   {
+    "step": "ctrl+w",
+    "text": "abcd",
+    "cursor": 2
+   },
+   {
+    "step": "ctrl+e",
+    "text": "abcd",
+    "cursor": 4
+   },
+   {
+    "step": "alt+d",
+    "text": "abcd",
+    "cursor": 4
+   },
+   {
+    "step": "ctrl+-",
+    "text": "ab\ncd",
+    "cursor": 3
+   },
+   {
+    "step": "ctrl+-",
+    "text": "",
+    "cursor": 0
+   }
+  ]
+ },
+ "undo_coalesces_words": {
+  "steps": [
+   [
+    "type",
+    "hello big  world"
+   ],
+   "ctrl+-",
+   "ctrl+-",
+   "ctrl+-",
+   "ctrl+-",
+   "ctrl+-",
+   "ctrl+-",
+   "ctrl+-"
+  ],
+  "states": [
+   {
+    "step": "type:hello big  world",
+    "text": "hello big  world",
+    "cursor": 16
+   },
+   {
+    "step": "ctrl+-",
+    "text": "hello big ",
+    "cursor": 10
+   },
+   {
+    "step": "ctrl+-",
+    "text": "hello big",
+    "cursor": 9
+   },
+   {
+    "step": "ctrl+-",
+    "text": "hello",
+    "cursor": 5
+   },
+   {
+    "step": "ctrl+-",
+    "text": "",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+-",
+    "text": "",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+-",
+    "text": "",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+-",
+    "text": "",
+    "cursor": 0
+   }
+  ]
+ },
+ "undo_after_move": {
+  "steps": [
+   [
+    "type",
+    "ab"
+   ],
+   "left",
+   [
+    "type",
+    "cd"
+   ],
+   "ctrl+-",
+   "ctrl+-",
+   "backspace",
+   "ctrl+-"
+  ],
+  "states": [
+   {
+    "step": "type:ab",
+    "text": "ab",
+    "cursor": 2
+   },
+   {
+    "step": "left",
+    "text": "ab",
+    "cursor": 1
+   },
+   {
+    "step": "type:cd",
+    "text": "acdb",
+    "cursor": 3
+   },
+   {
+    "step": "ctrl+-",
+    "text": "ab",
+    "cursor": 1
+   },
+   {
+    "step": "ctrl+-",
+    "text": "",
+    "cursor": 0
+   },
+   {
+    "step": "backspace",
+    "text": "",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+-",
+    "text": "",
+    "cursor": 0
+   }
+  ]
+ },
+ "jump": {
+  "steps": [
+   [
+    "set",
+    "a.b.c d.e"
+   ],
+   "ctrl+a",
+   "ctrl+]",
+   [
+    "type",
+    "."
+   ],
+   "ctrl+]",
+   [
+    "type",
+    "."
+   ],
+   "ctrl+]",
+   [
+    "type",
+    "z"
+   ],
+   "ctrl+alt+]",
+   [
+    "type",
+    "a"
+   ],
+   "ctrl+e",
+   "ctrl+alt+]",
+   [
+    "type",
+    "."
+   ],
+   "ctrl+]",
+   "ctrl+]",
+   [
+    "type",
+    "x"
+   ],
+   "ctrl+]",
+   "left",
+   [
+    "type",
+    "y"
+   ]
+  ],
+  "states": [
+   {
+    "step": "set:a.b.c d.e",
+    "text": "a.b.c d.e",
+    "cursor": 9
+   },
+   {
+    "step": "ctrl+a",
+    "text": "a.b.c d.e",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+]",
+    "text": "a.b.c d.e",
+    "cursor": 0
+   },
+   {
+    "step": "type:.",
+    "text": "a.b.c d.e",
+    "cursor": 1
+   },
+   {
+    "step": "ctrl+]",
+    "text": "a.b.c d.e",
+    "cursor": 1
+   },
+   {
+    "step": "type:.",
+    "text": "a.b.c d.e",
+    "cursor": 3
+   },
+   {
+    "step": "ctrl+]",
+    "text": "a.b.c d.e",
+    "cursor": 3
+   },
+   {
+    "step": "type:z",
+    "text": "a.b.c d.e",
+    "cursor": 3
+   },
+   {
+    "step": "ctrl+alt+]",
+    "text": "a.b.c d.e",
+    "cursor": 3
+   },
+   {
+    "step": "type:a",
+    "text": "a.b.c d.e",
+    "cursor": 0
+   },
+   {
+    "step": "ctrl+e",
+    "text": "a.b.c d.e",
+    "cursor": 9
+   },
+   {
+    "step": "ctrl+alt+]",
+    "text": "a.b.c d.e",
+    "cursor": 9
+   },
+   {
+    "step": "type:.",
+    "text": "a.b.c d.e",
+    "cursor": 7
+   },
+   {
+    "step": "ctrl+]",
+    "text": "a.b.c d.e",
+    "cursor": 7
+   },
+   {
+    "step": "ctrl+]",
+    "text": "a.b.c d.e",
+    "cursor": 7
+   },
+   {
+    "step": "type:x",
+    "text": "a.b.c dx.e",
+    "cursor": 8
+   },
+   {
+    "step": "ctrl+]",
+    "text": "a.b.c dx.e",
+    "cursor": 8
+   },
+   {
+    "step": "left",
+    "text": "a.b.c dx.e",
+    "cursor": 7
+   },
+   {
+    "step": "type:y",
+    "text": "a.b.c dyx.e",
+    "cursor": 8
+   }
+  ]
+ },
+ "jump_across_lines": {
+  "steps": [
+   [
+    "set",
+    "abc\ndef"
+   ],
+   "ctrl+alt+]",
+   [
+    "type",
+    "b"
+   ],
+   "ctrl+]",
+   [
+    "type",
+    "e"
+   ]
+  ],
+  "states": [
+   {
+    "step": "set:abc\ndef",
+    "text": "abc\ndef",
+    "cursor": 7
+   },
+   {
+    "step": "ctrl+alt+]",
+    "text": "abc\ndef",
+    "cursor": 7
+   },
+   {
+    "step": "type:b",
+    "text": "abc\ndef",
+    "cursor": 1
+   },
+   {
+    "step": "ctrl+]",
+    "text": "abc\ndef",
+    "cursor": 1
+   },
+   {
+    "step": "type:e",
+    "text": "abc\ndef",
+    "cursor": 5
+   }
+  ]
+ },
+ "paste_marker_atomic": {
+  "steps": [
+   [
+    "type",
+    "see "
+   ],
+   [
+    "paste",
+    "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11"
+   ],
+   [
+    "type",
+    " ok"
+   ],
+   "alt+b",
+   "alt+b",
+   "alt+b",
+   "alt+f",
+   "alt+f",
+   "ctrl+e",
+   "ctrl+w",
+   "ctrl+w"
+  ],
+  "states": [
+   {
+    "step": "type:see ",
+    "text": "see ",
+    "cursor": 4
+   },
+   {
+    "step": "paste:1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11",
+    "text": "see [paste #1 +11 lines]",
+    "cursor": 24
+   },
+   {
+    "step": "type: ok",
+    "text": "see [paste #1 +11 lines] ok",
+    "cursor": 27
+   },
+   {
+    "step": "alt+b",
+    "text": "see [paste #1 +11 lines] ok",
+    "cursor": 25
+   },
+   {
+    "step": "alt+b",
+    "text": "see [paste #1 +11 lines] ok",
+    "cursor": 4
+   },
+   {
+    "step": "alt+b",
+    "text": "see [paste #1 +11 lines] ok",
+    "cursor": 0
+   },
+   {
+    "step": "alt+f",
+    "text": "see [paste #1 +11 lines] ok",
+    "cursor": 3
+   },
+   {
+    "step": "alt+f",
+    "text": "see [paste #1 +11 lines] ok",
+    "cursor": 24
+   },
+   {
+    "step": "ctrl+e",
+    "text": "see [paste #1 +11 lines] ok",
+    "cursor": 27
+   },
+   {
+    "step": "ctrl+w",
+    "text": "see [paste #1 +11 lines] ",
+    "cursor": 25
+   },
+   {
+    "step": "ctrl+w",
+    "text": "see ",
+    "cursor": 4
+   }
+  ]
+ }
+}

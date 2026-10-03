@@ -112,7 +112,7 @@ func (c *chatTUI) piThinkingSelectorRows(width int) spanRows {
 		}
 	}
 	rows := spanRows{piRule(width, piBorder), {}, {{Text: "Thinking Level"}}, {},
-		{{Text: truncateCells("Ctrl+T cycles thinking levels in-session", width)}}, {},
+		{{Text: truncateCells(defaultPiKeys.display("Shift+Tab")+" cycles thinking levels in-session", width)}}, {},
 		piSearchRow(c.modelMenuQuery, width), {}}
 	rows = append(rows, piSelectRows(labels, descs, c.modelMenuSelected, width, max(1, len(labels)))...)
 	if c.modelMenuError != "" {

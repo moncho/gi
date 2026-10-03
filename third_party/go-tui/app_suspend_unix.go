@@ -176,3 +176,18 @@ func (a *App) registerSuspendSignals() func() {
 		signal.Stop(contCh)
 	}
 }
+
+// RunWithTerminal hands the terminal to fn (an external editor, say) and
+// restores the UI when it returns: the same teardown and restore as a
+// suspend, without stopping the process. fn runs on the event loop, which
+// waits for it. Safe to call from any goroutine.
+func (a *App) RunWithTerminal(fn func()) {
+	select {
+	case a.updates <- UpdateEvent{fn: func() {
+		a.suspendTerminal()
+		defer a.resumeTerminal()
+		fn()
+	}}:
+	case <-a.stopCh:
+	}
+}

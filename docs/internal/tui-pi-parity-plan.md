@@ -56,7 +56,7 @@ This gives us the same behavior-level regression style as Piclaw's UX features, 
 - `/skill:name [args]` command resolution that loads discovered `SKILL.md` files from the TUI.
 - `/model`, `/thinking`, `/compact`, and `/cancel` runtime controls, with richer `/model` listing and index selection.
 - `/scoped-models [list|add|remove|set]` enabled-model management backed by existing settings persistence.
-- Keyboard cycling for models (`Ctrl+L`/`Alt+L`) and thinking levels (`Ctrl+T`/`Alt+T`).
+- Keyboard cycling for models (`Ctrl+P`/`Shift+Ctrl+P`, gi's `Alt+L`) and thinking levels (`Shift+Tab`, gi's `Alt+T`).
 - `/commands [query]` / `/palette [query]` textual command palette fallback.
 - `/session`, `/new`, `/name`, `/resume`, `/clone`, `/copy [--osc52|--native|--auto|--fallback]`, and `/reload` command/session workflow affordances.
 - `/agents`, `/where`, `/tree`, `/plugins`, `/fork`, `/switch`, and `/send` session/agent workflows/debug views, with denser narrow-terminal output for `/tree` and `/resume`.

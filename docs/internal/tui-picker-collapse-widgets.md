@@ -10,7 +10,7 @@ Observed capabilities that are safe today:
 
 - deterministic static layout composition through existing panes/components;
 - focused multiline input with rune/key handling;
-- app/root-level preempt key bindings (`Ctrl+L`, `Alt+L`, `Ctrl+T`, `Alt+T`, history recall, scroll keys);
+- app/root-level preempt key bindings (`Ctrl+P`, `Ctrl+L`, `Alt+L`, `Shift+Tab`, `Alt+T`, history recall, scroll keys);
 - transcript rendering as plain lines, which is stable under tmux, `script(1)`, and test snapshots;
 - textual command output that can act as a picker when entries are numbered.
 
@@ -36,7 +36,7 @@ This means existing model selection already satisfies the first safe model-picke
 /model
 /model 2
 /model provider/model-name
-Ctrl+L      # cycle forward
+Ctrl+P      # cycle forward (Ctrl+L opens the selector)
 Alt+L       # cycle backward
 ```
 

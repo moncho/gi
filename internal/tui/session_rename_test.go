@@ -78,7 +78,7 @@ func TestSessionRenameSaveCancelValidationAndComposerIsolation(t *testing.T) {
 	}
 	renameKey(t, c, gotui.KeyLeft, 0, 0)
 	renameKey(t, c, gotui.KeyRune, 'X', 0)
-	renameKey(t, c, gotui.KeyRune, 'z', gotui.ModCtrl)
+	renameKey(t, c, gotui.KeyRune, '-', gotui.ModCtrl) // Pi's undo
 	if m.Text() != "Title 界 e\u0301" {
 		t.Fatal("undo damaged unicode", m.Text())
 	}

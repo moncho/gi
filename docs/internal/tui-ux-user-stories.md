@@ -49,7 +49,7 @@ Covers:
 **As a user**, I want `/model`, `/scoped-models`, and keyboard model cycling to switch models and persist my choice so the next run keeps it.
 
 - Evidence:
-  - `internal/tui/chat.go` `/model`, `/scoped-models`, Ctrl+L/Alt+L cycling
+  - `internal/tui/chat.go` `/model`, `/scoped-models`, Ctrl+P/Shift+Ctrl+P/Alt+L cycling, Ctrl+L selector
   - `internal/config/config.go` model persistence
   - `internal/config/config_test.go`
 
@@ -58,7 +58,7 @@ Covers:
 **As a user**, I want `/thinking` and keyboard thinking cycling to change the current/default thinking level without leaving the TUI.
 
 - Evidence:
-  - `internal/tui/chat.go` `/thinking`, Ctrl+T/Alt+T cycling
+  - `internal/tui/chat.go` `/thinking`, Shift+Tab/Alt+T cycling
   - `features/tui/assistant_basics.feature`
 
 ### 6. Inspect compaction and run-time settings

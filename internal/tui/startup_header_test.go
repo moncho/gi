@@ -26,15 +26,17 @@ func headerText(t *testing.T, c *chatTUI, width int) string {
 // gi's startup header: name, version and gi's keys collapsed; the full key
 // list and loaded resources on Ctrl+O; quietStartup like Pi.
 func TestStartupHeader(t *testing.T) {
+	defer func(keys piKeys) { defaultPiKeys = keys }(defaultPiKeys)
+	defaultPiKeys = piKeys{} // Pi's Linux keys
 	c := &chatTUI{startupHeader: true, transcriptExpanded: map[string]bool{},
 		cfg: config.RuntimeConfig{AssistantName: "Gi", EnabledModels: []string{"a/one", "b/two"},
 			Discovery: skills.Discovery{Skills: []skills.Skill{{Name: "zeta", Path: "/s/zeta/SKILL.md"}, {Name: "alpha", Path: "/s/alpha/SKILL.md"}}}}}
 	text := headerText(t, c, 100)
 	for _, want := range []string{
 		"gi " + version.String(),
-		"Esc interrupt · Ctrl+C quit · / commands · ! bash · Ctrl+O more",
-		"Press Ctrl+O to show full startup help and loaded resources.",
-		"Model scope: a/one, b/two (Ctrl+L to cycle)",
+		"escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more",
+		"Press ctrl+o to show full startup help and loaded resources.",
+		"Model scope: a/one, b/two (Ctrl+P to cycle)",
 		"[Skills]\n  alpha, zeta",
 	} {
 		if !strings.Contains(text, want) {
@@ -43,7 +45,7 @@ func TestStartupHeader(t *testing.T) {
 	}
 	c.toggleToolOutput()
 	text = headerText(t, c, 100)
-	for _, want := range []string{"Esc to interrupt", "Ctrl+O to expand tools", "!! to run bash (no context)", "[Skills]\n  /s/alpha/SKILL.md\n  /s/zeta/SKILL.md"} {
+	for _, want := range []string{"escape to interrupt", "ctrl+c twice to exit", "shift+tab to cycle thinking level", "ctrl+p/shift+ctrl+p to cycle models", "ctrl+o to expand tools", "!! to run bash (no context)", "drop files to attach", "[Skills]\n  /s/alpha/SKILL.md\n  /s/zeta/SKILL.md"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("expanded header lacks %q:\n%s", want, text)
 		}
@@ -51,7 +53,7 @@ func TestStartupHeader(t *testing.T) {
 	c.toggleToolOutput()
 	c.cfg.QuietStartup = "header"
 	text = headerText(t, c, 100)
-	if strings.Contains(text, "[Skills]") || strings.Contains(text, "Model scope") || !strings.Contains(text, "Press Ctrl+O to show full startup help.") {
+	if strings.Contains(text, "[Skills]") || strings.Contains(text, "Model scope") || !strings.Contains(text, "Press ctrl+o to show full startup help.") {
 		t.Fatalf("quietStartup header:\n%s", text)
 	}
 	c.cfg.QuietStartup = "true"

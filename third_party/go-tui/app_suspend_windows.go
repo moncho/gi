@@ -18,3 +18,12 @@ func (a *App) Suspend() {}
 func (a *App) registerSuspendSignals() func() {
 	return func() {}
 }
+
+// RunWithTerminal runs fn on the event loop; Windows has no terminal
+// teardown here.
+func (a *App) RunWithTerminal(fn func()) {
+	select {
+	case a.updates <- UpdateEvent{fn: fn}:
+	case <-a.stopCh:
+	}
+}

@@ -310,6 +310,7 @@ type chatTUI struct {
 	sessionActions              sessionActions
 	selectDialog                selectDialog     // Pi ctx.ui.select (modelMenuKind "select")
 	mcpManager                  *mcpManagerState // Pi's /mcp manager (modelMenuKind "mcp-manager")
+	lastCtrlC                   time.Time        // Pi's app.clear: a second press within 500ms exits
 	modelMenuSession            sessionScope
 	modelMenuAltScreen          bool
 	modelMenuResized            bool
@@ -1860,24 +1861,24 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 			gotui.OnFocused(gotui.AnyRune, func(ke gotui.KeyEvent) { c.modelMenuTypeRune(ke.Rune) }),
 		}
 	}
+	keys := defaultPiKeys
+	pasteKey, _ := keys.pasteImage()
+	cycleBackKey, _ := keys.cycleModelBackward()
 	bindings := gotui.KeyMap{
-		gotui.OnPreemptStop(gotui.KeyCtrlC, func(ke gotui.KeyEvent) {
-			if c.textSelection.active {
-				c.copyTranscriptSelection()
-			} else {
-				c.app.Stop()
-			}
-		}),
-		gotui.OnPreemptStop(gotui.Rune('x').Ctrl(), func(ke gotui.KeyEvent) {
-			if c.textSelection.active {
-				c.copyTranscriptSelection()
-			}
-		}),
+		// Pi's app.* bindings (docs/internal/keybindings.md).
+		gotui.OnPreemptStop(gotui.KeyCtrlC, func(gotui.KeyEvent) { c.handleCtrlC() }),
+		gotui.OnPreemptStop(gotui.Rune('x').Ctrl(), func(gotui.KeyEvent) { c.copySelectionOrLastMessage() }),
 		gotui.OnStop(gotui.KeyCtrlD, func(ke gotui.KeyEvent) {
 			if c.input.Text() == "" {
 				c.app.Stop()
+			} else { // Pi's tui.editor.deleteCharForward
+				c.input.jumpMode, c.input.lastAction = "", ""
+				c.input.delete()
 			}
 		}),
+		gotui.OnPreemptStop(gotui.KeyCtrlG, func(gotui.KeyEvent) { c.openExternalEditor() }),
+		gotui.OnPreemptStop(pasteKey, func(gotui.KeyEvent) { c.pasteClipboard() }),
+		gotui.OnPreemptStop(gotui.KeyTab.Shift(), func(gotui.KeyEvent) { c.cycleThinking(1) }),
 		gotui.OnPreemptStop(gotui.KeyEscape, func(ke gotui.KeyEvent) {
 			if c.textSelection.active {
 				c.clearTranscriptSelection()
@@ -1897,9 +1898,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 			}
 		}),
 		gotui.OnStop(gotui.KeyTab, func(ke gotui.KeyEvent) { c.focusInput() }),
-		gotui.OnPreemptStop(gotui.Rune('f').Ctrl().Shift(), func(ke gotui.KeyEvent) { c.toggleTranscriptSearch() }),
-		gotui.OnPreemptStop(gotui.KeyUp.Ctrl().Shift(), func(ke gotui.KeyEvent) { c.jumpTranscriptPrompt(-1) }),
-		gotui.OnPreemptStop(gotui.KeyDown.Ctrl().Shift(), func(ke gotui.KeyEvent) { c.jumpTranscriptPrompt(1) }),
+		gotui.OnPreemptStop(keys.search(), func(ke gotui.KeyEvent) { c.toggleTranscriptSearch() }),
+		gotui.OnPreemptStop(gotui.KeyUp.Ctrl(), func(ke gotui.KeyEvent) { c.jumpTranscriptPrompt(-1) }),
+		gotui.OnPreemptStop(gotui.KeyDown.Ctrl(), func(ke gotui.KeyEvent) { c.jumpTranscriptPrompt(1) }),
 		gotui.OnPreemptStop(gotui.KeyPageUp, func(ke gotui.KeyEvent) { c.pageTranscript(-1) }),
 		gotui.OnPreemptStop(gotui.KeyPageDown, func(ke gotui.KeyEvent) { c.pageTranscript(1) }),
 		gotui.OnPreemptStop(gotui.KeyHome, func(ke gotui.KeyEvent) { c.scrollTranscriptToTop() }),
@@ -1910,11 +1911,12 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 		gotui.OnPreemptStop(gotui.KeyF8, func(ke gotui.KeyEvent) { c.toggleSelectedTranscriptBlock() }),
 		gotui.OnPreemptStop(gotui.KeyF2, func(ke gotui.KeyEvent) { c.recallHistory(-1) }),
 		gotui.OnPreemptStop(gotui.KeyF3, func(ke gotui.KeyEvent) { c.recallHistory(1) }),
-		gotui.OnPreemptStop(gotui.Rune('p').Ctrl(), func(ke gotui.KeyEvent) { c.recallHistory(-1) }),
-		gotui.OnPreemptStop(gotui.Rune('n').Ctrl(), func(ke gotui.KeyEvent) { c.recallHistory(1) }),
-		gotui.OnPreemptStop(gotui.KeyCtrlL, func(ke gotui.KeyEvent) { c.cycleModel(1) }),
+		gotui.OnPreemptStop(gotui.Rune('p').Ctrl(), func(ke gotui.KeyEvent) { c.cycleModel(1) }),
+		gotui.OnPreemptStop(cycleBackKey, func(ke gotui.KeyEvent) { c.cycleModel(-1) }),
+		gotui.OnPreemptStop(gotui.KeyCtrlL, func(ke gotui.KeyEvent) { c.openModelMenu() }),
+		gotui.OnPreemptStop(gotui.KeyCtrlT, func(ke gotui.KeyEvent) { c.toggleThinkingBlocks() }),
+		// gi-only, on keys Pi leaves free:
 		gotui.OnPreemptStop(gotui.Rune('l').Alt(), func(ke gotui.KeyEvent) { c.cycleModel(-1) }),
-		gotui.OnPreemptStop(gotui.KeyCtrlT, func(ke gotui.KeyEvent) { c.cycleThinking(1) }),
 		gotui.OnPreemptStop(gotui.KeyCtrlR, func(ke gotui.KeyEvent) { c.searchHistoryBackward() }),
 		gotui.OnPreemptStop(gotui.Rune('i').Alt(), func(gotui.KeyEvent) { c.openWorkspaceIndex() }),
 		gotui.OnPreemptStop(gotui.Rune('s').Alt(), func(ke gotui.KeyEvent) { c.openSessionMenu() }),
@@ -1927,6 +1929,14 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 		gotui.OnPreemptStop(gotui.KeyDown, func(ke gotui.KeyEvent) {
 			c.recallHistory(1)
 		}),
+	}
+	if !keys.windows { // Pi's app.suspend (none on Windows, where Ctrl+Z undoes)
+		bindings = append(bindings, gotui.OnPreemptStop(gotui.KeyCtrlZ, func(gotui.KeyEvent) { c.suspend() }))
+	}
+	if !keys.windowsKeys() { // Pi's tui.altScreen.previousPrompt/nextPrompt
+		bindings = append(bindings,
+			gotui.OnPreemptStop(gotui.KeyUp.Ctrl().Shift(), func(ke gotui.KeyEvent) { c.jumpTranscriptPrompt(-1) }),
+			gotui.OnPreemptStop(gotui.KeyDown.Ctrl().Shift(), func(ke gotui.KeyEvent) { c.jumpTranscriptPrompt(1) }))
 	}
 	if slash := c.slashMenuKeys(); slash != nil {
 		bindings = append(slash, bindings...)
@@ -2824,7 +2834,7 @@ func (c *chatTUI) submitWithIntent(text string, metadata map[string]any, intent 
 		}
 		origin := c.sessionID
 		c.draftApplying = true
-		c.input.SetText("")
+		c.input.Reset("")
 		c.draftApplying = false
 		c.handleCommand(text)
 		if c.sessionID == origin && !c.editorAskActive && c.input.Text() == "" {
@@ -2858,7 +2868,7 @@ func (c *chatTUI) submitWithIntent(text string, metadata map[string]any, intent 
 		}
 	}
 	historyPrompt := text
-	c.input.SetText("")
+	c.input.Reset("")
 	if strings.HasPrefix(text, "/skill:") {
 		c.appendTranscript(c.skillCommandLines(text)...)
 		return
@@ -3366,36 +3376,6 @@ func (c *chatTUI) logoutLines(fields []string) []string {
 		return []string{fmt.Sprintf("logout: no stored credentials for %q", provider)}
 	}
 	return []string{fmt.Sprintf("logout: removed credentials for %s", provider)}
-}
-
-// hotkeyLines is the PiSwift-style `/hotkeys` reference, grouped by purpose.
-func (c *chatTUI) hotkeyLines() []string {
-	if c.regularMode {
-		return []string{"hotkeys · regular mode", "Terminal wheel/selection/copy owns printed history; Home/End edit the draft", "Enter send · Shift+Enter newline · Alt-S sessions · Alt-M models · Alt-C compact · Alt-I index", "Printed output is immutable; use -tui-mode fullscreen for in-app paging and tool toggles"}
-	}
-	return []string{
-		"hotkeys",
-		"editor:",
-		"  Enter send · Shift+Enter newline · Alt+Enter queue · Alt+Up restore queued",
-		"  Tab path complete · @path file ref · Ctrl+R history search",
-		"  Ctrl+Home/End or Ctrl+A/E editor line start/end",
-		"  Alt+Left/Right word move · Ctrl+W delete word · Ctrl+U/K delete line · Ctrl+Z undo · Ctrl+Y yank",
-		"runtime:",
-		"  Ctrl+L/Alt+L cycle model · Ctrl+T/Alt+T cycle thinking",
-		"  /model selector · /sessions selector · /thinking level",
-		"  Alt+I workspace index · ←/→ scope · ↑/↓ action · Enter run · Esc close",
-		"transcript:",
-		"  Ctrl+O expand/collapse tool output · F6/F7 select block · F8 expand/collapse · click toggle",
-		"  PgUp/PgDn transcript page · Home/End top/bottom (also while editing) · mouse wheel",
-		"  Ctrl+Shift+F rendered search · Enter/Shift+Enter next/previous · Esc restores editor",
-		"  Ctrl+Shift+Up/Down jump to previous/next user prompt",
-		"  Drag select · hold edges to scroll · release/Ctrl+C/X copy (clipboard setting) · Esc clear",
-		"session:",
-		"  Esc blur input · Tab focus input · F2/F3 (or Ctrl+P/Ctrl+N) history",
-		"  Esc interrupt · Ctrl+C quit · Ctrl+D exit (empty input)",
-		"shell:",
-		"  !cmd ask model to run · !!cmd run locally",
-	}
 }
 
 func (c *chatTUI) completeInputPath(text string, cursor int) (string, int, bool) {
@@ -4229,7 +4209,7 @@ func (c *chatTUI) settingsLines() []string {
 		fmt.Sprintf("- scrollback_limit: %d", c.currentScrollbackLimit()),
 		fmt.Sprintf("- clipboard_mode: %s", clipboardMode),
 		fmt.Sprintf("- history_limit: %d", c.currentHistoryLimit()),
-		"- shortcuts: Ctrl+L/Alt+L model cycle, Ctrl+T/Alt+T thinking cycle, Ctrl+R history search, Tab path completion, @path completion, F6/F7 transcript block select, F8 expand/collapse",
+		"- shortcuts: /hotkeys",
 		"settings: session",
 		fmt.Sprintf("- session_id: %s", c.sessionID),
 		fmt.Sprintf("- running: %v", c.running),
@@ -5522,6 +5502,10 @@ func (c *chatTUI) renderTranscriptBlockContent(block transcriptRenderableBlock) 
 		}
 		if len(body) == 0 {
 			container.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText(fmt.Sprintf("%s Thinking...", brailleSpinnerFrame(time.Now()))), gotui.WithTextStyle(block.BodyStyle)))
+			return container
+		}
+		if c.cfg.HideThinkingBlock { // Pi's hideThinkingBlock label
+			container.AddChild(gotui.New(gotui.WithWidthPercent(100), gotui.WithText("Thinking..."), gotui.WithTextStyle(block.BodyStyle.Italic())))
 			return container
 		}
 		for _, line := range body {

@@ -16,7 +16,9 @@ func (r *sessionRunner) projectContextSnapshot(ctx context.Context, sessionID st
 		messages = append(messages, goai.UserMessage(compaction.SummaryPrefix+snapshot.Summary+compaction.SummarySuffix))
 	}
 	for _, m := range snapshot.Messages {
-		if m.Role == "user" {
+		if kind, _ := m.Payload["kind"].(string); m.Role == "user" && kind == BranchSummaryKind {
+			messages = append(messages, branchSummaryContext(m.Content))
+		} else if m.Role == "user" {
 			messages = append(messages, r.userMessageWithProviderSafeMedia(ctx, sessionID, m.Content, m.Payload))
 		} else {
 			messages = append(messages, goai.Message{Role: goai.RoleAssistant, Content: []goai.ContentBlock{{Type: "text", Text: m.Content}}})
@@ -92,23 +94,29 @@ func (r *sessionRunner) compactionSummarizer(turnID, model string) compaction.Su
 		if rec, err := r.store.GetTurn(ctx, turnID); err == nil {
 			thinking, _ = rec.Metadata["selected_thinking_level"].(string)
 		}
-		if thinking == "off" {
-			thinking = ""
-		}
-		convCtx := &goai.Context{SystemPrompt: req.SystemPrompt, Messages: []goai.Message{goai.UserMessage(req.Prompt)}}
-		result, err := streamWithToolsWithHooks(ctx, model, convCtx, nil, &inference.StreamHooks{Thinking: thinking, MaxTokens: req.MaxTokens, CacheRetention: goai.CacheRetentionNone})
-		if err != nil {
-			return compaction.SummaryResponse{}, err
-		}
-		resp := compaction.SummaryResponse{Text: result.Text, Usage: result.Usage}
-		if result.Message != nil {
-			resp.StopReason, resp.ErrorMessage = result.Message.StopReason, result.Message.ErrorMessage
-			for _, b := range result.Message.Content {
-				if b.Type == "toolCall" {
-					resp.ToolCall = true
-				}
+		return summarizeWith(ctx, model, thinking, req)
+	}
+}
+
+// summarizeWith asks model for a summary: no tools, the given thinking
+// level, a capped response and no cache writes.
+func summarizeWith(ctx context.Context, model, thinking string, req compaction.SummaryRequest) (compaction.SummaryResponse, error) {
+	if thinking == "off" {
+		thinking = ""
+	}
+	convCtx := &goai.Context{SystemPrompt: req.SystemPrompt, Messages: []goai.Message{goai.UserMessage(req.Prompt)}}
+	result, err := streamWithToolsWithHooks(ctx, model, convCtx, nil, &inference.StreamHooks{Thinking: thinking, MaxTokens: req.MaxTokens, CacheRetention: goai.CacheRetentionNone})
+	if err != nil {
+		return compaction.SummaryResponse{}, err
+	}
+	resp := compaction.SummaryResponse{Text: result.Text, Usage: result.Usage}
+	if result.Message != nil {
+		resp.StopReason, resp.ErrorMessage = result.Message.StopReason, result.Message.ErrorMessage
+		for _, b := range result.Message.Content {
+			if b.Type == "toolCall" {
+				resp.ToolCall = true
 			}
 		}
-		return resp, nil
 	}
+	return resp, nil
 }

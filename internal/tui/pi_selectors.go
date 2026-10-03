@@ -299,6 +299,14 @@ func (c *chatTUI) piMenuRows(width int) (spanRows, bool) {
 		if c.settingsList != nil {
 			return c.piSettingsRows(width), true
 		}
+	case "tree":
+		if c.treeSelector != nil {
+			return c.treeSelector.list.selectorRows(width), true
+		}
+	case "editor-dialog":
+		if c.editorDialog != nil {
+			return c.editorDialog.rows(width), true
+		}
 	}
 	return nil, false
 }

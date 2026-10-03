@@ -16,8 +16,7 @@ Feature: TUI session and agent workflows
     When I type "/agents" and press Enter
     Then the screen should contain "@agent1"
     When I type "/tree" and press Enter
-    Then the screen should contain "tree: sessions:"
-    And the screen should contain "@agent1"
+    Then the screen should contain "No entries in session"
     When I type "/switch @agent" and press Enter
     Then the screen should contain "switched to @agent"
     And the screen should contain "@agent"

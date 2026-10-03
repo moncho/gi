@@ -288,3 +288,22 @@ func TestLoadModelCatalogURLFromUserSettingsOnly(t *testing.T) {
 		t.Fatalf("user setting: %q", got)
 	}
 }
+
+// Pi's /tree settings, treeFilterMode and branchSummary: project settings
+// over global ones, field by field.
+func TestLoadTreeSettings(t *testing.T) {
+	agent := t.TempDir()
+	t.Setenv("PI_CODING_AGENT_DIR", agent)
+	if err := os.WriteFile(filepath.Join(agent, "settings.json"), []byte(`{"treeFilterMode":"user-only","branchSummary":{"reserveTokens":9000,"skipPrompt":true}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if cfg := Load(t.TempDir()); cfg.TreeFilterMode != "user-only" || cfg.BranchSummaryReserveTokens != 9000 || !cfg.BranchSummarySkipPrompt {
+		t.Fatalf("global: %q %d %v", cfg.TreeFilterMode, cfg.BranchSummaryReserveTokens, cfg.BranchSummarySkipPrompt)
+	}
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, ".pi"), 0o755)
+	os.WriteFile(filepath.Join(root, ".pi", "settings.json"), []byte(`{"treeFilterMode":"all","branchSummary":{"skipPrompt":false}}`), 0o644)
+	if cfg := Load(root); cfg.TreeFilterMode != "all" || cfg.BranchSummaryReserveTokens != 9000 || cfg.BranchSummarySkipPrompt {
+		t.Fatalf("project: %q %d %v", cfg.TreeFilterMode, cfg.BranchSummaryReserveTokens, cfg.BranchSummarySkipPrompt)
+	}
+}

@@ -63,6 +63,8 @@ func (c *chatTUI) editorStatus(now time.Time) (frame, message string, spinner, t
 	switch {
 	case c.compaction.active:
 		return brailleSpinnerFrame(now), "Compacting context... (Esc to cancel)", piFg(piAccent), piFg(piMuted), true
+	case c.branchSummaryCancel != nil:
+		return brailleSpinnerFrame(now), "Summarizing branch... (Esc to cancel)", piFg(piAccent), piFg(piMuted), true
 	case c.running:
 		return brailleSpinnerFrame(now), piWorkingMessage, border, border, true
 	}

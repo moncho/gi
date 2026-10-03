@@ -314,6 +314,9 @@ type chatTUI struct {
 	authSelector                *authSelectorState // Pi's /login and /logout provider selector ("auth-selector")
 	loginDialog                 *loginDialogState  // Pi's login dialog ("login-dialog")
 	settingsList                *settingsListState // Pi's /settings ("settings")
+	treeSelector                *treeSelector      // Pi's /tree ("tree")
+	editorDialog                *editorDialog      // Pi's ctx.ui.editor ("editor-dialog")
+	branchSummaryCancel         context.CancelFunc // set while /tree summarizes a branch
 	lastCtrlC                   time.Time          // Pi's app.clear: a second press within 500ms exits
 	modelMenuSession            sessionScope
 	modelMenuAltScreen          bool
@@ -705,7 +708,7 @@ func (c *chatTUI) Watchers() []gotui.Watcher {
 		if ticks%2 == 0 {
 			c.saveDurableDraft()
 		}
-		if (c.running || c.compaction.active || c.hasRunningTranscriptBlock()) && c.app != nil {
+		if (c.running || c.compaction.active || c.branchSummaryCancel != nil || c.hasRunningTranscriptBlock()) && c.app != nil {
 			c.app.MarkDirty()
 		}
 	}))
@@ -1826,6 +1829,12 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "settings" && c.settingsList != nil {
 		return c.settingsKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "tree" && c.treeSelector != nil {
+		return treeSelectorKeys(c.treeSelector, c.markDirty)
+	}
+	if c.modelMenuOpen && c.modelMenuKind == "editor-dialog" && c.editorDialog != nil {
+		return c.editorDialogKeys()
+	}
 	if c.modelMenuOpen {
 		if c.modelMenuKind == "thinking" {
 			return gotui.KeyMap{
@@ -2386,7 +2395,7 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
-	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" || c.modelMenuKind == "scoped-models" || c.modelMenuKind == "auth-selector" || c.modelMenuKind == "login-dialog" || c.modelMenuKind == "settings" {
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" || c.modelMenuKind == "scoped-models" || c.modelMenuKind == "auth-selector" || c.modelMenuKind == "login-dialog" || c.modelMenuKind == "settings" || c.modelMenuKind == "tree" || c.modelMenuKind == "editor-dialog" {
 		width := c.currentContentWidth()
 		if c.app != nil {
 			width, _ = c.app.Size()
@@ -3115,7 +3124,7 @@ func (c *chatTUI) handleCommand(text string) {
 	case "/plugins", "/extensions":
 		c.transcript = append(c.transcript, c.pluginLines()...)
 	case "/tree":
-		c.transcript = append(c.transcript, c.treeLines()...)
+		c.openTreeSelector("")
 	case "/fork", "/spawn":
 		if fields[0] == "/fork" && len(fields) == 1 {
 			c.openForkSelector() // Pi: fork from an earlier user message
@@ -3244,7 +3253,7 @@ func (c *chatTUI) extensionCommandLines(text string, fields []string) ([]string,
 var piCommands = []struct{ name, hint string }{
 	{"/settings", "Open settings menu"},
 	{"/model <provider/model>", "Select model (opens selector UI)"},
-	{"/tree", "Show session tree"},
+	{"/tree", "Navigate session tree (switch branches)"},
 	{"/thinking <level>", "Set thinking level"},
 	{"/scoped-models", "Enable/disable models for Ctrl+P cycling"},
 	{"/export [path]", "Export session (HTML default, or specify path: .html/.jsonl)"},
@@ -3547,33 +3556,38 @@ func (c *chatTUI) copyLastAssistantLines(args ...string) []string {
 			continue
 		}
 		// Copy the persisted source, not a rendered or trimmed projection.
-		content := messages[i].Content
-		mode, persist, usage := c.copyModeFromArgs(args)
-		if usage != "" {
-			return []string{usage}
-		}
-		if persist {
-			if err := config.PersistClipboardMode(c.cfg.WorkspaceRoot, mode); err != nil {
-				return []string{fmt.Sprintf("warn: failed to persist clipboard mode: %v", err)}
-			}
-			c.cfg.TUIClipboardMode = mode
-		}
-		if mode == "osc52" {
-			if err := c.writeOSC52(content); err != nil {
-				return c.copyFallbackLines(content, fmt.Sprintf("OSC 52 failed: %v", err))
-			}
-			return []string{fmt.Sprintf("copy: sent %d bytes using OSC 52", len(content))}
-		}
-		if mode == "native" || mode == "auto" {
-			if err := c.copyNative(content); err == nil {
-				return []string{fmt.Sprintf("copy: sent %d bytes using native clipboard helper", len(content))}
-			} else if mode == "native" {
-				return c.copyFallbackLines(content, fmt.Sprintf("native clipboard failed: %v", err))
-			}
-		}
-		return c.copyFallbackLines(content, "clipboard unavailable")
+		return c.copyContentLines(messages[i].Content, "last assistant message", args...)
 	}
 	return []string{"copy: no assistant message found"}
+}
+
+// copyContentLines copies content (what it is, for the fallback) with the
+// configured (or given) clipboard mode and reports how.
+func (c *chatTUI) copyContentLines(content, what string, args ...string) []string {
+	mode, persist, usage := c.copyModeFromArgs(args)
+	if usage != "" {
+		return []string{usage}
+	}
+	if persist {
+		if err := config.PersistClipboardMode(c.cfg.WorkspaceRoot, mode); err != nil {
+			return []string{fmt.Sprintf("warn: failed to persist clipboard mode: %v", err)}
+		}
+		c.cfg.TUIClipboardMode = mode
+	}
+	if mode == "osc52" {
+		if err := c.writeOSC52(content); err != nil {
+			return c.copyFallbackLines(content, what, fmt.Sprintf("OSC 52 failed: %v", err))
+		}
+		return []string{fmt.Sprintf("copy: sent %d bytes using OSC 52", len(content))}
+	}
+	if mode == "native" || mode == "auto" {
+		if err := c.copyNative(content); err == nil {
+			return []string{fmt.Sprintf("copy: sent %d bytes using native clipboard helper", len(content))}
+		} else if mode == "native" {
+			return c.copyFallbackLines(content, what, fmt.Sprintf("native clipboard failed: %v", err))
+		}
+	}
+	return c.copyFallbackLines(content, what, "clipboard unavailable")
 }
 
 func (c *chatTUI) copyModeFromArgs(args []string) (mode string, persist bool, usage string) {
@@ -3611,8 +3625,8 @@ func (c *chatTUI) copyModeFromArgs(args []string) (mode string, persist bool, us
 	}
 }
 
-func (c *chatTUI) copyFallbackLines(content, reason string) []string {
-	lines := []string{fmt.Sprintf("copy: %s; last assistant message follows (%d chars)", reason, len(content))}
+func (c *chatTUI) copyFallbackLines(content, what, reason string) []string {
+	lines := []string{fmt.Sprintf("copy: %s; %s follows (%d chars)", reason, what, len(content))}
 	lines = append(lines, prefixMultiline("copy", content)...)
 	return lines
 }
@@ -5634,6 +5648,9 @@ func (c *chatTUI) renderMessageLines(m store.Message, width int) []string {
 	if kind == "compaction" {
 		return c.renderCompactionMessageLines(m)
 	}
+	if kind == turn.BranchSummaryKind {
+		return c.renderBranchSummaryLines(m)
+	}
 	prefix := "you: "
 	switch m.Role {
 	case "assistant":
@@ -5684,6 +5701,16 @@ func (c *chatTUI) renderToolResultWithArguments(m store.Message, arguments any) 
 func (c *chatTUI) renderCompactionMessageLines(m store.Message) []string {
 	tokens := toInt(m.Payload["tokens_before"], 0)
 	return []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "msg:" + m.ID, Kind: "compact", Title: "Context compacted", Status: "ok", StartedAt: strings.TrimSpace(m.CreatedAt), EndedAt: strings.TrimSpace(m.CreatedAt)}), fmt.Sprintf("│ summary=%s", truncate(m.Content, 160)), fmt.Sprintf("│ tokens_before=%d", tokens)}
+}
+
+// renderBranchSummaryLines shows a /tree branch summary as a block (Pi's
+// BranchSummaryMessageComponent: collapsed until expanded).
+func (c *chatTUI) renderBranchSummaryLines(m store.Message) []string {
+	lines := []string{encodeTranscriptBlockMarker(transcriptBlockMeta{Key: "msg:" + m.ID, Kind: "compact", Title: "Branch summary", Status: "ok", StartedAt: strings.TrimSpace(m.CreatedAt), EndedAt: strings.TrimSpace(m.CreatedAt)})}
+	for _, line := range strings.Split(m.Content, "\n") {
+		lines = append(lines, "│ "+line)
+	}
+	return lines
 }
 
 func (c *chatTUI) renderMessageLine(m store.Message) string {

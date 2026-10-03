@@ -232,43 +232,6 @@ func TestListAgentLinesReportsAgentIndexErrors(t *testing.T) {
 	}
 }
 
-func TestTreeLinesReportsAgentIndexErrors(t *testing.T) {
-	s, err := store.Open("file::memory:?cache=shared")
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	ctx := context.Background()
-	if _, err := s.CreateSession(ctx, "session_error_tree", "@agent", map[string]any{"model": "bootstrap", "status": "idle"}); err != nil {
-		t.Fatalf("create session: %v", err)
-	}
-	if err := s.Close(); err != nil {
-		t.Fatalf("close store: %v", err)
-	}
-	c := &chatTUI{store: s}
-	lines := c.treeLines()
-	if len(lines) == 0 || !strings.HasPrefix(lines[0], "error:") {
-		t.Fatalf("expected treeLines to surface error line, got %#v", lines)
-	}
-}
-
-func TestTreeLinesShowsParentChildSessions(t *testing.T) {
-	s, err := store.Open("file::memory:?cache=shared")
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	defer s.Close()
-	ctx := context.Background()
-	root, _ := s.CreateSession(ctx, "session_root", "@agent", map[string]any{"model": "bootstrap", "status": "idle"})
-	child, _ := s.CloneSession(ctx, root.ID, "session_child", "@agent1", "agent1")
-	c := &chatTUI{store: s, sessionID: child.ID}
-	lines := strings.Join(c.treeLines(), "\n")
-	for _, want := range []string{"tree: sessions:", "@gi session_root", "@agent · idle", "* @agent1 session_child", "@agent1 · idle", "messages=0 turns=0"} {
-		if !strings.Contains(lines, want) {
-			t.Fatalf("tree missing %q:\n%s", want, lines)
-		}
-	}
-}
-
 func TestResolveSessionRefPropagatesLookupErrors(t *testing.T) {
 	s, err := store.Open("file::memory:?cache=shared")
 	if err != nil {

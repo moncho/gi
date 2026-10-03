@@ -427,6 +427,10 @@ func (c *chatTUI) handleTranscriptEscape() bool {
 	if c.handleCompactionEscape() {
 		return true
 	}
+	if c.branchSummaryCancel != nil { // Pi: Escape aborts the branch summary
+		c.branchSummaryCancel()
+		return true
+	}
 	if c.engine == nil || c.store == nil || c.sessionID == "" {
 		return false
 	}

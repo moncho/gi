@@ -577,6 +577,8 @@ func (s *Store) CloneSessionBefore(ctx context.Context, sourceSessionID, newID, 
 	state["queue_count"] = 0
 	delete(state, "archived_at")
 	delete(state, "pinned")
+	delete(state, treeParentKey) // a copy starts its own /tree
+	delete(state, treeLabelsKey)
 	logicalChatID := newID
 	alloc := session.AllocateDefaultSession(newAgentID, "gi", "default", logicalChatID)
 	messages, err := s.ListMessages(ctx, sourceSessionID)

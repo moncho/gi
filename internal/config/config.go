@@ -50,6 +50,13 @@ type RuntimeConfig struct {
 	// QuietStartup is Pi's quietStartup: "" (false: header and loaded
 	// resources), "true" (neither) or "header" (header only).
 	QuietStartup string `json:"quiet_startup,omitempty"`
+	// TreeFilterMode is Pi's treeFilterMode: /tree's initial filter
+	// (default, no-tools, user-only, labeled-only or all).
+	TreeFilterMode string `json:"tree_filter_mode,omitempty"`
+	// BranchSummaryReserveTokens and BranchSummarySkipPrompt are Pi's
+	// branchSummary.reserveTokens and branchSummary.skipPrompt (/tree).
+	BranchSummaryReserveTokens int  `json:"branch_summary_reserve_tokens,omitempty"`
+	BranchSummarySkipPrompt    bool `json:"branch_summary_skip_prompt,omitempty"`
 	// DefaultToolsLayers are Pi's defaultTools lists, user then project.
 	DefaultToolsLayers [][]string `json:"default_tools_layers,omitempty"`
 	// ExtensionsLayers are Pi's extensions lists, user then project.
@@ -145,15 +152,19 @@ type piSettings struct {
 	// ModelCatalogURL is gi's modelCatalogUrl (user settings only).
 	ModelCatalogURL string `json:"modelCatalogUrl"`
 	// QuietStartup is Pi's quietStartup: false, true or "header".
-	QuietStartup         json.RawMessage `json:"quietStartup"`
-	DefaultProvider      string          `json:"defaultProvider"`
-	DefaultModel         string          `json:"defaultModel"`
-	DefaultThinkingLevel string          `json:"defaultThinkingLevel"`
-	EnabledModels        []string        `json:"enabledModels"`
-	MaxIterations        int             `json:"maxIterations"`
-	TUIScrollbackLimit   int             `json:"tuiScrollbackLimit"`
-	TUIHistoryLimit      int             `json:"tuiHistoryLimit"`
-	TUIClipboardMode     string          `json:"tuiClipboardMode"`
+	QuietStartup json.RawMessage `json:"quietStartup"`
+	// TreeFilterMode is Pi's treeFilterMode: /tree's initial filter.
+	// BranchSummary is Pi's branchSummary: reserveTokens and skipPrompt.
+	BranchSummary        *piBranchSummary `json:"branchSummary"`
+	TreeFilterMode       string           `json:"treeFilterMode"`
+	DefaultProvider      string           `json:"defaultProvider"`
+	DefaultModel         string           `json:"defaultModel"`
+	DefaultThinkingLevel string           `json:"defaultThinkingLevel"`
+	EnabledModels        []string         `json:"enabledModels"`
+	MaxIterations        int              `json:"maxIterations"`
+	TUIScrollbackLimit   int              `json:"tuiScrollbackLimit"`
+	TUIHistoryLimit      int              `json:"tuiHistoryLimit"`
+	TUIClipboardMode     string           `json:"tuiClipboardMode"`
 	// Pi's fullscreenWheelScrollLines: a number of lines, or "auto".
 	FullscreenWheelScrollLines any                    `json:"fullscreenWheelScrollLines"`
 	Compaction                 CompactionSettings     `json:"compaction"`
@@ -168,6 +179,24 @@ type piSettings struct {
 	Routing                    ModelRoutingConfig     `json:"routing"`
 }
 
+type piBranchSummary struct {
+	ReserveTokens *int  `json:"reserveTokens"`
+	SkipPrompt    *bool `json:"skipPrompt"`
+}
+
+// apply sets the branch summary settings it has (project over global).
+func (b *piBranchSummary) apply(cfg *RuntimeConfig) {
+	if b == nil {
+		return
+	}
+	if b.ReserveTokens != nil {
+		cfg.BranchSummaryReserveTokens = *b.ReserveTokens
+	}
+	if b.SkipPrompt != nil {
+		cfg.BranchSummarySkipPrompt = *b.SkipPrompt
+	}
+}
+
 func Load(workspaceRoot string) RuntimeConfig {
 	workspaceRoot = strings.TrimSpace(workspaceRoot)
 	if workspaceRoot == "" {
@@ -177,6 +206,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 	var projectTools, projectExtensions []string
 	var projectCodemode *CodemodeSettings
 	var projectHideThinking *bool
+	var projectBranchSummary *piBranchSummary
 	var pc piclawConfig
 	if err := readJSON(filepath.Join(workspaceRoot, ".piclaw", "config.json"), &pc); err == nil {
 		cfg.AssistantName = pc.Assistant.AssistantName
@@ -212,10 +242,13 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.TUIMode = strings.TrimSpace(ps.TUIMode)
 		cfg.ExternalEditor = strings.TrimSpace(ps.ExternalEditor)
 		cfg.QuietStartup = parseQuietStartup(ps.QuietStartup)
+		cfg.TreeFilterMode = strings.TrimSpace(ps.TreeFilterMode)
 		projectTools, projectExtensions, projectCodemode = ps.DefaultTools, ps.Extensions, ps.Codemode
 		projectHideThinking = ps.HideThinkingBlock
+		projectBranchSummary = ps.BranchSummary
 	}
 	applyGlobalPiSettings(&cfg)
+	projectBranchSummary.apply(&cfg)
 	if projectHideThinking != nil {
 		cfg.HideThinkingBlock = *projectHideThinking
 	}
@@ -346,6 +379,11 @@ func PersistQuietStartup(workspaceRoot, value string) error {
 	return persistPiFields(workspaceRoot, map[string]any{"quietStartup": v})
 }
 
+// PersistTreeFilterMode saves Pi's treeFilterMode.
+func PersistTreeFilterMode(workspaceRoot, mode string) error {
+	return persistPiFields(workspaceRoot, map[string]any{"treeFilterMode": mode})
+}
+
 // PersistTUIMode saves Pi's tuiMode.
 func PersistTUIMode(workspaceRoot, mode string) error {
 	return persistPiFields(workspaceRoot, map[string]any{"tuiMode": mode})
@@ -452,6 +490,10 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	if cfg.TUIWheelScrollLines == 0 {
 		cfg.TUIWheelScrollLines = wheelScrollLines(global.FullscreenWheelScrollLines)
 	}
+	if cfg.TreeFilterMode == "" {
+		cfg.TreeFilterMode = strings.TrimSpace(global.TreeFilterMode)
+	}
+	global.BranchSummary.apply(cfg)
 	if cfg.Theme == "" {
 		cfg.Theme = strings.TrimSpace(global.Theme)
 	}

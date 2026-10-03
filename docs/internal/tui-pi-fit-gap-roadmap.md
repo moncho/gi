@@ -24,9 +24,9 @@ gi's former `/fork @agentN` peer session is now `/spawn [@agentN]` (the old
 form still works).
 
 Pi built-ins not in gi yet (omitted, not approximated): `/import`, `/share`,
-`/bug`, `/changelog`, `/trust`. Pi built-ins whose gi behaviour still differs:
-`/tree`, `/settings`, `/scoped-models` and `/login` (Pi opens interactive UIs;
-gi prints or uses subcommands).
+`/bug`, `/changelog`, `/trust`. `/tree`, `/settings`, `/scoped-models` and
+`/login` open Pi's interactive UIs; `/tree` navigates gi's branch sessions
+(docs/internal/tui-tree.md).
 
 Implemented commands:
 
@@ -54,7 +54,7 @@ Implemented commands:
 - `/cancel`
 - `/agents`
 - `/plugins` / `/extensions`
-- `/tree`
+- `/tree` (Pi's session tree navigator)
 - `/fork` (Pi selector) · `/spawn [@agentN]` (peer session)
 - `/export [path]`
 - `/switch @agent|session_id`
@@ -103,7 +103,7 @@ Implemented:
 - session/agent context summary through `/where` and persistent context area;
 - detailed `/session` command with queue/steering counts and active turn state;
 - `/new`, `/name`, `/resume`, `/clone`, `/copy`, and `/reload` command/session workflow affordances;
-- session tree/debug output through `/tree`, with compact narrow-terminal formatting;
+- Pi's session tree navigator through `/tree` (branches, labels, branch summaries);
 - peer session creation via `/fork`;
 - session switching via `/switch`;
 - peer message sending via `/send`;
@@ -128,7 +128,7 @@ Implemented:
 - compact `/help` with detailed discovery delegated to `/commands`, `/session`, `/where`, and `/settings`;
 - textual `/commands [query]` palette plus searchable model/session/thinking selectors;
 - grouped `/settings` with runtime, model, editor, session, discovery, compaction, and peering sections;
-- denser `/tree`, `/resume`, `/settings`, and model-selection output for narrow terminals;
+- denser `/resume`, `/settings`, and model-selection output for narrow terminals;
 - editor bindings for word movement, word deletion, line deletion, minimal undo/yank, `!`/`!!` shell shortcuts, Tab path completion, and textual `@path` completion;
 - terminal-safe Markdown rendering for headings, lists, blockquotes, links, code blocks, and responsive table fallback;
 - folded multi-line tool results;

@@ -13,6 +13,7 @@ descriptions, values and order:
 - Auto-compact
 - Hide thinking
 - Quiet startup
+- Tree filter mode (the filter `/tree` opens with; docs/internal/tui-tree.md)
 - TUI mode
 - Fullscreen wheel scrolling
 

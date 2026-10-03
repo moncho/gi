@@ -81,14 +81,14 @@ func TestSettingsMenuAppliesAndSaves(t *testing.T) {
 			pressMenuKey(t, c.KeyMap(), settingsKeyEvents[n])
 		}
 	}
-	press("enter", "down", "enter", "down", "enter", "enter", "down", "down", "enter")
-	if c.engine.CompactionPolicy().Enabled || !c.cfg.HideThinkingBlock || c.cfg.QuietStartup != "header" || c.cfg.TUIWheelScrollLines != 1 {
-		t.Fatalf("not applied: compact %v hide %v quiet %q wheel %d", c.engine.CompactionPolicy().Enabled, c.cfg.HideThinkingBlock, c.cfg.QuietStartup, c.cfg.TUIWheelScrollLines)
+	press("enter", "down", "enter", "down", "enter", "enter", "down", "enter", "down", "down", "enter")
+	if c.engine.CompactionPolicy().Enabled || !c.cfg.HideThinkingBlock || c.cfg.QuietStartup != "header" || c.cfg.TreeFilterMode != "no-tools" || c.cfg.TUIWheelScrollLines != 1 {
+		t.Fatalf("not applied: compact %v hide %v quiet %q tree %q wheel %d", c.engine.CompactionPolicy().Enabled, c.cfg.HideThinkingBlock, c.cfg.QuietStartup, c.cfg.TreeFilterMode, c.cfg.TUIWheelScrollLines)
 	}
 	raw, _ := os.ReadFile(filepath.Join(c.cfg.WorkspaceRoot, ".pi", "settings.json"))
 	var saved map[string]any
 	_ = json.Unmarshal(raw, &saved)
-	if saved["compaction"].(map[string]any)["enabled"] != false || saved["hideThinkingBlock"] != true || saved["quietStartup"] != "header" || saved["fullscreenWheelScrollLines"] != float64(1) {
+	if saved["compaction"].(map[string]any)["enabled"] != false || saved["hideThinkingBlock"] != true || saved["quietStartup"] != "header" || saved["treeFilterMode"] != "no-tools" || saved["fullscreenWheelScrollLines"] != float64(1) {
 		t.Fatalf("saved: %s", raw)
 	}
 	pressMenuKey(t, c.KeyMap(), gotui.KeyEvent{Key: gotui.KeyEscape})

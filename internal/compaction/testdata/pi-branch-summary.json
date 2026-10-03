@@ -1,0 +1,292 @@
+{
+ "entries": [
+  {
+   "type": "compaction",
+   "id": "k",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "summary": "Compacted: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+   "tokensBefore": 5000,
+   "firstKeptEntryId": "x"
+  },
+  {
+   "type": "branch_summary",
+   "id": "bs",
+   "parentId": "k",
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "fromId": "z",
+   "summary": "Earlier branch.\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\n</modified-files>",
+   "details": {
+    "readFiles": [
+     "README.md"
+    ],
+    "modifiedFiles": [
+     "docs/a.md"
+    ]
+   }
+  },
+  {
+   "type": "message",
+   "id": "e0.5707502680464821",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "message": {
+    "timestamp": 1,
+    "role": "user",
+    "content": [
+     {
+      "type": "text",
+      "text": "Fix the parser in src/parse.go"
+     }
+    ]
+   }
+  },
+  {
+   "type": "message",
+   "id": "e0.9470055134197021",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "message": {
+    "timestamp": 1,
+    "role": "assistant",
+    "content": [
+     {
+      "type": "thinking",
+      "thinking": "Look first."
+     },
+     {
+      "type": "text",
+      "text": "Reading it."
+     },
+     {
+      "type": "toolCall",
+      "id": "t1",
+      "name": "read",
+      "arguments": {
+       "path": "src/parse.go"
+      }
+     }
+    ],
+    "stopReason": "stop"
+   }
+  },
+  {
+   "type": "message",
+   "id": "e0.018057270062546316",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "message": {
+    "timestamp": 1,
+    "role": "toolResult",
+    "toolCallId": "t",
+    "toolName": "read",
+    "content": [
+     {
+      "type": "text",
+      "text": "package parse\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     }
+    ],
+    "isError": false
+   }
+  },
+  {
+   "type": "message",
+   "id": "e0.8466324902260217",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "message": {
+    "timestamp": 1,
+    "role": "assistant",
+    "content": [
+     {
+      "type": "toolCall",
+      "id": "t2",
+      "name": "edit",
+      "arguments": {
+       "edits": [
+        {
+         "newText": "a>b",
+         "oldText": "a<b"
+        }
+       ],
+       "path": "src/parse.go"
+      }
+     }
+    ],
+    "stopReason": "stop"
+   }
+  },
+  {
+   "type": "message",
+   "id": "e0.6599344644793534",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "message": {
+    "timestamp": 1,
+    "role": "toolResult",
+    "toolCallId": "t",
+    "toolName": "read",
+    "content": [
+     {
+      "type": "text",
+      "text": "ok"
+     }
+    ],
+    "isError": false
+   }
+  },
+  {
+   "type": "message",
+   "id": "e0.8647507746333915",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "message": {
+    "timestamp": 1,
+    "role": "assistant",
+    "content": [
+     {
+      "type": "text",
+      "text": "Done."
+     }
+    ],
+    "stopReason": "stop"
+   }
+  },
+  {
+   "type": "message",
+   "id": "e0.675080926047475",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "message": {
+    "timestamp": 1,
+    "role": "user",
+    "content": [
+     {
+      "type": "text",
+      "text": "Now write tests"
+     }
+    ]
+   }
+  },
+  {
+   "type": "message",
+   "id": "e0.5161241507124824",
+   "parentId": null,
+   "timestamp": "2026-10-03T21:12:00.000Z",
+   "message": {
+    "timestamp": 1,
+    "role": "assistant",
+    "content": [
+     {
+      "type": "toolCall",
+      "id": "t3",
+      "name": "write",
+      "arguments": {
+       "content": "package parse",
+       "path": "src/parse_test.go"
+      }
+     }
+    ],
+    "stopReason": "stop"
+   }
+  }
+ ],
+ "cases": [
+  {
+   "name": "all",
+   "contextWindow": 200000,
+   "maxTokens": 64000,
+   "reserveTokens": 16384,
+   "request": {
+    "system": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+    "prompt": "<conversation>\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nCompacted: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n</summary>\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nEarlier branch.\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\n</modified-files></summary>\n\n[User]: Fix the parser in src/parse.go\n\n[Assistant thinking]: Look first.\n\n[Assistant]: Reading it.\n\n[Assistant tool calls]: read(path=\"src/parse.go\")\n\n[Assistant tool calls]: edit(edits=[{\"newText\":\"a>b\",\"oldText\":\"a<b\"}], path=\"src/parse.go\")\n\n[Assistant]: Done.\n\n[User]: Now write tests\n\n[Assistant tool calls]: write(content=\"package parse\", path=\"src/parse_test.go\")\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+    "maxTokens": 4096
+   },
+   "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nSUMMARY\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\nsrc/parse.go\nsrc/parse_test.go\n</modified-files>"
+  },
+  {
+   "name": "focus",
+   "contextWindow": 200000,
+   "maxTokens": 2000,
+   "reserveTokens": 16384,
+   "customInstructions": "the test plan",
+   "request": {
+    "system": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+    "prompt": "<conversation>\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nCompacted: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n</summary>\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nEarlier branch.\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\n</modified-files></summary>\n\n[User]: Fix the parser in src/parse.go\n\n[Assistant thinking]: Look first.\n\n[Assistant]: Reading it.\n\n[Assistant tool calls]: read(path=\"src/parse.go\")\n\n[Assistant tool calls]: edit(edits=[{\"newText\":\"a>b\",\"oldText\":\"a<b\"}], path=\"src/parse.go\")\n\n[Assistant]: Done.\n\n[User]: Now write tests\n\n[Assistant tool calls]: write(content=\"package parse\", path=\"src/parse_test.go\")\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: the test plan",
+    "maxTokens": 2000
+   },
+   "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nSUMMARY\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\nsrc/parse.go\nsrc/parse_test.go\n</modified-files>"
+  },
+  {
+   "name": "replace",
+   "contextWindow": 200000,
+   "maxTokens": 64000,
+   "reserveTokens": 16384,
+   "customInstructions": "Only list the files.",
+   "replaceInstructions": true,
+   "request": {
+    "system": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+    "prompt": "<conversation>\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nCompacted: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n</summary>\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nEarlier branch.\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\n</modified-files></summary>\n\n[User]: Fix the parser in src/parse.go\n\n[Assistant thinking]: Look first.\n\n[Assistant]: Reading it.\n\n[Assistant tool calls]: read(path=\"src/parse.go\")\n\n[Assistant tool calls]: edit(edits=[{\"newText\":\"a>b\",\"oldText\":\"a<b\"}], path=\"src/parse.go\")\n\n[Assistant]: Done.\n\n[User]: Now write tests\n\n[Assistant tool calls]: write(content=\"package parse\", path=\"src/parse_test.go\")\n</conversation>\n\nOnly list the files.",
+    "maxTokens": 4096
+   },
+   "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nSUMMARY\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\nsrc/parse.go\nsrc/parse_test.go\n</modified-files>"
+  },
+  {
+   "name": "keep-compaction",
+   "contextWindow": 200,
+   "maxTokens": 64000,
+   "reserveTokens": 100,
+   "request": {
+    "system": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+    "prompt": "<conversation>\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nCompacted: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n</summary>\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nEarlier branch.\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\n</modified-files></summary>\n\n[User]: Fix the parser in src/parse.go\n\n[Assistant thinking]: Look first.\n\n[Assistant]: Reading it.\n\n[Assistant tool calls]: read(path=\"src/parse.go\")\n\n[Assistant tool calls]: edit(edits=[{\"newText\":\"a>b\",\"oldText\":\"a<b\"}], path=\"src/parse.go\")\n\n[Assistant]: Done.\n\n[User]: Now write tests\n\n[Assistant tool calls]: write(content=\"package parse\", path=\"src/parse_test.go\")\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+    "maxTokens": 4096
+   },
+   "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nSUMMARY\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\nsrc/parse.go\nsrc/parse_test.go\n</modified-files>"
+  },
+  {
+   "name": "keep-branch-summary",
+   "contextWindow": 170,
+   "maxTokens": 64000,
+   "reserveTokens": 100,
+   "request": {
+    "system": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+    "prompt": "<conversation>\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nEarlier branch.\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\n</modified-files></summary>\n\n[User]: Fix the parser in src/parse.go\n\n[Assistant thinking]: Look first.\n\n[Assistant]: Reading it.\n\n[Assistant tool calls]: read(path=\"src/parse.go\")\n\n[Assistant tool calls]: edit(edits=[{\"newText\":\"a>b\",\"oldText\":\"a<b\"}], path=\"src/parse.go\")\n\n[Assistant]: Done.\n\n[User]: Now write tests\n\n[Assistant tool calls]: write(content=\"package parse\", path=\"src/parse_test.go\")\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+    "maxTokens": 4096
+   },
+   "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nSUMMARY\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\nsrc/parse.go\nsrc/parse_test.go\n</modified-files>"
+  },
+  {
+   "name": "drop-summaries",
+   "contextWindow": 160,
+   "maxTokens": 64000,
+   "reserveTokens": 100,
+   "request": {
+    "system": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+    "prompt": "<conversation>\n[User]: Fix the parser in src/parse.go\n\n[Assistant thinking]: Look first.\n\n[Assistant]: Reading it.\n\n[Assistant tool calls]: read(path=\"src/parse.go\")\n\n[Assistant tool calls]: edit(edits=[{\"newText\":\"a>b\",\"oldText\":\"a<b\"}], path=\"src/parse.go\")\n\n[Assistant]: Done.\n\n[User]: Now write tests\n\n[Assistant tool calls]: write(content=\"package parse\", path=\"src/parse_test.go\")\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+    "maxTokens": 4096
+   },
+   "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nSUMMARY\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\nsrc/parse.go\nsrc/parse_test.go\n</modified-files>"
+  },
+  {
+   "name": "nothing-fits",
+   "contextWindow": 110,
+   "maxTokens": 64000,
+   "reserveTokens": 100,
+   "request": null,
+   "summary": "No content to summarize"
+  },
+  {
+   "name": "unknown-window",
+   "contextWindow": 0,
+   "maxTokens": 0,
+   "reserveTokens": 16384,
+   "request": {
+    "system": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+    "prompt": "<conversation>\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\nCompacted: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n</summary>\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nEarlier branch.\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\n</modified-files></summary>\n\n[User]: Fix the parser in src/parse.go\n\n[Assistant thinking]: Look first.\n\n[Assistant]: Reading it.\n\n[Assistant tool calls]: read(path=\"src/parse.go\")\n\n[Assistant tool calls]: edit(edits=[{\"newText\":\"a>b\",\"oldText\":\"a<b\"}], path=\"src/parse.go\")\n\n[Assistant]: Done.\n\n[User]: Now write tests\n\n[Assistant tool calls]: write(content=\"package parse\", path=\"src/parse_test.go\")\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.",
+    "maxTokens": 4096
+   },
+   "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nSUMMARY\n\n<read-files>\nREADME.md\n</read-files>\n\n<modified-files>\ndocs/a.md\nsrc/parse.go\nsrc/parse_test.go\n</modified-files>"
+  }
+ ],
+ "empty": "No content to summarize"
+}

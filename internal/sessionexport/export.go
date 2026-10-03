@@ -40,6 +40,7 @@ type item struct {
 	model     string
 	createdAt time.Time
 	sourceID  string
+	source    store.Message
 }
 
 // Load reads a session's messages (and tool.started previews for sessions
@@ -75,7 +76,7 @@ func load(ctx context.Context, s *store.Store, sessionID string) ([]item, error)
 
 	var items []item
 	for i, m := range messages {
-		it := item{text: m.Content, createdAt: parseTime(m.CreatedAt), sourceID: m.ID}
+		it := item{text: m.Content, createdAt: parseTime(m.CreatedAt), sourceID: m.ID, source: m}
 		it.model, _ = m.Payload["model"].(string)
 		switch m.Role {
 		case "user":
@@ -224,37 +225,8 @@ func JSONL(ctx context.Context, s *store.Store, sessionID, cwd string) ([]byte, 
 		}
 	}
 	for _, it := range items {
-		ms := it.createdAt.UnixMilli()
-		var e Entry
-		switch it.role {
-		case "user":
-			e = Entry{"type": "message", "message": map[string]any{"role": "user", "content": it.text, "timestamp": ms}}
-		case "assistant":
-			content := []any{}
-			if strings.TrimSpace(it.text) != "" {
-				content = append(content, map[string]any{"type": "text", "text": it.text})
-			}
-			for _, c := range it.calls {
-				content = append(content, map[string]any{"type": "toolCall", "id": c.ID, "name": c.Name, "arguments": c.Arguments})
-			}
-			provider, model := splitModel(it.model)
-			stop := "stop"
-			if len(it.calls) > 0 {
-				stop = "toolUse"
-			}
-			msg := map[string]any{"role": "assistant", "content": content, "provider": provider, "model": model, "stopReason": stop, "timestamp": ms,
-				"usage": map[string]any{"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0, "cost": map[string]any{"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}}}
-			if m := goai.GetModel(goai.Provider(provider), model); m != nil {
-				msg["api"] = string(m.Api)
-			}
-			e = Entry{"type": "message", "message": msg}
-		case "toolResult":
-			e = Entry{"type": "message", "message": map[string]any{"role": "toolResult", "toolCallId": it.callID, "toolName": it.toolName,
-				"content": []any{map[string]any{"type": "text", "text": it.text}}, "isError": it.isError, "timestamp": ms}}
-		case "system":
-			// gi notices are not model context: a Pi custom entry, not a message.
-			e = Entry{"type": "custom", "customType": "gi.system", "data": map[string]any{"text": it.text}}
-		default:
+		e := it.entry()
+		if e == nil {
 			continue
 		}
 		if err := emit(e, it.sourceID, it.createdAt); err != nil {
@@ -262,6 +234,65 @@ func JSONL(ctx context.Context, s *store.Store, sessionID, cwd string) ([]byte, 
 		}
 	}
 	return buf.Bytes(), nil
+}
+
+// entry is the item as a Pi session entry, without id, parentId and
+// timestamp; nil for items Pi has no entry for.
+func (it item) entry() Entry {
+	ms := it.createdAt.UnixMilli()
+	var e Entry
+	switch it.role {
+	case "user":
+		e = Entry{"type": "message", "message": map[string]any{"role": "user", "content": it.text, "timestamp": ms}}
+	case "assistant":
+		content := []any{}
+		if strings.TrimSpace(it.text) != "" {
+			content = append(content, map[string]any{"type": "text", "text": it.text})
+		}
+		for _, c := range it.calls {
+			content = append(content, map[string]any{"type": "toolCall", "id": c.ID, "name": c.Name, "arguments": c.Arguments})
+		}
+		provider, model := splitModel(it.model)
+		stop := "stop"
+		if len(it.calls) > 0 {
+			stop = "toolUse"
+		}
+		msg := map[string]any{"role": "assistant", "content": content, "provider": provider, "model": model, "stopReason": stop, "timestamp": ms,
+			"usage": map[string]any{"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0, "cost": map[string]any{"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}}}
+		if m := goai.GetModel(goai.Provider(provider), model); m != nil {
+			msg["api"] = string(m.Api)
+		}
+		e = Entry{"type": "message", "message": msg}
+	case "toolResult":
+		e = Entry{"type": "message", "message": map[string]any{"role": "toolResult", "toolCallId": it.callID, "toolName": it.toolName,
+			"content": []any{map[string]any{"type": "text", "text": it.text}}, "isError": it.isError, "timestamp": ms}}
+	case "system":
+		// gi notices are not model context: a Pi custom entry, not a message.
+		e = Entry{"type": "custom", "customType": "gi.system", "data": map[string]any{"text": it.text}}
+	}
+	return e
+}
+
+// SourcedEntry is a session message as a Pi session entry (without id,
+// parentId and timestamp), with the gi message it came from.
+type SourcedEntry struct {
+	Entry   Entry
+	Message store.Message
+}
+
+// Entries reads a session's messages as Pi session entries, in order.
+func Entries(ctx context.Context, s *store.Store, sessionID string) ([]SourcedEntry, error) {
+	items, err := load(ctx, s, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]SourcedEntry, 0, len(items))
+	for _, it := range items {
+		if e := it.entry(); e != nil {
+			out = append(out, SourcedEntry{Entry: e, Message: it.source})
+		}
+	}
+	return out, nil
 }
 
 // HTML renders a standalone, self-contained transcript.

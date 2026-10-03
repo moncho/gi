@@ -54,6 +54,10 @@ func (c *chatTUI) piSettingItems() []settingItem {
 	if c.regularMode {
 		mode = "regular"
 	}
+	treeFilter := c.cfg.TreeFilterMode
+	if !slices.Contains(treeFilterModes, treeFilter) {
+		treeFilter = "default"
+	}
 	wheel := "auto"
 	if c.cfg.TUIWheelScrollLines > 0 {
 		wheel = strconv.Itoa(c.cfg.TUIWheelScrollLines)
@@ -71,6 +75,7 @@ func (c *chatTUI) piSettingItems() []settingItem {
 		{id: "autocompact", label: "Auto-compact", description: "Automatically compact context when it gets too large", value: strconv.FormatBool(c.autoCompaction()), values: []string{"true", "false"}},
 		{id: "hide-thinking", label: "Hide thinking", description: "Hide thinking blocks in assistant responses", value: strconv.FormatBool(c.cfg.HideThinkingBlock), values: []string{"true", "false"}},
 		{id: "quiet-startup", label: "Quiet startup", description: "Disable verbose printing at startup (header: keep only the startup header)", value: quiet, values: []string{"true", "header", "false"}},
+		{id: "tree-filter-mode", label: "Tree filter mode", description: "Default filter when opening /tree", value: treeFilter, values: treeFilterModes},
 		{id: "tui-mode", label: "TUI mode", description: "Interface layout; regular mode uses the terminal's normal scrollback", value: mode, values: []string{"regular", "fullscreen"}},
 		{id: "fullscreen-wheel-scroll-lines", label: "Fullscreen wheel scrolling", description: "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not", value: wheel, values: wheelValues},
 	}
@@ -160,6 +165,9 @@ func (c *chatTUI) applySetting(id, value string) {
 			c.cfg.QuietStartup = ""
 		}
 		err = config.PersistQuietStartup(root, value)
+	case "tree-filter-mode":
+		c.cfg.TreeFilterMode = value
+		err = config.PersistTreeFilterMode(root, value)
 	case "tui-mode":
 		c.cfg.TUIMode = value
 		err = config.PersistTUIMode(root, value)

@@ -22,6 +22,7 @@ const items = () => [
 	{ id: "autocompact", label: "Auto-compact", description: "Automatically compact context when it gets too large", currentValue: "true", values: ["true", "false"] },
 	{ id: "hide-thinking", label: "Hide thinking", description: "Hide thinking blocks in assistant responses", currentValue: "false", values: ["true", "false"] },
 	{ id: "quiet-startup", label: "Quiet startup", description: "Disable verbose printing at startup (header: keep only the startup header)", currentValue: "false", values: ["true", "header", "false"] },
+	{ id: "tree-filter-mode", label: "Tree filter mode", description: "Default filter when opening /tree", currentValue: "default", values: ["default", "no-tools", "user-only", "labeled-only", "all"] },
 	{ id: "tui-mode", label: "TUI mode", description: "Interface layout; regular mode uses the terminal's normal scrollback", currentValue: "fullscreen", values: ["regular", "fullscreen"] },
 	{ id: "fullscreen-wheel-scroll-lines", label: "Fullscreen wheel scrolling", description: "Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel spins where the terminal does not", currentValue: "auto", values: ["auto", "1", "2", "3", "5", "10"] },
 ];

@@ -235,7 +235,7 @@ test-shared-capability-evidence: fixtures-vibes
 
 .PHONY: test-message-retrieval
 test-message-retrieval:
-	$(GO) test $(RACE) ./internal/store ./internal/tools ./internal/turn -run 'TestMessageRows|TestMessageRetrieval' -count=3
+	$(GO) test $(RACE) ./internal/store ./internal/tools ./internal/turn -run 'TestMessageRows|TestMessageRetrieval|TestPiclawMessages' -count=3
 
 .PHONY: test-ux-message-retrieval
 test-ux-message-retrieval: build-web test-message-retrieval

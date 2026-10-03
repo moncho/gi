@@ -50,7 +50,7 @@ var builtinPromptContributions = map[string]promptContribution{
 	"rtk":         {"Run noisy commands (git, search, listings, tests) with compact output", []string{"Use rtk for noisy command output and shell when the raw output is needed"}},
 	"tools":       {"List, inspect and activate tools (query first, then fetch one tool's full schema)", []string{"Activate only the extra tools you need with tools, and reset them afterwards"}},
 	"skills":      {"List discovered skills and read a skill's SKILL.md", nil},
-	"messages":    {"Read earlier messages of this session by row id", nil},
+	"messages":    {"Search chat messages or read them by row id", nil},
 	"script":      {"Run Goja JavaScript or Joker scripts through gi's script bridge", nil},
 	"compact":     {"Inspect compaction thresholds and whether the session should compact", nil},
 	"peering":     {"Inspect tsnet/Tailscale peer-discovery status (disabled unless configured)", nil},

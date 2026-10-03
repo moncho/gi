@@ -36,7 +36,7 @@ func TestMessageRetrievalToolStrictArgumentsAndRuntimeScope(t *testing.T) {
 		t.Fatal(text, err)
 	}
 	bad := []string{
-		`{"session_id":"B"}`, `{"chat_jid":"*"}`, `{"action":"delete"}`, `{"row_ids":null}`, `{"row_ids":[]}`, `{"row_ids":[1.2]}`, `{"row_ids":["1"]}`, `{"row_ids":[1,1]}`, `{"row_ids":[9007199254740992]}`,
+		`{"session_id":"B"}`, `{"action":"delete"}`, `{"action":"grep","pattern":"x"}`, `{"action":"search","query":"x","cursor":"c"}`, `{"query":"x","content_bytes":10}`, `{"action":"search","query":"x","session_id":"B"}`, `{"action":"search","query":"x","limit":"5"}`, `{"row_ids":null}`, `{"row_ids":[]}`, `{"row_ids":[1.2]}`, `{"row_ids":["1"]}`, `{"row_ids":[1,1]}`, `{"row_ids":[9007199254740992]}`,
 		`{"limit":0}`, `{"limit":101}`, `{"limit":true}`, `{"limit":null}`, `{"limit":1.5}`, `{"content_bytes":2049}`, `{"content_bytes":0}`, `{"after_row":0}`, `{"before_row":0}`, `{"after_row":5,"before_row":4}`, `{"row_ids":[1],"before_row":2}`, `{"context_before":1}`, `{"row_ids":[1],"context_before":11}`, `{"cursor":33}`,
 	}
 	for _, input := range bad {

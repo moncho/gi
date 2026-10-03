@@ -1,0 +1,272 @@
+{
+ "content": "The quick brown fox jumps over the lazy dog while the Nonce-42 value is logged; café naïve résumé end.",
+ "fallback": [
+  {
+   "query": "nonce",
+   "operator": false,
+   "terms": [
+    "nonce"
+   ]
+  },
+  {
+   "query": "  alpha beta  ",
+   "operator": false,
+   "terms": [
+    "alpha",
+    "beta"
+   ]
+  },
+  {
+   "query": "#topic",
+   "operator": false,
+   "terms": [
+    "#topic"
+   ]
+  },
+  {
+   "query": "##",
+   "operator": false,
+   "terms": [
+    "##"
+   ]
+  },
+  {
+   "query": "*",
+   "operator": false,
+   "terms": []
+  },
+  {
+   "query": "foo AND bar",
+   "operator": true,
+   "terms": [
+    "foo",
+    "bar"
+   ]
+  },
+  {
+   "query": "\"quoted phrase\" x",
+   "operator": true,
+   "terms": [
+    "quoted",
+    "phrase",
+    "x"
+   ]
+  },
+  {
+   "query": "(grouped) y",
+   "operator": true,
+   "terms": [
+    "grouped",
+    "y"
+   ]
+  },
+  {
+   "query": "col:term",
+   "operator": true,
+   "terms": [
+    "col",
+    "term"
+   ]
+  },
+  {
+   "query": "http://host/x",
+   "operator": false,
+   "terms": [
+    "http",
+    "//host/x"
+   ]
+  },
+  {
+   "query": "-neg --dash a.b/c",
+   "operator": false,
+   "terms": [
+    "neg",
+    "dash",
+    "a.b/c"
+   ]
+  },
+  {
+   "query": "(foo) NOT bar",
+   "operator": true,
+   "terms": [
+    "foo",
+    "bar"
+   ]
+  },
+  {
+   "query": "naïve café",
+   "operator": false,
+   "terms": [
+    "naïve",
+    "café"
+   ]
+  },
+  {
+   "query": "x: y",
+   "operator": true,
+   "terms": [
+    "x",
+    "y"
+   ]
+  },
+  {
+   "query": "a_b-c! ?d",
+   "operator": false,
+   "terms": [
+    "a_b-c!",
+    "?d"
+   ]
+  }
+ ],
+ "searchTerms": [
+  {
+   "query": "nonce",
+   "terms": [
+    "nonce"
+   ]
+  },
+  {
+   "query": "  alpha beta  ",
+   "terms": [
+    "alpha",
+    "beta"
+   ]
+  },
+  {
+   "query": "#topic",
+   "terms": [
+    "topic"
+   ]
+  },
+  {
+   "query": "##",
+   "terms": []
+  },
+  {
+   "query": "*",
+   "terms": []
+  },
+  {
+   "query": "foo AND bar",
+   "terms": [
+    "foo",
+    "AND",
+    "bar"
+   ]
+  },
+  {
+   "query": "\"quoted phrase\" x",
+   "terms": [
+    "quoted",
+    "phrase",
+    "x"
+   ]
+  },
+  {
+   "query": "(grouped) y",
+   "terms": [
+    "grouped",
+    "y"
+   ]
+  },
+  {
+   "query": "col:term",
+   "terms": [
+    "col:term"
+   ]
+  },
+  {
+   "query": "http://host/x",
+   "terms": [
+    "http://host/x"
+   ]
+  },
+  {
+   "query": "-neg --dash a.b/c",
+   "terms": [
+    "-neg",
+    "--dash",
+    "a.b/c"
+   ]
+  },
+  {
+   "query": "(foo) NOT bar",
+   "terms": [
+    "foo",
+    "NOT",
+    "bar"
+   ]
+  },
+  {
+   "query": "naïve café",
+   "terms": [
+    "naïve",
+    "café"
+   ]
+  },
+  {
+   "query": "x: y",
+   "terms": [
+    "x",
+    "y"
+   ]
+  },
+  {
+   "query": "a_b-c! ?d",
+   "terms": [
+    "a_b-c",
+    "d"
+   ]
+  }
+ ],
+ "excerpts": [
+  {
+   "query": "nonce",
+   "width": 20,
+   "text": "…le the [[Nonce]]-42 valu…",
+   "truncated": true
+  },
+  {
+   "query": "fox lazy",
+   "width": 30,
+   "text": "… quick brown [[fox]] jumps over th…",
+   "truncated": true
+  },
+  {
+   "query": "DOG",
+   "width": 5,
+   "text": "…y [[dog]] wh…",
+   "truncated": true
+  },
+  {
+   "query": "missing",
+   "width": 40,
+   "text": null,
+   "truncated": null
+  },
+  {
+   "query": "café",
+   "width": 12,
+   "text": "…ed; [[café]] naï…",
+   "truncated": true
+  },
+  {
+   "query": "the",
+   "width": 1000,
+   "text": "[[The]] quick brown fox jumps over [[the]] lazy dog while [[the]] Nonce-42 value is logged; café naïve résumé end.",
+   "truncated": false
+  },
+  {
+   "query": "end",
+   "width": 10,
+   "text": "…ésumé [[end]].",
+   "truncated": true
+  },
+  {
+   "query": "quick",
+   "width": 0,
+   "text": null,
+   "truncated": null
+  }
+ ]
+}

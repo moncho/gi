@@ -1,8 +1,11 @@
 # Bounded current-session message retrieval
 
-The native `messages` tool reads historical messages from the runtime's current
-session. It does not accept a session identifier, all-chat scope, SQL, or write
-actions. The combined Shared38 web journey covers the current-session contract.
+The native `messages` tool's bounded JSON contract reads historical messages
+from the runtime's current session. It does not accept a session identifier,
+all-chat scope, SQL, or write actions. Calls with `action`/`query` use the
+Piclaw-compatible `search`/`get` actions instead, which can reach other
+sessions (see [tools/messages.md](tools/messages.md)). The combined Shared38
+web journey covers the current-session contract.
 Classic025 remains unmapped: all-chat and family-owned authorization are separate.
 
 ## Identity and migration

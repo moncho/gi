@@ -1859,7 +1859,7 @@ func TestSettingsCommandReportsEffectiveValuesWithoutTruncation(t *testing.T) {
 	cfg.Peering.AuthKeyEnv = "GI_TEST_PEERING_SECRET"
 	t.Setenv("GI_TEST_PEERING_SECRET", "secret-value-must-not-appear")
 	c := &chatTUI{cfg: cfg}
-	for _, command := range []string{"/settings", "/config"} {
+	for _, command := range []string{"/config"} { // /settings opens Pi's menu
 		c.transcript = nil
 		c.handleCommand(command)
 		output := strings.Join(c.transcript, "\n")

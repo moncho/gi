@@ -14,7 +14,31 @@ import (
 )
 
 // CompactionPolicy is the immutable policy loaded when this engine started.
-func (e *Engine) CompactionPolicy() config.CompactionSettings { return e.runtimeCfg.Compaction }
+func (e *Engine) CompactionPolicy() config.CompactionSettings {
+	policy := e.runtimeCfg.Compaction
+	policy.Enabled = e.autoCompaction()
+	return policy
+}
+
+// SetAutoCompaction is Pi's setAutoCompactionEnabled: it applies to the
+// running engine at once.
+func (e *Engine) SetAutoCompaction(enabled bool) {
+	v := int32(2)
+	if enabled {
+		v = 1
+	}
+	e.autoCompactionOverride.Store(v)
+}
+
+func (e *Engine) autoCompaction() bool {
+	switch e.autoCompactionOverride.Load() {
+	case 1:
+		return true
+	case 2:
+		return false
+	}
+	return e.runtimeCfg.Compaction.Enabled
+}
 
 // ManualCompactionState is advisory. Admission checks busy state and the exact
 // history token again under the runner lock and in the store transaction.

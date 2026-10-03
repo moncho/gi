@@ -313,6 +313,7 @@ type chatTUI struct {
 	scopedModels                *scopedModelsState // Pi's /scoped-models (modelMenuKind "scoped-models")
 	authSelector                *authSelectorState // Pi's /login and /logout provider selector ("auth-selector")
 	loginDialog                 *loginDialogState  // Pi's login dialog ("login-dialog")
+	settingsList                *settingsListState // Pi's /settings ("settings")
 	lastCtrlC                   time.Time          // Pi's app.clear: a second press within 500ms exits
 	modelMenuSession            sessionScope
 	modelMenuAltScreen          bool
@@ -1822,6 +1823,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "login-dialog" && c.loginDialog != nil {
 		return c.loginDialogKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "settings" && c.settingsList != nil {
+		return c.settingsKeys()
+	}
 	if c.modelMenuOpen {
 		if c.modelMenuKind == "thinking" {
 			return gotui.KeyMap{
@@ -2132,6 +2136,7 @@ func (c *chatTUI) closeModelMenu() {
 	c.sessionActions = sessionActions{}
 	c.scopedModels = nil
 	c.authSelector = nil
+	c.settingsList = nil
 	if c.mcpManager != nil {
 		c.mcpManager = nil
 		if c.engine != nil {
@@ -2381,7 +2386,7 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
-	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" || c.modelMenuKind == "scoped-models" || c.modelMenuKind == "auth-selector" || c.modelMenuKind == "login-dialog" {
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" || c.modelMenuKind == "scoped-models" || c.modelMenuKind == "auth-selector" || c.modelMenuKind == "login-dialog" || c.modelMenuKind == "settings" {
 		width := c.currentContentWidth()
 		if c.app != nil {
 			width, _ = c.app.Size()
@@ -3081,8 +3086,11 @@ func (c *chatTUI) handleCommand(text string) {
 		c.appendTranscript(c.scrollbackCommand(fields)...)
 	case "/history-limit":
 		c.appendTranscript(c.historyLimitCommand(fields)...)
-	case "/settings", "/config":
-		c.appendTranscript(c.settingsLines()...)
+	case "/settings":
+		c.openSettingsMenu() // Pi's settings selector
+		return
+	case "/config":
+		c.appendTranscript(c.settingsLines()...) // gi's runtime summary
 	case "/approvals":
 		c.appendTranscript("approvals: no approval gates are configured in gi yet")
 	case "/cancel":
@@ -3234,11 +3242,11 @@ func (c *chatTUI) extensionCommandLines(text string, fields []string) ([]string,
 // built-ins gi does not implement yet (/import, /share, /bug,
 // /changelog, /trust) are omitted rather than approximated.
 var piCommands = []struct{ name, hint string }{
-	{"/settings", "Show settings"},
+	{"/settings", "Open settings menu"},
 	{"/model <provider/model>", "Select model (opens selector UI)"},
 	{"/tree", "Show session tree"},
 	{"/thinking <level>", "Set thinking level"},
-	{"/scoped-models [list|add|remove|set]", "Enable/disable models for model cycling"},
+	{"/scoped-models", "Enable/disable models for Ctrl+P cycling"},
 	{"/export [path]", "Export session (HTML default, or specify path: .html/.jsonl)"},
 	{"/copy [--osc52|--native|--auto|--fallback]", "Copy last agent message to clipboard"},
 	{"/name <name>", "Set session display name"},
@@ -3246,8 +3254,8 @@ var piCommands = []struct{ name, hint string }{
 	{"/hotkeys", "Show all keyboard shortcuts"},
 	{"/fork", "Create a new fork from a previous user message"},
 	{"/clone [@agentN]", "Duplicate the current session at the current position"},
-	{"/login <provider>", "Show provider authentication status"},
-	{"/logout <provider>", "Remove provider authentication"},
+	{"/login <provider>", "Configure provider authentication"},
+	{"/logout", "Remove provider authentication"},
 	{"/new", "Start a new session"},
 	{"/compact [instructions]", "Manually compact the session context"},
 	{"/resume [index|session_id]", "Resume a different session"},

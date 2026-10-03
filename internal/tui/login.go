@@ -139,15 +139,20 @@ func authStatusSpans(p inference.LoginOption) []gotui.TextSpan {
 // piTruncatedText is pi-tui's TruncatedText with paddingX 1: one line,
 // cut with "..." to the width less the padding.
 func piTruncatedText(width int, spans ...gotui.TextSpan) []gotui.TextSpan {
-	avail := max(1, width-2)
+	return append([]gotui.TextSpan{{Text: " "}}, piTruncate(spans, max(1, width-2))...)
+}
+
+// piTruncate is pi-tui's truncateToWidth: spans wider than width are cut
+// and end in "...".
+func piTruncate(spans []gotui.TextSpan, width int) []gotui.TextSpan {
 	total := 0
 	for _, s := range spans {
 		total += gotui.StringWidth(s.Text)
 	}
-	if total > avail {
-		spans = append(clipSpans(spans, max(0, avail-3)), gotui.TextSpan{Text: "..."})
+	if total <= width {
+		return spans
 	}
-	return append([]gotui.TextSpan{{Text: " "}}, spans...)
+	return append(clipSpans(spans, max(0, width-3)), gotui.TextSpan{Text: "..."})
 }
 
 func (c *chatTUI) piAuthSelectorRows(width int) spanRows {

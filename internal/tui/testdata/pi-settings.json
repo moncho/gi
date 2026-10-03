@@ -1,0 +1,1197 @@
+{
+ "cycle": {
+  "steps": [
+   "enter",
+   "down",
+   "space",
+   "down",
+   "enter",
+   "enter",
+   "up",
+   "up",
+   "up",
+   "enter",
+   "down",
+   "down",
+   "down",
+   "down",
+   "enter"
+  ],
+  "widths": {
+   "50": [
+    {
+     "step": "open",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                false",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "autocompact",
+       "false"
+      ]
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "→ Hide thinking               false",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Hide thinking blocks in assistant responses",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "space",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "→ Hide thinking               true",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Hide thinking blocks in assistant responses",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "hide-thinking",
+       "true"
+      ]
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "→ Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Disable verbose printing at startup (header:",
+      "  keep only the startup header)",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "→ Quiet startup               true",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Disable verbose printing at startup (header:",
+      "  keep only the startup header)",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "quiet-startup",
+       "true"
+      ]
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "→ Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Disable verbose printing at startup (header:",
+      "  keep only the startup header)",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "quiet-startup",
+       "header"
+      ]
+     ]
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "→ Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Hide thinking blocks in assistant responses",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "→ Fullscreen wheel scrolling  auto",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "fullscreen-wheel-scroll-lines",
+       "1"
+      ]
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "→ Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Hide thinking blocks in assistant responses",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "→ Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Disable verbose printing at startup (header:",
+      "  keep only the startup header)",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "→ TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Interface layout; regular mode uses the",
+      "  terminal's normal scrollback",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "→ TUI mode                    regular",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Interface layout; regular mode uses the",
+      "  terminal's normal scrollback",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "tui-mode",
+       "regular"
+      ]
+     ]
+    }
+   ],
+   "80": [
+    {
+     "step": "open",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                false",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "autocompact",
+       "false"
+      ]
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "→ Hide thinking               false",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Hide thinking blocks in assistant responses",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "space",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "→ Hide thinking               true",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Hide thinking blocks in assistant responses",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "hide-thinking",
+       "true"
+      ]
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "→ Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Disable verbose printing at startup (header: keep only the startup header)",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "→ Quiet startup               true",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Disable verbose printing at startup (header: keep only the startup header)",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "quiet-startup",
+       "true"
+      ]
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "→ Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Disable verbose printing at startup (header: keep only the startup header)",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "quiet-startup",
+       "header"
+      ]
+     ]
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "→ Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Hide thinking blocks in assistant responses",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "→ Fullscreen wheel scrolling  auto",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "fullscreen-wheel-scroll-lines",
+       "1"
+      ]
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "→ Hide thinking               true",
+      "  Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Hide thinking blocks in assistant responses",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "→ Quiet startup               header",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Disable verbose printing at startup (header: keep only the startup header)",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "→ TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Interface layout; regular mode uses the terminal's normal scrollback",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                false",
+      "  Hide thinking               true",
+      "  Quiet startup               header",
+      "→ TUI mode                    regular",
+      "  Fullscreen wheel scrolling  1",
+      "",
+      "  Interface layout; regular mode uses the terminal's normal scrollback",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "tui-mode",
+       "regular"
+      ]
+     ]
+    }
+   ]
+  }
+ },
+ "search": {
+  "steps": [
+   [
+    "type",
+    "wheel"
+   ],
+   "space",
+   "enter",
+   "backspace",
+   "backspace",
+   "backspace",
+   "backspace",
+   "backspace",
+   [
+    "type",
+    "zzz"
+   ],
+   "backspace",
+   "backspace",
+   "backspace",
+   "down"
+  ],
+  "widths": {
+   "50": [
+    {
+     "step": "open",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "type:wheel",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> wheel",
+      "",
+      "→ Fullscreen wheel scrolling  auto",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "space",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> wheel",
+      "",
+      "→ Fullscreen wheel scrolling  auto",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> wheel",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "fullscreen-wheel-scroll-lines",
+       "1"
+      ]
+     ]
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> wheel",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> whee",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> whe",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> wh",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> w",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "type:zzz",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> wzzz",
+      "",
+      "  No matching settings",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> wzz",
+      "",
+      "  No matching settings",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> wz",
+      "",
+      "  No matching settings",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> w",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "> w",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen",
+      "  mode; 'auto' speeds up fast wheel spins where",
+      "  the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": []
+    }
+   ],
+   "80": [
+    {
+     "step": "open",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "type:wheel",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> wheel",
+      "",
+      "→ Fullscreen wheel scrolling  auto",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "space",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> wheel",
+      "",
+      "→ Fullscreen wheel scrolling  auto",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> wheel",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "fullscreen-wheel-scroll-lines",
+       "1"
+      ]
+     ]
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> wheel",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> whee",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> whe",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> wh",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> w",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "type:zzz",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> wzzz",
+      "",
+      "  No matching settings",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> wzz",
+      "",
+      "  No matching settings",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> wz",
+      "",
+      "  No matching settings",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "backspace",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> w",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "> w",
+      "",
+      "→ Fullscreen wheel scrolling  1",
+      "",
+      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
+      "  spins where the terminal does not",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": []
+    }
+   ]
+  }
+ }
+}

@@ -295,6 +295,10 @@ func (c *chatTUI) piMenuRows(width int) (spanRows, bool) {
 		if c.loginDialog != nil {
 			return c.piLoginDialogRows(width), true
 		}
+	case "settings":
+		if c.settingsList != nil {
+			return c.piSettingsRows(width), true
+		}
 	}
 	return nil, false
 }

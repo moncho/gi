@@ -44,6 +44,7 @@ type Engine struct {
 	routeResolver                     *routing.RouteResolver
 	modelRouter                       *routing.Router
 	runtimeCfg                        config.RuntimeConfig
+	autoCompactionOverride            atomic.Int32 // SetAutoCompaction: 0 unset, 1 on, 2 off
 	hooks                             *HookRegistry
 	tools                             *tools.ToolRegistry
 	connectivity                      *connectivity.Registry
@@ -4974,8 +4975,8 @@ func (r *sessionRunner) assembleAgentContext(ctx context.Context, s *store.Store
 		return nil, fmt.Errorf("load session messages: %w", err)
 	}
 	convCtx := &goai.Context{
-		Tools:        r.engine.toolDefsForMetadata(turnMetadata),
-		Messages:     r.projectContextSnapshot(ctx, sessionID, snapshot),
+		Tools:    r.engine.toolDefsForMetadata(turnMetadata),
+		Messages: r.projectContextSnapshot(ctx, sessionID, snapshot),
 	}
 	// Tools loaded by tool_search earlier in the session stay declared.
 	r.engine.declareLoadedTools(convCtx, r.engine.sessionLoadedTools(ctx, sessionID))

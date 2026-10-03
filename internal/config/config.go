@@ -321,6 +321,46 @@ func PersistEnabledModels(workspaceRoot string, models []string) error {
 	return err
 }
 
+// PersistCompactionEnabled saves Pi's compaction.enabled (auto-compact),
+// keeping the other compaction settings.
+func PersistCompactionEnabled(workspaceRoot string, enabled bool) error {
+	_, err := updatePiSettings(workspaceRoot, "", func(d *settingsDocument) error {
+		compaction := map[string]json.RawMessage{}
+		if raw, ok := d.Values["compaction"]; ok {
+			_ = json.Unmarshal(raw, &compaction)
+		}
+		compaction["enabled"], _ = json.Marshal(enabled)
+		raw, err := json.Marshal(compaction)
+		d.Values["compaction"] = raw
+		return err
+	})
+	return err
+}
+
+// PersistQuietStartup saves Pi's quietStartup: true, false or "header".
+func PersistQuietStartup(workspaceRoot, value string) error {
+	var v any = value == "true"
+	if value == "header" {
+		v = "header"
+	}
+	return persistPiFields(workspaceRoot, map[string]any{"quietStartup": v})
+}
+
+// PersistTUIMode saves Pi's tuiMode.
+func PersistTUIMode(workspaceRoot, mode string) error {
+	return persistPiFields(workspaceRoot, map[string]any{"tuiMode": mode})
+}
+
+// PersistWheelScrollLines saves Pi's fullscreenWheelScrollLines; 0 is
+// "auto".
+func PersistWheelScrollLines(workspaceRoot string, lines int) error {
+	var v any = lines
+	if lines <= 0 {
+		v = "auto"
+	}
+	return persistPiFields(workspaceRoot, map[string]any{"fullscreenWheelScrollLines": v})
+}
+
 // PersistHideThinkingBlock saves Pi's hideThinkingBlock.
 func PersistHideThinkingBlock(workspaceRoot string, hide bool) error {
 	return persistPiFields(workspaceRoot, map[string]any{"hideThinkingBlock": hide})

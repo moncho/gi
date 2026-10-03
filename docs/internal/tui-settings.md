@@ -1,6 +1,44 @@
-# TUI settings output
+# TUI settings
 
-`/settings` and `/config` are aliases for a read-only, live runtime summary.
+## /settings
+
+`/settings` opens Pi's settings selector, `SettingsSelectorComponent`, built
+on pi-tui's `SettingsList`. The code is in `internal/tui/settings_menu.go`.
+Pi's golden is `scripts/golden-settings.mjs`, checked by
+`TestSettingsMenuMatchesPi`.
+
+The selector lists the Pi settings that gi implements, with Pi's labels,
+descriptions, values and order:
+
+- Auto-compact
+- Hide thinking
+- Quiet startup
+- TUI mode
+- Fullscreen wheel scrolling
+
+Keys:
+
+- Enter or Space moves the selected setting to its next value. Space does
+  this only while the search is empty.
+- Typing searches the labels with Pi's fuzzy filter.
+- Escape or Ctrl+C closes the selector.
+
+Each change applies at once and is saved to the project's settings. Pi saves
+them to the global settings. Differences from Pi:
+
+- **Auto-compact** updates the running engine and is saved as
+  `compaction.enabled`.
+- **TUI mode** is saved and takes effect the next time gi starts. Pi switches
+  modes live.
+
+Pi settings that gi does not implement are not listed, because they would
+have no effect. These include images, transport, cache warming, Mermaid,
+telemetry, project trust, padding and others. The theme submenu comes with the
+custom themes work (#12).
+
+## /config
+
+`/config` is a read-only, live runtime summary.
 They do not reread the settings file, constitute a complete serialized config,
 or claim that every Pi setting is supported. Disk changes may require reload
 or restart; model and thinking selections reflect the TUI's current session.

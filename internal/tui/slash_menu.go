@@ -11,12 +11,15 @@ import (
 
 // Pi's editor opens a slash-command autocomplete list when "/" is typed at
 // the start of the message (pi-tui Editor + CombinedAutocompleteProvider +
-// SelectList). It is rendered under the editor's bottom border, fuzzy filters
-// as the command name is typed, closes at the first space, and:
+// SelectList). It is rendered under the editor's bottom border and fuzzy
+// filters as the command name is typed. After the first space it lists the
+// command's argument completions (Pi's getArgumentCompletions), or closes
+// when the command has none. Typing a letter, digit or ".-_" in a slash
+// command, or deleting, opens it again.
 //
 //	Up/Down  move the selection (wrapping)
-//	Tab      complete to "/name "
-//	Enter    complete to "/name " and submit
+//	Tab      complete to "/name " (or the argument)
+//	Enter    complete to "/name " and submit; complete an argument only
 //	Escape   close the list
 
 const (
@@ -27,14 +30,19 @@ const (
 	slashMinDescription = 10
 )
 
+// slashItem is a command (name) or an argument completion (name is the
+// label, value the text that replaces the typed arguments).
 type slashItem struct {
 	name, description string
+	value             string
 }
 
 type slashMenu struct {
 	active   bool
 	items    []slashItem
 	selected int
+	argument bool // items complete the command's arguments
+	applying bool // a completion is being applied; it never reopens the list
 }
 
 var slashArgHint = regexp.MustCompile(`^/([^\s]+)\s*(.*)$`)
@@ -190,17 +198,43 @@ func (c *chatTUI) slashMatches(prefix string) []slashItem {
 	return append(bare, piFuzzyFilter(skillsOnly, prefix, func(it slashItem) string { return it.name })...)
 }
 
-// slashPrefix returns the command name typed so far, when the draft is a
-// single-line slash command with no argument yet. Leading whitespace is
-// allowed, as in Pi (pi-tui: textBeforeCursor.trimStart()).
-func slashPrefix(text string, cursor int) (string, bool) {
+// slashContext returns the text before the cursor, without leading
+// whitespace, when the cursor is on the first line and that text is a slash
+// command (pi-tui isInSlashCommandContext).
+func slashContext(text string, cursor int) (string, bool) {
 	runes := []rune(text)
 	cursor = max(0, min(cursor, len(runes)))
-	before := strings.TrimLeft(string(runes[:cursor]), " \t")
-	if !strings.HasPrefix(before, "/") || strings.ContainsAny(before, " \t\n") || strings.Contains(text, "\n") {
+	before := string(runes[:cursor])
+	if strings.Contains(before, "\n") {
 		return "", false
 	}
-	return strings.TrimPrefix(before, "/"), true
+	before = strings.TrimLeft(before, " \t")
+	return before, strings.HasPrefix(before, "/")
+}
+
+// slashSuggestions ports CombinedAutocompleteProvider.getSuggestions for
+// slash commands: command names before the first space, then the command's
+// argument completions for the text after it.
+func (c *chatTUI) slashSuggestions(text string, cursor int) (items []slashItem, argument bool) {
+	before, ok := slashContext(text, cursor)
+	if !ok {
+		return nil, false
+	}
+	space := strings.Index(before, " ")
+	if space < 0 {
+		return c.slashMatches(before[1:]), false
+	}
+	return c.slashArgumentCompletions(before[1:space], before[space+1:]), true
+}
+
+// slashArgumentCompletions is Pi's command.getArgumentCompletions; nil when
+// the command has none or nothing matches.
+func (c *chatTUI) slashArgumentCompletions(command, args string) []slashItem {
+	switch command {
+	case "mcp":
+		return c.mcpArgumentCompletions(args)
+	}
+	return nil
 }
 
 // slashLead is the whitespace before the command, kept when a completion is
@@ -209,32 +243,57 @@ func slashLead(text string) string {
 	return text[:len(text)-len(strings.TrimLeft(text, " \t"))]
 }
 
-// updateSlashMenu follows Pi: typing "/" as the first character opens the
-// list; later edits refilter it; a space, leaving the slash prefix, or no
-// matches closes it.
+var slashTriggerChar = regexp.MustCompile(`^[a-zA-Z0-9.\-_]$`)
+
+// cjkBreak is pi-tui's cjkBreakRegex by script; Go has no Script_Extensions,
+// so CJK punctuation shared between scripts (、, ー) does not match.
+var cjkBreak = regexp.MustCompile(`^[\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}\p{Bopomofo}]$`)
+
+// updateSlashMenu follows pi-tui's Editor: an open list is refreshed on
+// every edit and closes when nothing matches. A closed list opens when "/"
+// is typed at the start of the message, when a letter, digit or ".-_" (or
+// CJK text) is typed in a slash command, or when a character is deleted in
+// one. Programmatic text changes (history, drafts, paste) never open it.
 func (c *chatTUI) updateSlashMenu(previous string) {
 	if c.input == nil {
 		return
 	}
 	text := c.input.Text()
-	prefix, ok := slashPrefix(text, c.input.cursorPos)
+	cursor := c.input.cursorPos
+	if c.slash.applying {
+		return
+	}
 	if !c.slash.active {
-		// Pi opens the list when "/" is typed at the start of the message,
-		// after nothing but whitespace.
-		if !ok || strings.TrimLeft(text, " \t") != "/" || strings.TrimSpace(previous) != "" {
+		before, inSlash := slashContext(text, cursor)
+		typed, deleted := editedRune(previous, text, cursor)
+		switch {
+		case typed == "/" && strings.TrimSpace(strings.TrimSuffix(before, "/")) == "" && inSlash:
+		case typed != "" && inSlash && (slashTriggerChar.MatchString(typed) || cjkBreak.MatchString(typed)):
+		case deleted && inSlash:
+		default:
 			return
 		}
 	}
-	if !ok {
-		c.slash = slashMenu{}
-		return
-	}
-	items := c.slashMatches(prefix)
+	items, argument := c.slashSuggestions(text, cursor)
 	if len(items) == 0 {
 		c.slash = slashMenu{}
 		return
 	}
-	c.slash = slashMenu{active: true, items: items}
+	c.slash = slashMenu{active: true, items: items, argument: argument}
+}
+
+// editedRune reports a single rune typed just before the cursor, or a single
+// rune deleted, between previous and text.
+func editedRune(previous, text string, cursor int) (typed string, deleted bool) {
+	prev, next := []rune(previous), []rune(text)
+	switch {
+	case len(next) == len(prev)+1 && cursor >= 1 && cursor <= len(next) &&
+		string(next[:cursor-1])+string(next[cursor:]) == previous:
+		return string(next[cursor-1]), false
+	case len(next) == len(prev)-1:
+		return "", true
+	}
+	return "", false
 }
 
 func (c *chatTUI) moveSlashSelection(delta int) {
@@ -246,18 +305,31 @@ func (c *chatTUI) moveSlashSelection(delta int) {
 	c.markDirty()
 }
 
-// applySlashSelection replaces the command prefix with "/name " (Pi's
-// applyCompletion) and optionally submits it.
+// applySlashSelection ports CombinedAutocompleteProvider.applyCompletion.
+// A command becomes "/name " (and Enter submits it); an argument completion
+// replaces the arguments typed before the cursor and never submits.
 func (c *chatTUI) applySlashSelection(submit bool) {
 	if !c.slash.active || len(c.slash.items) == 0 {
 		return
 	}
 	item := c.slash.items[c.slash.selected]
+	argument := c.slash.argument
 	runes := []rune(c.input.Text())
 	cursor := max(0, min(c.input.cursorPos, len(runes)))
 	after := string(runes[cursor:])
-	c.slash = slashMenu{}
+	before, _ := slashContext(c.input.Text(), cursor)
+	c.slash = slashMenu{applying: true}
+	defer func() { c.slash.applying = false }()
 	c.input.snapshotUndo()
+	if argument {
+		typed := []rune(before[strings.Index(before, " ")+1:])
+		head := string(runes[:cursor-len(typed)])
+		c.input.text = head + item.value + after
+		c.input.cursorPos = len([]rune(head)) + len([]rune(item.value))
+		c.input.notifyChanged()
+		c.markDirty()
+		return
+	}
 	lead := slashLead(c.input.text)
 	c.input.text = lead + "/" + item.name + " " + after
 	c.input.cursorPos = len([]rune(lead)) + len([]rune(item.name)) + 2
@@ -338,6 +410,9 @@ func (c *chatTUI) slashMenuRows(width int) [][]gotui.TextSpan {
 		widest = max(widest, gotui.StringWidth(it.name)+slashPrimaryGap)
 	}
 	primary := max(slashMinPrimaryCol, min(widest, slashMaxPrimaryCol))
+	if c.slash.argument {
+		primary = slashMaxPrimaryCol // SelectList's default layout: a fixed 32-cell column
+	}
 	accent, muted := piFg(piAccent), piFg(piMuted)
 	start, end := c.slashVisibleRange()
 	var rows [][]gotui.TextSpan

@@ -196,9 +196,24 @@ Rules, as in Pi:
 - `/mcp` prints Pi's status text (the non-interactive form of Pi's `formatStatus`): one line per server with its state, tool count and exposure, connection errors indented below it, then config errors.
 - `/mcp reconnect [server]` drops the connection, connects again and re-registers the server's tools (`Manager.Reconnect`, `Engine.MCPReconnect`).
   - Without a name it picks the only enabled server, or the only failed or disconnected one; otherwise it asks for a name.
+- Argument completion (Pi's `getArgumentCompletions` for `/mcp`): after `/mcp `
+  the slash menu lists `login`, `logout` and `reconnect`, then the eligible
+  servers with their state (OAuth servers for `login`/`logout`, enabled servers
+  for `reconnect`). Tab or Enter completes an argument without submitting.
+  - The slash menu follows pi-tui's Editor: an open list refreshes on every
+    edit; a closed one opens when `/` is typed at the start, when a letter,
+    digit, `.`, `-`, `_` or CJK character is typed in a slash command, or when
+    a character is deleted in one (also after Esc). Programmatic changes
+    (history, drafts, paste) do not open it.
+  - Golden: `scripts/golden-slash-autocomplete.mjs` replays pi-tui's own Editor
+    with Pi's `/mcp` completion function; `TestSlashArgumentCompletionMatchesPi`.
+  - Difference: Go has no Unicode `Script_Extensions`, so CJK punctuation
+    shared between scripts (`、`, `ー`) does not open the list.
+  - Pi's `/model`, `/thinking` and `/login` argument completions are not
+    ported yet (#17).
 - Not yet ported:
   - Pi's interactive manager (inspect tools, enable or disable a server, change exposure).
-  - `/mcp` argument completion and the server picker.
+  - The server picker when the name is omitted and ambiguous; gi asks for the name instead.
 
 ## OAuth (`internal/mcp/oauth.go`)
 

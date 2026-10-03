@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	gimcp "github.com/rcarmo/gi/internal/mcp"
 )
@@ -256,4 +258,41 @@ func mcpNoticeLines(level, text string) []string {
 		text = "Warning: " + text
 	}
 	return strings.Split(text, "\n")
+}
+
+var mcpArgSplit = regexp.MustCompile(`\s+`)
+
+// mcpArgumentCompletions ports Pi's /mcp getArgumentCompletions: actions,
+// then the eligible servers with their state (OAuth servers for login and
+// logout, enabled servers for reconnect). Like JavaScript's split, a
+// trailing space yields an empty last field: "login " completes servers.
+func (c *chatTUI) mcpArgumentCompletions(prefix string) []slashItem {
+	parts := mcpArgSplit.Split(strings.TrimLeftFunc(prefix, unicode.IsSpace), -1)
+	if len(parts) > 2 {
+		return nil
+	}
+	action := parts[0]
+	var items []slashItem
+	if len(parts) == 1 {
+		for _, item := range []string{"login", "logout", "reconnect"} {
+			if strings.HasPrefix(item, action) {
+				items = append(items, slashItem{name: item, value: item + " "})
+			}
+		}
+		return items
+	}
+	if (action != "login" && action != "logout" && action != "reconnect") || c.engine == nil {
+		return nil
+	}
+	statuses, _ := c.engine.MCPStatus()
+	for _, st := range statuses {
+		eligible := st.State != gimcp.StateDisabled
+		if action != "reconnect" {
+			eligible = c.engine.MCPUsesOAuth(st.Name)
+		}
+		if eligible && strings.HasPrefix(st.Name, parts[1]) {
+			items = append(items, slashItem{name: st.Name, value: action + " " + st.Name, description: gimcp.DescribeState(st)})
+		}
+	}
+	return items
 }

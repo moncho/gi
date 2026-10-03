@@ -57,8 +57,8 @@ func TestSlashMenuOpensFiltersCompletesAndCloses(t *testing.T) {
 		t.Fatal("escape")
 	}
 	type_("m")
-	if c.slash.active {
-		t.Fatal("dismissed list reopened without a new leading slash")
+	if !c.slash.active || c.slash.items[0].name != "compact" {
+		t.Fatalf("typing in a slash command reopens the list, as in Pi: %+v", c.slash)
 	}
 	c.input.SetText("say /model")
 	if c.slash.active {

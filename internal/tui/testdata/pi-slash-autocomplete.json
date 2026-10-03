@@ -1,0 +1,408 @@
+{
+ "actions": [
+  {
+   "step": "/",
+   "text": "/",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "model",
+    "copy",
+    "compact",
+    "mcp"
+   ],
+   "descriptions": [
+    "Select model",
+    "Copy the last reply",
+    "Compact the session",
+    "Manage MCP servers"
+   ]
+  },
+  {
+   "step": "mc",
+   "text": "/mc",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "mcp",
+    "compact"
+   ],
+   "descriptions": [
+    "Manage MCP servers",
+    "Compact the session"
+   ]
+  },
+  {
+   "step": "p",
+   "text": "/mcp",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "mcp"
+   ],
+   "descriptions": [
+    "Manage MCP servers"
+   ]
+  },
+  {
+   "step": " ",
+   "text": "/mcp ",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "login",
+    "logout",
+    "reconnect"
+   ],
+   "descriptions": [
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "step": "l",
+   "text": "/mcp l",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "login",
+    "logout"
+   ],
+   "descriptions": [
+    "",
+    ""
+   ]
+  },
+  {
+   "step": "tab",
+   "text": "/mcp login ",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  },
+  {
+   "step": "g",
+   "text": "/mcp login g",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "github"
+   ],
+   "descriptions": [
+    "needs sign-in"
+   ]
+  },
+  {
+   "step": "enter",
+   "text": "/mcp login github",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  }
+ ],
+ "reconnect": [
+  {
+   "step": "/mcp r",
+   "text": "/mcp r",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "reconnect"
+   ],
+   "descriptions": [
+    ""
+   ]
+  },
+  {
+   "step": "tab",
+   "text": "/mcp reconnect ",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  },
+  {
+   "step": "l",
+   "text": "/mcp reconnect l",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "local"
+   ],
+   "descriptions": [
+    "connected · 2 tools"
+   ]
+  },
+  {
+   "step": "enter",
+   "text": "/mcp reconnect local",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  }
+ ],
+ "reopen_after_escape": [
+  {
+   "step": "/co",
+   "text": "/co",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "copy",
+    "compact"
+   ],
+   "descriptions": [
+    "Copy the last reply",
+    "Compact the session"
+   ]
+  },
+  {
+   "step": "esc",
+   "text": "/co",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  },
+  {
+   "step": "m",
+   "text": "/com",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "compact"
+   ],
+   "descriptions": [
+    "Compact the session"
+   ]
+  }
+ ],
+ "command_enter_submits": [
+  {
+   "step": "/cop",
+   "text": "/cop",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "copy",
+    "compact"
+   ],
+   "descriptions": [
+    "Copy the last reply",
+    "Compact the session"
+   ]
+  },
+  {
+   "step": "enter",
+   "text": "/copy",
+   "submitted": true,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  }
+ ],
+ "argument_enter_completes": [
+  {
+   "step": "/mcp lo",
+   "text": "/mcp lo",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "login",
+    "logout"
+   ],
+   "descriptions": [
+    "",
+    ""
+   ]
+  },
+  {
+   "step": "enter",
+   "text": "/mcp login ",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  }
+ ],
+ "no_matches": [
+  {
+   "step": "/mcp x",
+   "text": "/mcp x",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  }
+ ],
+ "extra_argument": [
+  {
+   "step": "/mcp login github",
+   "text": "/mcp login github",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "github"
+   ],
+   "descriptions": [
+    "needs sign-in"
+   ]
+  },
+  {
+   "step": " ",
+   "text": "/mcp login github ",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  },
+  {
+   "step": "x",
+   "text": "/mcp login github x",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  }
+ ],
+ "no_completions_command": [
+  {
+   "step": "/copy",
+   "text": "/copy",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "copy"
+   ],
+   "descriptions": [
+    "Copy the last reply"
+   ]
+  },
+  {
+   "step": " ",
+   "text": "/copy ",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  },
+  {
+   "step": "a",
+   "text": "/copy a",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  }
+ ],
+ "backspace_reopens": [
+  {
+   "step": "/mcp lo",
+   "text": "/mcp lo",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "login",
+    "logout"
+   ],
+   "descriptions": [
+    "",
+    ""
+   ]
+  },
+  {
+   "step": "esc",
+   "text": "/mcp lo",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  },
+  {
+   "step": "backspace",
+   "text": "/mcp l",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "login",
+    "logout"
+   ],
+   "descriptions": [
+    "",
+    ""
+   ]
+  }
+ ],
+ "tab_completes_command": [
+  {
+   "step": "/mc",
+   "text": "/mc",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "mcp",
+    "compact"
+   ],
+   "descriptions": [
+    "Manage MCP servers",
+    "Compact the session"
+   ]
+  },
+  {
+   "step": "tab",
+   "text": "/mcp ",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  },
+  {
+   "step": "l",
+   "text": "/mcp l",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "login",
+    "logout"
+   ],
+   "descriptions": [
+    "",
+    ""
+   ]
+  }
+ ],
+ "one_letter_completion": [
+  {
+   "step": "/mcp login githu",
+   "text": "/mcp login githu",
+   "submitted": false,
+   "open": true,
+   "items": [
+    "github"
+   ],
+   "descriptions": [
+    "needs sign-in"
+   ]
+  },
+  {
+   "step": "tab",
+   "text": "/mcp login github",
+   "submitted": false,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  },
+  {
+   "step": "enter",
+   "text": "/mcp login github",
+   "submitted": true,
+   "open": false,
+   "items": [],
+   "descriptions": []
+  }
+ ]
+}

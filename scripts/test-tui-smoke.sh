@@ -70,7 +70,11 @@ if [[ ! -x bin/gi ]]; then
 fi
 
 # Start detached with a fixed terminal size for deterministic mouse coordinates.
-tmux new-session -d -x 100 -y 20 -s "$SESSION" "cd '$ROOT' && ./bin/gi -db '$DB' -workspace '$WORKSPACE'"
+# User agent dirs are test-local, so the host's mcp.json, auth and skills
+# (~/.gi/agent, ~/.pi/agent) cannot change what the smoke test sees.
+AGENT_DIR="$TEST_DIR/agent"
+mkdir -p "$AGENT_DIR/gi" "$AGENT_DIR/pi"
+tmux new-session -d -x 100 -y 20 -s "$SESSION" "cd '$ROOT' && GI_CODING_AGENT_DIR='$AGENT_DIR/gi' PI_CODING_AGENT_DIR='$AGENT_DIR/pi' ./bin/gi -db '$DB' -workspace '$WORKSPACE'"
 for _ in 1 2 3 4 5; do
   sleep 1
   tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/01-start.txt"

@@ -206,7 +206,9 @@ gi reads Pi's configuration unchanged and lets its own directories override it. 
 - **Project level:** `<workspace>/.gi/`, then `<workspace>/.pi/`: `settings.json`, `mcp.json`.
 - **Directories** (`skills/`, `tools/`, `extensions/`): `.gi/` is scanned before `.pi/`; the first item of a name wins. Skills are also loaded from the user agent directories, before the project's, as in Pi.
 
-A file is written where it was read (Pi refreshes `auth.json` in place). When neither location has it, it is created in Pi's location, so it stays shared with Pi. `.piclaw/config.json` (assistant and user identity) is Piclaw's file and is read only there. [Details](docs/internal/config-files.md).
+A file is written where it was read (gi and Pi refresh `auth.json` in place, holding Pi's lock). When neither location has it, it is created in Pi's location, so it stays shared with Pi. `.piclaw/config.json` (assistant and user identity) is Piclaw's file and is read only there. [Details](docs/internal/config-files.md).
+
+Model lists: gi lists the models of go-ai's catalogue plus those `models-store.json` adds, and filters Copilot to the account's `availableModelIds`, which a Copilot token refresh updates. To refresh `models-store.json` without Pi, set `"modelCatalogUrl": "https://pi.dev"` in the user `settings.json` (Pi's catalogue service); `PI_OFFLINE=1` disables startup refreshes.
 
 ## Testing
 

@@ -265,3 +265,26 @@ func TestQuietStartupSetting(t *testing.T) {
 		}
 	}
 }
+
+// modelCatalogUrl is read from the user settings only: a project cannot
+// choose where model definitions come from.
+func TestLoadModelCatalogURLFromUserSettingsOnly(t *testing.T) {
+	user, ws := t.TempDir(), t.TempDir()
+	t.Setenv("GI_CODING_AGENT_DIR", t.TempDir())
+	t.Setenv("PI_CODING_AGENT_DIR", user)
+	if err := os.MkdirAll(filepath.Join(ws, ".pi"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ws, ".pi", "settings.json"), []byte(`{"modelCatalogUrl":"https://project.example"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := Load(ws).ModelCatalogURL; got != "" {
+		t.Fatalf("project setting used: %q", got)
+	}
+	if err := os.WriteFile(filepath.Join(user, "settings.json"), []byte(`{"modelCatalogUrl":" https://pi.dev "}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := Load(ws).ModelCatalogURL; got != "https://pi.dev" {
+		t.Fatalf("user setting: %q", got)
+	}
+}

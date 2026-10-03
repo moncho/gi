@@ -396,18 +396,7 @@ func loadAuth(provider string) (string, string, error) {
 	}
 
 	if provider == "github-copilot" {
-		refreshToken := entry.Refresh
-		if refreshToken == "" {
-			refreshToken = entry.Access
-		}
-		if refreshToken == "" {
-			return "", "", fmt.Errorf("no access/refresh token for github-copilot")
-		}
-		token, baseURL, err := refreshCopilotToken(refreshToken)
-		if err != nil {
-			return "", "", fmt.Errorf("refresh copilot token: %w", err)
-		}
-		return token, baseURL, nil
+		return copilotAuth(entry)
 	}
 
 	if entry.Access != "" {
@@ -782,36 +771,4 @@ func sortedToolCallIndexes(calls map[int]*goai.ToolCall) []int {
 		}
 	}
 	return idx
-}
-
-func refreshCopilotToken(refreshToken string) (string, string, error) {
-	req, _ := http.NewRequest("GET", "https://api.github.com/copilot_internal/v2/token", nil)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "token "+refreshToken)
-	for k, v := range goai.CopilotHeaders() {
-		req.Header.Set(k, v)
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return "", "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(b))
-	}
-	var raw struct {
-		Token     string `json:"token"`
-		Endpoints struct {
-			API string `json:"api"`
-		} `json:"endpoints"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-		return "", "", err
-	}
-	baseURL := raw.Endpoints.API
-	if baseURL == "" {
-		baseURL = "https://api.individual.githubcopilot.com"
-	}
-	return raw.Token, baseURL, nil
 }

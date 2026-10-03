@@ -33,6 +33,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/rcarmo/gi/internal/lockdir"
 )
 
 const (
@@ -44,7 +46,6 @@ const (
 	oauthRefreshLockStale   = 20 * time.Second
 	oauthRefreshLockWait    = 25 * time.Second
 	oauthFileLockStale      = 10 * time.Second
-	oauthLockRetry          = 100 * time.Millisecond
 	mcpProtocolVersionOAuth = "2025-11-25"
 )
 
@@ -181,57 +182,13 @@ func normalizeServerURL(raw string) string {
 	return u.String()
 }
 
-// withFileLock holds proper-lockfile's lock (a "<file>.lock" directory), as
-// Pi's FileAuthStorageBackend does, so gi and Pi do not interleave writes.
-func withLockDir(lockPath string, stale, wait time.Duration, fn func() error) error {
-	if err := os.MkdirAll(filepath.Dir(lockPath), 0o700); err != nil {
-		return err
-	}
-	deadline := time.Now().Add(wait)
-	for {
-		err := os.Mkdir(lockPath, 0o700)
-		if err == nil {
-			break
-		}
-		if !os.IsExist(err) {
-			return err
-		}
-		if info, statErr := os.Stat(lockPath); statErr == nil && time.Since(info.ModTime()) > stale {
-			_ = os.Remove(lockPath) // abandoned by a killed process
-			continue
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("lock %s is held", lockPath)
-		}
-		time.Sleep(oauthLockRetry)
-	}
-	done := make(chan struct{})
-	go func() { // keep the lock fresh, like proper-lockfile's update
-		ticker := time.NewTicker(stale / 2)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-done:
-				return
-			case now := <-ticker.C:
-				_ = os.Chtimes(lockPath, now, now)
-			}
-		}
-	}()
-	defer func() {
-		close(done)
-		_ = os.Remove(lockPath)
-	}()
-	return fn()
-}
-
 func (c *CredentialStore) withFile(update func(states *orderedObject) bool) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if err := os.MkdirAll(filepath.Dir(c.Path), 0o700); err != nil {
 		return err
 	}
-	return withLockDir(c.Path+".lock", oauthFileLockStale, oauthFileLockStale, func() error {
+	return lockdir.With(c.Path+".lock", oauthFileLockStale, oauthFileLockStale, func() error {
 		states := &orderedObject{values: map[string]json.RawMessage{}}
 		if data, err := os.ReadFile(c.Path); err == nil && strings.TrimSpace(string(data)) != "" {
 			if parsed, ok := parseOrderedObject(data); ok {
@@ -324,7 +281,7 @@ func (c *CredentialStore) withRefreshLock(name, serverURL string, fn func() erro
 	key, _ := storeKeys(name, serverURL)
 	sum := sha256.Sum256([]byte(key))
 	lock := filepath.Join(c.LockDir, "mcp-auth-refresh-"+hex.EncodeToString(sum[:])[:16]) + ".lock"
-	return withLockDir(lock, oauthRefreshLockStale, oauthRefreshLockWait, fn)
+	return lockdir.With(lock, oauthRefreshLockStale, oauthRefreshLockWait, fn)
 }
 
 // --- provider (Pi's McpOAuthProvider) --------------------------------------

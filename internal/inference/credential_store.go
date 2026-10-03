@@ -12,8 +12,11 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/rcarmo/gi/internal/lockdir"
 )
 
 var credentialMu sync.Mutex
@@ -127,11 +130,31 @@ func readCredentials() (credentialDocument, error) {
 	return readCredentialDocument(root)
 }
 
-// Both web API-key changes and native TUI logout cooperate on this writer.
-// No external provider call or credential verification is performed here.
-func updateCredentials(expected string, change func(map[string]json.RawMessage) error) (credentialDocument, error) {
+// errCredentialUnchanged, returned by an updateCredentials change, leaves
+// the file as it is.
+var errCredentialUnchanged = errors.New("credentials unchanged")
+
+// piAuthLockStale is Pi's FileAuthStorageBackend lock staleness and wait.
+const piAuthLockStale = 30 * time.Second
+
+// Web API-key changes, native TUI logout and OAuth refreshes cooperate on
+// this writer, which also holds Pi's lock (auth.json.lock) so gi and Pi do
+// not interleave writes. A change returning errCredentialUnchanged skips the
+// write.
+func updateCredentials(expected string, change func(map[string]json.RawMessage) error) (d credentialDocument, err error) {
 	credentialMu.Lock()
 	defer credentialMu.Unlock()
+	lockErr := lockdir.With(filepath.Join(filepath.Dir(AuthFilePath()), "auth.json.lock"), piAuthLockStale, piAuthLockStale, func() error {
+		d, err = updateCredentialsLocked(expected, change)
+		return nil
+	})
+	if lockErr != nil {
+		return credentialDocument{}, ErrCredentialConflict
+	}
+	return d, err
+}
+
+func updateCredentialsLocked(expected string, change func(map[string]json.RawMessage) error) (credentialDocument, error) {
 	root, err := openCredentialRoot(true)
 	if err != nil {
 		return credentialDocument{}, err
@@ -164,7 +187,9 @@ func updateCredentials(expected string, change func(map[string]json.RawMessage) 
 		return d, ErrCredentialConflict
 	}
 	revision := d.revision
-	if err = change(d.entries); err != nil {
+	if err = change(d.entries); errors.Is(err, errCredentialUnchanged) {
+		return d, nil
+	} else if err != nil {
 		return d, err
 	}
 	body, err := json.MarshalIndent(d.entries, "", "  ")

@@ -38,6 +38,10 @@ type RuntimeConfig struct {
 	// TUIMode is Pi's tuiMode setting (project, else global); the -tui-mode
 	// flag overrides it.
 	TUIMode string `json:"tui_mode,omitempty"`
+	// ModelCatalogURL is the user setting modelCatalogUrl: the base URL of
+	// Pi's model catalogue service (Pi always uses https://pi.dev); empty: gi
+	// does not refresh models-store.json.
+	ModelCatalogURL string `json:"model_catalog_url,omitempty"`
 	// QuietStartup is Pi's quietStartup: "" (false: header and loaded
 	// resources), "true" (neither) or "header" (header only).
 	QuietStartup string `json:"quiet_startup,omitempty"`
@@ -129,6 +133,8 @@ type piSettings struct {
 	Theme                string   `json:"theme"`
 	// TUIMode is Pi's tuiMode: "fullscreen" (default) or "regular".
 	TUIMode string `json:"tuiMode"`
+	// ModelCatalogURL is gi's modelCatalogUrl (user settings only).
+	ModelCatalogURL string `json:"modelCatalogUrl"`
 	// QuietStartup is Pi's quietStartup: false, true or "header".
 	QuietStartup json.RawMessage `json:"quietStartup"`
 	DefaultProvider      string   `json:"defaultProvider"`
@@ -354,6 +360,7 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	if err := readJSON(UserConfigFile("settings.json"), &global); err != nil {
 		return
 	}
+	cfg.ModelCatalogURL = strings.TrimSpace(global.ModelCatalogURL)
 	if strings.TrimSpace(cfg.DefaultProvider) == "" && strings.TrimSpace(cfg.DefaultModel) == "" {
 		cfg.DefaultProvider = global.DefaultProvider
 		cfg.DefaultModel = global.DefaultModel

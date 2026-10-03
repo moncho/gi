@@ -22,6 +22,7 @@ import (
 
 	"github.com/rcarmo/gi/internal/config"
 	"github.com/rcarmo/gi/internal/httpserver"
+	"github.com/rcarmo/gi/internal/inference"
 	gimcp "github.com/rcarmo/gi/internal/mcp"
 	"github.com/rcarmo/gi/internal/store"
 	storecache "github.com/rcarmo/gi/internal/store/cache"
@@ -94,6 +95,7 @@ func run() error {
 	_ = flag.Bool("tui", true, "Run the terminal UI (default; kept for compatibility)")
 	tuiLayout := flag.String("tui-mode", "", "Terminal rendering: fullscreen or regular (native scrollback); default: tuiMode setting, else fullscreen")
 	flag.Parse()
+	startModelCatalogRefresh(*workspace)
 
 	if !*webMode {
 		// Server-only flags without -web are almost certainly a mistake;
@@ -254,6 +256,30 @@ func startProfiling() {
 	go func() {
 		if err := http.ListenAndServe(addr, nil); err != nil {
 			log.Printf("pprof: %v", err)
+		}
+	}()
+}
+
+// startModelCatalogRefresh is Pi's startup model refresh, in the
+// background and bounded to 15 seconds, unless PI_OFFLINE is set: expired
+// Copilot credentials are refreshed (updating the account's model list), and
+// with modelCatalogUrl set, models-store.json catalogues that are due.
+func startModelCatalogRefresh(workspace string) {
+	if os.Getenv("PI_OFFLINE") != "" {
+		return
+	}
+	base := config.Load(workspace).ModelCatalogURL
+	go func() {
+		if err := inference.RefreshExpiredCopilotCredentials(); err != nil {
+			log.Printf("models: copilot credentials: %v", err)
+		}
+		if base == "" {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := inference.RefreshModelCatalog(ctx, base, false); err != nil {
+			log.Printf("models: catalogue refresh: %v", err)
 		}
 	}()
 }

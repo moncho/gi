@@ -15,8 +15,8 @@ it is created in Pi's location, so it stays shared with Pi.
 | File | Level | Where |
 |---|---|---|
 | `settings.json` | project, then user (Pi's merge of global under project) | `config.Load`, `settings_file.go` (reads and writes the project file that exists) |
-| `auth.json` | user | `inference.AuthFilePath`, credential store (writes the file read; Pi refreshes tokens in place) |
-| `models-store.json` | user | `inference.PiModelsStorePath` (read-only) |
+| `auth.json` | user | `inference.AuthFilePath`, credential store (writes the file read, holding Pi's `auth.json.lock`; refreshes Copilot tokens in place, like Pi) |
+| `models-store.json` | user | `inference.PiModelsStorePath`; refreshed with `modelCatalogUrl` set (below), holding Pi's `models-store.json.lock` |
 | `mcp.json` | user and project | `internal/mcp` |
 | `mcp-auth.json` | user | MCP OAuth credentials, shared with Pi |
 
@@ -58,3 +58,39 @@ repository's. They become the prompt's `project_context` entries.
 
 `.piclaw/config.json` (assistant and user names and avatars) is Piclaw's
 file, not Pi's; gi reads and writes it only there.
+
+## Copilot credentials (`internal/inference/copilot_auth.go`)
+
+As in Pi (pi-ai `resolveRefreshCredential` and `refreshGitHubCopilotToken`):
+the Copilot token in `access` is used until `expires`, with the API base
+URL taken from the token's `proxy-ep`. Then, holding `auth.json.lock`
+(proper-lockfile's directory lock, as Pi's `FileAuthStorageBackend`), the
+entry is read again, since another gi or Pi may have refreshed it, and, if
+still expired, refreshed through go-ai's port. A refresh also fetches
+`{copilot-base}/models` and stores the picker-enabled, tool-capable models
+the policy allows as `availableModelIds` (Pi's picker and policy rules,
+with Pi's policy fallback for the individual endpoint); they filter the
+Copilot model listing. A failed model fetch fails the refresh, as in Pi.
+
+At startup (`cmd/gi`, in the background, skipped with `PI_OFFLINE` like
+Pi's offline mode), expired Copilot credentials are refreshed, as Pi's
+startup model refresh does.
+
+## Model catalogue (`internal/inference/model_catalog.go`)
+
+A port of Pi's `withRemoteCatalog` and `FileModelsStore`. For each go-ai
+provider with credentials (Pi resolves the credential first; radius is
+excluded), `GET <modelCatalogUrl>/api/models/providers/<id>?types=chat,image,classifier`
+at most every four hours. A cached body is revalidated with
+`If-None-Match`; 304 only moves `checkedAt`; 404/501 store an empty
+catalogue with `lastModified: 0`; other failures keep the body and its
+ETag. Requests are retried as Pi's `fetchWithRetry` (two immediate retries
+on 408/425/429/5xx and network errors, four seconds per attempt; 15 seconds
+overall at startup). Entries are written one provider at a time under
+`models-store.json.lock`, keeping the others. Models the store adds are
+registered; go-ai's definitions are never replaced.
+
+Difference: Pi always uses `https://pi.dev`. gi refreshes only when the
+user settings set `modelCatalogUrl` (project settings cannot), so offline
+and test instances never call out; otherwise it reads the store Pi
+refreshes.

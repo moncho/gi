@@ -92,11 +92,28 @@ func TestSelectPiThemeHonoursSetting(t *testing.T) {
 		{"dark", "light", "dark"}, {"light", "dark", "light"},
 		{"light/dark", "light", "light"}, {"light/dark", "dark", "dark"},
 		{"system/dark", "light", "system"},
-		{"my-custom", "light", "system"}, {"a/b/c", "dark", "system"},
+		{"my-custom", "light", "my-custom"}, {"a/b/c", "dark", "system"},
 	} {
 		if got := selectPiTheme(tc.setting, tc.terminal); got != tc.want {
 			t.Fatalf("setting %q on %s = %s, want %s", tc.setting, tc.terminal, got, tc.want)
 		}
+	}
+}
+
+// An unknown or invalid theme falls back to the system theme (Pi's
+// setTheme) and says why.
+func TestSetPiThemeFallsBackToSystem(t *testing.T) {
+	previous := customThemeDirs
+	customThemeDirs = func() []string { return []string{t.TempDir()} }
+	t.Cleanup(func() { customThemeDirs = previous; applyPiTheme("dark") })
+	piTerminal.scheme = "light"
+	t.Cleanup(func() { piTerminal.scheme = "" })
+	if err := setPiTheme("my-custom"); err == nil || err.Error() != "Theme not found: my-custom" {
+		t.Fatalf("err %v", err)
+	}
+	// No reported background: the scheme's built-in theme stands in for system.
+	if piActiveTheme != "light" {
+		t.Fatalf("active %q", piActiveTheme)
 	}
 }
 

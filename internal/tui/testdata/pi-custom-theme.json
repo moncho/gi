@@ -1,0 +1,771 @@
+{
+ "files": {
+  "ocean": {
+   "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+   "name": "ocean",
+   "appearance": "dark",
+   "vars": {
+    "text": "okhsl(234 3% 89%)",
+    "muted": "okhsl(229 6% 67%)",
+    "violet": "okhsl(295 50% 67%)",
+    "blue": "okhsl(232 54% 67%)",
+    "green": "okhsl(159 59% 67%)",
+    "red": "okhsl(20 72% 67%)",
+    "yellow": "okhsl(83 88% 67%)",
+    "blueBg": "okhsl(233 41% 24%)",
+    "base": "#112233",
+    "alias": "base",
+    "deep": 24
+   },
+   "colors": {
+    "accent": "#0af",
+    "border": 75,
+    "borderAccent": "okhsl(295 53% 64%)",
+    "borderMuted": "deep",
+    "success": "okhsl(140deg 60% 60%)",
+    "error": "red",
+    "warning": "yellow",
+    "muted": "muted",
+    "dim": "okhsl(229 8% 56%)",
+    "text": "",
+    "thinkingText": "okhsl(226 7% 65%)",
+    "selectedBg": "",
+    "scrollbarTrack": "okhsl(237 7% 33%)",
+    "scrollbarThumb": "okhsl(232 7% 65%)",
+    "searchMatchText": "muted",
+    "userMessageBg": "blueBg",
+    "userMessageText": "text",
+    "customMessageBg": "okhsl(295 42% 24%)",
+    "customMessageText": "muted",
+    "customMessageLabel": "violet",
+    "toolPendingBg": "okhsl(229 5% 24%)",
+    "toolSuccessBg": "okhsl(158 46% 25%)",
+    "toolErrorBg": "okhsl(19 54% 25%)",
+    "toolTitle": "alias",
+    "toolOutput": "muted",
+    "mdHeading": "yellow",
+    "mdLink": "oklch(70% 0.1 200)",
+    "mdLinkUrl": "muted",
+    "mdCode": "violet",
+    "mdCodeBlock": "green",
+    "mdCodeBlockBorder": "muted",
+    "mdQuote": "muted",
+    "mdQuoteBorder": "muted",
+    "mdHr": "muted",
+    "mdListBullet": "violet",
+    "toolDiffAdded": "green",
+    "toolDiffRemoved": "red",
+    "toolDiffContext": "muted",
+    "syntaxComment": "muted",
+    "syntaxKeyword": "blue",
+    "syntaxFunction": "yellow",
+    "syntaxVariable": "okhsl(202 58% 67%)",
+    "syntaxString": "okhsl(52 67% 67%)",
+    "syntaxNumber": "green",
+    "syntaxType": "violet",
+    "syntaxOperator": "muted",
+    "syntaxPunctuation": "muted",
+    "thinkingOff": "okhsl(229 8% 49%)",
+    "thinkingMinimal": "okhsl(232 20% 52%)",
+    "thinkingLow": "okhsl(232 45% 54%)",
+    "thinkingMedium": "okhsl(263 59% 56%)",
+    "thinkingHigh": "okhsl(295 73% 59%)",
+    "thinkingXhigh": "okhsl(337 81% 61%)",
+    "bashMode": "okhsl(159 64% 65%)"
+   },
+   "export": {
+    "pageBg": "okhsl(262 14% 16%)",
+    "cardBg": "okhsl(264 13% 19%)",
+    "infoBg": "okhsl(53 51% 24%)"
+   }
+  },
+  "missing": {
+   "name": "missing",
+   "colors": {
+    "accent": "#fff",
+    "text": "#000"
+   }
+  },
+  "circular": {
+   "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+   "name": "circular",
+   "appearance": "dark",
+   "vars": {
+    "a": "b",
+    "b": "a"
+   },
+   "colors": {
+    "accent": "a",
+    "border": "okhsl(231 57% 65%)",
+    "borderAccent": "okhsl(295 53% 64%)",
+    "borderMuted": "okhsl(229 8% 53%)",
+    "success": "green",
+    "error": "red",
+    "warning": "yellow",
+    "muted": "muted",
+    "dim": "okhsl(229 8% 56%)",
+    "text": "text",
+    "thinkingText": "okhsl(226 7% 65%)",
+    "selectedBg": "blueBg",
+    "scrollbarTrack": "okhsl(237 7% 33%)",
+    "scrollbarThumb": "okhsl(232 7% 65%)",
+    "searchMatchBg": "okhsl(53 51% 24%)",
+    "searchMatchText": "muted",
+    "userMessageBg": "blueBg",
+    "userMessageText": "text",
+    "customMessageBg": "okhsl(295 42% 24%)",
+    "customMessageText": "muted",
+    "customMessageLabel": "violet",
+    "toolPendingBg": "okhsl(229 5% 24%)",
+    "toolSuccessBg": "okhsl(158 46% 25%)",
+    "toolErrorBg": "okhsl(19 54% 25%)",
+    "toolTitle": "text",
+    "toolOutput": "muted",
+    "mdHeading": "yellow",
+    "mdLink": "blue",
+    "mdLinkUrl": "muted",
+    "mdCode": "violet",
+    "mdCodeBlock": "green",
+    "mdCodeBlockBorder": "muted",
+    "mdQuote": "muted",
+    "mdQuoteBorder": "muted",
+    "mdHr": "muted",
+    "mdListBullet": "violet",
+    "toolDiffAdded": "green",
+    "toolDiffRemoved": "red",
+    "toolDiffContext": "muted",
+    "syntaxComment": "muted",
+    "syntaxKeyword": "blue",
+    "syntaxFunction": "yellow",
+    "syntaxVariable": "okhsl(202 58% 67%)",
+    "syntaxString": "okhsl(52 67% 67%)",
+    "syntaxNumber": "green",
+    "syntaxType": "violet",
+    "syntaxOperator": "muted",
+    "syntaxPunctuation": "muted",
+    "thinkingOff": "okhsl(229 8% 49%)",
+    "thinkingMinimal": "okhsl(232 20% 52%)",
+    "thinkingLow": "okhsl(232 45% 54%)",
+    "thinkingMedium": "okhsl(263 59% 56%)",
+    "thinkingHigh": "okhsl(295 73% 59%)",
+    "thinkingXhigh": "okhsl(337 81% 61%)",
+    "thinkingMax": "okhsl(20 99% 63%)",
+    "bashMode": "okhsl(159 64% 65%)"
+   },
+   "export": {
+    "pageBg": "okhsl(262 14% 16%)",
+    "cardBg": "okhsl(264 13% 19%)",
+    "infoBg": "okhsl(53 51% 24%)"
+   }
+  },
+  "unknownvar": {
+   "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+   "name": "unknownvar",
+   "appearance": "dark",
+   "vars": {
+    "text": "okhsl(234 3% 89%)",
+    "muted": "okhsl(229 6% 67%)",
+    "violet": "okhsl(295 50% 67%)",
+    "blue": "okhsl(232 54% 67%)",
+    "green": "okhsl(159 59% 67%)",
+    "red": "okhsl(20 72% 67%)",
+    "yellow": "okhsl(83 88% 67%)",
+    "blueBg": "okhsl(233 41% 24%)"
+   },
+   "colors": {
+    "accent": "nosuchvar",
+    "border": "okhsl(231 57% 65%)",
+    "borderAccent": "okhsl(295 53% 64%)",
+    "borderMuted": "okhsl(229 8% 53%)",
+    "success": "green",
+    "error": "red",
+    "warning": "yellow",
+    "muted": "muted",
+    "dim": "okhsl(229 8% 56%)",
+    "text": "text",
+    "thinkingText": "okhsl(226 7% 65%)",
+    "selectedBg": "blueBg",
+    "scrollbarTrack": "okhsl(237 7% 33%)",
+    "scrollbarThumb": "okhsl(232 7% 65%)",
+    "searchMatchBg": "okhsl(53 51% 24%)",
+    "searchMatchText": "muted",
+    "userMessageBg": "blueBg",
+    "userMessageText": "text",
+    "customMessageBg": "okhsl(295 42% 24%)",
+    "customMessageText": "muted",
+    "customMessageLabel": "violet",
+    "toolPendingBg": "okhsl(229 5% 24%)",
+    "toolSuccessBg": "okhsl(158 46% 25%)",
+    "toolErrorBg": "okhsl(19 54% 25%)",
+    "toolTitle": "text",
+    "toolOutput": "muted",
+    "mdHeading": "yellow",
+    "mdLink": "blue",
+    "mdLinkUrl": "muted",
+    "mdCode": "violet",
+    "mdCodeBlock": "green",
+    "mdCodeBlockBorder": "muted",
+    "mdQuote": "muted",
+    "mdQuoteBorder": "muted",
+    "mdHr": "muted",
+    "mdListBullet": "violet",
+    "toolDiffAdded": "green",
+    "toolDiffRemoved": "red",
+    "toolDiffContext": "muted",
+    "syntaxComment": "muted",
+    "syntaxKeyword": "blue",
+    "syntaxFunction": "yellow",
+    "syntaxVariable": "okhsl(202 58% 67%)",
+    "syntaxString": "okhsl(52 67% 67%)",
+    "syntaxNumber": "green",
+    "syntaxType": "violet",
+    "syntaxOperator": "muted",
+    "syntaxPunctuation": "muted",
+    "thinkingOff": "okhsl(229 8% 49%)",
+    "thinkingMinimal": "okhsl(232 20% 52%)",
+    "thinkingLow": "okhsl(232 45% 54%)",
+    "thinkingMedium": "okhsl(263 59% 56%)",
+    "thinkingHigh": "okhsl(295 73% 59%)",
+    "thinkingXhigh": "okhsl(337 81% 61%)",
+    "thinkingMax": "okhsl(20 99% 63%)",
+    "bashMode": "okhsl(159 64% 65%)"
+   },
+   "export": {
+    "pageBg": "okhsl(262 14% 16%)",
+    "cardBg": "okhsl(264 13% 19%)",
+    "infoBg": "okhsl(53 51% 24%)"
+   }
+  },
+  "badcolor": {
+   "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+   "name": "badcolor",
+   "appearance": "dark",
+   "vars": {
+    "text": "okhsl(234 3% 89%)",
+    "muted": "okhsl(229 6% 67%)",
+    "violet": "okhsl(295 50% 67%)",
+    "blue": "okhsl(232 54% 67%)",
+    "green": "okhsl(159 59% 67%)",
+    "red": "okhsl(20 72% 67%)",
+    "yellow": "okhsl(83 88% 67%)",
+    "blueBg": "okhsl(233 41% 24%)"
+   },
+   "colors": {
+    "accent": "#12345",
+    "border": "okhsl(231 57% 65%)",
+    "borderAccent": "okhsl(295 53% 64%)",
+    "borderMuted": "okhsl(229 8% 53%)",
+    "success": "green",
+    "error": "red",
+    "warning": "yellow",
+    "muted": "muted",
+    "dim": "okhsl(229 8% 56%)",
+    "text": "text",
+    "thinkingText": "okhsl(226 7% 65%)",
+    "selectedBg": "blueBg",
+    "scrollbarTrack": "okhsl(237 7% 33%)",
+    "scrollbarThumb": "okhsl(232 7% 65%)",
+    "searchMatchBg": "okhsl(53 51% 24%)",
+    "searchMatchText": "muted",
+    "userMessageBg": "blueBg",
+    "userMessageText": "text",
+    "customMessageBg": "okhsl(295 42% 24%)",
+    "customMessageText": "muted",
+    "customMessageLabel": "violet",
+    "toolPendingBg": "okhsl(229 5% 24%)",
+    "toolSuccessBg": "okhsl(158 46% 25%)",
+    "toolErrorBg": "okhsl(19 54% 25%)",
+    "toolTitle": "text",
+    "toolOutput": "muted",
+    "mdHeading": "yellow",
+    "mdLink": "blue",
+    "mdLinkUrl": "muted",
+    "mdCode": "violet",
+    "mdCodeBlock": "green",
+    "mdCodeBlockBorder": "muted",
+    "mdQuote": "muted",
+    "mdQuoteBorder": "muted",
+    "mdHr": "muted",
+    "mdListBullet": "violet",
+    "toolDiffAdded": "green",
+    "toolDiffRemoved": "red",
+    "toolDiffContext": "muted",
+    "syntaxComment": "muted",
+    "syntaxKeyword": "blue",
+    "syntaxFunction": "yellow",
+    "syntaxVariable": "okhsl(202 58% 67%)",
+    "syntaxString": "okhsl(52 67% 67%)",
+    "syntaxNumber": "green",
+    "syntaxType": "violet",
+    "syntaxOperator": "muted",
+    "syntaxPunctuation": "muted",
+    "thinkingOff": "okhsl(229 8% 49%)",
+    "thinkingMinimal": "okhsl(232 20% 52%)",
+    "thinkingLow": "okhsl(232 45% 54%)",
+    "thinkingMedium": "okhsl(263 59% 56%)",
+    "thinkingHigh": "okhsl(295 73% 59%)",
+    "thinkingXhigh": "okhsl(337 81% 61%)",
+    "thinkingMax": "okhsl(20 99% 63%)",
+    "bashMode": "okhsl(159 64% 65%)"
+   },
+   "export": {
+    "pageBg": "okhsl(262 14% 16%)",
+    "cardBg": "okhsl(264 13% 19%)",
+    "infoBg": "okhsl(53 51% 24%)"
+   }
+  },
+  "wrongtype": {
+   "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+   "name": "wrongtype",
+   "appearance": "dark",
+   "vars": {
+    "text": "okhsl(234 3% 89%)",
+    "muted": "okhsl(229 6% 67%)",
+    "violet": "okhsl(295 50% 67%)",
+    "blue": "okhsl(232 54% 67%)",
+    "green": "okhsl(159 59% 67%)",
+    "red": "okhsl(20 72% 67%)",
+    "yellow": "okhsl(83 88% 67%)",
+    "blueBg": "okhsl(233 41% 24%)"
+   },
+   "colors": {
+    "accent": true,
+    "border": "okhsl(231 57% 65%)",
+    "borderAccent": "okhsl(295 53% 64%)",
+    "borderMuted": "okhsl(229 8% 53%)",
+    "success": "green",
+    "error": "red",
+    "warning": "yellow",
+    "muted": "muted",
+    "dim": "okhsl(229 8% 56%)",
+    "text": "text",
+    "thinkingText": "okhsl(226 7% 65%)",
+    "selectedBg": "blueBg",
+    "scrollbarTrack": "okhsl(237 7% 33%)",
+    "scrollbarThumb": "okhsl(232 7% 65%)",
+    "searchMatchBg": "okhsl(53 51% 24%)",
+    "searchMatchText": "muted",
+    "userMessageBg": "blueBg",
+    "userMessageText": "text",
+    "customMessageBg": "okhsl(295 42% 24%)",
+    "customMessageText": "muted",
+    "customMessageLabel": "violet",
+    "toolPendingBg": "okhsl(229 5% 24%)",
+    "toolSuccessBg": "okhsl(158 46% 25%)",
+    "toolErrorBg": "okhsl(19 54% 25%)",
+    "toolTitle": "text",
+    "toolOutput": "muted",
+    "mdHeading": "yellow",
+    "mdLink": "blue",
+    "mdLinkUrl": "muted",
+    "mdCode": "violet",
+    "mdCodeBlock": "green",
+    "mdCodeBlockBorder": "muted",
+    "mdQuote": "muted",
+    "mdQuoteBorder": "muted",
+    "mdHr": "muted",
+    "mdListBullet": "violet",
+    "toolDiffAdded": "green",
+    "toolDiffRemoved": "red",
+    "toolDiffContext": "muted",
+    "syntaxComment": "muted",
+    "syntaxKeyword": "blue",
+    "syntaxFunction": "yellow",
+    "syntaxVariable": "okhsl(202 58% 67%)",
+    "syntaxString": "okhsl(52 67% 67%)",
+    "syntaxNumber": "green",
+    "syntaxType": "violet",
+    "syntaxOperator": "muted",
+    "syntaxPunctuation": "muted",
+    "thinkingOff": "okhsl(229 8% 49%)",
+    "thinkingMinimal": "okhsl(232 20% 52%)",
+    "thinkingLow": "okhsl(232 45% 54%)",
+    "thinkingMedium": "okhsl(263 59% 56%)",
+    "thinkingHigh": "okhsl(295 73% 59%)",
+    "thinkingXhigh": "okhsl(337 81% 61%)",
+    "thinkingMax": "okhsl(20 99% 63%)",
+    "bashMode": "okhsl(159 64% 65%)"
+   },
+   "export": {
+    "pageBg": "okhsl(262 14% 16%)",
+    "cardBg": "okhsl(264 13% 19%)",
+    "infoBg": "okhsl(53 51% 24%)"
+   }
+  },
+  "slash": {
+   "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+   "name": "a/b",
+   "appearance": "dark",
+   "vars": {
+    "text": "okhsl(234 3% 89%)",
+    "muted": "okhsl(229 6% 67%)",
+    "violet": "okhsl(295 50% 67%)",
+    "blue": "okhsl(232 54% 67%)",
+    "green": "okhsl(159 59% 67%)",
+    "red": "okhsl(20 72% 67%)",
+    "yellow": "okhsl(83 88% 67%)",
+    "blueBg": "okhsl(233 41% 24%)"
+   },
+   "colors": {
+    "accent": "violet",
+    "border": "okhsl(231 57% 65%)",
+    "borderAccent": "okhsl(295 53% 64%)",
+    "borderMuted": "okhsl(229 8% 53%)",
+    "success": "green",
+    "error": "red",
+    "warning": "yellow",
+    "muted": "muted",
+    "dim": "okhsl(229 8% 56%)",
+    "text": "text",
+    "thinkingText": "okhsl(226 7% 65%)",
+    "selectedBg": "blueBg",
+    "scrollbarTrack": "okhsl(237 7% 33%)",
+    "scrollbarThumb": "okhsl(232 7% 65%)",
+    "searchMatchBg": "okhsl(53 51% 24%)",
+    "searchMatchText": "muted",
+    "userMessageBg": "blueBg",
+    "userMessageText": "text",
+    "customMessageBg": "okhsl(295 42% 24%)",
+    "customMessageText": "muted",
+    "customMessageLabel": "violet",
+    "toolPendingBg": "okhsl(229 5% 24%)",
+    "toolSuccessBg": "okhsl(158 46% 25%)",
+    "toolErrorBg": "okhsl(19 54% 25%)",
+    "toolTitle": "text",
+    "toolOutput": "muted",
+    "mdHeading": "yellow",
+    "mdLink": "blue",
+    "mdLinkUrl": "muted",
+    "mdCode": "violet",
+    "mdCodeBlock": "green",
+    "mdCodeBlockBorder": "muted",
+    "mdQuote": "muted",
+    "mdQuoteBorder": "muted",
+    "mdHr": "muted",
+    "mdListBullet": "violet",
+    "toolDiffAdded": "green",
+    "toolDiffRemoved": "red",
+    "toolDiffContext": "muted",
+    "syntaxComment": "muted",
+    "syntaxKeyword": "blue",
+    "syntaxFunction": "yellow",
+    "syntaxVariable": "okhsl(202 58% 67%)",
+    "syntaxString": "okhsl(52 67% 67%)",
+    "syntaxNumber": "green",
+    "syntaxType": "violet",
+    "syntaxOperator": "muted",
+    "syntaxPunctuation": "muted",
+    "thinkingOff": "okhsl(229 8% 49%)",
+    "thinkingMinimal": "okhsl(232 20% 52%)",
+    "thinkingLow": "okhsl(232 45% 54%)",
+    "thinkingMedium": "okhsl(263 59% 56%)",
+    "thinkingHigh": "okhsl(295 73% 59%)",
+    "thinkingXhigh": "okhsl(337 81% 61%)",
+    "thinkingMax": "okhsl(20 99% 63%)",
+    "bashMode": "okhsl(159 64% 65%)"
+   },
+   "export": {
+    "pageBg": "okhsl(262 14% 16%)",
+    "cardBg": "okhsl(264 13% 19%)",
+    "infoBg": "okhsl(53 51% 24%)"
+   }
+  },
+  "broken": "{ not json"
+ },
+ "available": [
+  "system",
+  "dark",
+  "light",
+  "ocean"
+ ],
+ "themes": {
+  "ocean": {
+   "colors": {
+    "accent": [
+     0,
+     170,
+     255
+    ],
+    "bashMode": [
+     94,
+     178,
+     134
+    ],
+    "border": 75,
+    "borderAccent": [
+     160,
+     142,
+     213
+    ],
+    "borderMuted": 24,
+    "customMessageBg": [
+     58,
+     48,
+     85
+    ],
+    "customMessageLabel": [
+     167,
+     152,
+     215
+    ],
+    "customMessageText": [
+     157,
+     165,
+     169
+    ],
+    "dim": [
+     126,
+     136,
+     142
+    ],
+    "error": [
+     234,
+     127,
+     129
+    ],
+    "mdCode": [
+     167,
+     152,
+     215
+    ],
+    "mdCodeBlock": [
+     104,
+     183,
+     141
+    ],
+    "mdCodeBlockBorder": [
+     157,
+     165,
+     169
+    ],
+    "mdHeading": [
+     205,
+     154,
+     34
+    ],
+    "mdHr": [
+     157,
+     165,
+     169
+    ],
+    "mdLink": [
+     64,
+     177,
+     183
+    ],
+    "mdLinkUrl": [
+     157,
+     165,
+     169
+    ],
+    "mdListBullet": [
+     167,
+     152,
+     215
+    ],
+    "mdQuote": [
+     157,
+     165,
+     169
+    ],
+    "mdQuoteBorder": [
+     157,
+     165,
+     169
+    ],
+    "muted": [
+     157,
+     165,
+     169
+    ],
+    "scrollbarThumb": [
+     151,
+     160,
+     165
+    ],
+    "scrollbarTrack": [
+     72,
+     78,
+     82
+    ],
+    "searchMatchBg": "default",
+    "searchMatchText": [
+     157,
+     165,
+     169
+    ],
+    "selectedBg": "default",
+    "success": [
+     108,
+     161,
+     96
+    ],
+    "syntaxComment": [
+     157,
+     165,
+     169
+    ],
+    "syntaxFunction": [
+     205,
+     154,
+     34
+    ],
+    "syntaxKeyword": [
+     105,
+     173,
+     208
+    ],
+    "syntaxNumber": [
+     104,
+     183,
+     141
+    ],
+    "syntaxOperator": [
+     157,
+     165,
+     169
+    ],
+    "syntaxPunctuation": [
+     157,
+     165,
+     169
+    ],
+    "syntaxString": [
+     222,
+     141,
+     90
+    ],
+    "syntaxType": [
+     167,
+     152,
+     215
+    ],
+    "syntaxVariable": [
+     93,
+     179,
+     186
+    ],
+    "text": "default",
+    "thinkingHigh": [
+     151,
+     118,
+     229
+    ],
+    "thinkingLow": [
+     84,
+     137,
+     164
+    ],
+    "thinkingMax": [
+     222,
+     84,
+     193
+    ],
+    "thinkingMedium": [
+     97,
+     133,
+     204
+    ],
+    "thinkingMinimal": [
+     104,
+     128,
+     141
+    ],
+    "thinkingOff": [
+     108,
+     118,
+     123
+    ],
+    "thinkingText": [
+     150,
+     160,
+     164
+    ],
+    "thinkingXhigh": [
+     222,
+     84,
+     193
+    ],
+    "toolDiffAdded": [
+     104,
+     183,
+     141
+    ],
+    "toolDiffContext": [
+     157,
+     165,
+     169
+    ],
+    "toolDiffRemoved": [
+     234,
+     127,
+     129
+    ],
+    "toolErrorBg": [
+     91,
+     40,
+     42
+    ],
+    "toolOutput": [
+     157,
+     165,
+     169
+    ],
+    "toolPendingBg": [
+     52,
+     56,
+     58
+    ],
+    "toolSuccessBg": [
+     37,
+     65,
+     49
+    ],
+    "toolTitle": [
+     17,
+     34,
+     51
+    ],
+    "userMessageBg": [
+     33,
+     59,
+     73
+    ],
+    "userMessageText": [
+     222,
+     224,
+     225
+    ],
+    "warning": [
+     205,
+     154,
+     34
+    ]
+   }
+  },
+  "missing": {
+   "error": "Invalid theme \"missing\":\n\nMissing required color tokens:\n  - bashMode\n  - border\n  - borderAccent\n  - borderMuted\n  - customMessageBg\n  - customMessageLabel\n  - customMessageText\n  - dim\n  - error\n  - mdCode\n  - mdCodeBlock\n  - mdCodeBlockBorder\n  - mdHeading\n  - mdHr\n  - mdLink\n  - mdLinkUrl\n  - mdListBullet\n  - mdQuote\n  - mdQuoteBorder\n  - muted\n  - selectedBg\n  - success\n  - syntaxComment\n  - syntaxFunction\n  - syntaxKeyword\n  - syntaxNumber\n  - syntaxOperator\n  - syntaxPunctuation\n  - syntaxString\n  - syntaxType\n  - syntaxVariable\n  - thinkingHigh\n  - thinkingLow\n  - thinkingMedium\n  - thinkingMinimal\n  - thinkingOff\n  - thinkingText\n  - thinkingXhigh\n  - toolDiffAdded\n  - toolDiffContext\n  - toolDiffRemoved\n  - toolErrorBg\n  - toolOutput\n  - toolPendingBg\n  - toolSuccessBg\n  - toolTitle\n  - userMessageBg\n  - userMessageText\n  - warning\n\nPlease add these colors to your theme's \"colors\" object.\nSee the built-in themes (dark.json, light.json) for reference values."
+  },
+  "circular": {
+   "error": "Circular variable reference detected: a"
+  },
+  "unknownvar": {
+   "error": "Variable reference not found: nosuchvar"
+  },
+  "badcolor": {
+   "error": "Invalid color value: #12345"
+  },
+  "wrongtype": {
+   "error": "Invalid theme \"wrongtype\":\n\n\nOther errors:\n  - /colors/accent: must be string\n  - /colors/accent: must be integer\n  - /colors/accent: must match a schema in anyOf"
+  },
+  "slash": {
+   "error": "Invalid theme name \"a/b\": theme names cannot contain \"/\" because it is reserved for automatic light/dark theme settings."
+  },
+  "broken": {
+   "error": "Failed to parse theme broken: SyntaxError: JSON Parse error: Expected '}'"
+  },
+  "nosuch": {
+   "error": "Theme not found: nosuch"
+  }
+ }
+}

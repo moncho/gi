@@ -19,10 +19,43 @@ query early. Windows currently uses environment fallback without probing.
 The startup probe consumes incoming bytes, so type after the editor appears;
 this is not a general-purpose input/reply multiplexer.
 
-The Pi `theme` setting accepts `system`, `dark`, `light`, or a `light/dark`
-pair. Whitespace is trimmed. As in Pi 1.0, an unset, invalid, or unavailable
-name selects the default `system` theme. `/settings` reports effective and
+The Pi `theme` setting accepts `system`, `dark`, `light`, a custom theme
+name, or a `light/dark` pair of any of them. Whitespace is trimmed. As in Pi,
+an unset or invalid setting, or a theme that does not load, selects the
+default `system` theme (silently at startup). `/config` reports effective and
 configured theme values separately. Detection is startup-only.
+
+## Custom themes
+
+`custom_theme.go` ports Pi's custom themes (`theme.js`, `theme-json.js`):
+JSON files in `themes/` of the user config dirs (gi's, then Pi's; the first
+theme of a name wins), listed by their `name` and loaded by file name.
+
+- Validation is Pi's `validateThemeJson` for the shapes gi checks: Pi's
+  message for missing colour tokens, colour values that are neither strings
+  nor integers 0-255, and names with "/". Invalid files are left out of the
+  list.
+- Colours are resolved as Pi's `createTheme`: Pi's fallbacks for optional
+  tokens, `vars` references (chained; circular and unknown ones are Pi's
+  errors), then pi-tui's `parseColor`: `#rgb`/`#rrggbb`, `okhsl(...)`,
+  `oklch(...)`, 256-colour indexes (emitted as indexes) and `""` for the
+  terminal's default.
+- While a custom theme is active its file is watched (`theme_watcher.go`,
+  Pi's `startThemeWatcher`): edits apply 100 ms after the last change, and a
+  missing or invalid file keeps the last good theme.
+
+Golden: `scripts/golden-custom-theme.mjs` renders every token of a custom
+theme with Pi's own theme code and records Pi's errors for invalid files;
+`TestCustomThemesMatchPi`, `TestActiveCustomThemeReloads`.
+
+## Switching themes
+
+`/settings` has Pi's Theme item: Pi's `ThemeSubmenu` with one theme or
+automatic mode (a light and a dark theme). Moving through themes previews
+them live; Enter saves the setting (Pi's `theme` in the project settings) and
+applies it; Escape restores the theme in use. A theme that fails to load
+reports Pi's "Failed to load theme" error and falls back to the system theme.
+Golden: the theme scenarios of `scripts/golden-settings.mjs`.
 
 ## System theme (#31)
 
@@ -54,7 +87,7 @@ Differences from Pi:
 - Text selection, which gi draws with the text colour as background, uses
   inverse video when the text colour is the terminal default.
 
-The built-in palettes are RGB goldens generated from Pi 1.0.0's own theme
+The built-in palettes are RGB goldens generated from Pi's own theme
 conversion (`pi_themes_gen.go`); Gi retains Pi's truecolor detection and
 256-colour quantization. Markdown, tool output/title, diff, user text, and
 custom-message text/label roles are independent even when built-in colours
@@ -82,18 +115,9 @@ it completes at about 150 ms. Parser and role-independence unit regressions
 cover malformed OSC values, all 16 `COLORFGBG` indices, and independent
 Markdown/tool/diff tokens.
 
-## Remaining scope — do not close #12 yet
+## Not ported
 
-- Pi custom theme JSON/resource loading, variable references and runtime
-  OKHSL/OKLCH conversion. Unknown custom names currently fall back as above.
-- Live `/theme` switching and scheme-change notifications.
+- Pi's terminal light/dark change notifications (mode 2031) and late colour
+  replies: the scheme and the system theme are fixed at startup.
+- Themes registered by extensions; the HTML export colours of a theme.
 - Windows console probing and preservation of unrelated startup input.
-
-Built-in and system themes are in place; custom theme files are not.
-
-Final verification for this slice: full `make test`, `make vet`, all 12
-`make test-tui-theme-pty` scenarios, `make build-web`, and `make bun-checks`
-passed. Build verification reused existing dependencies; no packages were
-installed and no npm command was run. Generated web output was restored because
-this change is TUI-only. Browser suites were skipped under the repository's
-ChromeOS-host guidance. No deployment or issue closure is claimed.

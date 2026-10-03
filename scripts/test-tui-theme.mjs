@@ -2,7 +2,10 @@
 import {mkdirSync, mkdtempSync, writeFileSync, rmSync} from 'node:fs';
 import {resolve, join} from 'node:path';
 import {homedir} from 'node:os';
-const {generateSystemThemeColors} = await import(`${homedir()}/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/system-theme.js`);
+import {existsSync as piModulesExist} from 'node:fs';
+// Pi's packages: PI_NODE_MODULES, the global bun install, or the reference install.
+const PI_MODULES = [process.env.PI_NODE_MODULES, `${homedir()}/.bun/install/global/node_modules`, '/workspace/.cache/pi-ref/node_modules'].find((dir) => dir && piModulesExist(`${dir}/@earendil-works/pi-coding-agent`));
+const {generateSystemThemeColors} = await import(`${PI_MODULES}/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/system-theme.js`);
 const bin = process.env.GI_THEME_TEST_BIN || resolve('bin/gi-theme-test');
 const out = resolve('test-results/tui-theme');
 mkdirSync(out, {recursive:true});
@@ -49,7 +52,7 @@ for (const tc of cases) {
   if(!tc.disabled && !answered)throw Error('query was not sent');
   if(tc.ui){
    await wait(()=>raw.includes('%/'),'editor ready');
-   child.stdin.write('/settings\r');child.stdin.flush();
+   child.stdin.write('/config\r');child.stdin.flush();
    await wait(()=>plain(raw).includes('settings: peering'),'settings output');
    child.stdin.write('\x1b[H');child.stdin.flush();
    await wait(()=>plain(raw).includes(`theme: ${tc.want}`),'settings theme');

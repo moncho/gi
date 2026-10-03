@@ -63,7 +63,7 @@ func blockHeightKey(block transcriptRenderableBlock, previousKind string, width 
 		strconv.FormatBool(block.Static) + strconv.FormatBool(block.PreviewTail) + strconv.Itoa(block.PreviewLimit))
 	write(previousKind)
 	write(strconv.Itoa(width))
-	write(piActiveTheme)
+	write(piActiveTheme + "#" + strconv.Itoa(piThemeGeneration))
 	return h.Sum64()
 }
 
@@ -278,7 +278,7 @@ func (c *chatTUI) transcriptBlockState() string {
 	b.WriteByte(0)
 	b.WriteString(c.cfg.AssistantName)
 	b.WriteByte(0)
-	b.WriteString(piActiveTheme)
+	b.WriteString(piActiveTheme + "#" + strconv.Itoa(piThemeGeneration))
 	b.WriteByte(0)
 	b.WriteString(strconv.Itoa(c.currentScrollbackLimit()))
 	b.WriteByte(0)

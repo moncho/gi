@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"log"
 	"math"
 	"os"
 	"regexp"
@@ -233,20 +234,28 @@ func resolveThemeSetting(setting, terminalTheme string) string {
 	return setting
 }
 
-// selectPiTheme picks the theme for a setting and detected scheme: a
-// built-in name, or Pi's default "system" when unset or unknown (custom Pi
-// themes are not loaded yet; Pi also falls back to system for invalid ones).
+// selectPiTheme picks the theme name for a setting and detected scheme:
+// the setting's theme, or Pi's default "system" when unset or invalid.
 func selectPiTheme(setting, terminalTheme string) string {
 	if name := resolveThemeSetting(setting, terminalTheme); name != "" {
-		if _, ok := piBuiltinThemes[name]; ok {
-			return name
-		}
+		return name
 	}
 	return systemThemeName
 }
 
-// piActiveTheme is the applied theme name.
-var piActiveTheme = "dark"
+// piActiveTheme is the applied theme name; piThemeGeneration changes with
+// every applied palette, so caches keyed by it see a reloaded theme.
+var (
+	piActiveTheme     = "dark"
+	piThemeGeneration int
+)
+
+// piTerminal is what the terminal reported at startup: its colours (for the
+// system theme) and its light/dark scheme (for automatic theme settings).
+var piTerminal struct {
+	colors terminalColors
+	scheme string
+}
 
 // applyPiTheme sets gi's colour palette from a built-in Pi theme.
 func applyPiTheme(name string) bool {
@@ -298,26 +307,76 @@ func applyPiThemeColors(name string, c func(key string) gotui.Color) {
 	piDiffAdded, piDiffRemoved, piDiffContext = c("toolDiffAdded"), c("toolDiffRemoved"), c("toolDiffContext")
 	piUserText, piCustomLabel, piCustomText = c("userMessageText"), c("customMessageLabel"), c("customMessageText")
 	piActiveTheme = name
+	piThemeGeneration++
 }
 
-// initPiTheme detects the terminal scheme and applies the configured theme.
+// applyThemeByName applies a theme: system (from the terminal's colours, or
+// the scheme's built-in theme when it reported none), a built-in one, or a
+// custom theme file.
+func applyThemeByName(name string) error {
+	if name == systemThemeName {
+		if applySystemTheme(piTerminal.colors) {
+			return nil
+		}
+		fallback := "dark"
+		if piTerminal.scheme == "light" {
+			fallback = "light"
+		}
+		applyPiTheme(fallback)
+		return nil
+	}
+	if applyPiTheme(name) {
+		return nil
+	}
+	colors, err := loadCustomTheme(name)
+	if err != nil {
+		return err
+	}
+	applyCustomThemeColors(name, colors)
+	return nil
+}
+
+// applyCustomThemeColors sets the palette from a resolved custom theme.
+func applyCustomThemeColors(name string, colors map[string]themeColor) {
+	applyPiThemeColors(name, func(key string) gotui.Color {
+		if c, ok := colors[key]; ok {
+			return c.color()
+		}
+		return gotui.DefaultColor()
+	})
+}
+
+// setPiTheme is Pi's setTheme: an invalid theme falls back to the system
+// theme, and the error says why.
+func setPiTheme(name string) error {
+	err := applyThemeByName(name)
+	if err != nil {
+		_ = applyThemeByName(systemThemeName)
+	}
+	return err
+}
+
+// applyPiThemeSetting applies a theme setting (a name or a "light/dark"
+// pair) for the terminal's scheme.
+func applyPiThemeSetting(setting string) (string, error) {
+	name := selectPiTheme(setting, piTerminal.scheme)
+	err := setPiTheme(name)
+	return piActiveTheme, err
+}
+
+// initPiTheme detects the terminal scheme and applies the configured theme
+// (Pi's initTheme: an invalid one falls back to the system theme silently).
 // It runs before the UI owns the terminal.
 func initPiTheme(setting string) string {
 	colors := terminalColors{}
 	if os.Getenv("GI_TUI_NO_THEME_QUERY") == "" {
 		colors = queryTerminalColors(piThemeQueryTimeout)
 	}
-	scheme := detectTerminalTheme(colors, os.Getenv("COLORFGBG"))
-	name := selectPiTheme(setting, scheme)
-	if name == systemThemeName {
-		if applySystemTheme(colors) {
-			return name
-		}
-		name = "dark" // no reported background: the scheme's built-in theme
-		if scheme == "light" {
-			name = "light"
-		}
+	piTerminal.colors = colors
+	piTerminal.scheme = detectTerminalTheme(colors, os.Getenv("COLORFGBG"))
+	name, err := applyPiThemeSetting(setting)
+	if err != nil {
+		log.Printf("tui theme %q: %v", setting, err)
 	}
-	applyPiTheme(name)
 	return name
 }

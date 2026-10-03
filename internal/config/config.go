@@ -379,6 +379,11 @@ func PersistQuietStartup(workspaceRoot, value string) error {
 	return persistPiFields(workspaceRoot, map[string]any{"quietStartup": v})
 }
 
+// PersistTheme saves Pi's theme: a theme name or a "light/dark" pair.
+func PersistTheme(workspaceRoot, theme string) error {
+	return persistPiFields(workspaceRoot, map[string]any{"theme": theme})
+}
+
 // PersistTreeFilterMode saves Pi's treeFilterMode.
 func PersistTreeFilterMode(workspaceRoot, mode string) error {
 	return persistPiFields(workspaceRoot, map[string]any{"treeFilterMode": mode})

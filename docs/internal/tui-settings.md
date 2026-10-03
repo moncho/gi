@@ -16,6 +16,7 @@ descriptions, values and order:
 - Tree filter mode (the filter `/tree` opens with; docs/internal/tui-tree.md)
 - TUI mode
 - Fullscreen wheel scrolling
+- Theme (a submenu, below)
 
 Keys:
 
@@ -34,8 +35,13 @@ them to the global settings. Differences from Pi:
 
 Pi settings that gi does not implement are not listed, because they would
 have no effect. These include images, transport, cache warming, Mermaid,
-telemetry, project trust, padding and others. The theme submenu comes with the
-custom themes work (#12).
+telemetry, project trust, padding and others.
+
+**Theme** opens Pi's theme submenu (pi-tui's SettingsList submenus, Pi's
+`SelectSubmenu` and `ThemeSubmenu`; `settings_list.go`): one theme, or
+automatic mode with a theme for light and one for dark terminals. Themes
+preview as the selection moves; Escape restores the theme in use. See
+docs/internal/tui-terminal-theme.md.
 
 ## /config
 

@@ -31,6 +31,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Automatically compact context when it gets too",
       "  large",
@@ -38,7 +39,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "enter",
@@ -52,6 +54,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Automatically compact context when it gets too",
       "  large",
@@ -64,7 +67,8 @@
        "autocompact",
        "false"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "down",
@@ -78,13 +82,15 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Hide thinking blocks in assistant responses",
       "",
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "space",
@@ -98,6 +104,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Hide thinking blocks in assistant responses",
       "",
@@ -109,7 +116,8 @@
        "hide-thinking",
        "true"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "down",
@@ -123,6 +131,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Disable verbose printing at startup (header:",
       "  keep only the startup header)",
@@ -130,7 +139,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "enter",
@@ -144,6 +154,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Disable verbose printing at startup (header:",
       "  keep only the startup header)",
@@ -156,7 +167,8 @@
        "quiet-startup",
        "true"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "enter",
@@ -170,6 +182,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Disable verbose printing at startup (header:",
       "  keep only the startup header)",
@@ -182,7 +195,8 @@
        "quiet-startup",
        "header"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "up",
@@ -196,13 +210,15 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Hide thinking blocks in assistant responses",
       "",
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "up",
@@ -216,6 +232,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Automatically compact context when it gets too",
       "  large",
@@ -223,7 +240,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "up",
@@ -236,16 +254,129 @@
       "  Quiet startup               header",
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
-      "→ Fullscreen wheel scrolling  auto",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
       "",
-      "  Lines per mouse-wheel event in fullscreen",
-      "  mode; 'auto' speeds up fast wheel spins where",
-      "  the terminal does not",
+      "  Color theme for the interface",
       "",
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "→   automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "→   light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "→   ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "ocean"
+     ]
     },
     {
      "step": "enter",
@@ -258,128 +389,21 @@
       "  Quiet startup               header",
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
-      "→ Fullscreen wheel scrolling  1",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       ocean",
       "",
-      "  Lines per mouse-wheel event in fullscreen",
-      "  mode; 'auto' speeds up fast wheel spins where",
-      "  the terminal does not",
-      "",
-      "  Type to search · Enter/Space to change · Esc ...",
-      "──────────────────────────────────────────────────"
-     ],
-     "changes": [
-      [
-       "fullscreen-wheel-scroll-lines",
-       "1"
-      ]
-     ]
-    },
-    {
-     "step": "down",
-     "rows": [
-      "──────────────────────────────────────────────────",
-      ">",
-      "",
-      "→ Auto-compact                false",
-      "  Hide thinking               true",
-      "  Quiet startup               header",
-      "  Tree filter mode            default",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Automatically compact context when it gets too",
-      "  large",
-      "",
-      "  Type to search · Enter/Space to change · Esc ...",
-      "──────────────────────────────────────────────────"
-     ],
-     "changes": []
-    },
-    {
-     "step": "down",
-     "rows": [
-      "──────────────────────────────────────────────────",
-      ">",
-      "",
-      "  Auto-compact                false",
-      "→ Hide thinking               true",
-      "  Quiet startup               header",
-      "  Tree filter mode            default",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Hide thinking blocks in assistant responses",
-      "",
-      "  Type to search · Enter/Space to change · Esc ...",
-      "──────────────────────────────────────────────────"
-     ],
-     "changes": []
-    },
-    {
-     "step": "down",
-     "rows": [
-      "──────────────────────────────────────────────────",
-      ">",
-      "",
-      "  Auto-compact                false",
-      "  Hide thinking               true",
-      "→ Quiet startup               header",
-      "  Tree filter mode            default",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Disable verbose printing at startup (header:",
-      "  keep only the startup header)",
-      "",
-      "  Type to search · Enter/Space to change · Esc ...",
-      "──────────────────────────────────────────────────"
-     ],
-     "changes": []
-    },
-    {
-     "step": "down",
-     "rows": [
-      "──────────────────────────────────────────────────",
-      ">",
-      "",
-      "  Auto-compact                false",
-      "  Hide thinking               true",
-      "  Quiet startup               header",
-      "→ Tree filter mode            default",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Default filter when opening /tree",
-      "",
-      "  Type to search · Enter/Space to change · Esc ...",
-      "──────────────────────────────────────────────────"
-     ],
-     "changes": []
-    },
-    {
-     "step": "enter",
-     "rows": [
-      "──────────────────────────────────────────────────",
-      ">",
-      "",
-      "  Auto-compact                false",
-      "  Hide thinking               true",
-      "  Quiet startup               header",
-      "→ Tree filter mode            no-tools",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Default filter when opening /tree",
+      "  Color theme for the interface",
       "",
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
      "changes": [
       [
-       "tree-filter-mode",
-       "no-tools"
+       "theme",
+       "ocean"
       ]
-     ]
+     ],
+     "previews": []
     }
    ],
    "80": [
@@ -395,13 +419,15 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Automatically compact context when it gets too large",
       "",
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "enter",
@@ -415,6 +441,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Automatically compact context when it gets too large",
       "",
@@ -426,7 +453,8 @@
        "autocompact",
        "false"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "down",
@@ -440,13 +468,15 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Hide thinking blocks in assistant responses",
       "",
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "space",
@@ -460,6 +490,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Hide thinking blocks in assistant responses",
       "",
@@ -471,7 +502,8 @@
        "hide-thinking",
        "true"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "down",
@@ -485,13 +517,15 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Disable verbose printing at startup (header: keep only the startup header)",
       "",
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "enter",
@@ -505,6 +539,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Disable verbose printing at startup (header: keep only the startup header)",
       "",
@@ -516,7 +551,8 @@
        "quiet-startup",
        "true"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "enter",
@@ -530,6 +566,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Disable verbose printing at startup (header: keep only the startup header)",
       "",
@@ -541,7 +578,8 @@
        "quiet-startup",
        "header"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "up",
@@ -555,13 +593,15 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Hide thinking blocks in assistant responses",
       "",
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "up",
@@ -575,13 +615,15 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Automatically compact context when it gets too large",
       "",
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "up",
@@ -594,15 +636,124 @@
       "  Quiet startup               header",
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
-      "→ Fullscreen wheel scrolling  auto",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
       "",
-      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
-      "  spins where the terminal does not",
+      "  Color theme for the interface",
       "",
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "→   automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "→   light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "→   ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "ocean"
+     ]
     },
     {
      "step": "enter",
@@ -615,125 +766,21 @@
       "  Quiet startup               header",
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
-      "→ Fullscreen wheel scrolling  1",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       ocean",
       "",
-      "  Lines per mouse-wheel event in fullscreen mode; 'auto' speeds up fast wheel",
-      "  spins where the terminal does not",
-      "",
-      "  Type to search · Enter/Space to change · Esc to cancel",
-      "────────────────────────────────────────────────────────────────────────────────"
-     ],
-     "changes": [
-      [
-       "fullscreen-wheel-scroll-lines",
-       "1"
-      ]
-     ]
-    },
-    {
-     "step": "down",
-     "rows": [
-      "────────────────────────────────────────────────────────────────────────────────",
-      ">",
-      "",
-      "→ Auto-compact                false",
-      "  Hide thinking               true",
-      "  Quiet startup               header",
-      "  Tree filter mode            default",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Automatically compact context when it gets too large",
-      "",
-      "  Type to search · Enter/Space to change · Esc to cancel",
-      "────────────────────────────────────────────────────────────────────────────────"
-     ],
-     "changes": []
-    },
-    {
-     "step": "down",
-     "rows": [
-      "────────────────────────────────────────────────────────────────────────────────",
-      ">",
-      "",
-      "  Auto-compact                false",
-      "→ Hide thinking               true",
-      "  Quiet startup               header",
-      "  Tree filter mode            default",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Hide thinking blocks in assistant responses",
-      "",
-      "  Type to search · Enter/Space to change · Esc to cancel",
-      "────────────────────────────────────────────────────────────────────────────────"
-     ],
-     "changes": []
-    },
-    {
-     "step": "down",
-     "rows": [
-      "────────────────────────────────────────────────────────────────────────────────",
-      ">",
-      "",
-      "  Auto-compact                false",
-      "  Hide thinking               true",
-      "→ Quiet startup               header",
-      "  Tree filter mode            default",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Disable verbose printing at startup (header: keep only the startup header)",
-      "",
-      "  Type to search · Enter/Space to change · Esc to cancel",
-      "────────────────────────────────────────────────────────────────────────────────"
-     ],
-     "changes": []
-    },
-    {
-     "step": "down",
-     "rows": [
-      "────────────────────────────────────────────────────────────────────────────────",
-      ">",
-      "",
-      "  Auto-compact                false",
-      "  Hide thinking               true",
-      "  Quiet startup               header",
-      "→ Tree filter mode            default",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Default filter when opening /tree",
-      "",
-      "  Type to search · Enter/Space to change · Esc to cancel",
-      "────────────────────────────────────────────────────────────────────────────────"
-     ],
-     "changes": []
-    },
-    {
-     "step": "enter",
-     "rows": [
-      "────────────────────────────────────────────────────────────────────────────────",
-      ">",
-      "",
-      "  Auto-compact                false",
-      "  Hide thinking               true",
-      "  Quiet startup               header",
-      "→ Tree filter mode            no-tools",
-      "  TUI mode                    fullscreen",
-      "  Fullscreen wheel scrolling  1",
-      "",
-      "  Default filter when opening /tree",
+      "  Color theme for the interface",
       "",
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
      "changes": [
       [
-       "tree-filter-mode",
-       "no-tools"
+       "theme",
+       "ocean"
       ]
-     ]
+     ],
+     "previews": []
     }
    ]
   }
@@ -774,6 +821,7 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Automatically compact context when it gets too",
       "  large",
@@ -781,7 +829,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "type:wheel",
@@ -798,7 +847,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "space",
@@ -815,7 +865,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "enter",
@@ -837,7 +888,8 @@
        "fullscreen-wheel-scroll-lines",
        "1"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -854,7 +906,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -871,7 +924,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -888,7 +942,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -905,7 +960,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -922,7 +978,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "type:zzz",
@@ -935,7 +992,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -948,7 +1006,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -961,7 +1020,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -978,7 +1038,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "down",
@@ -995,7 +1056,8 @@
       "  Type to search · Enter/Space to change · Esc ...",
       "──────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     }
    ],
    "80": [
@@ -1011,13 +1073,15 @@
       "  Tree filter mode            default",
       "  TUI mode                    fullscreen",
       "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
       "",
       "  Automatically compact context when it gets too large",
       "",
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "type:wheel",
@@ -1033,7 +1097,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "space",
@@ -1049,7 +1114,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "enter",
@@ -1070,7 +1136,8 @@
        "fullscreen-wheel-scroll-lines",
        "1"
       ]
-     ]
+     ],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -1086,7 +1153,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -1102,7 +1170,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -1118,7 +1187,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -1134,7 +1204,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -1150,7 +1221,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "type:zzz",
@@ -1163,7 +1235,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -1176,7 +1249,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -1189,7 +1263,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "backspace",
@@ -1205,7 +1280,8 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
     },
     {
      "step": "down",
@@ -1221,7 +1297,1988 @@
       "  Type to search · Enter/Space to change · Esc to cancel",
       "────────────────────────────────────────────────────────────────────────────────"
      ],
-     "changes": []
+     "changes": [],
+     "previews": []
+    }
+   ]
+  }
+ },
+ "theme-single": {
+  "steps": [
+   "up",
+   "enter",
+   "down",
+   "down",
+   "down",
+   "up",
+   "enter"
+  ],
+  "widths": {
+   "50": [
+    {
+     "step": "open",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "→   automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "→   light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light"
+     ]
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       dark",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "theme",
+       "dark"
+      ]
+     ],
+     "previews": []
+    }
+   ],
+   "80": [
+    {
+     "step": "open",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "→   automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "→   light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light"
+     ]
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       dark",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "theme",
+       "dark"
+      ]
+     ],
+     "previews": []
+    }
+   ]
+  }
+ },
+ "theme-cancel": {
+  "steps": [
+   "up",
+   "enter",
+   "down",
+   "down",
+   "esc",
+   "esc"
+  ],
+  "widths": {
+   "50": [
+    {
+     "step": "open",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "→   automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "esc",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system"
+     ]
+    },
+    {
+     "step": "esc",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    }
+   ],
+   "80": [
+    {
+     "step": "open",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "→   automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "esc",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system"
+     ]
+    },
+    {
+     "step": "esc",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    }
+   ]
+  }
+ },
+ "theme-automatic": {
+  "steps": [
+   "up",
+   "enter",
+   "down",
+   "enter",
+   "enter",
+   "down",
+   "down",
+   "enter",
+   "down",
+   "enter",
+   "up",
+   "esc",
+   "down",
+   "down",
+   "space"
+  ],
+  "widths": {
+   "50": [
+    {
+     "step": "open",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal'",
+      "→   automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "→ Light theme  system",
+      "  Dark theme   system",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the",
+      "  terminal is light",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Light Theme",
+      "",
+      "Select the theme to use for light terminal",
+      "appearance",
+      "",
+      "→ ✓ system    Theme created from your terminal's",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Light Theme",
+      "",
+      "Select the theme to use for light terminal",
+      "appearance",
+      "",
+      "  ✓ system    Theme created from your terminal's",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Light Theme",
+      "",
+      "Select the theme to use for light terminal",
+      "appearance",
+      "",
+      "  ✓ system    Theme created from your terminal's",
+      "    dark",
+      "→   light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "→ Light theme  light",
+      "  Dark theme   system",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the",
+      "  terminal is light",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "→ Dark theme   system",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the",
+      "  terminal is dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Dark Theme",
+      "",
+      "Select the theme to use for dark terminal",
+      "appearance",
+      "",
+      "→ ✓ system    Theme created from your terminal's",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Dark Theme",
+      "",
+      "Select the theme to use for dark terminal",
+      "appearance",
+      "",
+      "  ✓ system    Theme created from your terminal's",
+      "    dark",
+      "    light",
+      "→   ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "ocean"
+     ]
+    },
+    {
+     "step": "esc",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "→ Dark theme   system",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the",
+      "  terminal is dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "  Dark theme   system",
+      "→ Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Save and go back",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "  Dark theme   system",
+      "  Apply        save and go back",
+      "→ Change mode  switch to single theme",
+      "",
+      "  Switch to one theme for light and dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "space",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system"
+     ]
+    }
+   ],
+   "80": [
+    {
+     "step": "open",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "  Theme                       system",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       system",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "  ✓ system     Theme created from your terminal's colors",
+      "→   automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "→ Light theme  system",
+      "  Dark theme   system",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the terminal is light",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system/system"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Light Theme",
+      "",
+      "Select the theme to use for light terminal appearance",
+      "",
+      "→ ✓ system    Theme created from your terminal's colors",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Light Theme",
+      "",
+      "Select the theme to use for light terminal appearance",
+      "",
+      "  ✓ system    Theme created from your terminal's colors",
+      "→   dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "dark"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Light Theme",
+      "",
+      "Select the theme to use for light terminal appearance",
+      "",
+      "  ✓ system    Theme created from your terminal's colors",
+      "    dark",
+      "→   light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "→ Light theme  light",
+      "  Dark theme   system",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the terminal is light",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "→ Dark theme   system",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the terminal is dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Dark Theme",
+      "",
+      "Select the theme to use for dark terminal appearance",
+      "",
+      "→ ✓ system    Theme created from your terminal's colors",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "Dark Theme",
+      "",
+      "Select the theme to use for dark terminal appearance",
+      "",
+      "  ✓ system    Theme created from your terminal's colors",
+      "    dark",
+      "    light",
+      "→   ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "ocean"
+     ]
+    },
+    {
+     "step": "esc",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "→ Dark theme   system",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the terminal is dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light/system"
+     ]
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "  Dark theme   system",
+      "→ Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Save and go back",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "  Dark theme   system",
+      "  Apply        save and go back",
+      "→ Change mode  switch to single theme",
+      "",
+      "  Switch to one theme for light and dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "space",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "→ ✓ system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "    ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "system"
+     ]
+    }
+   ]
+  }
+ },
+ "theme-pair": {
+  "steps": [
+   "up",
+   "enter",
+   "down",
+   "down",
+   "down",
+   "enter",
+   "up",
+   "enter",
+   "esc"
+  ],
+  "widths": {
+   "50": [
+    {
+     "step": "open",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "  Theme                       light/ocean",
+      "",
+      "  Automatically compact context when it gets too",
+      "  large",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       light/ocean",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "→ Light theme  light",
+      "  Dark theme   ocean",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the",
+      "  terminal is light",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "→ Dark theme   ocean",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the",
+      "  terminal is dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "  Dark theme   ocean",
+      "→ Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Save and go back",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark",
+      "appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "  Dark theme   ocean",
+      "  Apply        save and go back",
+      "→ Change mode  switch to single theme",
+      "",
+      "  Switch to one theme for light and dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "    system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "    light",
+      "→ ✓ ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "ocean"
+     ]
+    },
+    {
+     "step": "up",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow",
+      "terminal appearance.",
+      "",
+      "    system     Theme created from your terminal'",
+      "    automatic  Use separate themes for light and",
+      "    dark",
+      "→   light",
+      "  ✓ ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       light",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "theme",
+       "light"
+      ]
+     ],
+     "previews": []
+    },
+    {
+     "step": "esc",
+     "rows": [
+      "──────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       light",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc ...",
+      "──────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    }
+   ],
+   "80": [
+    {
+     "step": "open",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "→ Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "  Theme                       light/ocean",
+      "",
+      "  Automatically compact context when it gets too large",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       light/ocean",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "→ Light theme  light",
+      "  Dark theme   ocean",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the terminal is light",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "→ Dark theme   ocean",
+      "  Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Theme to use in automatic mode when the terminal is dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "  Dark theme   ocean",
+      "→ Apply        save and go back",
+      "  Change mode  switch to single theme",
+      "",
+      "  Save and go back",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "down",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Automatic Theme",
+      "",
+      "Choose themes for terminal light and dark appearance.",
+      "Light/dark detection requires terminal support.",
+      "",
+      "  Light theme  light",
+      "  Dark theme   ocean",
+      "  Apply        save and go back",
+      "→ Change mode  switch to single theme",
+      "",
+      "  Switch to one theme for light and dark",
+      "",
+      "  Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "    system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "    light",
+      "→ ✓ ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "ocean"
+     ]
+    },
+    {
+     "step": "up",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      "Theme",
+      "",
+      "Select a theme, or choose automatic to follow terminal appearance.",
+      "",
+      "    system     Theme created from your terminal's colors",
+      "    automatic  Use separate themes for light and dark terminal appearance",
+      "    dark",
+      "→   light",
+      "  ✓ ocean",
+      "",
+      "  Enter to select · Esc to go back",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": [
+      "light"
+     ]
+    },
+    {
+     "step": "enter",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       light",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [
+      [
+       "theme",
+       "light"
+      ]
+     ],
+     "previews": []
+    },
+    {
+     "step": "esc",
+     "rows": [
+      "────────────────────────────────────────────────────────────────────────────────",
+      ">",
+      "",
+      "  Auto-compact                true",
+      "  Hide thinking               false",
+      "  Quiet startup               false",
+      "  Tree filter mode            default",
+      "  TUI mode                    fullscreen",
+      "  Fullscreen wheel scrolling  auto",
+      "→ Theme                       light",
+      "",
+      "  Color theme for the interface",
+      "",
+      "  Type to search · Enter/Space to change · Esc to cancel",
+      "────────────────────────────────────────────────────────────────────────────────"
+     ],
+     "changes": [],
+     "previews": []
     }
    ]
   }

@@ -117,6 +117,8 @@ func runWithEngineMode(s *store.Store, engine *turn.Engine, cfg config.RuntimeCo
 	app.SetPasteHandler(chat.handlePaste)
 	cleanup := chat.Init()
 	defer cleanup()
+	chat.watchActiveTheme()
+	defer func() { chat.themeWatcher.stop() }()
 	app.SetRootComponent(chat)
 	return app.Run()
 }
@@ -317,6 +319,7 @@ type chatTUI struct {
 	treeSelector                *treeSelector      // Pi's /tree ("tree")
 	editorDialog                *editorDialog      // Pi's ctx.ui.editor ("editor-dialog")
 	branchSummaryCancel         context.CancelFunc // set while /tree summarizes a branch
+	themeWatcher                *themeWatcher      // reloads the active custom theme's file
 	lastCtrlC                   time.Time          // Pi's app.clear: a second press within 500ms exits
 	modelMenuSession            sessionScope
 	modelMenuAltScreen          bool

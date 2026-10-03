@@ -1,5 +1,5 @@
 import {test,expect} from 'bun:test';
-import {createComposeTransfers} from '../../../web/src/gi-compose-transfer';
+import {createComposeTransfers,bindComposeSending} from '../../../web/src/gi-compose-transfer';
 
 test('transport phases are independent per session and concurrent completion cannot clear peers',()=>{
  const s=createComposeTransfers();let changes=0;const unsubscribe=s.subscribe(()=>changes++);
@@ -13,6 +13,21 @@ test('transport phases are independent per session and concurrent completion can
  const second=s.begin('a','send');sending.end();expect(s.snapshot('a').sending).toBe(1);second.end();b.end();
  expect(s.snapshot('a').sending).toBe(0);expect(s.snapshot('b').uploads).toBe(0);
  unsubscribe();const before=changes;s.begin('c','send').end();expect(changes).toBe(before);
+});
+
+test('transport cleanup never restores old Send labels over a newly active Stop control',()=>{
+ const saved=globalThis.MutationObserver;
+ globalThis.MutationObserver=class {observe(){} disconnect(){}} as any;
+ try {
+  const attrs=new Map([['aria-label','Send message'],['title','Send (Enter)']]);let active=false;
+  const button:any={dataset:{},disabled:false,classList:{contains:()=>active},
+   getAttribute:(k:string)=>attrs.get(k)??null,setAttribute:(k:string,v:string)=>attrs.set(k,v),removeAttribute:(k:string)=>attrs.delete(k)};
+  const root:any={querySelector:(selector:string)=>selector.includes('textarea')?{value:'newer draft'}:button};
+  const cleanup=bindComposeSending(root,false,true);
+  expect(attrs.get('aria-label')).toBe('Sending message');expect(button.disabled).toBe(true);
+  active=true;attrs.set('aria-label','Stop response');attrs.set('title','Stop response');button.disabled=false;
+  cleanup();expect(attrs.get('aria-label')).toBe('Stop response');expect(attrs.get('title')).toBe('Stop response');expect(button.disabled).toBe(false);
+ } finally {globalThis.MutationObserver=saved;}
 });
 
 test('unknown byte totals remain indeterminate and fresh reload has no work',()=>{

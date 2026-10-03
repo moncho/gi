@@ -7,6 +7,8 @@ test('guarded outcome adapter moves existing chips after timestamp without modif
  expect(out.indexOf('<a class="post-time"')).toBeLessThan(out.indexOf('${recoveryMarker && html`'));
  expect(out.indexOf('${recoveryMarker && html`')).toBeLessThan(out.indexOf('${timeoutMarker && html`'));
  expect(out.match(/class="post-time"/g)).toHaveLength(1);expect(out.match(/formatRecoveryChipTooltip\(recoveryMarker\)/g)).toHaveLength(1);
+ expect(out).toContain('title=${new Date(post.timestamp).toISOString()}');
+ expect(out).toContain('<time datetime=${new Date(post.timestamp).toISOString()}>');
  expect(()=>patchPostOutcomes(out)).toThrow();expect(()=>patchPostOutcomes(source.replace('class="post-time"','class="changed"'))).toThrow();
  expect(readFileSync('web/src/components/post.ts','utf8')).toBe(original);
 });

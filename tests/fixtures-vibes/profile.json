@@ -3,7 +3,7 @@
   "version": "gi-main+fixtures-vibes-adapter",
   "lifecycle": {
     "prepare": "sh ./prepare.sh",
-    "start": "HOME=\"$FIXTURES_ROOT/home\" FIXTURE_MODEL_URL=\"$FIXTURE_MODEL_URL\" exec \"$FIXTURES_ROOT/bin/gi\" -web -bind 127.0.0.1 -port \"$FIXTURES_PORT\" -db \"$FIXTURES_ROOT/gi.db\" -workspace \"$FIXTURES_ROOT/workspace\""
+    "start": "HOME=\"$FIXTURES_ROOT/home\" GI_CODING_AGENT_DIR=\"$FIXTURES_ROOT/home/.gi/agent\" PI_CODING_AGENT_DIR=\"$FIXTURES_ROOT/home/.pi/agent\" FIXTURE_MODEL_URL=\"$FIXTURE_MODEL_URL\" exec \"$FIXTURES_ROOT/bin/gi\" -web -bind 127.0.0.1 -port \"$FIXTURES_PORT\" -db \"$FIXTURES_ROOT/gi.db\" -workspace \"$FIXTURES_ROOT/workspace\""
   },
   "readiness": { "path": "/api/sessions", "status": 200, "timeoutMs": 30000 },
   "session": {
@@ -11,7 +11,7 @@
     "open": "/?chat_jid=gi:{id}"
   },
   "auth": { "mode": "none" },
-  "capabilities": ["@cap-queue", "@cap-svg-render", "@cap-thoughts", "@cap-tool-output", "@cap-message-delete", "@cap-quick-actions", "@cap-slash-commands", "@cap-skills", "@cap-pwa", "@cap-steer", "@cap-attachments", "@cap-session-picker", "@cap-workspace", "@cap-model-picker", "@cap-read-aloud"],
+  "capabilities": ["@cap-queue", "@cap-svg-render", "@cap-thoughts", "@cap-tool-output", "@cap-message-delete", "@cap-quick-actions", "@cap-slash-commands", "@cap-skills", "@cap-pwa", "@cap-steer", "@cap-attachments", "@cap-session-picker", "@cap-workspace", "@cap-model-picker", "@cap-read-aloud", "@cap-upload-cancel", "@cap-tool-pane", "@cap-messages-tool", "@cap-reconnect", "@cap-stop"],
   "selectors": { "queueItem": ".compose-queue-stack-item", "quickActionHighlight": ".timeline-quick-actions-item.active" },
   "tools": { "shell": "shell" },
   "skips": "skips.json"

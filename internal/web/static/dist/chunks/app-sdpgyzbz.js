@@ -1800,6 +1800,8 @@ function bindComposeSending(root, uploading, sending) {
     for (const [button, initial] of owned) {
       delete button.dataset.giSending;
       button.removeAttribute("aria-busy");
+      if (button.classList.contains("abort-mode"))
+        continue;
       if (initial.label === null)
         button.removeAttribute("aria-label");
       else
@@ -7900,12 +7902,12 @@ function Post({ post, onClick, onHashtagClick, onMessageRef, onScrollToMessage, 
                 <div class="post-meta">
                     <span class="post-author">${displayName}</span>
                     ${showSearchChatAgentTag && fe`<span class="post-chat-agent-tag" title=${`Chat: ${searchChatAgentName}`}>@${searchChatAgentName}</span>`}
-                    <a class="post-time" href=${`#msg-${post.id}`} onClick=${(e) => {
+                    <a class="post-time" title=${new Date(post.timestamp).toISOString()} href=${`#msg-${post.id}`} onClick=${(e) => {
     e.preventDefault();
     e.stopPropagation();
     if (onMessageRef)
       onMessageRef(post.id);
-  }}>${formatTime(post.timestamp)}</a>
+  }}><time datetime=${new Date(post.timestamp).toISOString()}>${formatTime(post.timestamp)}</time></a>
                     ${recoveryMarker && fe`
                         <span
                             class="post-recovery-chip"
@@ -22891,11 +22893,11 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-f5a0323d.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-98mpw5vc.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-9cv4ngqj.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-w69nfhbe.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-c92y93c2.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-px3pn556.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-qrb4hqvm.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-j58dxcxr.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-n716ya7k.js").then((module) => module.GiSettingsProviders),
+  authentication: () => import("./gi-settings-authentication-cyzp81fn.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
 var components = new Map;

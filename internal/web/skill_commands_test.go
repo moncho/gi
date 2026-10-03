@@ -75,6 +75,9 @@ func TestLoadedWebSkillCatalogueAndCapturedInvocation(t *testing.T) {
 	if rec.SessionID != "A" || !strings.Contains(rec.Prompt, "NATIVE_SKILL_MARKER") || !strings.Contains(rec.Prompt, "request β") || strings.Contains(rec.Prompt, "BAD_DUPLICATE") || rec.Metadata["skill_name"] != "proof" {
 		t.Fatal(rec)
 	}
+	if !strings.Contains(rec.Prompt, `<skill name="proof" location="`+path+`">`) || !strings.Contains(rec.Prompt, "</skill>\n\nUser request:\nrequest β") {
+		t.Fatal("skill context lost its loaded identity or user request", rec.Prompt)
+	}
 	for _, command := range []string{"/skill:unknown nope", "/skill:../proof nope"} {
 		if r := send(command, ""); r.Code != 400 {
 			t.Fatal(r.Code, r.Body.String())

@@ -11,7 +11,7 @@ import {
   saveGiCompactionPolicy,
   compactionNotice,
   compactionElapsed
-} from "./app-wnnf88fh.js";
+} from "./app-sdpgyzbz.js";
 
 // web/src/gi-settings-compaction-policy.ts
 var fields = [

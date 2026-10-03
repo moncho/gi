@@ -8,5 +8,9 @@ export function patchPostOutcomes(source) {
     }
     const a = source.indexOf(start), b = source.indexOf(timestamp), c = source.indexOf(end) + end.length;
     if (!(a < b && b < c)) throw new Error('Post outcome ordering already adapted or changed');
-    return source.slice(0, a) + source.slice(b, c) + '\n' + source.slice(a, b).trimEnd() + source.slice(c);
+    const ordered = source.slice(0, a) + source.slice(b, c) + '\n' + source.slice(a, b).trimEnd() + source.slice(c);
+    // Keep relative visible text; expose the source instant without relying on locale parsing.
+    return ordered
+        .replace('<a class="post-time"', '<a class="post-time" title=${new Date(post.timestamp).toISOString()}')
+        .replace('${formatTime(post.timestamp)}</a>', '<time datetime=${new Date(post.timestamp).toISOString()}>${formatTime(post.timestamp)}</time></a>');
 }

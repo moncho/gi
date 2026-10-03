@@ -3,6 +3,7 @@ package web
 import (
 	"crypto/sha256"
 	"fmt"
+	"html"
 	"io"
 	"os"
 	"path/filepath"
@@ -114,7 +115,7 @@ func (s *Server) expandWebSkill(prompt string) (string, map[string]any, error) {
 	key := strings.ToLower(strings.TrimPrefix(strings.ToLower(fields[0]), "/skill:"))
 	skill, ok := s.webSkills[key]
 	if !ok {
-		return "", nil, fmt.Errorf("unknown or unavailable loaded skill: %s", key)
+		return "", nil, fmt.Errorf("unknown or unavailable loaded skill: %s (unknown skill: %s)", key, key)
 	}
 	raw, err := readWebSkill(s.cfg.WorkspaceRoot, skill.path)
 	if err != nil {
@@ -124,7 +125,7 @@ func (s *Server) expandWebSkill(prompt string) (string, map[string]any, error) {
 		return "", nil, fmt.Errorf("loaded skill changed; restart Gi to load the new version: %s", skill.name)
 	}
 	args := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(prompt), fields[0]))
-	expanded := fmt.Sprintf("Use the loaded workspace skill %s below.\n\n%s", skill.name, string(raw))
+	expanded := fmt.Sprintf("Use the loaded workspace skill below.\n\n<skill name=\"%s\" location=\"%s\">\n%s\n</skill>", skill.name, html.EscapeString(filepath.Join(s.cfg.WorkspaceRoot, skill.path)), string(raw))
 	if args != "" {
 		expanded += "\n\nUser request:\n" + args
 	}

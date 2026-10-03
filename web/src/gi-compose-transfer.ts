@@ -85,6 +85,9 @@ export function bindComposeSending(root: HTMLElement, uploading: boolean, sendin
         observer.disconnect();
         for (const [button, initial] of owned) {
             delete button.dataset.giSending; button.removeAttribute('aria-busy');
+            // The composer may have changed this same node into Stop while
+            // the POST was completing. Do not restore its old Send semantics.
+            if (button.classList.contains('abort-mode')) continue;
             if (initial.label === null) button.removeAttribute('aria-label');
             else button.setAttribute('aria-label', initial.label);
             if (initial.title === null) button.removeAttribute('title');

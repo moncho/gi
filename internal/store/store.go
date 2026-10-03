@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -85,7 +87,12 @@ type SubTurn struct {
 }
 
 func Open(path string) (*Store, error) {
+	// New databases copy the migrated schema template instead of running
+	// initSchema: a file not created yet is created from it, and an empty
+	// in-memory database (tests) is restored from it.
+	fromTemplate := newSQLiteFile(path) && createFromSchemaTemplate(path) == nil
 	path = normalizeSQLitePath(path)
+	memory := path == ":memory:" || strings.Contains(path, "mode=memory") || strings.HasPrefix(path, "file::memory:")
 	// database/sql opens additional connections lazily. These pragmas and the
 	// transaction mode must apply to every connection, not just the first Exec.
 	options := url.Values{}
@@ -95,7 +102,7 @@ func Open(path string) (*Store, error) {
 	// File-backed WAL transactions reserve the writer before reading. Shared
 	// memory databases use SQLite's table-locking path (no WAL), where immediate
 	// BEGIN can raise SQLITE_LOCKED without invoking the busy handler.
-	if path != ":memory:" && !strings.Contains(path, "mode=memory") && !strings.HasPrefix(path, "file::memory:") {
+	if !memory {
 		options.Set("_txlock", "immediate")
 	}
 	separator := "?"
@@ -106,11 +113,21 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
+	if memory && path != ":memory:" && schemaEmpty(db) {
+		if err := restoreSchemaTemplate(db); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("init schema: %w", err)
+		}
+		fromTemplate = true
+	}
 	if err := configure(db); err != nil {
 		if closeErr := db.Close(); closeErr != nil {
 			return nil, fmt.Errorf("configure sqlite: %w (close: %v)", err, closeErr)
 		}
 		return nil, err
+	}
+	if fromTemplate {
+		return &Store{db: db}, nil
 	}
 	if err := initSchema(db); err != nil {
 		if closeErr := db.Close(); closeErr != nil {
@@ -121,8 +138,20 @@ func Open(path string) (*Store, error) {
 	return &Store{db: db}, nil
 }
 
+// newSQLiteFile reports a plain database path with nothing there yet.
+func newSQLiteFile(path string) bool {
+	if path == "" || path == ":memory:" || strings.HasPrefix(path, "file:") || strings.Contains(path, "?") {
+		return false
+	}
+	_, err := os.Lstat(path)
+	return errors.Is(err, os.ErrNotExist)
+}
+
+// ephemeralSQLitePath opens a new, private in-memory store (tests).
+const ephemeralSQLitePath = "file::memory:?cache=shared"
+
 func normalizeSQLitePath(path string) string {
-	if path == "file::memory:?cache=shared" {
+	if path == ephemeralSQLitePath {
 		id := atomic.AddUint64(&ephemeralStoreCounter, 1)
 		return fmt.Sprintf("file:gi_test_%d_%d?mode=memory&cache=shared", time.Now().UnixNano(), id)
 	}

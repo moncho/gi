@@ -60,6 +60,8 @@ Volume test runs are profiled and analysed so the suites stay lean (AGENTS.md):
   tests on its own (`go test -json -cpuprofile -memprofile`; one package at a
   time, as the Makefile throttling requires), then prints:
   - packages, tests, failures, wall and CPU time (build included), peak RSS
+    (RUSAGE_CHILDREN: the largest process, often the linker; linking
+    internal/web's test binary peaks near 1.3 GB, its tests near 100 MB)
     and the package that reached it, compared with the previous passing run
     of the same package set (▲ above +25%);
   - the slowest packages (wall incl. build · reported test time · CPU) and
@@ -80,3 +82,24 @@ Everything is kept in `~/.cache/gi-test-profile` (`GI_TEST_PROFILE_DIR`,
 `TEST_PROFILE_DIR`): `history.jsonl` (totals of every run), `latest-<suite>.json`
 (baselines) and the last five Go runs (`go-<time>/report.json` plus each
 package's `cpu.pprof` and `mem.pprof`, readable with `go tool pprof`).
+
+## Findings acted on (#38)
+
+- New stores copy a migrated schema template instead of running
+  `initSchema` (`internal/store/schema_template.go`): an empty in-memory
+  store is restored from it, and a database file not created yet is written
+  from it beside the target and linked into place (an existing file, or one
+  another process created first, is migrated as before).
+  `TestSchemaTemplateMatchesInitSchema` compares the schema, migration
+  records and `user_version` with `initSchema`'s. `initSchema` had been
+  28–41% of CPU in internal/turn, internal/store and internal/web.
+- `validateWorkspaceSchema` normalised the whole migration text once per
+  schema object; it now does so once.
+- Tailscale (`tsnet`, some 200 packages) is linked only into gi:
+  `internal/peering` starts it through `peering.StartBackend`, which
+  `internal/peering/tsnetbackend` sets and only `cmd/gi` imports. Test
+  binaries no longer link it.
+- The 1.3 GB peak RSS was the linker building internal/web's test binary,
+  not its tests (about 100 MB); without Tailscale the peak is about 740 MB.
+- Result (warm cache): 1962 tests in 58 s wall and 30 s CPU, from 2m37s and
+  3m6s.

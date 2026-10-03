@@ -255,7 +255,10 @@ func analyze(rep, prev *report, hot int, runDir string) {
 		tests += len(p.Tests)
 		failed += len(p.Failed)
 	}
-	fmt.Printf("\n── go test profile ── %d packages · %d tests (%d failed) · wall %s · cpu %s · peak RSS %s (%s)%s\n",
+	// Peak RSS is RUSAGE_CHILDREN's: the largest process go test ran,
+	// including the compiler and linker (linking internal/web's test binary
+	// peaks near 1.3 GB while the tests stay near 100 MB).
+	fmt.Printf("\n── go test profile ── %d packages · %d tests (%d failed) · wall %s · cpu %s · peak RSS %s incl. build (%s)%s\n",
 		len(rep.Packages), tests, failed, dur(rep.Wall), dur(rep.CPU), mb(rep.PeakRSS), rep.PeakBy, compareTotals(prev, rep))
 
 	prevPkg := map[string]*pkgResult{}

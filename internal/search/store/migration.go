@@ -112,7 +112,8 @@ func validateWorkspaceSchema(tx *sql.Tx, version int) error {
 	if version >= 2 {
 		objects["workspace_index_invalidations"] = "table"
 	}
-	declarations := strings.Join(workspaceMigrations[:version], "\n")
+	// Whitespace-normalised once, not per object (it is the whole migration text).
+	declarations := strings.Join(strings.Fields(strings.Join(workspaceMigrations[:version], "\n")), " ")
 	for name, kind := range objects {
 		var actual, ddl string
 		if err := tx.QueryRow("SELECT type,sql FROM sqlite_schema WHERE name=?", name).Scan(&actual, &ddl); err != nil {
@@ -124,7 +125,7 @@ func validateWorkspaceSchema(tx *sql.Tx, version int) error {
 		// sqlite_schema stores the original declaration without its trailing ';'.
 		// Compare the whole declaration so a no-op replacement trigger fails closed.
 		compact := strings.Join(strings.Fields(ddl), " ")
-		if !strings.Contains(strings.Join(strings.Fields(declarations), " "), compact+";") {
+		if !strings.Contains(declarations, compact+";") {
 			return fmt.Errorf("workspace schema object %s definition mismatch", name)
 		}
 	}

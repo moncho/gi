@@ -24,6 +24,7 @@ import (
 	"github.com/rcarmo/gi/internal/httpserver"
 	"github.com/rcarmo/gi/internal/inference"
 	gimcp "github.com/rcarmo/gi/internal/mcp"
+	_ "github.com/rcarmo/gi/internal/peering/tsnetbackend" // tsnet, linked only into gi
 	"github.com/rcarmo/gi/internal/store"
 	storecache "github.com/rcarmo/gi/internal/store/cache"
 	gitui "github.com/rcarmo/gi/internal/tui"

@@ -55,3 +55,34 @@ func TestManagerAuthKeyEnvTakesPrecedence(t *testing.T) {
 		t.Fatalf("resolveAuthKey = %q, %v", got, err)
 	}
 }
+
+type fakeServer struct{ closed bool }
+
+func (f *fakeServer) Close() error { f.closed = true; return nil }
+
+// The tsnet backend is linked only into gi (tsnetbackend); without it Start
+// reports it, and with one it starts and closes the server.
+func TestManagerStartUsesLinkedBackend(t *testing.T) {
+	previous := StartBackend
+	t.Cleanup(func() { StartBackend = previous })
+	cfg := config.PeeringSettings{Enabled: true, Hostname: "h"}
+	StartBackend = nil
+	m := NewManager(cfg, t.TempDir())
+	if err := m.Start(context.Background()); err == nil || m.Status().State != "unavailable" {
+		t.Fatalf("%v %#v", err, m.Status())
+	}
+	server := &fakeServer{}
+	StartBackend = func(hostname, stateDir, authKey string) (Server, error) {
+		if hostname != "h" || stateDir == "" {
+			t.Errorf("start %q %q", hostname, stateDir)
+		}
+		return server, nil
+	}
+	m = NewManager(cfg, t.TempDir())
+	if err := m.Start(context.Background()); err != nil || m.Status().State != "started" {
+		t.Fatalf("%v %#v", err, m.Status())
+	}
+	if err := m.Close(); err != nil || !server.closed || m.Status().State != "stopped" {
+		t.Fatalf("%v %v %#v", err, server.closed, m.Status())
+	}
+}

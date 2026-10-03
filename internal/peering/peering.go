@@ -10,8 +10,15 @@ import (
 
 	"github.com/rcarmo/gi/internal/config"
 	"github.com/rcarmo/gi/internal/secrets"
-	"tailscale.com/tsnet"
 )
+
+// Server is a started peering backend.
+type Server interface{ Close() error }
+
+// StartBackend starts the tsnet backend. internal/peering/tsnetbackend sets
+// it and only cmd/gi imports that package, so test binaries do not link
+// Tailscale (some 200 packages).
+var StartBackend func(hostname, stateDir, authKey string) (Server, error)
 
 type Status struct {
 	Enabled         bool   `json:"enabled"`
@@ -27,7 +34,7 @@ type Status struct {
 type Manager struct {
 	mu       sync.Mutex
 	cfg      config.PeeringSettings
-	server   *tsnet.Server
+	server   Server
 	state    string
 	err      string
 	resolver secrets.Resolver
@@ -65,12 +72,18 @@ func (m *Manager) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	m.server = &tsnet.Server{Hostname: m.cfg.Hostname, Dir: m.cfg.StateDir, AuthKey: authKey, Ephemeral: true}
-	if err := m.server.Start(); err != nil {
+	if StartBackend == nil {
+		m.state = "unavailable"
+		m.err = "tsnet backend not linked"
+		return fmt.Errorf("peering: %s", m.err)
+	}
+	server, err := StartBackend(m.cfg.Hostname, m.cfg.StateDir, authKey)
+	if err != nil {
 		m.state = "error"
 		m.err = err.Error()
 		return err
 	}
+	m.server = server
 	m.state = "started"
 	m.err = ""
 	return nil

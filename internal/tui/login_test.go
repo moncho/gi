@@ -2,8 +2,10 @@ package tui
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -333,5 +335,31 @@ func TestLoginDialogCopiesAuthURL(t *testing.T) {
 	rows := strings.Join(spanRowsText(c.piLoginDialogRows(80)), "\n")
 	if !strings.Contains(rows, "Ctrl+click to open • Copied URL to clipboard") && !strings.Contains(rows, "Cmd+click to open • Copied URL to clipboard") {
 		t.Fatalf("rows:\n%s", rows)
+	}
+}
+
+// go-ai's OnPromptContext (ChatGPT): when the browser's callback wins, the
+// pasted-code prompt ends and the input stops taking an answer.
+func TestLoginPromptEndsWithContext(t *testing.T) {
+	c := sessionTestChat(t)
+	c.uiQueue = make(chan func(), 16)
+	d := c.openLoginDialog("Login to ChatGPT", nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		_, err := c.loginPromptContext(ctx, d, func() { d.showPrompt("Paste the redirect URL:", "") })
+		done <- err
+	}()
+	(<-c.uiQueue)() // the prompt shows
+	if d.answer == nil {
+		t.Fatal("no prompt")
+	}
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatalf("err %v", err)
+	}
+	(<-c.uiQueue)()
+	if d.answer != nil {
+		t.Fatal("the input still takes an answer")
 	}
 }

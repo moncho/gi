@@ -79,6 +79,9 @@ its earlier `apiKey` field. gi's web settings now write `key`.
 
 - go-ai's sign-in flows take no cancellation signal. Cancelling closes the
   dialog, and the flow's result is ignored when it ends.
+- Flows that race the browser callback against a pasted code (ChatGPT, go-ai
+  v1.0.1's `OnPromptContext`) end the prompt when the callback wins: the input
+  stops taking an answer.
 - The environment status shows `✓ environment` instead of the variable's
   name.
 - gi does not select the provider's default model after a login.

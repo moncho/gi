@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -371,6 +372,13 @@ func (c *chatTUI) closeLoginDialog() {
 
 // prompt waits for the dialog's answer from the sign-in goroutine.
 func (c *chatTUI) loginPrompt(d *loginDialogState, show func()) (string, error) {
+	return c.loginPromptContext(context.Background(), d, show)
+}
+
+// loginPromptContext is loginPrompt that ctx can end: when the browser's
+// callback wins over a pasted code (go-ai's OnPromptContext, Pi's manual
+// input race), the input stops taking an answer.
+func (c *chatTUI) loginPromptContext(ctx context.Context, d *loginDialogState, show func()) (string, error) {
 	ready := make(chan chan string, 1)
 	c.runOnUI(func() {
 		if c.loginDialog != d {
@@ -391,9 +399,19 @@ func (c *chatTUI) loginPrompt(d *loginDialogState, show func()) (string, error) 
 			return value, nil
 		case <-d.cancelled:
 			return "", errLoginCancelled
+		case <-ctx.Done():
+			c.runOnUI(func() {
+				if d.answer == answer {
+					d.answer = nil
+					c.markDirty()
+				}
+			})
+			return "", ctx.Err()
 		}
 	case <-d.cancelled:
 		return "", errLoginCancelled
+	case <-ctx.Done():
+		return "", ctx.Err()
 	}
 }
 
@@ -514,6 +532,9 @@ func (c *chatTUI) startProviderLogin(p inference.LoginOption, onBack func()) {
 		},
 		OnPrompt: func(prompt oauth.Prompt) (string, error) {
 			return c.loginPrompt(d, func() { d.showPrompt(prompt.Message, prompt.Placeholder) })
+		},
+		OnPromptContext: func(ctx context.Context, prompt oauth.Prompt) (string, error) {
+			return c.loginPromptContext(ctx, d, func() { d.showPrompt(prompt.Message, prompt.Placeholder) })
 		},
 		OnSelect: func(prompt oauth.SelectPrompt) (string, error) {
 			return c.loginSelect(d, prompt)

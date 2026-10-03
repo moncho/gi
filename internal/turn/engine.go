@@ -2264,6 +2264,11 @@ func (e *Engine) emitRecoveryRestartFailureSessionState(ctx context.Context, ses
 	runner.emitSessionStateHook(ctx, sessionID, agentID, model, status, payload)
 }
 
+// recoveryDispositionForClaim decides what happens to a turn whose claim
+// went stale (gi stopped mid-turn). A turn that may have sent a request or
+// run tools is held for an explicit /retry instead of being replayed, which
+// could repeat side effects (#21); only turns that had not started yet are
+// requeued.
 func recoveryDispositionForClaim(claim store.ActiveTurnClaim) string {
 	switch claim.Phase {
 	case "waiting_on_tools":
@@ -2272,13 +2277,30 @@ func recoveryDispositionForClaim(claim store.ActiveTurnClaim) string {
 		return "abort_cancelling"
 	case "completed", "failed", "aborted", "cancelled", "held_for_retry_or_skip":
 		return "release_terminal"
-	default:
-		if claim.Phase == "compacting" {
-			return "requeue_after_compaction_checkpoint"
-		}
+	case "queued", "setup", "steer_returned":
 		return "requeue_interrupted_turn"
+	default: // inference, compacting, or an unknown running phase
+		return "hold_for_retry_or_skip_after_interruption"
 	}
 }
+
+// turnStartedWork reports whether a turn sent a model request or started a
+// tool (unknown counts as started).
+func (e *Engine) turnStartedWork(ctx context.Context, turnID string) bool {
+	events, err := e.store.ListTurnEvents(ctx, turnID)
+	if err != nil {
+		return true
+	}
+	for _, ev := range events {
+		if ev.Type == "inference.started" || ev.Type == "tool.started" {
+			return true
+		}
+	}
+	return false
+}
+
+// InterruptedFailureKind marks turns held because gi stopped mid-turn.
+const InterruptedFailureKind = "recovery_interrupted"
 
 func (e *Engine) recoverInterruptedTurn(ctx context.Context, claim store.ActiveTurnClaim) error {
 	opCtx := store.CoordinationContext(ctx, e.backgroundContext())
@@ -2290,6 +2312,14 @@ func (e *Engine) recoverInterruptedTurn(ctx context.Context, claim store.ActiveT
 	if record, getErr := e.store.GetTurn(opCtx, claim.TurnID); getErr == nil && record.Metadata["operation"] == "manual_compaction" && status != "completed" && status != "failed" && status != "cancelled" && status != "aborted" {
 		recoveryPhase = "cancelling"
 		disposition = "abort_interrupted_manual_compaction"
+	}
+	if claim.Phase == "compacting" && disposition == "hold_for_retry_or_skip_after_interruption" && !e.turnStartedWork(opCtx, claim.TurnID) {
+		// Compacting before the turn's first request: nothing was sent and
+		// no tool ran, so replaying it is safe.
+		disposition, recoveryPhase = "requeue_after_compaction_checkpoint", "queued"
+	}
+	if disposition == "hold_for_retry_or_skip_after_interruption" {
+		recoveryPhase = "waiting_on_tools" // held like a tool-phase interruption
 	}
 	switch recoveryPhase {
 	case "waiting_on_tools":
@@ -2321,8 +2351,13 @@ func (e *Engine) recoverInterruptedTurn(ctx context.Context, claim store.ActiveT
 	}
 
 	if disposition != "release_terminal" {
-		if disposition == "hold_for_retry_or_skip_after_tool_checkpoint" {
+		switch disposition {
+		case "hold_for_retry_or_skip_after_tool_checkpoint":
 			if err := e.store.MarkTurnFailureWithFallbackErr(e.backgroundContext(), nil, claim.TurnID, claim.SessionID, "recovery_interrupted_tool_phase", "review", "Recovered stale turn that was interrupted while waiting on tool results"); err != nil {
+				return err
+			}
+		case "hold_for_retry_or_skip_after_interruption":
+			if err := e.store.MarkTurnFailureWithFallbackErr(e.backgroundContext(), nil, claim.TurnID, claim.SessionID, InterruptedFailureKind, "review", "Interrupted when gi stopped; held instead of resending"); err != nil {
 				return err
 			}
 		}

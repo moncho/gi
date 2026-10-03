@@ -9,9 +9,10 @@ import (
 	"unicode"
 
 	"github.com/rcarmo/gi/internal/store"
+	"github.com/rcarmo/gi/internal/turn"
 )
 
-const retryUsage = "retry: /retry [page] | check <id> | run <id> | release <id> <token>"
+const retryUsage = "retry: /retry [page] | check <id> | run <id> | skip <id> | release <id> <token>"
 const retryPageSize = 6
 
 func retryState(f *store.TurnFailure) string {
@@ -47,7 +48,7 @@ func (c *chatTUI) retryCommand(fields []string) []string {
 	page := 1
 	if len(fields) > 1 {
 		switch fields[1] {
-		case "check", "run", "release":
+		case "check", "run", "skip", "release":
 			action := fields[1]
 			want := 3
 			if action == "release" {
@@ -80,6 +81,11 @@ func (c *chatTUI) retryCommand(fields []string) []string {
 					return []string{"retry: release failed; check ID/token", "  " + err.Error()}
 				}
 				return []string{"retry: released " + id, "  no work submitted; held for explicit action"}
+			case "skip":
+				if err = c.engine.SkipHeldTurn(ctx, id, "Skipped from the terminal"); err != nil {
+					return []string{"retry: skip failed: " + err.Error()}
+				}
+				return []string{"retry: skipped " + id, "  nothing resent"}
 			case "run":
 				result, err := c.engine.RetryHeldTurnInSession(ctx, sessionID, id, "Explicit terminal retry")
 				if err != nil {
@@ -120,4 +126,38 @@ func (c *chatTUI) retryCommand(fields []string) []string {
 		lines = append(lines, fmt.Sprintf("  more: /retry %d", page+1))
 	}
 	return append(lines, retryUsage)
+}
+
+// noticeHeldInterruptions tells, once per session and run, that turns gi
+// was running when it stopped were held instead of resent (#21).
+func (c *chatTUI) noticeHeldInterruptions() {
+	if c.store == nil || c.engine == nil || c.sessionID == "" || c.heldNoticeShown[c.sessionID] {
+		return
+	}
+	if c.heldNoticeShown == nil {
+		c.heldNoticeShown = map[string]bool{}
+	}
+	c.heldNoticeShown[c.sessionID] = true
+	ctx := context.Background()
+	items, err := c.store.ListHeldTurnFailures(ctx, c.sessionID, 0, 20)
+	if err != nil {
+		return
+	}
+	var lines []string
+	for _, item := range items {
+		if item.ResolutionState != "" || (item.FailureKind != turn.InterruptedFailureKind && item.FailureKind != "recovery_interrupted_tool_phase") {
+			continue
+		}
+		prompt := item.Summary
+		if rec, err := c.store.GetTurn(ctx, item.TurnID); err == nil && strings.TrimSpace(rec.Prompt) != "" {
+			prompt = rec.Prompt
+		}
+		lines = append(lines, "  "+item.TurnID+"  "+retryPreview(prompt))
+	}
+	if len(lines) == 0 {
+		return
+	}
+	head := fmt.Sprintf("retry: %d turn(s) interrupted when gi stopped were held, not resent", len(lines))
+	lines = append([]string{head}, lines...)
+	c.showQueueCommand(append(lines, "  /retry run <id> resends · /retry skip <id> dismisses"))
 }

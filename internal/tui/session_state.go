@@ -150,6 +150,7 @@ func (c *chatTUI) restoreSessionEditor() {
 	c.queuedDrafts = append([]string(nil), state.queuedDrafts...)
 	c.draftApplying = false
 	c.loadDurableDraft()
+	c.noticeHeldInterruptions()
 }
 
 // Guard UI completions at application time too: QueueUpdate may run after a

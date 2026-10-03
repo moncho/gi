@@ -256,6 +256,7 @@ type chatTUI struct {
 	runningCheckResult          bool
 	blockCache                  *transcriptBlockCache // block heights and recently rendered blocks (#34, #31)
 	thinkingMemoKey             string                // effectiveThinking's last model+level and answer
+	heldNoticeShown             map[string]bool       // sessions told about held interrupted turns
 	thinkingMemoValue           string
 	blocksMemo                  transcriptBlocksMemo              // block list and keys for unchanged transcripts (#34)
 	jumpToLatest                jumpToLatestRect                  // where the cue was drawn (none: width 0)
@@ -630,6 +631,7 @@ func (c *chatTUI) Init() func() {
 	}
 	c.ensureInput()
 	c.loadDurableDraft()
+	c.noticeHeldInterruptions()
 	c.scrollTranscriptToBottom()
 
 	if c.app != nil {
@@ -3111,7 +3113,7 @@ func (c *chatTUI) handleCommand(text string) {
 		if lines, handled := c.extensionCommandLines(text, fields); handled {
 			c.appendTranscript(lines...)
 		} else {
-			c.appendTranscript("sys: commands: /help, /hotkeys, /commands [query], /session, /sessions, /new, /name <name>, /resume [index|session_id], /clone [@agentN], /copy [--osc52|--native|--auto|--fallback], /attach <path> [prompt], /attachments, /detach <media:id|all|unresolved>, /reload, /tools [query|active|activate|reset], /skills [query], /skill:name [args], /model [name], /scoped-models [add|remove|set], /thinking [level], /compact, /scrollback [n], /history-limit [n], /settings, /approvals, /queue [page|remove|steer|move], /draft [reload|check|release|restore|discard], /retry [page|check|run|release], /cancel, /agents, /tree, /plugins, /fork [@agentN], /switch @agent|session_id, /send @agent message, /where, !cmd, !!cmd")
+			c.appendTranscript("sys: commands: /help, /hotkeys, /commands [query], /session, /sessions, /new, /name <name>, /resume [index|session_id], /clone [@agentN], /copy [--osc52|--native|--auto|--fallback], /attach <path> [prompt], /attachments, /detach <media:id|all|unresolved>, /reload, /tools [query|active|activate|reset], /skills [query], /skill:name [args], /model [name], /scoped-models [add|remove|set], /thinking [level], /compact, /scrollback [n], /history-limit [n], /settings, /approvals, /queue [page|remove|steer|move], /draft [reload|check|release|restore|discard], /retry [page|check|run|skip|release], /cancel, /agents, /tree, /plugins, /fork [@agentN], /switch @agent|session_id, /send @agent message, /where, !cmd, !!cmd")
 		}
 	}
 	c.running = false
@@ -3202,7 +3204,7 @@ var piCommands = []struct{ name, hint string }{
 var giCommands = []struct{ name, hint string }{
 	{"/abort", "Abort the running turn (also clears one left by a crash)"},
 	{"/queue [page|remove|steer|move]", "Inspect the durable queue; mutate by full turn IDs"},
-	{"/retry [page|check|run|release]", "Inspect held failures; guarded retry actions"},
+	{"/retry [page|check|run|skip|release]", "Inspect held failures; guarded retry actions"},
 	{"/draft [reload|check|release|restore|discard]", "Inspect or recover durable drafts"},
 	{"/attach <path> [prompt]", "Stage up to six media refs for the next prompt"},
 	{"/attachments", "List pending media refs and held admissions"},

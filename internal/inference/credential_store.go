@@ -274,7 +274,8 @@ func SaveProviderKey(provider, revision, key string) error {
 			_ = json.Unmarshal(raw, &entry)
 		}
 		entry["type"], _ = json.Marshal("api_key")
-		entry["apiKey"], _ = json.Marshal(key)
+		entry["key"], _ = json.Marshal(key) // Pi's field
+		delete(entry, "apiKey")
 		entries[provider], _ = json.Marshal(entry)
 		return nil
 	})

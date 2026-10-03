@@ -311,6 +311,8 @@ type chatTUI struct {
 	selectDialog                selectDialog       // Pi ctx.ui.select (modelMenuKind "select")
 	mcpManager                  *mcpManagerState   // Pi's /mcp manager (modelMenuKind "mcp-manager")
 	scopedModels                *scopedModelsState // Pi's /scoped-models (modelMenuKind "scoped-models")
+	authSelector                *authSelectorState // Pi's /login and /logout provider selector ("auth-selector")
+	loginDialog                 *loginDialogState  // Pi's login dialog ("login-dialog")
 	lastCtrlC                   time.Time          // Pi's app.clear: a second press within 500ms exits
 	modelMenuSession            sessionScope
 	modelMenuAltScreen          bool
@@ -1814,6 +1816,12 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "scoped-models" && c.scopedModels != nil {
 		return c.scopedModelsKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "auth-selector" && c.authSelector != nil {
+		return c.authSelectorKeys()
+	}
+	if c.modelMenuOpen && c.modelMenuKind == "login-dialog" && c.loginDialog != nil {
+		return c.loginDialogKeys()
+	}
 	if c.modelMenuOpen {
 		if c.modelMenuKind == "thinking" {
 			return gotui.KeyMap{
@@ -2123,6 +2131,7 @@ func (c *chatTUI) closeModelMenu() {
 	c.modelMenuOpen = false
 	c.sessionActions = sessionActions{}
 	c.scopedModels = nil
+	c.authSelector = nil
 	if c.mcpManager != nil {
 		c.mcpManager = nil
 		if c.engine != nil {
@@ -2372,7 +2381,7 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
-	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" || c.modelMenuKind == "scoped-models" {
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" || c.modelMenuKind == "scoped-models" || c.modelMenuKind == "auth-selector" || c.modelMenuKind == "login-dialog" {
 		width := c.currentContentWidth()
 		if c.app != nil {
 			width, _ = c.app.Size()
@@ -3025,9 +3034,13 @@ func (c *chatTUI) handleCommand(text string) {
 	case "/paste-image", "/paste":
 		c.appendTranscript(c.pasteImageCommand(text, fields)...)
 	case "/login":
-		c.appendTranscript(c.loginLines(fields)...)
+		c.handleLoginCommand(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(text), fields[0])))
 	case "/logout":
-		c.appendTranscript(c.logoutLines(fields)...)
+		if len(fields) == 1 {
+			c.handleLogoutCommand()
+		} else {
+			c.appendTranscript(c.logoutLines(fields)...) // gi: /logout <provider>
+		}
 	case "/reload":
 		c.appendTranscript(c.reloadLines()...)
 	case "/tools":
@@ -3325,43 +3338,6 @@ func (c *chatTUI) helpLines() []string {
 		"ctrl-r     search submitted prompts (current input is query)",
 		"!cmd       ask model about shell · !!cmd run locally",
 	}
-}
-
-// loginLines surfaces OAuth/credential auth status from auth.json. Gi does not
-// run an interactive browser OAuth flow in-TUI; it reports provider status and
-// how to authenticate, matching PiSwift's /login discovery surface.
-func (c *chatTUI) loginLines(fields []string) []string {
-	statuses := inference.ListAuthStatus()
-	if len(fields) > 1 {
-		want := strings.ToLower(strings.TrimSpace(fields[1]))
-		for _, s := range statuses {
-			if strings.ToLower(s.ID) == want {
-				if s.Authenticated {
-					return []string{fmt.Sprintf("login: %s (%s) [%s] ✓ configured", s.Name, s.ID, s.AuthTypeLabel())}
-				}
-				return []string{
-					fmt.Sprintf("login: %s (%s) [%s] • not configured", s.Name, s.ID, s.AuthTypeLabel()),
-					fmt.Sprintf("- add credentials to %s, then /reload", inference.AuthFilePath()),
-				}
-			}
-		}
-		return []string{fmt.Sprintf("login: unknown provider %q; run /login to list providers", fields[1])}
-	}
-	lines := []string{"login: providers (auth.json)"}
-	if len(statuses) == 0 {
-		lines = append(lines, "- no OAuth providers registered")
-	}
-	// Pi's labels: the auth type, then "✓ configured" or "• not configured".
-	for _, s := range statuses {
-		state := " • not configured"
-		if s.Authenticated {
-			state = " ✓ configured"
-		}
-		lines = append(lines, fmt.Sprintf("  %s (%s) [%s]%s", s.Name, s.ID, s.AuthTypeLabel(), state))
-	}
-	lines = append(lines, fmt.Sprintf("- credentials file: %s", inference.AuthFilePath()))
-	lines = append(lines, "- /login <provider> for details · /logout <provider> to remove credentials")
-	return lines
 }
 
 func (c *chatTUI) logoutLines(fields []string) []string {

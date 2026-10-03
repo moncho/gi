@@ -56,7 +56,7 @@ func ReadProviderSettings() (ProviderSettingsSnapshot, error) {
 				kind = "api_key"
 			}
 		}
-		snapshot.Providers = append(snapshot.Providers, ProviderCredentialInfo{ID: id, Name: providerName(id), Stored: stored, HasMaterial: entry.APIKey != "" || entry.Access != "" || entry.Refresh != "" || entry.Token != "", Kind: kind, Editable: APIKeyProvider(id) && editableKeyEntry(raw)})
+		snapshot.Providers = append(snapshot.Providers, ProviderCredentialInfo{ID: id, Name: providerName(id), Stored: stored, HasMaterial: entry.Key != "" || entry.APIKey != "" || entry.Access != "" || entry.Refresh != "" || entry.Token != "", Kind: kind, Editable: APIKeyProvider(id) && editableKeyEntry(raw)})
 	}
 	sort.Slice(snapshot.Providers, func(i, j int) bool { return snapshot.Providers[i].ID < snapshot.Providers[j].ID })
 	return snapshot, nil

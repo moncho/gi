@@ -3,10 +3,13 @@ package tui
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	gotui "github.com/grindlemire/go-tui"
+	"github.com/rcarmo/gi/internal/inference"
 )
 
 // Pi's editor opens a slash-command autocomplete list when "/" is typed at
@@ -233,8 +236,90 @@ func (c *chatTUI) slashArgumentCompletions(command, args string) []slashItem {
 	switch command {
 	case "mcp":
 		return c.mcpArgumentCompletions(args)
+	case "model":
+		return c.modelArgumentCompletions(args)
+	case "thinking":
+		return fuzzyCompletions(c.thinkingMenuLevels(), args, func(level string) string { return level }, func(level string) slashItem {
+			return slashItem{name: level, value: level}
+		})
+	case "login":
+		return loginArgumentCompletions(inference.LoginOptions(""), args)
 	}
 	return nil
+}
+
+// fuzzyCompletions is Pi's createFuzzyAutocompleteItems.
+func fuzzyCompletions[T any](items []T, prefix string, text func(T) string, item func(T) slashItem) []slashItem {
+	wrapped := make([]slashItem, len(items))
+	for i, it := range items {
+		wrapped[i] = slashItem{value: strconv.Itoa(i), description: text(it)}
+	}
+	var out []slashItem
+	for _, w := range piFuzzyFilter(wrapped, prefix, func(it slashItem) string { return it.description }) {
+		i, _ := strconv.Atoi(w.value)
+		out = append(out, item(items[i]))
+	}
+	return out
+}
+
+// modelArgumentCompletions is Pi's /model completion: the scoped models,
+// else every available one, as provider/id.
+func (c *chatTUI) modelArgumentCompletions(prefix string) []slashItem {
+	models, all := c.modelMenuScopes()
+	if len(models) == 0 {
+		models = all
+	}
+	return fuzzyCompletions(models, prefix, func(label string) string {
+		provider, id := splitModelLabel(label)
+		return modelSearchText(provider, id, c.modelMenuName(label))
+	}, func(label string) slashItem {
+		provider, id := splitModelLabel(label)
+		return slashItem{name: id, value: label, description: provider}
+	})
+}
+
+// loginArgumentCompletions is Pi's /login completion: one item per
+// provider, with its sign-in methods.
+func loginArgumentCompletions(options []inference.LoginOption, prefix string) []slashItem {
+	type provider struct {
+		id, name     string
+		types        []string
+		subscription bool
+	}
+	var providers []*provider
+	byID := map[string]*provider{}
+	for _, o := range options {
+		if p := byID[o.ID]; p != nil {
+			if !slices.Contains(p.types, o.AuthType) {
+				p.types = append(p.types, o.AuthType)
+				slices.SortFunc(p.types, func(a, b string) int { return strings.Compare(b, a) }) // oauth, then api_key
+			}
+			continue
+		}
+		p := &provider{id: o.ID, name: o.Name, types: []string{o.AuthType}, subscription: o.Subscription}
+		byID[o.ID] = p
+		providers = append(providers, p)
+	}
+	slices.SortStableFunc(providers, func(a, b *provider) int { return inference.LocaleCompare(a.name, b.name) })
+	labels := func(p *provider, sep string, withType bool) string {
+		parts := make([]string, len(p.types))
+		for i, t := range p.types {
+			parts[i] = authTypeLabel(t, p.subscription)
+			if withType {
+				parts[i] = t + " " + parts[i]
+			}
+		}
+		return strings.Join(parts, sep)
+	}
+	return fuzzyCompletions(providers, prefix, func(p *provider) string {
+		return p.id + " " + p.name + " " + labels(p, " ", true)
+	}, func(p *provider) slashItem {
+		description := labels(p, "/", false)
+		if p.name != p.id {
+			description = p.name + " · " + description
+		}
+		return slashItem{name: p.id, value: p.id, description: description}
+	})
 }
 
 // slashLead is the whitespace before the command, kept when a completion is

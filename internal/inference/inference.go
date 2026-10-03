@@ -30,7 +30,10 @@ type authEntry struct {
 	Refresh string `json:"refresh"`
 	Expires int64  `json:"expires"`
 	Token   string `json:"token"`
-	APIKey  string `json:"apiKey"`
+	// Key is Pi's stored API key ({"type": "api_key", "key": ...});
+	// APIKey is gi's earlier field, still read.
+	Key    string `json:"key"`
+	APIKey string `json:"apiKey"`
 	// Pi records the account's Copilot model list and enterprise domain;
 	// listings are filtered to it like Pi's provider filterModels.
 	AvailableModelIDs []string `json:"availableModelIds"`
@@ -165,7 +168,7 @@ func ListAuthStatus() []AuthStatus {
 		}
 		kind := entry.Type
 		if kind == "" {
-			if entry.APIKey != "" {
+			if entry.APIKey != "" || entry.Key != "" {
 				kind = "api-key"
 			} else {
 				kind = "credential"
@@ -404,6 +407,9 @@ func loadAuth(provider string) (string, string, error) {
 	}
 	if entry.Token != "" {
 		return entry.Token, "", nil
+	}
+	if entry.Key != "" {
+		return entry.Key, "", nil
 	}
 	if entry.APIKey != "" {
 		return entry.APIKey, "", nil

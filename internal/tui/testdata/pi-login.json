@@ -1,0 +1,1010 @@
+{
+ "selectors": {
+  "login": {
+   "mode": "login",
+   "providers": [
+    {
+     "id": "anthropic",
+     "name": "Anthropic",
+     "authType": "oauth",
+     "subscription": true,
+     "status": {
+      "type": "oauth",
+      "source": "stored credential"
+     }
+    },
+    {
+     "id": "anthropic",
+     "name": "Anthropic",
+     "authType": "api_key",
+     "subscription": true,
+     "status": {
+      "type": "oauth",
+      "source": "stored credential"
+     }
+    },
+    {
+     "id": "groq",
+     "name": "Groq",
+     "authType": "api_key",
+     "subscription": false,
+     "status": {
+      "type": "api_key",
+      "source": "environment"
+     }
+    },
+    {
+     "id": "openrouter",
+     "name": "OpenRouter",
+     "authType": "oauth",
+     "subscription": false
+    },
+    {
+     "id": "mistral",
+     "name": "Mistral",
+     "authType": "api_key",
+     "subscription": false,
+     "status": {
+      "type": "api_key",
+      "source": "GROQ_API_KEY"
+     }
+    },
+    {
+     "id": "p-a",
+     "name": "Provider A",
+     "authType": "api_key",
+     "subscription": false
+    },
+    {
+     "id": "p-b",
+     "name": "Provider B",
+     "authType": "api_key",
+     "subscription": false
+    },
+    {
+     "id": "p-c",
+     "name": "Provider C",
+     "authType": "api_key",
+     "subscription": false
+    },
+    {
+     "id": "p-d",
+     "name": "Provider D",
+     "authType": "api_key",
+     "subscription": false
+    },
+    {
+     "id": "p-e",
+     "name": "Provider E",
+     "authType": "api_key",
+     "subscription": false
+    },
+    {
+     "id": "p-f",
+     "name": "Provider F",
+     "authType": "api_key",
+     "subscription": false
+    }
+   ],
+   "steps": [
+    "down",
+    "down",
+    "down",
+    "down",
+    "down",
+    "down",
+    "up",
+    [
+     "type",
+     "an"
+    ],
+    "backspace",
+    [
+     "type",
+     "zz"
+    ]
+   ],
+   "widths": {
+    "40": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       " → Anthropic [subscription] ✓ config...",
+       "   Anthropic [API key] • subscriptio...",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not config...",
+       "   Mistral [API key] ✓ env: GROQ_API...",
+       "   Provider A [API key] • not config...",
+       "   Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   (1/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ config...",
+       " → Anthropic [API key] • subscriptio...",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not config...",
+       "   Mistral [API key] ✓ env: GROQ_API...",
+       "   Provider A [API key] • not config...",
+       "   Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   (2/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ config...",
+       "   Anthropic [API key] • subscriptio...",
+       " → Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not config...",
+       "   Mistral [API key] ✓ env: GROQ_API...",
+       "   Provider A [API key] • not config...",
+       "   Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   (3/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ config...",
+       "   Anthropic [API key] • subscriptio...",
+       "   Groq [API key] ✓ environment",
+       " → OpenRouter [account] • not config...",
+       "   Mistral [API key] ✓ env: GROQ_API...",
+       "   Provider A [API key] • not config...",
+       "   Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   (4/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ config...",
+       "   Anthropic [API key] • subscriptio...",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not config...",
+       " → Mistral [API key] ✓ env: GROQ_API...",
+       "   Provider A [API key] • not config...",
+       "   Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   (5/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [API key] • subscriptio...",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not config...",
+       "   Mistral [API key] ✓ env: GROQ_API...",
+       " → Provider A [API key] • not config...",
+       "   Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   Provider D [API key] • not config...",
+       "   (6/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not config...",
+       "   Mistral [API key] ✓ env: GROQ_API...",
+       "   Provider A [API key] • not config...",
+       " → Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   Provider D [API key] • not config...",
+       "   Provider E [API key] • not config...",
+       "   (7/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "up",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [API key] • subscriptio...",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not config...",
+       "   Mistral [API key] ✓ env: GROQ_API...",
+       " → Provider A [API key] • not config...",
+       "   Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   Provider D [API key] • not config...",
+       "   (6/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "type:an",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       "> an",
+       "",
+       "   Anthropic [subscription] ✓ config...",
+       " → Anthropic [API key] • subscriptio...",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "backspace",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       "> a",
+       "",
+       "   Anthropic [subscription] ✓ config...",
+       " → Anthropic [API key] • subscriptio...",
+       "   Provider A [API key] • not config...",
+       "   Groq [API key] ✓ environment",
+       "   Provider B [API key] • not config...",
+       "   Provider C [API key] • not config...",
+       "   Provider D [API key] • not config...",
+       "   Provider E [API key] • not config...",
+       "   (2/11)",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "type:zz",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       "> azz",
+       "",
+       "   No matching providers",
+       "",
+       "────────────────────────────────────────"
+      ]
+     }
+    ],
+    "80": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       " → Anthropic [subscription] ✓ configured",
+       "   Anthropic [API key] • subscription configured",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not configured",
+       "   Mistral [API key] ✓ env: GROQ_API_KEY",
+       "   Provider A [API key] • not configured",
+       "   Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   (1/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ configured",
+       " → Anthropic [API key] • subscription configured",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not configured",
+       "   Mistral [API key] ✓ env: GROQ_API_KEY",
+       "   Provider A [API key] • not configured",
+       "   Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   (2/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ configured",
+       "   Anthropic [API key] • subscription configured",
+       " → Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not configured",
+       "   Mistral [API key] ✓ env: GROQ_API_KEY",
+       "   Provider A [API key] • not configured",
+       "   Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   (3/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ configured",
+       "   Anthropic [API key] • subscription configured",
+       "   Groq [API key] ✓ environment",
+       " → OpenRouter [account] • not configured",
+       "   Mistral [API key] ✓ env: GROQ_API_KEY",
+       "   Provider A [API key] • not configured",
+       "   Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   (4/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ configured",
+       "   Anthropic [API key] • subscription configured",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not configured",
+       " → Mistral [API key] ✓ env: GROQ_API_KEY",
+       "   Provider A [API key] • not configured",
+       "   Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   (5/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [API key] • subscription configured",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not configured",
+       "   Mistral [API key] ✓ env: GROQ_API_KEY",
+       " → Provider A [API key] • not configured",
+       "   Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   Provider D [API key] • not configured",
+       "   (6/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not configured",
+       "   Mistral [API key] ✓ env: GROQ_API_KEY",
+       "   Provider A [API key] • not configured",
+       " → Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   Provider D [API key] • not configured",
+       "   Provider E [API key] • not configured",
+       "   (7/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "up",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   Anthropic [API key] • subscription configured",
+       "   Groq [API key] ✓ environment",
+       "   OpenRouter [account] • not configured",
+       "   Mistral [API key] ✓ env: GROQ_API_KEY",
+       " → Provider A [API key] • not configured",
+       "   Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   Provider D [API key] • not configured",
+       "   (6/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "type:an",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       "> an",
+       "",
+       "   Anthropic [subscription] ✓ configured",
+       " → Anthropic [API key] • subscription configured",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "backspace",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       "> a",
+       "",
+       "   Anthropic [subscription] ✓ configured",
+       " → Anthropic [API key] • subscription configured",
+       "   Provider A [API key] • not configured",
+       "   Groq [API key] ✓ environment",
+       "   Provider B [API key] • not configured",
+       "   Provider C [API key] • not configured",
+       "   Provider D [API key] • not configured",
+       "   Provider E [API key] • not configured",
+       "   (2/11)",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "type:zz",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       "> azz",
+       "",
+       "   No matching providers",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     }
+    ]
+   }
+  },
+  "logout": {
+   "mode": "logout",
+   "providers": [
+    {
+     "id": "anthropic",
+     "name": "Anthropic",
+     "authType": "oauth",
+     "subscription": true,
+     "status": {
+      "type": "oauth",
+      "source": "stored credential"
+     }
+    },
+    {
+     "id": "groq",
+     "name": "Groq",
+     "authType": "api_key",
+     "subscription": false,
+     "status": {
+      "type": "api_key",
+      "source": "stored credential"
+     }
+    }
+   ],
+   "steps": [
+    "down",
+    "down"
+   ],
+   "widths": {
+    "40": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to logout:",
+       "",
+       ">",
+       "",
+       " → Anthropic [subscription] ✓ config...",
+       "   Groq [API key] ✓ configured",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to logout:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ config...",
+       " → Groq [API key] ✓ configured",
+       "",
+       "────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to logout:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ config...",
+       " → Groq [API key] ✓ configured",
+       "",
+       "────────────────────────────────────────"
+      ]
+     }
+    ],
+    "80": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to logout:",
+       "",
+       ">",
+       "",
+       " → Anthropic [subscription] ✓ configured",
+       "   Groq [API key] ✓ configured",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to logout:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ configured",
+       " → Groq [API key] ✓ configured",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     },
+     {
+      "step": "down",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to logout:",
+       "",
+       ">",
+       "",
+       "   Anthropic [subscription] ✓ configured",
+       " → Groq [API key] ✓ configured",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     }
+    ]
+   }
+  },
+  "login_one_type": {
+   "mode": "login",
+   "providers": [
+    {
+     "id": "anthropic",
+     "name": "Anthropic",
+     "authType": "api_key",
+     "subscription": true,
+     "status": {
+      "type": "oauth",
+      "source": "stored credential"
+     }
+    },
+    {
+     "id": "groq",
+     "name": "Groq",
+     "authType": "api_key",
+     "subscription": false,
+     "status": {
+      "type": "api_key",
+      "source": "environment"
+     }
+    },
+    {
+     "id": "mistral",
+     "name": "Mistral",
+     "authType": "api_key",
+     "subscription": false,
+     "status": {
+      "type": "api_key",
+      "source": "GROQ_API_KEY"
+     }
+    }
+   ],
+   "initial": "gr",
+   "steps": [],
+   "widths": {
+    "40": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       "> gr",
+       "",
+       " → Groq ✓ environment",
+       "",
+       "────────────────────────────────────────"
+      ]
+     }
+    ],
+    "80": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       "> gr",
+       "",
+       " → Groq ✓ environment",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     }
+    ]
+   }
+  },
+  "logout_empty": {
+   "mode": "logout",
+   "providers": [],
+   "steps": [],
+   "widths": {
+    "40": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to logout:",
+       "",
+       ">",
+       "",
+       "   No providers logged in. Use /logi...",
+       "",
+       "────────────────────────────────────────"
+      ]
+     }
+    ],
+    "80": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to logout:",
+       "",
+       ">",
+       "",
+       "   No providers logged in. Use /login first.",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     }
+    ]
+   }
+  },
+  "login_empty": {
+   "mode": "login",
+   "providers": [],
+   "steps": [],
+   "widths": {
+    "40": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   No providers available",
+       "",
+       "────────────────────────────────────────"
+      ]
+     }
+    ],
+    "80": [
+     {
+      "step": "open",
+      "rows": [
+       "────────────────────────────────────────────────────────────────────────────────",
+       "",
+       " Select provider to configure:",
+       "",
+       ">",
+       "",
+       "   No providers available",
+       "",
+       "────────────────────────────────────────────────────────────────────────────────"
+      ]
+     }
+    ]
+   }
+  }
+ },
+ "dialogs": {
+  "40": {
+   "auth_prompt": [
+    "────────────────────────────────────────",
+    " Login to Anthropic",
+    "",
+    " https://claude.ai/oauth/authorize?code",
+    " =true",
+    " Ctrl+click to open",
+    "",
+    " Paste the code shown after signing in.",
+    "",
+    " Paste the authorization code:",
+    " e.g., abc#123",
+    ">",
+    " (escape/ctrl+c to cancel, enter to",
+    " submit)",
+    "────────────────────────────────────────"
+   ],
+   "auth_prompt_typed": [
+    "────────────────────────────────────────",
+    " Login to Anthropic",
+    "",
+    " https://claude.ai/oauth/authorize?code",
+    " =true",
+    " Ctrl+click to open",
+    "",
+    " Paste the code shown after signing in.",
+    "",
+    " Paste the authorization code:",
+    " e.g., abc#123",
+    "> xyz",
+    " (escape/ctrl+c to cancel, enter to",
+    " submit)",
+    "────────────────────────────────────────"
+   ],
+   "auth_submitted": [
+    "────────────────────────────────────────",
+    " Login to Anthropic",
+    "",
+    " https://claude.ai/oauth/authorize?code",
+    " =true",
+    " Ctrl+click to open",
+    "",
+    " Paste the code shown after signing in.",
+    "",
+    " Paste the authorization code:",
+    " e.g., abc#123",
+    "> xyz",
+    " (escape/ctrl+c to cancel, enter to",
+    " submit)",
+    " Exchanging code for tokens…",
+    "────────────────────────────────────────"
+   ],
+   "device": [
+    "────────────────────────────────────────",
+    " Login to GitHub Copilot",
+    "",
+    " https://github.com/login/device",
+    " Ctrl+click to open",
+    "",
+    " Enter code: ABCD-1234",
+    "",
+    " Waiting for authentication...",
+    " (escape/ctrl+c to cancel)",
+    "────────────────────────────────────────"
+   ],
+   "api_key": [
+    "────────────────────────────────────────",
+    " Login to Groq",
+    "",
+    " Enter API key:",
+    ">",
+    " (escape/ctrl+c to cancel, enter to",
+    " submit)",
+    "────────────────────────────────────────"
+   ],
+   "manual": [
+    "────────────────────────────────────────",
+    " Login to X",
+    "",
+    " Paste the redirect URL:",
+    ">",
+    " (escape/ctrl+c to cancel)",
+    "────────────────────────────────────────"
+   ]
+  },
+  "80": {
+   "auth_prompt": [
+    "────────────────────────────────────────────────────────────────────────────────",
+    " Login to Anthropic",
+    "",
+    " https://claude.ai/oauth/authorize?code=true",
+    " Ctrl+click to open",
+    "",
+    " Paste the code shown after signing in.",
+    "",
+    " Paste the authorization code:",
+    " e.g., abc#123",
+    ">",
+    " (escape/ctrl+c to cancel, enter to submit)",
+    "────────────────────────────────────────────────────────────────────────────────"
+   ],
+   "auth_prompt_typed": [
+    "────────────────────────────────────────────────────────────────────────────────",
+    " Login to Anthropic",
+    "",
+    " https://claude.ai/oauth/authorize?code=true",
+    " Ctrl+click to open",
+    "",
+    " Paste the code shown after signing in.",
+    "",
+    " Paste the authorization code:",
+    " e.g., abc#123",
+    "> xyz",
+    " (escape/ctrl+c to cancel, enter to submit)",
+    "────────────────────────────────────────────────────────────────────────────────"
+   ],
+   "auth_submitted": [
+    "────────────────────────────────────────────────────────────────────────────────",
+    " Login to Anthropic",
+    "",
+    " https://claude.ai/oauth/authorize?code=true",
+    " Ctrl+click to open",
+    "",
+    " Paste the code shown after signing in.",
+    "",
+    " Paste the authorization code:",
+    " e.g., abc#123",
+    "> xyz",
+    " (escape/ctrl+c to cancel, enter to submit)",
+    " Exchanging code for tokens…",
+    "────────────────────────────────────────────────────────────────────────────────"
+   ],
+   "device": [
+    "────────────────────────────────────────────────────────────────────────────────",
+    " Login to GitHub Copilot",
+    "",
+    " https://github.com/login/device",
+    " Ctrl+click to open",
+    "",
+    " Enter code: ABCD-1234",
+    "",
+    " Waiting for authentication...",
+    " (escape/ctrl+c to cancel)",
+    "────────────────────────────────────────────────────────────────────────────────"
+   ],
+   "api_key": [
+    "────────────────────────────────────────────────────────────────────────────────",
+    " Login to Groq",
+    "",
+    " Enter API key:",
+    ">",
+    " (escape/ctrl+c to cancel, enter to submit)",
+    "────────────────────────────────────────────────────────────────────────────────"
+   ],
+   "manual": [
+    "────────────────────────────────────────────────────────────────────────────────",
+    " Login to X",
+    "",
+    " Paste the redirect URL:",
+    ">",
+    " (escape/ctrl+c to cancel)",
+    "────────────────────────────────────────────────────────────────────────────────"
+   ]
+  }
+ }
+}

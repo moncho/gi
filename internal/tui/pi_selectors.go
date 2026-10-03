@@ -287,6 +287,14 @@ func (c *chatTUI) piMenuRows(width int) (spanRows, bool) {
 		if c.scopedModels != nil {
 			return c.piScopedModelsRows(width), true
 		}
+	case "auth-selector":
+		if c.authSelector != nil {
+			return c.piAuthSelectorRows(width), true
+		}
+	case "login-dialog":
+		if c.loginDialog != nil {
+			return c.piLoginDialogRows(width), true
+		}
 	}
 	return nil, false
 }

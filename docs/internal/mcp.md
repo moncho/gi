@@ -211,9 +211,19 @@ Rules, as in Pi:
     shared between scripts (`、`, `ー`) does not open the list.
   - Pi's `/model`, `/thinking` and `/login` argument completions are not
     ported yet (#17).
+- Server picker (Pi's `pickServer`): without a name, `login`/`logout` and
+  `reconnect` use the only eligible server, else the only preferred one (the
+  one needing sign-in; the failed or disconnected one), else ask with Pi's
+  `ctx.ui.select` dialog ("MCP server"). Cancelling does nothing. An unknown
+  name is reported as `No MCP server named "x".`
+  - The dialog (`internal/tui/select_dialog.go`) ports
+    `ExtensionSelectorComponent`: title, options, key hints between borders,
+    word-wrapped like pi-tui `Text`; Up/Down or k/j move without wrapping,
+    Enter selects, Escape or Ctrl+C cancels. Golden:
+    `scripts/golden-select-dialog.mjs`, `TestSelectDialogMatchesPi`. The
+    dialog is shown where gi shows its other Pi selectors.
 - Not yet ported:
   - Pi's interactive manager (inspect tools, enable or disable a server, change exposure).
-  - The server picker when the name is omitted and ambiguous; gi asks for the name instead.
 
 ## OAuth (`internal/mcp/oauth.go`)
 

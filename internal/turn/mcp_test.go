@@ -449,14 +449,17 @@ func TestMCPDirectWaitOnlyOnce(t *testing.T) {
 	old := mcpDirectWait
 	mcpDirectWait = 200 * time.Millisecond
 	t.Cleanup(func() { mcpDirectWait = old })
+	s := openTestStore(t)
+	e := New(s)
+	t.Cleanup(func() { e.Close(); s.Close() })
+	// Registered after the engine, so its held connections close first: the
+	// SDK's best-effort cancellation notice to a hung server would otherwise
+	// hold Close for its 5 s timeout.
 	slow := hangingListener(t, true)
 	path := filepath.Join(t.TempDir(), "mcp.json")
 	if err := os.WriteFile(path, []byte(fmt.Sprintf(`{"mcpServers": {"slow": {"url": %q, "exposure": "direct"}}}`, slow)), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	s := openTestStore(t)
-	e := New(s)
-	t.Cleanup(func() { e.Close(); s.Close() })
 	var notices []string
 	e.SetMCPNotifier(func(level, text string) { notices = append(notices, level+": "+text) })
 	e.enableMCPWith(gimcp.NewManager(gimcp.LoadConfig(path, "", false), t.TempDir(), ""))

@@ -308,6 +308,7 @@ type chatTUI struct {
 	modelMenuValues             map[string]string
 	modelMenuMetadata           map[string]modelPickerMetadata
 	sessionActions              sessionActions
+	selectDialog                selectDialog // Pi ctx.ui.select (modelMenuKind "select")
 	modelMenuSession            sessionScope
 	modelMenuAltScreen          bool
 	modelMenuResized            bool
@@ -1801,6 +1802,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "fork" {
 		return c.forkSelectorKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "select" {
+		return c.selectDialogKeys()
+	}
 	if c.modelMenuOpen {
 		if c.modelMenuKind == "thinking" {
 			return gotui.KeyMap{
@@ -2100,6 +2104,14 @@ func (c *chatTUI) closeModelMenu() {
 	// Hide before the screen-restore resize is dispatched.
 	c.modelMenuOpen = false
 	c.sessionActions = sessionActions{}
+	if c.selectDialog.onCancel != nil || c.selectDialog.onSelect != nil {
+		// Closed by something else (session switch, quit): Pi resolves undefined.
+		cancel := c.selectDialog.onCancel
+		c.selectDialog = selectDialog{}
+		if cancel != nil {
+			defer cancel()
+		}
+	}
 	c.closeModelPickerScreen()
 	c.resetModelMenuMetadata()
 	c.modelMenuError = ""
@@ -2335,7 +2347,7 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
-	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" {
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" {
 		width := c.currentContentWidth()
 		if c.app != nil {
 			width, _ = c.app.Size()

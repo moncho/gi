@@ -1,0 +1,172 @@
+{
+ "width": 40,
+ "states": [
+  {
+   "step": "start",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    " → github",
+    "   local",
+    "   remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": null
+  },
+  {
+   "step": "down",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    "   github",
+    " → local",
+    "   remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": null
+  },
+  {
+   "step": "down",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    "   github",
+    "   local",
+    " → remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": null
+  },
+  {
+   "step": "down",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    "   github",
+    "   local",
+    " → remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": null
+  },
+  {
+   "step": "k",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    "   github",
+    " → local",
+    "   remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": null
+  },
+  {
+   "step": "up",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    " → github",
+    "   local",
+    "   remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": null
+  },
+  {
+   "step": "up",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    " → github",
+    "   local",
+    "   remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": null
+  },
+  {
+   "step": "j",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    "   github",
+    " → local",
+    "   remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": null
+  },
+  {
+   "step": "enter",
+   "rows": [
+    "────────────────────────────────────────",
+    "",
+    " MCP server",
+    "",
+    "   github",
+    " → local",
+    "   remote-with-a-rather-long-name-here",
+    "",
+    " ↑↓ navigate  enter select",
+    " escape/ctrl+c cancel",
+    "",
+    "────────────────────────────────────────"
+   ],
+   "result": {
+    "select": "local"
+   }
+  }
+ ],
+ "escape": {
+  "cancel": true
+ }
+}

@@ -277,6 +277,8 @@ func (c *chatTUI) piMenuRows(width int) (spanRows, bool) {
 		return c.piSessionActionRows(width), true
 	case "fork":
 		return c.piForkSelectorRows(width), true
+	case "select":
+		return c.piSelectDialogRows(width), true
 	}
 	return nil, false
 }

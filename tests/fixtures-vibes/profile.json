@@ -12,7 +12,7 @@
   },
   "auth": { "mode": "none" },
   "capabilities": ["@cap-queue", "@cap-svg-render", "@cap-thoughts", "@cap-tool-output", "@cap-message-delete", "@cap-quick-actions", "@cap-slash-commands", "@cap-skills", "@cap-pwa", "@cap-steer", "@cap-attachments", "@cap-session-picker", "@cap-workspace", "@cap-model-picker", "@cap-read-aloud", "@cap-upload-cancel", "@cap-tool-pane", "@cap-messages-tool", "@cap-reconnect", "@cap-stop"],
-  "selectors": { "queueItem": ".compose-queue-stack-item", "quickActionHighlight": ".timeline-quick-actions-item.active" },
+  "selectors": { "queueItem": ".compose-queue-stack-item", "quickActionHighlight": ".timeline-quick-actions-item.active", "quickActionItem": ".timeline-quick-actions-item" },
   "tools": { "shell": "shell" },
   "skips": "skips.json"
 }

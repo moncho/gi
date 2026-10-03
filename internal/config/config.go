@@ -303,6 +303,24 @@ func PersistModelSelection(workspaceRoot, provider, model, thinking string, enab
 	return persistPiFields(workspaceRoot, fields)
 }
 
+// PersistEnabledModels saves Pi's enabledModels (Pi's setEnabledModels); nil
+// removes the setting, so every model is enabled.
+func PersistEnabledModels(workspaceRoot string, models []string) error {
+	_, err := updatePiSettings(workspaceRoot, "", func(d *settingsDocument) error {
+		if models == nil {
+			delete(d.Values, "enabledModels")
+			return nil
+		}
+		raw, err := json.Marshal(models)
+		if err != nil {
+			return err
+		}
+		d.Values["enabledModels"] = raw
+		return nil
+	})
+	return err
+}
+
 // PersistHideThinkingBlock saves Pi's hideThinkingBlock.
 func PersistHideThinkingBlock(workspaceRoot string, hide bool) error {
 	return persistPiFields(workspaceRoot, map[string]any{"hideThinkingBlock": hide})

@@ -41,9 +41,12 @@ func TestAppKeysMatchPiDefaults(t *testing.T) {
 		return strings.Join(c.transcript[n:], "\n")
 	}
 
+	c.cfg.EnabledModels, c.cfg.EnabledModelsConfigured = []string{"bootstrap"}, true
 	for _, ev := range []gotui.KeyEvent{{Key: gotui.KeyRune, Rune: 'p', Mod: gotui.ModCtrl}, {Key: gotui.KeyRune, Rune: 'p', Mod: gotui.ModCtrl | gotui.ModShift}} {
-		if got := transcriptSince(func() { pressAppKey(t, c, ev) }); !strings.Contains(got, "no enabled models configured") {
-			t.Fatalf("%+v did not cycle models: %q", ev, got)
+		c.textSelection.notice = ""
+		pressAppKey(t, c, ev)
+		if c.textSelection.notice != "Only one model in scope" {
+			t.Fatalf("%+v did not cycle models: %q", ev, c.textSelection.notice)
 		}
 	}
 	if got := transcriptSince(func() { pressAppKey(t, c, gotui.KeyEvent{Key: gotui.KeyRune, Rune: 'l', Mod: gotui.ModCtrl}) }); c.modelMenuKind == "" && !strings.Contains(got, "no available models") {

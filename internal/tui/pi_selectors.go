@@ -283,6 +283,10 @@ func (c *chatTUI) piMenuRows(width int) (spanRows, bool) {
 		if c.mcpManager != nil {
 			return c.piMCPManagerRows(width), true
 		}
+	case "scoped-models":
+		if c.scopedModels != nil {
+			return c.piScopedModelsRows(width), true
+		}
 	}
 	return nil, false
 }

@@ -308,9 +308,10 @@ type chatTUI struct {
 	modelMenuValues             map[string]string
 	modelMenuMetadata           map[string]modelPickerMetadata
 	sessionActions              sessionActions
-	selectDialog                selectDialog     // Pi ctx.ui.select (modelMenuKind "select")
-	mcpManager                  *mcpManagerState // Pi's /mcp manager (modelMenuKind "mcp-manager")
-	lastCtrlC                   time.Time        // Pi's app.clear: a second press within 500ms exits
+	selectDialog                selectDialog       // Pi ctx.ui.select (modelMenuKind "select")
+	mcpManager                  *mcpManagerState   // Pi's /mcp manager (modelMenuKind "mcp-manager")
+	scopedModels                *scopedModelsState // Pi's /scoped-models (modelMenuKind "scoped-models")
+	lastCtrlC                   time.Time          // Pi's app.clear: a second press within 500ms exits
 	modelMenuSession            sessionScope
 	modelMenuAltScreen          bool
 	modelMenuResized            bool
@@ -1810,6 +1811,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "mcp-manager" && c.mcpManager != nil {
 		return c.mcpManagerKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "scoped-models" && c.scopedModels != nil {
+		return c.scopedModelsKeys()
+	}
 	if c.modelMenuOpen {
 		if c.modelMenuKind == "thinking" {
 			return gotui.KeyMap{
@@ -2118,6 +2122,7 @@ func (c *chatTUI) closeModelMenu() {
 	// Hide before the screen-restore resize is dispatched.
 	c.modelMenuOpen = false
 	c.sessionActions = sessionActions{}
+	c.scopedModels = nil
 	if c.mcpManager != nil {
 		c.mcpManager = nil
 		if c.engine != nil {
@@ -2367,7 +2372,7 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
-	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" {
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" || c.modelMenuKind == "scoped-models" {
 		width := c.currentContentWidth()
 		if c.app != nil {
 			width, _ = c.app.Size()
@@ -2469,28 +2474,29 @@ func (c *chatTUI) renderModelMenu(width int) *gotui.Element {
 	return menu
 }
 
+// cycleModel is Pi's cycleModel: through the scoped models (Pi's
+// enabledModels) that are available, else through every available model.
 func (c *chatTUI) cycleModel(delta int) {
-	if len(c.cfg.EnabledModels) == 0 {
-		c.appendTranscript("sys: no enabled models configured; use /scoped-models add <model>")
+	models, _ := c.modelMenuScopes()
+	only := "Only one model in scope"
+	if len(models) == 0 {
+		_, models = c.modelMenuScopes()
+		only = "Only one model available"
+	}
+	if len(models) <= 1 {
+		c.selectionNotice(only)
 		return
 	}
-	idx := -1
-	for i, model := range c.cfg.EnabledModels {
-		if canonicalModelRef(c.modelDefaults().Provider, model) == canonicalModelRef(c.cfg.DefaultProvider, c.cfg.DefaultModel) {
+	current := canonicalModelRef(c.cfg.DefaultProvider, c.cfg.DefaultModel)
+	idx := 0 // Pi: a current model outside the list counts as the first
+	for i, model := range models {
+		if model == current {
 			idx = i
 			break
 		}
 	}
-	if idx < 0 {
-		idx = 0
-	} else {
-		idx = (idx + delta) % len(c.cfg.EnabledModels)
-		if idx < 0 {
-			idx += len(c.cfg.EnabledModels)
-		}
-	}
-	lines := c.modelCommand([]string{"/model", c.cfg.EnabledModels[idx]})
-	c.appendTranscript(lines...)
+	idx = (idx + delta + len(models)) % len(models)
+	c.appendTranscript(c.modelCommand([]string{"/model", models[idx]})...)
 }
 
 func (c *chatTUI) cycleThinking(delta int) {
@@ -3039,6 +3045,10 @@ func (c *chatTUI) handleCommand(text string) {
 			c.transcript = append(c.transcript, c.modelCommand(fields)...)
 		}
 	case "/scoped-models":
+		if len(fields) == 1 {
+			c.openScopedModels() // Pi's selector; gi keeps its subcommands
+			return
+		}
 		c.transcript = append(c.transcript, c.scopedModelsCommand(fields)...)
 	case "/thinking":
 		if len(fields) == 1 {

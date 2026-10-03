@@ -51,3 +51,32 @@ Details:
 - **The running-block answer** is reused while transcript lines are unchanged.
 
 On the long real session, idle CPU went from about 21% to about 1%.
+
+## Volume test runs (scripts/testprofile)
+
+Volume test runs are profiled and analysed so the suites stay lean (AGENTS.md):
+
+- **`make test`** (no `TEST_RUN`): `testprofile go` runs each package with
+  tests on its own (`go test -json -cpuprofile -memprofile`; one package at a
+  time, as the Makefile throttling requires), then prints:
+  - packages, tests, failures, wall and CPU time (build included), peak RSS
+    and the package that reached it, compared with the previous passing run
+    of the same package set (▲ above +25%);
+  - the slowest packages (wall incl. build · reported test time · CPU) and
+    the slowest tests, with their change;
+  - packages and tests that got markedly slower (test time +25% and +2 s per
+    package, +50% and +1 s per test);
+  - hot spots in the slowest packages: flat CPU and allocated bytes charged
+    to the nearest gi function (`pprof -show=github.com/rcarmo/gi`);
+  - disk used by the Go build cache, `GOTMPDIR` and the kept profiles.
+  Profiled runs are not cached by `go test`, so every test executes. Test
+  binaries are deleted after profiling (the profiles carry their symbols).
+  `TEST_PROFILE=0` runs plain `go test`.
+- **Script suites** (`test-tui-smoke`, `test-tui-gherkin-features`,
+  `test-ux`): `testprofile run -name …` measures wall time, CPU time and peak
+  RSS of the whole suite and compares them with the previous passing run.
+
+Everything is kept in `~/.cache/gi-test-profile` (`GI_TEST_PROFILE_DIR`,
+`TEST_PROFILE_DIR`): `history.jsonl` (totals of every run), `latest-<suite>.json`
+(baselines) and the last five Go runs (`go-<time>/report.json` plus each
+package's `cpu.pprof` and `mem.pprof`, readable with `go tool pprof`).

@@ -247,6 +247,20 @@ func (t *ANSITerminal) EnableMouse() {
 	t.out.Write(t.esc.Bytes())
 }
 
+// EnableBracketedPaste turns on bracketed paste mode (BracketedPaster).
+func (t *ANSITerminal) EnableBracketedPaste() {
+	t.esc.Reset()
+	t.esc.EnableBracketedPaste()
+	t.out.Write(t.esc.Bytes())
+}
+
+// DisableBracketedPaste turns off bracketed paste mode (BracketedPaster).
+func (t *ANSITerminal) DisableBracketedPaste() {
+	t.esc.Reset()
+	t.esc.DisableBracketedPaste()
+	t.out.Write(t.esc.Bytes())
+}
+
 // DisableMouse disables mouse event reporting.
 func (t *ANSITerminal) DisableMouse() {
 	t.esc.Reset()

@@ -175,6 +175,13 @@ func (e *escBuilder) EndSyncUpdate() {
 	e.buf = append(e.buf, '?', '2', '0', '2', '6', 'l')
 }
 
+// EnableBracketedPaste makes the terminal wrap pasted text in ESC[200~ and
+// ESC[201~ (mode 2004), so a paste is one event instead of keystrokes.
+func (e *escBuilder) EnableBracketedPaste() { e.buf = append(e.buf, "\x1b[?2004h"...) }
+
+// DisableBracketedPaste turns bracketed paste mode off.
+func (e *escBuilder) DisableBracketedPaste() { e.buf = append(e.buf, "\x1b[?2004l"...) }
+
 // EnableMouse enables mouse reporting using SGR-1006 extended mode.
 // This enables button events (press/release) with SGR encoding for better
 // coordinate support (works beyond column 223).

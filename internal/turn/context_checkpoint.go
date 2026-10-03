@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/rcarmo/gi/internal/compaction"
+	"github.com/rcarmo/gi/internal/inference"
 	"github.com/rcarmo/gi/internal/store"
 	goai "github.com/rcarmo/go-ai"
 )
@@ -57,7 +58,7 @@ func (r *sessionRunner) compactSnapshot(ctx context.Context, sessionID, turnID, 
 }
 
 func (r *sessionRunner) compactSnapshotWithInstructions(ctx context.Context, sessionID, turnID, model, agentID string, convCtx *goai.Context, snapshot store.ContextSnapshot, force bool, instructions string) error {
-	return compaction.MaybeCompactContext(ctx, compaction.RuntimeRequest{SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Settings: r.engine.runtimeCfg.Compaction, Force: force, Instructions: instructions}, convCtx, compaction.RuntimeOps{BackgroundContext: r.engine.backgroundContext, BeforeCompact: func(ctx context.Context, payload map[string]any, messages []goai.Message) (compaction.HookDecision, error) {
+	return compaction.MaybeCompactContext(ctx, compaction.RuntimeRequest{SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Settings: r.engine.runtimeCfg.Compaction, Force: force, Instructions: instructions, ModelMaxTokens: inference.ModelMaxTokens(model)}, convCtx, compaction.RuntimeOps{BackgroundContext: r.engine.backgroundContext, Summarize: r.compactionSummarizer(turnID, model), BeforeCompact: func(ctx context.Context, payload map[string]any, messages []goai.Message) (compaction.HookDecision, error) {
 		resp, err := r.engine.emitHook(ctx, HookRequest{Name: HookSessionBeforeCompact, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Payload: payload, Messages: messages})
 		return compaction.HookDecision{Cancel: resp.Cancel, Block: resp.Block, Payload: resp.Payload}, err
 	}, AfterCompact: func(ctx context.Context, payload map[string]any) {
@@ -80,4 +81,34 @@ func (r *sessionRunner) compactSnapshotWithInstructions(ctx context.Context, ses
 		}
 		return accepted, err
 	}, Broadcast: r.engine.broadcast})
+}
+
+// compactionSummarizer asks the session model for a compaction summary (Pi):
+// no tools, the turn's thinking level, a capped response and no cache
+// writes.
+func (r *sessionRunner) compactionSummarizer(turnID, model string) compaction.Summarizer {
+	return func(ctx context.Context, req compaction.SummaryRequest) (compaction.SummaryResponse, error) {
+		thinking := ""
+		if rec, err := r.store.GetTurn(ctx, turnID); err == nil {
+			thinking, _ = rec.Metadata["selected_thinking_level"].(string)
+		}
+		if thinking == "off" {
+			thinking = ""
+		}
+		convCtx := &goai.Context{SystemPrompt: req.SystemPrompt, Messages: []goai.Message{goai.UserMessage(req.Prompt)}}
+		result, err := streamWithToolsWithHooks(ctx, model, convCtx, nil, &inference.StreamHooks{Thinking: thinking, MaxTokens: req.MaxTokens, CacheRetention: goai.CacheRetentionNone})
+		if err != nil {
+			return compaction.SummaryResponse{}, err
+		}
+		resp := compaction.SummaryResponse{Text: result.Text, Usage: result.Usage}
+		if result.Message != nil {
+			resp.StopReason, resp.ErrorMessage = result.Message.StopReason, result.Message.ErrorMessage
+			for _, b := range result.Message.Content {
+				if b.Type == "toolCall" {
+					resp.ToolCall = true
+				}
+			}
+		}
+		return resp, nil
+	}
 }

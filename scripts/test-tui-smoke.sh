@@ -133,6 +133,34 @@ fi
 tmux send-keys -t "$SESSION":0 C-u
 sleep 1
 
+# A multi-line bracketed paste lands in the editor as one edit (Pi); its
+# newlines must not submit. Enter then sends all lines as one message.
+BEFORE_PASTE=$(sqlite3 "$DB" 'select count(*) from messages;')
+tmux set-buffer -b gi-paste "$(printf 'pasted line one\npasted line two\npasted line three')"
+tmux paste-buffer -p -b gi-paste -t "$SESSION":0
+sleep 1
+tmux capture-pane -p -t "$SESSION":0 > "$ARTIFACT_DIR/03b-after-paste.txt"
+if [[ "$(sqlite3 "$DB" 'select count(*) from messages;')" != "$BEFORE_PASTE" ]]; then
+  echo "TUI submitted a pasted line (bracketed paste not handled)" >&2
+  exit 1
+fi
+if ! grep -q 'pasted line three' "$ARTIFACT_DIR/03b-after-paste.txt"; then
+  echo "TUI editor did not show the pasted lines" >&2
+  exit 1
+fi
+tmux send-keys -t "$SESSION":0 Enter
+for _ in 1 2 3 4 5; do
+  sleep 1
+  if [[ "$(sqlite3 "$DB" "select count(*) from messages where role='user' and content = 'pasted line one' || char(10) || 'pasted line two' || char(10) || 'pasted line three';")" == 1 ]]; then
+    break
+  fi
+done
+if [[ "$(sqlite3 "$DB" "select count(*) from messages where role='user' and content = 'pasted line one' || char(10) || 'pasted line two' || char(10) || 'pasted line three';")" != 1 ]]; then
+  sqlite3 -separator '|' "$DB" 'select role, content from messages;' > "$ARTIFACT_DIR/03c-paste-messages.txt"
+  echo "TUI did not submit the paste as one message" >&2
+  exit 1
+fi
+
 # Exercise transcript scrolling keys before resizing.
 tmux send-keys -t "$SESSION":0 PageUp
 sleep 1
@@ -140,7 +168,7 @@ tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/04-after-pageup.txt"
 tmux send-keys -t "$SESSION":0 End
 sleep 1
 tmux capture-pane -pe -t "$SESSION":0 > "$ARTIFACT_DIR/05-after-end.txt"
-if ! grep -q 'Gi received: hello from tmux' "$ARTIFACT_DIR/05-after-end.txt"; then
+if ! grep -q 'Gi received: pasted line one' "$ARTIFACT_DIR/05-after-end.txt"; then
   echo "TUI did not restore transcript bottom after End" >&2
   exit 1
 fi
@@ -154,7 +182,7 @@ if ! grep -q '%/' "$ARTIFACT_DIR/06-after-resize.txt"; then
   echo "TUI lost the footer context meter after resize" >&2
   exit 1
 fi
-if ! grep -q 'Gi received: hello from tmux' "$ARTIFACT_DIR/06-after-resize.txt"; then
+if ! grep -q 'Gi received: pasted line one' "$ARTIFACT_DIR/06-after-resize.txt"; then
   echo "TUI did not render transcript content after resize" >&2
   exit 1
 fi

@@ -24,18 +24,13 @@ type Preparation struct {
 	Messages            []map[string]any `json:"messages"`
 }
 
+// Prepare describes a compaction with Pi's cut point (PlanCompaction): the
+// first MessagesToSummarize messages (a previous summary included) are
+// replaced; none when the recent-message budget covers everything.
 func Prepare(messages []goai.Message, contextTokens, keepRecentTokens, reserveTokens, thresholdTokens int, strategy string) Preparation {
-	keepStart := len(messages)
-	kept := 0
-	for i := len(messages) - 1; i >= 0; i-- {
-		kept += EstimateMessageTokens(messages[i])
-		keepStart = i
-		if kept >= keepRecentTokens {
-			break
-		}
-	}
-	if keepStart <= 0 {
-		keepStart = len(messages) / 2
+	keepStart := 0
+	if plan, ok := PlanCompaction(messages, keepRecentTokens); ok {
+		keepStart = plan.Split.FirstKept
 	}
 	prep := Preparation{ContextTokens: contextTokens, ThresholdTokens: thresholdTokens, KeepRecentTokens: keepRecentTokens, ReserveTokens: reserveTokens, MessagesBefore: len(messages), MessagesToSummarize: keepStart, RecentMessages: len(messages) - keepStart, Strategy: strategy}
 	prep.Transcript = SerializeMessages(messages[:keepStart])

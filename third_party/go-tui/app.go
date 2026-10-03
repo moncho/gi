@@ -47,6 +47,7 @@ type App struct {
 	signalCleanup    func()              // Cleans up signal handlers (set by Open)
 	selfSuspended    atomic.Bool         // True during self-initiated suspend; prevents double resume from SIGCONT handler
 	globalKeyHandler func(KeyEvent) bool // Returns true if event consumed
+	pasteHandler     func(PasteEvent) bool
 
 	// Configuration (set via options)
 	inputLatency     time.Duration // Polling timeout for event reader (default: blocking, use positive duration for polling)
@@ -437,6 +438,13 @@ func mergeStopChannels(ch1, ch2 <-chan struct{}) <-chan struct{} {
 // Use this for app-level key bindings like quit.
 func (a *App) SetGlobalKeyHandler(fn func(KeyEvent) bool) {
 	a.globalKeyHandler = fn
+}
+
+// SetPasteHandler sets the handler for pasted text (bracketed paste). If it
+// is unset or returns false, the paste is replayed as keystrokes (newlines
+// as Enter), as a terminal without bracketed paste would deliver it.
+func (a *App) SetPasteHandler(fn func(PasteEvent) bool) {
+	a.pasteHandler = fn
 }
 
 // Root returns the current root element.

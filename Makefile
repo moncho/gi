@@ -273,9 +273,30 @@ test-web-basic-send: test-instance-start
 
 # Narrow with TEST_PKGS / TEST_RUN, e.g. make test TEST_PKGS=./internal/turn TEST_RUN=Abort
 TEST_PKGS ?= ./...
+TEST_PROFILE_DIR ?= $(HOME)/.cache/gi-test-profile
 TEST_RUN ?=
+# Volume runs (no TEST_RUN) are profiled and analysed (scripts/testprofile):
+# one package at a time with CPU/allocation profiles, then wall/CPU/peak
+# memory, the slowest packages and tests, hot spots and what got slower
+# since the previous run. Reports and history: $(TEST_PROFILE_DIR).
+# TEST_PROFILE=0 runs plain `go test`; focused runs (TEST_RUN) are never
+# profiled.
+TEST_PROFILE ?= 1
+export GI_TEST_PROFILE_DIR := $(TEST_PROFILE_DIR)
+export GO
+TESTPROFILE := $(BIN_DIR)/testprofile
+
+$(TESTPROFILE): scripts/testprofile/main.go
+	mkdir -p $(BIN_DIR)
+	$(GO) build -o $@ ./scripts/testprofile
+
+ifeq ($(TEST_PROFILE)$(TEST_RUN),1)
+test: $(TESTPROFILE)
+	$(TESTPROFILE) go $(TEST_PKGS)
+else
 test:
 	$(GO) test $(if $(TEST_RUN),-run '$(TEST_RUN)') $(TEST_PKGS)
+endif
 
 .PHONY: test-shell-runtime check-cross-build test-active-steering
 
@@ -539,9 +560,9 @@ test-instance-stop:
 	fi
 	@rm -rf $(TEST_DIR)
 
-test-ux: playwright-browsers test-instance-start
+test-ux: playwright-browsers test-instance-start $(TESTPROFILE)
 	mkdir -p $(TEST_RESULTS)
-	GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/ --reporter=line --output=$(TEST_RESULTS)/playwright $(PLAYWRIGHT_ARGS); \
+	GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(TESTPROFILE) run -name test-ux -- $(PLAYWRIGHT) test tests/functional/ --reporter=line --output=$(TEST_RESULTS)/playwright $(PLAYWRIGHT_ARGS); \
 	rc=$$?; \
 	$(MAKE) --no-print-directory test-instance-stop; \
 	exit $$rc
@@ -904,18 +925,18 @@ test-tui-pending-media: build
 test-tui-session-picker: build
 	GI_TUI_BIN=$(abspath $(BIN)) $(BUN) scripts/test-tui-session-picker.mjs
 
-test-tui-smoke: build
+test-tui-smoke: build $(TESTPROFILE)
 	chmod +x scripts/test-tui-smoke.sh
-	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
+	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) $(TESTPROFILE) run -name tui-smoke -- scripts/test-tui-smoke.sh
 
 test-tui-gherkin: build test-tui-markdown test-tui-inline-prose test-tui-gherkin-features
 
 # Feature files only (no markdown/prose prerequisites). FEATURE_DIR narrows
 # the run, e.g. `make test-tui-gherkin-features FEATURE_DIR=/tmp/one-feature`.
 .PHONY: test-tui-gherkin-features
-test-tui-gherkin-features: build
+test-tui-gherkin-features: build $(TESTPROFILE)
 	chmod +x scripts/test-tui-gherkin.sh
-	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin $(if $(FEATURE_DIR),FEATURE_DIR=$(abspath $(FEATURE_DIR))) scripts/test-tui-gherkin.sh
+	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin $(if $(FEATURE_DIR),FEATURE_DIR=$(abspath $(FEATURE_DIR))) $(TESTPROFILE) run -name tui-gherkin$(if $(FEATURE_DIR),-subset) -- scripts/test-tui-gherkin.sh
 
 # ── Cleanup ─────────────────────────────────────────────────────────────
 

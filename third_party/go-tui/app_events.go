@@ -40,6 +40,19 @@ func (a *App) Dispatch(event Event) bool {
 		}
 		return a.focus.Dispatch(e)
 
+	case PasteEvent:
+		e.app = a
+		if a.pasteHandler != nil && a.pasteHandler(e) {
+			return true
+		}
+		consumed := false
+		for _, ev := range parseInput([]byte(e.Text)) {
+			if a.Dispatch(ev) {
+				consumed = true
+			}
+		}
+		return consumed
+
 	case MouseEvent:
 		e.app = a
 		// Inline mode: translate terminal-space Y to buffer-space Y

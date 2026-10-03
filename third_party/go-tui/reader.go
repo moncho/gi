@@ -3,6 +3,7 @@
 package tui
 
 import (
+	"bytes"
 	"os"
 	"sync/atomic"
 	"syscall"
@@ -151,9 +152,32 @@ func (r *stdinReader) Interrupt() error {
 	return err
 }
 
-// parseInputWithRemainder parses input and returns any incomplete trailing bytes.
-// This handles partial UTF-8 sequences and incomplete escape sequences at the end of the buffer.
+const (
+	pasteStart = "\x1b[200~"
+	pasteEnd   = "\x1b[201~"
+)
+
+// parseInputWithRemainder parses input and returns any incomplete trailing
+// bytes: partial UTF-8 sequences, incomplete escape sequences, and a
+// bracketed paste whose end marker has not arrived yet (kept whole so the
+// paste becomes one PasteEvent).
 func parseInputWithRemainder(data []byte) ([]Event, []byte) {
+	start := bytes.Index(data, []byte(pasteStart))
+	if start < 0 {
+		return parseKeysWithRemainder(data)
+	}
+	events, _ := parseKeysWithRemainder(data[:start])
+	body := data[start+len(pasteStart):]
+	end := bytes.Index(body, []byte(pasteEnd))
+	if end < 0 {
+		return events, data[start:]
+	}
+	events = append(events, PasteEvent{Text: string(body[:end])})
+	more, rest := parseInputWithRemainder(body[end+len(pasteEnd):])
+	return append(events, more...), rest
+}
+
+func parseKeysWithRemainder(data []byte) ([]Event, []byte) {
 	// Check for trailing incomplete escape sequence first
 	escRemaining := findIncompleteEscapeSequence(data)
 	if len(escRemaining) > 0 {

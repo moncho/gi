@@ -120,6 +120,27 @@ type AuthStatus struct {
 	Kind          string
 }
 
+// subscriptionProviders are the providers whose OAuth sign-in is backed by
+// a subscription (pi-ai's isSubscription: Claude Pro/Max, Copilot, ChatGPT,
+// Codex, Kimi Code, Meta Muse, SuperGrok/X Premium); other OAuth sign-ins
+// are accounts.
+var subscriptionProviders = map[string]bool{
+	"anthropic": true, "github-copilot": true, "kimi-coding": true, "meta": true,
+	"openai": true, "openai-codex": true, "xai": true,
+}
+
+// AuthTypeLabel is Pi's formatAuthSelectorProviderType: "API key",
+// "subscription" for subscription-backed OAuth providers, else "account".
+func (s AuthStatus) AuthTypeLabel() string {
+	if s.Kind == "api-key" || s.Kind == "api_key" {
+		return "API key"
+	}
+	if subscriptionProviders[s.ID] {
+		return "subscription"
+	}
+	return "account"
+}
+
 // ListAuthStatus returns the registered OAuth providers plus any auth.json
 // entries, marking which are currently authenticated. It never performs network
 // calls.
@@ -413,6 +434,10 @@ type StreamHooks struct {
 	Thinking   string
 	OnPayload  func(payload any, model *goai.Model) (any, error)
 	OnResponse func(status int, headers map[string]string, model *goai.Model)
+	// MaxTokens caps the response; CacheRetention "none" avoids cache
+	// writes for one-off requests (compaction summaries, as Pi).
+	MaxTokens      int
+	CacheRetention goai.CacheRetention
 }
 
 // StreamWithTools streams a single LLM call (which may produce tool calls).
@@ -461,6 +486,13 @@ func StreamWithToolsWithHooks(ctx context.Context, modelID string, convCtx *goai
 		if hooks.Thinking != "" {
 			level := goai.ThinkingLevel(hooks.Thinking)
 			opts.Reasoning = &level
+		}
+		if hooks.MaxTokens > 0 {
+			maxTokens := hooks.MaxTokens
+			opts.MaxTokens = &maxTokens
+		}
+		if hooks.CacheRetention != "" {
+			opts.CacheRetention = hooks.CacheRetention
 		}
 	}
 	if model.Api == goai.ApiOpenAICodexResponses {

@@ -10,6 +10,9 @@ package tui
 // scrollback stays usable. Dynamic alternate-screen overlays are left alone too;
 // alternate-scroll tracks the base full-screen mode only.
 func (a *App) enableInputReporting() {
+	if p, ok := a.terminal.(BracketedPaster); ok {
+		p.EnableBracketedPaste()
+	}
 	if a.mouseEnabled {
 		a.terminal.EnableMouse()
 		return
@@ -22,6 +25,9 @@ func (a *App) enableInputReporting() {
 // disableInputReporting undoes enableInputReporting, matching the same mode
 // selection so we only disable what we turned on.
 func (a *App) disableInputReporting() {
+	if p, ok := a.terminal.(BracketedPaster); ok {
+		p.DisableBracketedPaste()
+	}
 	if a.mouseEnabled {
 		a.terminal.DisableMouse()
 		return

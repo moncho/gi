@@ -17,6 +17,8 @@ regular mode prints once above the dock without flushing partial model output.
   Admission creates separate queued work when another turn is active, never
   steering. A repeated successful request returns the same admitted ID. Pending
   unknown admission reports `no resend` and points to `check`.
+- `/retry skip <turn-id>` dismisses a held failure without resending
+  (`Engine.SkipHeldTurn`); the original turn stays terminal.
 - `/retry release <turn-id> <token>` releases only an unadmitted version-one
   reservation. It never submits work. The exact session, turn and token must
   match; the transaction fences a paused old owner. A later retry requires a
@@ -91,3 +93,18 @@ coverage was removed and no timeouts or pixel criteria were relaxed.
 Evidence: `test-results/tui-retry-commands/summary.json`, per-mode captures and
 local gate logs. No live terminal mutations were used. This is not physical
 emulator, exact-pixel, screen-reader or full web/TUI parity acceptance.
+
+## Turns interrupted when gi stopped (#21)
+
+After a crash or kill, stale-claim recovery no longer replays a turn that may
+have sent a model request or run tools (it could repeat their side effects).
+Such a turn (phase `inference`, `waiting_on_tools`, an unknown running phase,
+or `compacting` after the turn's first request or tool) is held for retry or
+skip with failure kind `recovery_interrupted` (`recovery_interrupted_tool_phase`
+for the tool phase). Only turns that had not started work (`queued`, `setup`,
+`steer_returned`, or `compacting` before any request) are requeued; an
+interrupted `/compact` is aborted as before.
+
+When a session with such held turns opens (startup or switch), the TUI says
+so once per run, listing each turn's ID and prompt with `/retry run <id>` to
+resend and `/retry skip <id>` to dismiss.

@@ -182,3 +182,62 @@ func TestMaybeCompactContextCarriesCustomInstructions(t *testing.T) {
 		t.Fatalf("summary lacks the focus: %q", got)
 	}
 }
+
+// The session model writes the summary (Pi); a failed summary falls back to
+// gi's heuristic and says why; a hook summary still wins.
+func TestCompactionSummarisesWithTheModel(t *testing.T) {
+	conv, req := runtimeFixture()
+	req.Settings.ReserveTokens = 1000
+	var prompts []SummaryRequest
+	ops := RuntimeOps{Summarize: func(_ context.Context, r SummaryRequest) (SummaryResponse, error) {
+		prompts = append(prompts, r)
+		return SummaryResponse{Text: "## Goal\nmodel summary", StopReason: goai.StopReasonStop, Usage: &goai.Usage{Input: 7, Output: 3}}, nil
+	}}
+	var finished map[string]any
+	ops.Finish = func(_ context.Context, _, _ string, _ int, outcome, summary string, payload map[string]any) (string, error) {
+		finished = payload
+		return outcome, nil
+	}
+	if err := MaybeCompactContext(context.Background(), req, conv, ops); err != nil {
+		t.Fatal(err)
+	}
+	if len(prompts) != 1 || prompts[0].SystemPrompt != SummarizationSystemPrompt || prompts[0].MaxTokens != 800 || !strings.Contains(prompts[0].Prompt, "<conversation>\n[User]: history") {
+		t.Fatalf("prompts %+v", prompts)
+	}
+	if !strings.Contains(goai.GetTextContent(&conv.Messages[0]), "model summary") || finished["summary_source"] != "model" || finished["usage"] == nil {
+		t.Fatalf("summary %q payload %v", goai.GetTextContent(&conv.Messages[0]), finished)
+	}
+	// The next compaction updates that summary.
+	for i := 0; i < 6; i++ {
+		conv.Messages = append(conv.Messages, goai.UserMessage(strings.Repeat("more ", 60)))
+	}
+	prompts = nil
+	if err := MaybeCompactContext(context.Background(), req, conv, ops); err != nil {
+		t.Fatal(err)
+	}
+	if len(prompts) != 1 || !strings.Contains(prompts[0].Prompt, "<previous-summary>\n## Goal\nmodel summary\n</previous-summary>") {
+		t.Fatalf("update prompt %q", prompts[0].Prompt)
+	}
+
+	// A truncated summary is not used.
+	conv, _ = runtimeFixture()
+	ops.Summarize = func(context.Context, SummaryRequest) (SummaryResponse, error) {
+		return SummaryResponse{Text: "partial", StopReason: goai.StopReasonLength}, nil
+	}
+	if err := MaybeCompactContext(context.Background(), req, conv, ops); err != nil {
+		t.Fatal(err)
+	}
+	if finished["summary_source"] != "heuristic" || !strings.Contains(finished["summary_error"].(string), "token cap") {
+		t.Fatalf("fallback payload %v", finished)
+	}
+	// A hook summary wins without calling the model.
+	conv, _ = runtimeFixture()
+	called := false
+	ops.Summarize = func(context.Context, SummaryRequest) (SummaryResponse, error) { called = true; return SummaryResponse{}, nil }
+	ops.BeforeCompact = func(context.Context, map[string]any, []goai.Message) (HookDecision, error) {
+		return HookDecision{Payload: map[string]any{"summary": "hook summary"}}, nil
+	}
+	if err := MaybeCompactContext(context.Background(), req, conv, ops); err != nil || called || finished["summary_source"] != "hook" {
+		t.Fatalf("hook: %v called=%v %v", err, called, finished)
+	}
+}

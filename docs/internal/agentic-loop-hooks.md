@@ -350,7 +350,7 @@ The initial implementation now exists in the turn engine:
 - `internal/tools/registry.go` + `internal/tools/scope.go` — runtime tool registry, active-tool set, metadata-enriched entries (`kind`, `weight`, `activation`, `source`, `active`), staged discovery, activation/reset, and registry-backed `tools` meta-tool.
 - `internal/tools/extensions.go` — startup loading for `.gi/extensions/*.js`, `.gi/extensions/*.joke`, `.pi/extensions/*.js`, and `.pi/extensions/*.joke`.
 - `internal/skills/discovery.go` + `internal/skills/tools_tool.go` — workspace skill/tool discovery and the `skills` meta-tool.
-- `internal/compaction` — compaction thresholds, token estimation, `session_before_compact` override hook, `session_compact` notification hook, and summary wrapping.
+- `internal/compaction` — compaction thresholds, Pi's cut point and model-written summaries ([compaction.md](compaction.md)), `session_before_compact` override hook, `session_compact` notification hook, and summary wrapping.
 - `internal/rtk` — native Go RTK-inspired filters for git status/log, search, listings, test output, and generic truncation; exposed through the `rtk` tool.
 - `examples/joker-smart-compaction.joke` and `examples/rtk-tool-filter.joke` — runnable extension examples.
 - Hook call sites wired through the centralized engine runtime:

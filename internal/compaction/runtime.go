@@ -23,8 +23,10 @@ type RuntimeRequest struct {
 	Settings  config.CompactionSettings
 	Force     bool
 	// Instructions are Pi-style /compact custom instructions ("Additional
-	// focus"): passed to the before-compact hook and kept in the summary.
+	// focus"): passed to the before-compact hook and the summary prompt.
 	Instructions string
+	// ModelMaxTokens caps the summary request (the model's output limit).
+	ModelMaxTokens int
 }
 
 type RuntimeOps struct {
@@ -34,6 +36,9 @@ type RuntimeOps struct {
 	Begin             func(context.Context, string, string, map[string]any) (int, error)
 	Finish            func(context.Context, string, string, int, string, string, map[string]any) (string, error)
 	Broadcast         func(string, map[string]any)
+	// Summarize asks the session model for the summary (Pi); without it, or
+	// when it fails, gi's heuristic summary is used.
+	Summarize Summarizer
 }
 
 func MaybeCompactContext(ctx context.Context, req RuntimeRequest, convCtx *goai.Context, ops RuntimeOps) error {
@@ -140,12 +145,27 @@ func MaybeCompactContext(ctx context.Context, req RuntimeRequest, convCtx *goai.
 		summary, _ = decision.Payload["summary"].(string)
 		summary = strings.TrimSpace(summary)
 	}
+	source := "hook"
+	if summary == "" && ops.Summarize != nil {
+		if plan, ok := PlanCompaction(convCtx.Messages, settings.KeepRecentTokens); ok {
+			text, usage, err := Compact(ctx, ops.Summarize, plan, settings.ReserveTokens, req.ModelMaxTokens, req.Instructions)
+			if usage != nil {
+				payload["usage"] = usage
+			}
+			if err != nil {
+				payload["summary_error"] = err.Error()
+			} else if strings.TrimSpace(text) != "" {
+				summary, source = text, "model"
+			}
+		}
+	}
 	if summary == "" {
-		summary = DefaultSummary(prep)
+		summary, source = DefaultSummary(prep), "heuristic"
 		if req.Instructions != "" {
 			summary += "\n\nAdditional focus: " + req.Instructions
 		}
 	}
+	payload["summary_source"] = source
 	if strings.TrimSpace(summary) == "" {
 		payload["detail"] = "Compaction produced an empty summary"
 		_, err := finish("failed", "", payload)

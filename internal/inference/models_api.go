@@ -228,3 +228,13 @@ func SupportsMidConversationSystemMessages(modelID string) bool {
 	}
 	return false
 }
+
+// ModelMaxTokens is a model's output token limit (0 when unknown).
+func ModelMaxTokens(modelID string) int {
+	Init()
+	provider, name := splitModelID(modelID)
+	if m := goai.GetModel(goai.Provider(provider), name); m != nil {
+		return m.MaxTokens
+	}
+	return 0
+}

@@ -413,6 +413,10 @@ type StreamHooks struct {
 	Thinking   string
 	OnPayload  func(payload any, model *goai.Model) (any, error)
 	OnResponse func(status int, headers map[string]string, model *goai.Model)
+	// MaxTokens caps the response; CacheRetention "none" avoids cache
+	// writes for one-off requests (compaction summaries, as Pi).
+	MaxTokens      int
+	CacheRetention goai.CacheRetention
 }
 
 // StreamWithTools streams a single LLM call (which may produce tool calls).
@@ -461,6 +465,13 @@ func StreamWithToolsWithHooks(ctx context.Context, modelID string, convCtx *goai
 		if hooks.Thinking != "" {
 			level := goai.ThinkingLevel(hooks.Thinking)
 			opts.Reasoning = &level
+		}
+		if hooks.MaxTokens > 0 {
+			maxTokens := hooks.MaxTokens
+			opts.MaxTokens = &maxTokens
+		}
+		if hooks.CacheRetention != "" {
+			opts.CacheRetention = hooks.CacheRetention
 		}
 	}
 	if model.Api == goai.ApiOpenAICodexResponses {

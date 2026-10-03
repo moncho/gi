@@ -127,6 +127,7 @@ Paths under `docs/internal/` should remain stable once referenced by prompts, to
 - `subturn-runtime.md` — concrete sub-turn runtime contract, limits, store APIs, and current implementation status
 - `tui-stack-evaluation.md` — decision record for keeping the current Gi TUI stack instead of switching to PicoClaw/Pi's launcher/TUI stack now
 - `tui-pi-fit-gap-roadmap.md` — baseline inventory and acceptance criteria for incremental Pi-like TUI fit/gap work
+- `compaction.md` — Pi's cut point and model-written compaction summaries
 - `config-files.md` — configuration file lookup (.gi, then .pi) and write locations
 - `tui-paste.md` — bracketed paste and Pi's large-paste markers in the editor
 - `system-prompt.md` — Pi's structured system prompt: sections, tool contributions, mid-conversation updates

@@ -2,6 +2,7 @@ package tui
 
 import (
 	gotui "github.com/grindlemire/go-tui"
+	"strings"
 )
 
 // Pi's ctx.ui.select (ExtensionSelectorComponent): a titled list of options
@@ -87,7 +88,9 @@ func (c *chatTUI) piSelectDialogRows(width int) spanRows {
 		}
 	}
 	rows = append(rows, piRule(width, piBorder), nil)
-	text(gotui.TextSpan{Text: c.selectDialog.title, Style: piFg(piAccent).Bold()})
+	for _, line := range strings.Split(c.selectDialog.title, "\n") { // Pi's confirm: title, then message
+		text(gotui.TextSpan{Text: line, Style: piFg(piAccent).Bold()})
+	}
 	rows = append(rows, nil)
 	for i, option := range c.modelMenuChoices {
 		if i == c.modelMenuSelected {

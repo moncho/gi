@@ -23,8 +23,9 @@ the chosen message goes to a new session; the message returns to the editor).
 gi's former `/fork @agentN` peer session is now `/spawn [@agentN]` (the old
 form still works).
 
-Pi built-ins not in gi yet (omitted, not approximated): `/import`, `/share`,
-`/bug`, `/changelog`, `/trust`. `/tree`, `/settings`, `/scoped-models` and
+Pi built-ins not in gi yet (omitted, not approximated): `/share`, `/bug`,
+`/changelog`, `/trust`. `/import` reads Pi session files
+(docs/internal/session-import.md). `/tree`, `/settings`, `/scoped-models` and
 `/login` open Pi's interactive UIs; `/tree` navigates gi's branch sessions
 (docs/internal/tui-tree.md).
 

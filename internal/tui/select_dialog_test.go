@@ -26,6 +26,27 @@ func spanRowsText(rows spanRows) []string {
 	return out
 }
 
+// Pi's showExtensionConfirm: title and message on their own lines.
+func TestConfirmDialogMatchesPi(t *testing.T) {
+	raw, err := os.ReadFile("testdata/pi-select-dialog.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var golden struct {
+		Width   int
+		Confirm []string
+	}
+	if err := json.Unmarshal(raw, &golden); err != nil {
+		t.Fatal(err)
+	}
+	c := &chatTUI{}
+	c.ensureInput()
+	c.openSelect("Import session\nReplace current session with ~/sessions/a-rather-long-session-file-name.jsonl?", []string{"Yes", "No"}, func(string) {}, nil)
+	if got := spanRowsText(c.piSelectDialogRows(golden.Width)); strings.Join(got, "\n") != strings.Join(golden.Confirm, "\n") {
+		t.Fatalf("%s\nPi:\n%s", strings.Join(got, "\n"), strings.Join(golden.Confirm, "\n"))
+	}
+}
+
 // Pi's ExtensionSelectorComponent rendered by Pi: bun scripts/golden-select-dialog.mjs
 func TestSelectDialogMatchesPi(t *testing.T) {
 	raw, err := os.ReadFile("testdata/pi-select-dialog.json")
@@ -39,7 +60,8 @@ func TestSelectDialogMatchesPi(t *testing.T) {
 			Rows   []string
 			Result map[string]any
 		}
-		Escape map[string]any
+		Escape  map[string]any
+		Confirm []string
 	}
 	if err := json.Unmarshal(raw, &golden); err != nil {
 		t.Fatal(err)

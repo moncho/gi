@@ -3108,6 +3108,8 @@ func (c *chatTUI) handleCommand(text string) {
 		c.appendTranscript(c.cancelCommand())
 	case "/export":
 		c.appendTranscript(c.exportCommand(text))
+	case "/import":
+		c.appendTranscript(c.importCommand(text)...)
 	case "/quit", "/exit":
 		if c.app != nil {
 			c.app.Stop()
@@ -3259,6 +3261,7 @@ var piCommands = []struct{ name, hint string }{
 	{"/thinking <level>", "Set thinking level"},
 	{"/scoped-models", "Enable/disable models for Ctrl+P cycling"},
 	{"/export [path]", "Export session (HTML default, or specify path: .html/.jsonl)"},
+	{"/import <path>", "Import and resume a session from a JSONL file"},
 	{"/copy [--osc52|--native|--auto|--fallback]", "Copy last agent message to clipboard"},
 	{"/name <name>", "Set session display name"},
 	{"/session", "Show session info and stats"},

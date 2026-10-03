@@ -31,7 +31,7 @@ type toolCall struct {
 
 // item is one exported conversation element, before serialization.
 type item struct {
-	role      string // user | assistant | toolResult | system
+	role      string // user | assistant | toolResult | system | compaction | branchSummary | customMessage | bashExecution
 	text      string
 	calls     []toolCall
 	callID    string
@@ -41,6 +41,8 @@ type item struct {
 	createdAt time.Time
 	sourceID  string
 	source    store.Message
+	// firstKept is the first message a compaction keeps (its source ID).
+	firstKept string
 }
 
 // Load reads a session's messages (and tool.started previews for sessions
@@ -74,27 +76,53 @@ func load(ctx context.Context, s *store.Store, sessionID string) ([]item, error)
 		}
 	}
 
+	// A compaction keeps the context messages its checkpoint does not cover.
+	firstKept := ""
+	if snapshot, err := s.ContextSnapshot(ctx, sessionID); err == nil && snapshot.Summary != "" && len(snapshot.Messages) > 0 {
+		firstKept = snapshot.Messages[0].ID
+	}
+	lastCompaction := -1
+	for i, m := range messages {
+		if kind, _ := m.Payload["kind"].(string); m.Role == "assistant" && kind == "compaction" {
+			lastCompaction = i
+		}
+	}
 	var items []item
 	for i, m := range messages {
 		it := item{text: m.Content, createdAt: parseTime(m.CreatedAt), sourceID: m.ID, source: m}
 		it.model, _ = m.Payload["model"].(string)
-		switch m.Role {
-		case "user":
+		kind, _ := m.Payload["kind"].(string)
+		switch {
+		case m.Role == "user" && kind == "branch_summary":
+			it.role = "branchSummary"
+		case m.Role == "user" && kind == "custom_message":
+			it.role = "customMessage"
+		case m.Role == "user" && kind == "bash_execution":
+			it.role = "bashExecution"
+		case m.Role == "assistant" && kind == "compaction":
+			it.role = "compaction"
+			// Older compactions are superseded; they keep what follows them.
+			if i == lastCompaction && firstKept != "" {
+				it.firstKept = firstKept
+			} else if i+1 < len(messages) {
+				it.firstKept = messages[i+1].ID
+			}
+		case m.Role == "user":
 			it.role = "user"
-		case "assistant":
+		case m.Role == "assistant":
 			it.role = "assistant"
-			if kind, _ := m.Payload["kind"].(string); kind == "tool_calls" {
+			if kind == "tool_calls" {
 				it.text, _ = m.Payload["display_text"].(string)
 				it.calls = recordedCalls(m.Payload)
 				if len(it.calls) == 0 {
 					it.calls = reconstructCalls(m.Content, messages[i+1:], previews)
 				}
 			}
-		case "tool_result":
+		case m.Role == "tool_result":
 			it.role = "toolResult"
 			it.callID, _ = m.Payload["tool_call_id"].(string)
 			it.isError, _ = m.Payload["is_error"].(bool)
-		case "system":
+		case m.Role == "system":
 			it.role = "system"
 		default:
 			continue
@@ -269,6 +297,30 @@ func (it item) entry() Entry {
 	case "system":
 		// gi notices are not model context: a Pi custom entry, not a message.
 		e = Entry{"type": "custom", "customType": "gi.system", "data": map[string]any{"text": it.text}}
+	case "compaction":
+		tokens, _ := it.source.Payload["tokens_before"].(float64)
+		if n, ok := it.source.Payload["tokens_before"].(int); ok {
+			tokens = float64(n)
+		}
+		e = Entry{"type": "compaction", "summary": it.text, "firstKeptEntryId": entryID(it.firstKept), "tokensBefore": int(tokens)}
+	case "branchSummary":
+		from, _ := it.source.Payload["from_id"].(string)
+		e = Entry{"type": "branch_summary", "fromId": entryID(from), "summary": it.text}
+	case "customMessage":
+		customType, _ := it.source.Payload["custom_type"].(string)
+		display, _ := it.source.Payload["display"].(bool)
+		e = Entry{"type": "custom_message", "customType": customType, "content": it.text, "display": display}
+	case "bashExecution":
+		p := it.source.Payload
+		msg := map[string]any{"role": "bashExecution", "command": p["command"], "output": p["output"], "exitCode": p["exit_code"],
+			"cancelled": p["cancelled"] == true, "truncated": p["truncated"] == true, "timestamp": ms}
+		if path, _ := p["full_output_path"].(string); path != "" {
+			msg["fullOutputPath"] = path
+		}
+		if p["exclude_from_context"] == true {
+			msg["excludeFromContext"] = true
+		}
+		e = Entry{"type": "message", "message": msg}
 	}
 	return e
 }
@@ -342,6 +394,11 @@ details{margin:.4rem 0}summary{cursor:pointer;font:13px ui-monospace,monospace}.
 			fmt.Fprintf(&b, `<details%s><summary>← %s result</summary><pre>%s</pre></details>`+"\n", class, esc(it.toolName), esc(it.text))
 		case "system":
 			fmt.Fprintf(&b, `<div class="msg system">%s</div>`+"\n", esc(it.text))
+		case "compaction", "branchSummary":
+			label := map[string]string{"compaction": "Compaction summary", "branchSummary": "Branch summary"}[it.role]
+			fmt.Fprintf(&b, `<details class="msg system"><summary>%s</summary><pre>%s</pre></details>`+"\n", label, esc(it.text))
+		case "customMessage", "bashExecution":
+			fmt.Fprintf(&b, `<div class="msg user"><div class="who">%s</div><pre>%s</pre></div>`+"\n", esc(it.role), esc(it.text))
 		}
 	}
 	b.WriteString("</body></html>\n")

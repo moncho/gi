@@ -27,4 +27,8 @@ for (const step of steps) {
 const cancelled = new ExtensionSelectorComponent("MCP server", ["github", "local"], () => { result = { select: true }; }, () => { result = { cancel: true }; });
 result = null;
 cancelled.handleInput(keys.escape);
-writeFileSync("internal/tui/testdata/pi-select-dialog.json", JSON.stringify({ width, states, escape: result }, null, 1) + "\n");
+// Pi's showExtensionConfirm (/import): the title and message on two lines,
+// Yes and No.
+const confirm = new ExtensionSelectorComponent("Import session\nReplace current session with ~/sessions/a-rather-long-session-file-name.jsonl?", ["Yes", "No"], () => {}, () => {});
+const confirmRows = confirm.render(width).map((line) => strip(line).trimEnd());
+writeFileSync("internal/tui/testdata/pi-select-dialog.json", JSON.stringify({ width, states, escape: result, confirm: confirmRows }, null, 1) + "\n");

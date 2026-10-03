@@ -813,3 +813,40 @@ func cliList(cfg Config, asJSON bool, untrustedNote string, opts CLIOptions, log
 	}
 	return code
 }
+
+// UpdateServerConfig ports Pi's updateMcpServerConfig: change one server's
+// settings in the mcp.json that defines it. enabled true removes the key,
+// false writes "enabled": false; exposure "codemode" (the default) removes the
+// key, others are written. Other content is kept.
+func UpdateServerConfig(path, name string, patch ServerPatch) error {
+	var missing bool
+	err := editServers(path, func(servers *orderedObject) bool {
+		raw, ok := servers.values[name]
+		server, isObject := parseOrderedObject(raw)
+		if !ok || !isObject {
+			missing = true
+			return false
+		}
+		if patch.Enabled != nil {
+			if *patch.Enabled {
+				server.remove("enabled")
+			} else {
+				server.set("enabled", json.RawMessage("false"))
+			}
+		}
+		switch patch.Exposure {
+		case "":
+		case ExposureCodemode:
+			server.remove("exposure")
+		default:
+			server.set("exposure", jsonValue(patch.Exposure))
+		}
+		encoded, _ := server.MarshalJSON()
+		servers.set(name, encoded)
+		return true
+	})
+	if err == nil && missing {
+		err = fmt.Errorf("%s does not define MCP server %q", path, name)
+	}
+	return err
+}

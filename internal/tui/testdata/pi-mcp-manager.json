@@ -1,0 +1,429 @@
+{
+ "menus": {
+  "servers": {
+   "40": {
+    "menu": {
+     "title": "MCP servers",
+     "error": "config: /home/u/.pi/agent/mcp.json: server \"x\": url or command required",
+     "items": [
+      {
+       "value": "github",
+       "label": "github",
+       "description": "needs sign-in · codemode · global"
+      },
+      {
+       "value": "local",
+       "label": "local",
+       "description": "connected · 2 tools · direct · global"
+      },
+      {
+       "value": "off",
+       "label": "off",
+       "description": "disabled · codemode · global"
+      }
+     ],
+     "confirmLabel": "manage",
+     "cancelLabel": "close"
+    },
+    "rows": [
+     "────────────────────────────────────────",
+     " MCP servers",
+     " config: /home/u/.pi/agent/mcp.json:",
+     " server \"x\": url or command required",
+     "",
+     "→ github",
+     "  local",
+     "  off",
+     "",
+     " enter manage • escape/ctrl+c close",
+     "────────────────────────────────────────"
+    ]
+   },
+   "70": {
+    "menu": {
+     "title": "MCP servers",
+     "error": "config: /home/u/.pi/agent/mcp.json: server \"x\": url or command required",
+     "items": [
+      {
+       "value": "github",
+       "label": "github",
+       "description": "needs sign-in · codemode · global"
+      },
+      {
+       "value": "local",
+       "label": "local",
+       "description": "connected · 2 tools · direct · global"
+      },
+      {
+       "value": "off",
+       "label": "off",
+       "description": "disabled · codemode · global"
+      }
+     ],
+     "confirmLabel": "manage",
+     "cancelLabel": "close"
+    },
+    "rows": [
+     "──────────────────────────────────────────────────────────────────────",
+     " MCP servers",
+     " config: /home/u/.pi/agent/mcp.json: server \"x\": url or command",
+     " required",
+     "",
+     "→ github                          needs sign-in · codemode · global",
+     "  local                           connected · 2 tools · direct · glo",
+     "  off                             disabled · codemode · global",
+     "",
+     " enter manage • escape/ctrl+c close",
+     "──────────────────────────────────────────────────────────────────────"
+    ]
+   }
+  },
+  "server": {
+   "40": {
+    "menu": {
+     "title": "MCP server github",
+     "details": "https://api.example.com/mcp\nglobal: /home/u/.pi/agent/mcp.json\nState: failed",
+     "error": "initialize: connection refused",
+     "items": [
+      {
+       "value": "reconnect",
+       "label": "Reconnect"
+      },
+      {
+       "value": "exposure",
+       "label": "Exposure",
+       "description": "codemode"
+      },
+      {
+       "value": "disable",
+       "label": "Disable",
+       "description": "saved to the global mcp.json"
+      }
+     ],
+     "selected": "exposure",
+     "confirmLabel": "select",
+     "cancelLabel": "back"
+    },
+    "rows": [
+     "────────────────────────────────────────",
+     " MCP server github",
+     " https://api.example.com/mcp",
+     " global: /home/u/.pi/agent/mcp.json",
+     " State: failed",
+     " initialize: connection refused",
+     "",
+     "  Reconnect",
+     "→ Exposure",
+     "  Disable",
+     "",
+     " enter select • escape/ctrl+c back",
+     "────────────────────────────────────────"
+    ]
+   },
+   "70": {
+    "menu": {
+     "title": "MCP server github",
+     "details": "https://api.example.com/mcp\nglobal: /home/u/.pi/agent/mcp.json\nState: failed",
+     "error": "initialize: connection refused",
+     "items": [
+      {
+       "value": "reconnect",
+       "label": "Reconnect"
+      },
+      {
+       "value": "exposure",
+       "label": "Exposure",
+       "description": "codemode"
+      },
+      {
+       "value": "disable",
+       "label": "Disable",
+       "description": "saved to the global mcp.json"
+      }
+     ],
+     "selected": "exposure",
+     "confirmLabel": "select",
+     "cancelLabel": "back"
+    },
+    "rows": [
+     "──────────────────────────────────────────────────────────────────────",
+     " MCP server github",
+     " https://api.example.com/mcp",
+     " global: /home/u/.pi/agent/mcp.json",
+     " State: failed",
+     " initialize: connection refused",
+     "",
+     "  Reconnect",
+     "→ Exposure                        codemode",
+     "  Disable                         saved to the global mcp.json",
+     "",
+     " enter select • escape/ctrl+c back",
+     "──────────────────────────────────────────────────────────────────────"
+    ]
+   }
+  },
+  "gone": {
+   "40": {
+    "menu": {
+     "title": "gone",
+     "items": [],
+     "empty": "This server is no longer configured.",
+     "confirmLabel": "",
+     "cancelLabel": "back"
+    },
+    "rows": [
+     "────────────────────────────────────────",
+     " gone",
+     "",
+     " This server is no longer configured.",
+     "",
+     " escape/ctrl+c back",
+     "────────────────────────────────────────"
+    ]
+   },
+   "70": {
+    "menu": {
+     "title": "gone",
+     "items": [],
+     "empty": "This server is no longer configured.",
+     "confirmLabel": "",
+     "cancelLabel": "back"
+    },
+    "rows": [
+     "──────────────────────────────────────────────────────────────────────",
+     " gone",
+     "",
+     " This server is no longer configured.",
+     "",
+     " escape/ctrl+c back",
+     "──────────────────────────────────────────────────────────────────────"
+    ]
+   }
+  },
+  "scrolled": {
+   "40": {
+    "menu": {
+     "title": "Tools of big",
+     "details": "Exposure direct: declared to the model like built-in tools",
+     "items": [
+      {
+       "value": "tool_0",
+       "label": "tool_0",
+       "description": "Tool number 0"
+      },
+      {
+       "value": "tool_1",
+       "label": "tool_1",
+       "description": "Tool number 1"
+      },
+      {
+       "value": "tool_2",
+       "label": "tool_2",
+       "description": "Tool number 2"
+      },
+      {
+       "value": "tool_3",
+       "label": "tool_3",
+       "description": "Tool number 3"
+      },
+      {
+       "value": "tool_4",
+       "label": "tool_4",
+       "description": "Tool number 4"
+      },
+      {
+       "value": "tool_5",
+       "label": "tool_5",
+       "description": "Tool number 5"
+      },
+      {
+       "value": "tool_6",
+       "label": "tool_6",
+       "description": "Tool number 6"
+      },
+      {
+       "value": "tool_7",
+       "label": "tool_7",
+       "description": "Tool number 7"
+      },
+      {
+       "value": "tool_8",
+       "label": "tool_8",
+       "description": "Tool number 8"
+      },
+      {
+       "value": "tool_9",
+       "label": "tool_9",
+       "description": "Tool number 9"
+      },
+      {
+       "value": "tool_10",
+       "label": "tool_10",
+       "description": "Tool number 10"
+      },
+      {
+       "value": "tool_11",
+       "label": "tool_11",
+       "description": "Tool number 11"
+      },
+      {
+       "value": "tool_12",
+       "label": "tool_12",
+       "description": "Tool number 12"
+      },
+      {
+       "value": "tool_13",
+       "label": "tool_13",
+       "description": "Tool number 13"
+      }
+     ],
+     "selected": "tool_13",
+     "confirmLabel": "back",
+     "cancelLabel": "back"
+    },
+    "rows": [
+     "────────────────────────────────────────",
+     " Tools of big",
+     " Exposure direct: declared to the model",
+     " like built-in tools",
+     "",
+     "  tool_2",
+     "  tool_3",
+     "  tool_4",
+     "  tool_5",
+     "  tool_6",
+     "  tool_7",
+     "  tool_8",
+     "  tool_9",
+     "  tool_10",
+     "  tool_11",
+     "  tool_12",
+     "→ tool_13",
+     "  (14/14)",
+     "",
+     " enter back • escape/ctrl+c back",
+     "────────────────────────────────────────"
+    ]
+   },
+   "70": {
+    "menu": {
+     "title": "Tools of big",
+     "details": "Exposure direct: declared to the model like built-in tools",
+     "items": [
+      {
+       "value": "tool_0",
+       "label": "tool_0",
+       "description": "Tool number 0"
+      },
+      {
+       "value": "tool_1",
+       "label": "tool_1",
+       "description": "Tool number 1"
+      },
+      {
+       "value": "tool_2",
+       "label": "tool_2",
+       "description": "Tool number 2"
+      },
+      {
+       "value": "tool_3",
+       "label": "tool_3",
+       "description": "Tool number 3"
+      },
+      {
+       "value": "tool_4",
+       "label": "tool_4",
+       "description": "Tool number 4"
+      },
+      {
+       "value": "tool_5",
+       "label": "tool_5",
+       "description": "Tool number 5"
+      },
+      {
+       "value": "tool_6",
+       "label": "tool_6",
+       "description": "Tool number 6"
+      },
+      {
+       "value": "tool_7",
+       "label": "tool_7",
+       "description": "Tool number 7"
+      },
+      {
+       "value": "tool_8",
+       "label": "tool_8",
+       "description": "Tool number 8"
+      },
+      {
+       "value": "tool_9",
+       "label": "tool_9",
+       "description": "Tool number 9"
+      },
+      {
+       "value": "tool_10",
+       "label": "tool_10",
+       "description": "Tool number 10"
+      },
+      {
+       "value": "tool_11",
+       "label": "tool_11",
+       "description": "Tool number 11"
+      },
+      {
+       "value": "tool_12",
+       "label": "tool_12",
+       "description": "Tool number 12"
+      },
+      {
+       "value": "tool_13",
+       "label": "tool_13",
+       "description": "Tool number 13"
+      }
+     ],
+     "selected": "tool_13",
+     "confirmLabel": "back",
+     "cancelLabel": "back"
+    },
+    "rows": [
+     "──────────────────────────────────────────────────────────────────────",
+     " Tools of big",
+     " Exposure direct: declared to the model like built-in tools",
+     "",
+     "  tool_2                          Tool number 2",
+     "  tool_3                          Tool number 3",
+     "  tool_4                          Tool number 4",
+     "  tool_5                          Tool number 5",
+     "  tool_6                          Tool number 6",
+     "  tool_7                          Tool number 7",
+     "  tool_8                          Tool number 8",
+     "  tool_9                          Tool number 9",
+     "  tool_10                         Tool number 10",
+     "  tool_11                         Tool number 11",
+     "  tool_12                         Tool number 12",
+     "→ tool_13                         Tool number 13",
+     "  (14/14)",
+     "",
+     " enter back • escape/ctrl+c back",
+     "──────────────────────────────────────────────────────────────────────"
+    ]
+   }
+  }
+ },
+ "status": {
+  "40": [
+   "────────────────────────────────────────",
+   " MCP server github",
+   "",
+   " Reconnecting…",
+   "────────────────────────────────────────"
+  ],
+  "70": [
+   "──────────────────────────────────────────────────────────────────────",
+   " MCP server github",
+   "",
+   " Reconnecting…",
+   "──────────────────────────────────────────────────────────────────────"
+  ]
+ }
+}

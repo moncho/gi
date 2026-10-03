@@ -258,8 +258,8 @@ type chatTUI struct {
 	thinkingMemoKey             string                // effectiveThinking's last model+level and answer
 	heldNoticeShown             map[string]bool       // sessions told about held interrupted turns
 	thinkingMemoValue           string
-	blocksMemo                  transcriptBlocksMemo              // block list and keys for unchanged transcripts (#34)
-	jumpToLatest                jumpToLatestRect                  // where the cue was drawn (none: width 0)
+	blocksMemo                  transcriptBlocksMemo // block list and keys for unchanged transcripts (#34)
+	jumpToLatest                jumpToLatestRect     // where the cue was drawn (none: width 0)
 	regularPrinted              int
 	regularSessionPending       bool
 	regularWidth, regularHeight int
@@ -308,7 +308,8 @@ type chatTUI struct {
 	modelMenuValues             map[string]string
 	modelMenuMetadata           map[string]modelPickerMetadata
 	sessionActions              sessionActions
-	selectDialog                selectDialog // Pi ctx.ui.select (modelMenuKind "select")
+	selectDialog                selectDialog     // Pi ctx.ui.select (modelMenuKind "select")
+	mcpManager                  *mcpManagerState // Pi's /mcp manager (modelMenuKind "mcp-manager")
 	modelMenuSession            sessionScope
 	modelMenuAltScreen          bool
 	modelMenuResized            bool
@@ -1805,6 +1806,9 @@ func (c *chatTUI) KeyMap() gotui.KeyMap {
 	if c.modelMenuOpen && c.modelMenuKind == "select" {
 		return c.selectDialogKeys()
 	}
+	if c.modelMenuOpen && c.modelMenuKind == "mcp-manager" && c.mcpManager != nil {
+		return c.mcpManagerKeys()
+	}
 	if c.modelMenuOpen {
 		if c.modelMenuKind == "thinking" {
 			return gotui.KeyMap{
@@ -2104,6 +2108,12 @@ func (c *chatTUI) closeModelMenu() {
 	// Hide before the screen-restore resize is dispatched.
 	c.modelMenuOpen = false
 	c.sessionActions = sessionActions{}
+	if c.mcpManager != nil {
+		c.mcpManager = nil
+		if c.engine != nil {
+			c.engine.SetMCPChangeListener(nil)
+		}
+	}
 	if c.selectDialog.onCancel != nil || c.selectDialog.onSelect != nil {
 		// Closed by something else (session switch, quit): Pi resolves undefined.
 		cancel := c.selectDialog.onCancel
@@ -2347,7 +2357,7 @@ func (c *chatTUI) modelMenuHeight() int {
 	if !c.modelMenuOpen {
 		return 0
 	}
-	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" {
+	if c.modelMenuKind == "model" || c.modelMenuKind == "thinking" || c.modelMenuKind == "session" || c.modelMenuKind == "session-actions" || c.modelMenuKind == "fork" || c.modelMenuKind == "select" || c.modelMenuKind == "mcp-manager" {
 		width := c.currentContentWidth()
 		if c.app != nil {
 			width, _ = c.app.Size()

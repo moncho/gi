@@ -53,6 +53,7 @@ type ServerConfig struct {
 	// patterns the first match wins (Pi), and Go maps do not keep order.
 	toolExposureOrder []string
 	Source            string `json:"-"` // file that defined the entry
+	Scope             string `json:"-"` // "global" (user mcp.json) or "project", as Pi labels them
 }
 
 // Config is the merged user and (trusted) project configuration.
@@ -150,6 +151,10 @@ func LoadConfig(userPath, projectPath string, projectTrusted bool) Config {
 				continue
 			}
 			seen[canon] = name
+			server.Scope = "global"
+			if path != userPath {
+				server.Scope = "project"
+			}
 			// A later file (the project) replaces an earlier entry with the
 			// same canonical name.
 			for existing := range cfg.Servers {

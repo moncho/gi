@@ -48,9 +48,11 @@ func TestTUIMCPLoginPastedRedirect(t *testing.T) {
 		st, _ := c.engine.MCPStatus()
 		return len(st) == 1 && st[0].State == gimcp.StateNeedsAuth
 	})
-	if out := c.mcpCommand([]string{"/mcp"}); !strings.Contains(out[0], "remote: needs sign-in, run /mcp login remote") {
-		t.Fatal(out)
+	c.mcpCommand([]string{"/mcp"})
+	if menu := c.mcpManagerMenu(); len(menu.items) != 1 || menu.items[0].description != "needs sign-in · codemode · global" {
+		t.Fatalf("%+v", menu.items)
 	}
+	c.closeMCPManager()
 	c.mcpCommand([]string{"/mcp", "login"})
 	var authURL string
 	waitFor("the sign-in link", func() bool {

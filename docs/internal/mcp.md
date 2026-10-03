@@ -193,7 +193,32 @@ Rules, as in Pi:
 
 ## `/mcp` in the TUI (`internal/tui/mcp_command.go`)
 
-- `/mcp` prints Pi's status text (the non-interactive form of Pi's `formatStatus`): one line per server with its state, tool count and exposure, connection errors indented below it, then config errors.
+- `/mcp` opens Pi's manager (`internal/tui/mcp_manager.go`, a port of
+  `McpManagerView` and the `manage` loop):
+  - The server list: servers needing attention first (needs sign-in, failed,
+    disconnected, connecting, connected, disabled), each with its state,
+    exposure and scope (`global` for the user mcp.json, `project`); config
+    errors above the list.
+  - A server's menu: its endpoint, scope and source, state and errors, and
+    the actions Pi offers for its state: Sign in, Tools, Reconnect, Sign out,
+    Exposure, Disable (Enable when disabled).
+  - Tools: the server's tools with their first description line, marked
+    `[exposure]` when `toolExposure` overrides the server's exposure.
+  - Exposure: codemode, deferred or direct, saved to the mcp.json that defines
+    the server (other content and indentation kept, `Manager.UpdateServer`,
+    `UpdateServerConfig`); a connected server's tools are registered again.
+  - Enable/Disable are saved the same way; disabling closes the connection and
+    withdraws the tools, enabling connects.
+  - Menus are rebuilt from the engine's state on every frame and redraw when
+    a server changes (`Engine.SetMCPChangeListener`); slow actions show Pi's
+    status screen ("Reconnecting…") until they finish.
+  - Up/Down wrap, Enter selects, Escape or Ctrl+C goes back (closes the list).
+  - Golden: `scripts/golden-mcp-manager.mjs` renders Pi's own
+    `McpManagerView`; `TestMCPManagerRenderMatchesPi`, and
+    `TestMCPManagerManagesServers` against real servers.
+  - Difference: Pi signs in inside the manager (link and redirect-URL input);
+    gi closes the manager and runs its in-session sign-in (`/mcp login`).
+    Pi's `overridden:` notices (extension-registered servers) do not apply.
 - `/mcp reconnect [server]` drops the connection, connects again and re-registers the server's tools (`Manager.Reconnect`, `Engine.MCPReconnect`).
   - Without a name it picks the only enabled server, or the only failed or disconnected one; otherwise it asks for a name.
 - Argument completion (Pi's `getArgumentCompletions` for `/mcp`): after `/mcp `
@@ -222,8 +247,7 @@ Rules, as in Pi:
     Enter selects, Escape or Ctrl+C cancels. Golden:
     `scripts/golden-select-dialog.mjs`, `TestSelectDialogMatchesPi`. The
     dialog is shown where gi shows its other Pi selectors.
-- Not yet ported:
-  - Pi's interactive manager (inspect tools, enable or disable a server, change exposure).
+- Not yet ported: `/mcp` in the web UI.
 
 ## OAuth (`internal/mcp/oauth.go`)
 

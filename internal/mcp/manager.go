@@ -47,6 +47,8 @@ type Status struct {
 	Tools        int
 	Exposure     string
 	Source       string
+	Scope        string // "global" or "project"
+	Endpoint     string // Pi's describeTransport: the URL, or the command and arguments
 	Instructions string
 	StderrTail   string
 }
@@ -116,7 +118,64 @@ func NewManager(cfg Config, workspace, logPath string) *Manager {
 }
 
 // Config returns the configuration the manager was built from.
-func (m *Manager) Config() Config { return m.cfg }
+func (m *Manager) Config() Config {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.cfg
+}
+
+// ServerPatch is a change to one server's settings (Pi's saveConfig patch):
+// Enabled when non-nil, Exposure when non-empty.
+type ServerPatch struct {
+	Enabled  *bool
+	Exposure string
+}
+
+// UpdateServer ports Pi's saveConfig: the change is written to the mcp.json
+// that defines the server (other content kept, see UpdateServerConfig), then
+// applied here. Disabling closes the server's connection; enabling leaves it
+// to connect on next use.
+func (m *Manager) UpdateServer(name string, patch ServerPatch) error {
+	s, err := m.server(name)
+	if err != nil {
+		return err
+	}
+	if err := UpdateServerConfig(s.cfg.Source, name, patch); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	sc := m.cfg.Servers[name]
+	if patch.Enabled != nil {
+		sc.Enabled = *patch.Enabled
+	}
+	if patch.Exposure != "" {
+		sc.Exposure = patch.Exposure
+	}
+	// Copy on write: callers may be reading the previous map.
+	servers := make(map[string]ServerConfig, len(m.cfg.Servers))
+	for k, v := range m.cfg.Servers {
+		servers[k] = v
+	}
+	servers[name] = sc
+	m.cfg.Servers = servers
+	m.mu.Unlock()
+	s.mu.Lock()
+	s.cfg = sc
+	closeConn := s.closeConn
+	if !sc.Enabled {
+		s.session, s.closeConn, s.toolsValid, s.tools = nil, nil, false, nil
+		s.state, s.err = StateDisabled, nil
+	} else if s.state == StateDisabled {
+		s.state, closeConn = StateDisconnected, nil
+	} else {
+		closeConn = nil
+	}
+	s.mu.Unlock()
+	if closeConn != nil {
+		closeConn()
+	}
+	return nil
+}
 
 func (m *Manager) server(name string) (*server, error) {
 	m.mu.Lock()
@@ -134,14 +193,14 @@ func (m *Manager) server(name string) (*server, error) {
 // Status reports every configured server, sorted by name.
 func (m *Manager) Status() []Status {
 	var out []Status
-	for _, name := range m.cfg.Names() {
+	for _, name := range m.Config().Names() {
 		s, err := m.server(name)
 		if err != nil {
 			continue
 		}
 		s.mu.Lock()
 		st := Status{Name: name, Transport: s.cfg.Transport, State: s.state, Tools: len(s.tools), Exposure: s.cfg.Exposure,
-			Source: s.cfg.Source, Instructions: s.instructions, StderrTail: s.stderr.String()}
+			Source: s.cfg.Source, Scope: s.cfg.Scope, Endpoint: describeTransport(s.cfg), Instructions: s.instructions, StderrTail: s.stderr.String()}
 		if s.err != nil {
 			st.Error = s.err.Error()
 		}
@@ -154,7 +213,7 @@ func (m *Manager) Status() []Status {
 // ConnectAll starts connecting every enabled server in the background and
 // returns immediately (Pi connects servers when a session starts).
 func (m *Manager) ConnectAll(ctx context.Context) {
-	for _, name := range m.cfg.Names() {
+	for _, name := range m.Config().Names() {
 		if s, err := m.server(name); err == nil && s.cfg.Enabled {
 			go func(s *server) { _, _ = m.ensureSession(ctx, s) }(s)
 		}

@@ -15,13 +15,14 @@ import (
 // mcpUsage is Pi's /mcp usage line.
 const mcpUsage = "Usage: /mcp, /mcp login [server], /mcp logout [server], /mcp reconnect [server]"
 
-// mcpCommand ports Pi's /mcp in its non-interactive form: the server status
-// list, sign-in, sign-out and reconnect, with Pi's server picker when the
-// name is omitted and ambiguous.
+// mcpCommand ports Pi's /mcp: the manager without arguments; sign-in,
+// sign-out and reconnect, with Pi's server picker when the name is omitted
+// and ambiguous.
 func (c *chatTUI) mcpCommand(fields []string) []string {
 	args := fields[1:]
 	if len(args) == 0 {
-		return strings.Split(c.mcpStatusText(), "\n")
+		c.openMCPManager() // Pi's manager (Pi prints formatStatus only without a TUI)
+		return nil
 	}
 	if len(args) > 2 {
 		return []string{mcpUsage}
@@ -50,38 +51,6 @@ func (c *chatTUI) mcpCommand(fields []string) []string {
 		return c.runMCPAction(action, server)
 	}
 	return []string{mcpUsage}
-}
-
-// mcpStatusText ports Pi's formatStatus.
-func (c *chatTUI) mcpStatusText() string {
-	statuses, errs := c.engine.MCPStatus()
-	if len(statuses) == 0 && len(errs) == 0 {
-		return "No MCP servers configured. Add them to " + gimcp.UserConfigPath() + "."
-	}
-	var lines []string
-	for _, st := range statuses {
-		if st.State == gimcp.StateNeedsAuth {
-			lines = append(lines, fmt.Sprintf("%s: needs sign-in, run /mcp login %s (%s)", st.Name, st.Name, st.Exposure))
-			continue
-		}
-		tools := ""
-		if st.State == gimcp.StateConnected {
-			tools = fmt.Sprintf(", %d tools", st.Tools)
-		}
-		state := st.State
-		if st.State == gimcp.StateDisconnected {
-			state = "disconnected, reconnects on next call"
-		}
-		errText := ""
-		if st.Error != "" && st.State != gimcp.StateConnected {
-			errText = "\n    " + strings.ReplaceAll(st.Error, "\n", "\n    ")
-		}
-		lines = append(lines, fmt.Sprintf("%s: %s%s (%s)%s", st.Name, state, tools, st.Exposure, errText))
-	}
-	for _, err := range errs {
-		lines = append(lines, "config error: "+err.Error())
-	}
-	return strings.Join(lines, "\n")
 }
 
 const mcpOAuthNone = "No enabled MCP server uses OAuth. Only HTTP servers without an Authorization header do."

@@ -279,6 +279,10 @@ func (c *chatTUI) piMenuRows(width int) (spanRows, bool) {
 		return c.piForkSelectorRows(width), true
 	case "select":
 		return c.piSelectDialogRows(width), true
+	case "mcp-manager":
+		if c.mcpManager != nil {
+			return c.piMCPManagerRows(width), true
+		}
 	}
 	return nil, false
 }

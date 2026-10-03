@@ -9,9 +9,12 @@ import (
 
 func TestTUIMCPCommand(t *testing.T) {
 	c := sessionTestChat(t)
-	if out := c.mcpCommand([]string{"/mcp"}); !strings.HasPrefix(out[0], "No MCP servers configured. Add them to ") {
-		t.Fatal(out)
+	// Without servers, the manager shows Pi's empty text.
+	if out := c.mcpCommand([]string{"/mcp"}); out != nil || c.modelMenuKind != "mcp-manager" ||
+		!strings.Contains(strings.Join(spanRowsText(c.piMCPManagerRows(200)), "\n"), " No MCP servers configured. Add them to ") {
+		t.Fatal(out, strings.Join(spanRowsText(c.piMCPManagerRows(200)), "\n"))
 	}
+	c.closeMCPManager()
 	if out := c.mcpCommand([]string{"/mcp", "frob"}); out[0] != mcpUsage {
 		t.Fatal(out)
 	}

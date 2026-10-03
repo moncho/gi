@@ -160,9 +160,19 @@ func (e *Engine) reportMCPStartup(ctx context.Context, st *mcpState) {
 // mcpNotices holds MCP notices for the UI (Pi's ctx.ui.notify) until a
 // notifier is set, so startup reports are not lost.
 type mcpNotices struct {
-	mu      sync.Mutex
-	notify  func(level, text string)
-	pending [][2]string
+	mu       sync.Mutex
+	notify   func(level, text string)
+	pending  [][2]string
+	onChange func()
+}
+
+func (n *mcpNotices) changed() {
+	n.mu.Lock()
+	fn := n.onChange
+	n.mu.Unlock()
+	if fn != nil {
+		fn()
+	}
 }
 
 func (n *mcpNotices) post(level, text string) {
@@ -224,6 +234,7 @@ func (e *Engine) refreshMCPServer(ctx context.Context, server string) {
 		}
 		st.mu.Unlock()
 	}()
+	defer e.mcpNotices.changed()
 	list, err := st.manager.Tools(ctx, server)
 	if err != nil {
 		log.Printf("mcp: %v", err)
@@ -648,4 +659,79 @@ func (e *Engine) MCPSignOut(ctx context.Context, name string) bool {
 	removed := e.mcp.manager.Credentials().Remove(name, e.mcp.manager.Config().Servers[name].URL)
 	_ = e.MCPReconnect(ctx, name) // fails with needs-auth now
 	return removed
+}
+
+// MCPSetEnabled ports Pi's setEnabled: the change is saved to the mcp.json
+// that defines the server. A disabled server's tools are withdrawn; an
+// enabled one connects now (its connection error shows in its state).
+func (e *Engine) MCPSetEnabled(ctx context.Context, name string, enabled bool) error {
+	if e.mcp == nil {
+		return fmt.Errorf("No MCP servers configured.")
+	}
+	if err := e.mcp.manager.UpdateServer(name, gimcp.ServerPatch{Enabled: &enabled}); err != nil {
+		return err
+	}
+	if enabled {
+		e.autoEnableCodemode(e.mcp.manager.Config())
+		e.refreshMCPServer(ctx, name)
+	} else {
+		e.registerMCPTools(name, nil)
+	}
+	e.mcpNotices.changed()
+	return nil
+}
+
+// MCPSetExposure ports Pi's setExposure: saved to the server's mcp.json, and
+// a connected server's tools are registered again with the new exposure.
+func (e *Engine) MCPSetExposure(ctx context.Context, name, exposure string) error {
+	if e.mcp == nil {
+		return fmt.Errorf("No MCP servers configured.")
+	}
+	if err := e.mcp.manager.UpdateServer(name, gimcp.ServerPatch{Exposure: exposure}); err != nil {
+		return err
+	}
+	e.autoEnableCodemode(e.mcp.manager.Config())
+	for _, st := range e.mcp.manager.Status() {
+		if st.Name == name && st.State == gimcp.StateConnected {
+			e.refreshMCPServer(ctx, name)
+		}
+	}
+	e.mcpNotices.changed()
+	return nil
+}
+
+// MCPTool is one tool a server offers, with its effective exposure.
+type MCPTool struct {
+	Name, Description, Exposure string
+}
+
+// MCPServerTools lists the tools a server offers, in the server's order.
+func (e *Engine) MCPServerTools(name string) []MCPTool {
+	if e.mcp == nil {
+		return nil
+	}
+	e.mcp.mu.Lock()
+	defer e.mcp.mu.Unlock()
+	var out []MCPTool
+	for _, mt := range e.mcp.byServer[name] {
+		out = append(out, MCPTool{Name: mt.Tool.Name, Description: mt.Tool.Description, Exposure: mt.Exposure})
+	}
+	return out
+}
+
+// SetMCPChangeListener is called (from any goroutine) when a server's
+// connection or settings change, so open views can redraw (Pi's subscribe).
+func (e *Engine) SetMCPChangeListener(fn func()) {
+	e.mcpNotices.mu.Lock()
+	e.mcpNotices.onChange = fn
+	e.mcpNotices.mu.Unlock()
+}
+
+// MCPServerConfig returns a configured server's settings.
+func (e *Engine) MCPServerConfig(name string) (gimcp.ServerConfig, bool) {
+	if e.mcp == nil {
+		return gimcp.ServerConfig{}, false
+	}
+	sc, ok := e.mcp.manager.Config().Servers[name]
+	return sc, ok
 }

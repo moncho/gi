@@ -40,7 +40,13 @@ type multilineInput struct {
 	cursorPos    int
 	undoText     string
 	undoCursor   int
+	undoPastes   map[int]string
+	undoCounter  int
 	hasUndo      bool
+	// pastes holds the content behind paste markers (Pi's large-paste
+	// markers); pasteCounter numbers them.
+	pastes       map[int]string
+	pasteCounter int
 	yankText     string
 	focused      bool
 }
@@ -61,6 +67,7 @@ func newMultilineInput(width int, placeholder string, onSubmit func(string), onC
 func (m *multilineInput) BindApp(app *gotui.App) { m.app = app }
 func (m *multilineInput) Text() string           { return m.text }
 func (m *multilineInput) SetText(s string) {
+	m.clearPastes()
 	m.text = s
 	m.cursorPos = utf8.RuneCountInString(s)
 	m.notifyChanged()
@@ -454,6 +461,14 @@ func (m *multilineInput) backspace() {
 		return
 	}
 	m.snapshotUndo()
+	if start, ok := m.markerEndingAt(pos); ok { // a paste marker is one unit
+		marker := string(runes[start:pos])
+		m.text = string(append(runes[:start:start], runes[pos:]...))
+		m.removePaste(marker)
+		m.cursorPos = start
+		m.notifyEdited()
+		return
+	}
 	m.yankText = string(runes[pos-1 : pos])
 	runes = append(runes[:pos-1], runes[pos:]...)
 	m.text = string(runes)
@@ -468,6 +483,13 @@ func (m *multilineInput) delete() {
 		return
 	}
 	m.snapshotUndo()
+	if end, ok := m.markerStartingAt(pos); ok {
+		marker := string(runes[pos:end])
+		m.text = string(append(runes[:pos:pos], runes[end:]...))
+		m.removePaste(marker)
+		m.notifyEdited()
+		return
+	}
 	m.yankText = string(runes[pos : pos+1])
 	runes = append(runes[:pos], runes[pos+1:]...)
 	m.text = string(runes)
@@ -475,14 +497,22 @@ func (m *multilineInput) delete() {
 }
 
 func (m *multilineInput) moveLeft() {
-	if m.cursorPos > 0 {
-		m.cursorPos--
+	if pos := m.clampCursor(); pos > 0 {
+		if start, ok := m.markerEndingAt(pos); ok {
+			m.cursorPos = start
+		} else {
+			m.cursorPos = pos - 1
+		}
 		m.markDirty()
 	}
 }
 func (m *multilineInput) moveRight() {
-	if m.cursorPos < utf8.RuneCountInString(m.text) {
-		m.cursorPos++
+	if pos := m.clampCursor(); pos < utf8.RuneCountInString(m.text) {
+		if end, ok := m.markerStartingAt(pos); ok {
+			m.cursorPos = end
+		} else {
+			m.cursorPos = pos + 1
+		}
 		m.markDirty()
 	}
 }
@@ -605,11 +635,11 @@ func (m *multilineInput) enter(ke gotui.KeyEvent) {
 		return
 	}
 	if ke.Mod&gotui.ModAlt != 0 && m.onFollowUp != nil {
-		m.onFollowUp(m.text)
+		m.onFollowUp(m.ExpandedText())
 		return
 	}
 	if m.onSubmit != nil {
-		m.onSubmit(m.text)
+		m.onSubmit(m.ExpandedText())
 	}
 }
 
@@ -626,6 +656,7 @@ func (m *multilineInput) insertLiteral(r rune) {
 func (m *multilineInput) snapshotUndo() {
 	m.undoText = m.text
 	m.undoCursor = m.clampCursor()
+	m.undoPastes, m.undoCounter = copyPastes(m.pastes), m.pasteCounter
 	m.hasUndo = true
 }
 
@@ -635,6 +666,8 @@ func (m *multilineInput) undo() {
 	}
 	m.text, m.undoText = m.undoText, m.text
 	m.cursorPos, m.undoCursor = m.undoCursor, m.clampCursor()
+	m.pastes, m.undoPastes = m.undoPastes, m.pastes
+	m.pasteCounter, m.undoCounter = m.undoCounter, m.pasteCounter
 	m.notifyEdited()
 }
 

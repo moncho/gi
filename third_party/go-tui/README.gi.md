@@ -35,3 +35,9 @@ The patch is suitable for upstream review; it has not been submitted upstream.
   in the parent Gi repository. The frozen-reference tests cover all code points
   and randomized valid/malformed text. Preserve the existing terminal-width
   profile; these optimizations do not implement full UAX #29.
+- Bracketed paste: the app enables mode 2004 with input reporting (on start
+  and resume, off on exit and suspend) for terminals implementing
+  `BracketedPaster`; the reader turns `ESC[200~ … ESC[201~` into one
+  `PasteEvent` (held until its end marker arrives, across reads), and
+  `App.SetPasteHandler` receives it. Without a handler the paste replays as
+  keystrokes, as before. Tests: `paste_test.go`.

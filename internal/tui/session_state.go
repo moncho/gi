@@ -124,7 +124,7 @@ func (c *chatTUI) saveSessionEditor() {
 		c.sessionEditors = map[string]sessionEditorState{}
 	}
 	c.sessionEditors[c.sessionID] = sessionEditorState{
-		text: c.input.Text(), cursor: c.input.cursorPos,
+		text: c.input.ExpandedText(), cursor: c.input.expandedCursor(),
 		undoText: c.input.undoText, undoCursor: c.input.undoCursor, hasUndo: c.input.hasUndo, yank: c.input.yankText,
 		history: append([]string(nil), c.history...), histIdx: c.histIdx,
 		historySearchQuery: c.historySearchQuery, historySearchIdx: c.historySearchIdx,

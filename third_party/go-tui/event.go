@@ -126,3 +126,15 @@ type UpdateEvent struct {
 }
 
 func (UpdateEvent) isEvent() {}
+
+// PasteEvent is text pasted into the terminal with bracketed paste mode:
+// everything between ESC[200~ and ESC[201~, unparsed (newlines included).
+type PasteEvent struct {
+	Text string
+	app  *App
+}
+
+// App returns the App that dispatched this event.
+func (e PasteEvent) App() *App { return e.app }
+
+func (PasteEvent) isEvent() {}

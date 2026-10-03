@@ -20,7 +20,8 @@ func (c *chatTUI) draftContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second)
 }
 func (c *chatTUI) editorSnapshot() store.TUITextSnapshot {
-	return store.TUITextSnapshot{Text: c.input.Text(), Cursor: c.input.cursorPos}
+	// Paste markers are stored expanded: the draft outlives the editor.
+	return store.TUITextSnapshot{Text: c.input.ExpandedText(), Cursor: c.input.expandedCursor()}
 }
 func (c *chatTUI) draftNotice(message string) { c.showQueueCommand([]string{"draft: " + message}) }
 func (c *chatTUI) setDraftError(d *terminalDraftState, err error) {
@@ -127,7 +128,7 @@ func (c *chatTUI) submitDurableDraftWithIntent(text, intent string) {
 	}
 	// Programmatic commands such as /attach path prompt must not smuggle their
 	// replacement prompt past the exact stored-editor ownership boundary.
-	if text != strings.TrimSpace(c.input.Text()) {
+	if text != strings.TrimSpace(c.input.ExpandedText()) {
 		c.draftNotice("put the prompt in the editor before sending; refs retained")
 		return
 	}

@@ -41,10 +41,19 @@ func (c *chatTUI) effectiveThinking(provider, model, level string) string {
 	if provider = strings.TrimSpace(provider); provider != "" && !strings.HasPrefix(id, provider+"/") && !strings.Contains(id, "/") {
 		id = provider + "/" + id
 	}
-	if effective, known := inference.EffectiveThinking(id, level); known {
-		return effective // clamped like Pi; "" for non-reasoning models
+	// The border asks every frame; a model lookup copies the provider's
+	// whole catalogue in go-ai, so the answer is kept until the model or
+	// level changes.
+	key := id + "\x00" + level
+	if c.thinkingMemoKey == key {
+		return c.thinkingMemoValue
 	}
-	return level
+	value := level
+	if effective, known := inference.EffectiveThinking(id, level); known {
+		value = effective // clamped like Pi; "" for non-reasoning models
+	}
+	c.thinkingMemoKey, c.thinkingMemoValue = key, value
+	return value
 }
 
 // editorStatus returns Pi's active status indicator (spinner frame, message and

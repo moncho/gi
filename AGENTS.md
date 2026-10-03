@@ -93,6 +93,8 @@ Run tests **one at a time, through the Makefile only** (see *CPU throttling* bel
 
 **Every user-visible feature must have corresponding functional tests.**
 
+**Volume test runs are profiled and analysed, to keep the suites lean.** A volume run is the full Go suite (`make test` without `TEST_RUN`) or a script-driven suite (`make test-tui-smoke`, `make test-tui-gherkin-features`, `make test-ux`). The Makefile runs them through `scripts/testprofile`, which reports wall and CPU time, peak memory, the slowest packages and tests, CPU and allocation hot spots in gi code, and what got slower than the previous passing run (▲). After every volume run, read that report: investigate a regression or a new hot spot before committing, and say what you found when you report the run. Reports and history are kept in `~/.cache/gi-test-profile` (see `docs/internal/profiling.md`). Focused runs (`TEST_RUN=...`) are not profiled.
+
 **For now, web (Playwright) tests are not run on the ChromeOS (Crostini) laptop** used for development: `make test-ux` and the other browser targets are skipped there. Verify web-facing changes on that laptop with Go tests (for example `internal/web` handler tests), and run browser acceptance on another host. This is temporary and specific to that laptop; other machines run the web suites as usual.
 
 Before committing:

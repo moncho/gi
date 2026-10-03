@@ -72,6 +72,8 @@ type Terminal interface {
 	ExitAltScreen()
 
 	// EnableMouse enables mouse event reporting.
+	//
+	// Terminals may also implement BracketedPaster.
 	// After calling this, mouse clicks will be reported as events.
 	EnableMouse()
 
@@ -115,4 +117,12 @@ type Terminal interface {
 	// WriteDirect writes raw bytes directly to the terminal.
 	// Use this for escape sequences that are not covered by other methods.
 	WriteDirect([]byte) (int, error)
+}
+
+// BracketedPaster is a Terminal that can turn bracketed paste mode on and
+// off; the app enables it with input reporting so pastes arrive as
+// PasteEvents.
+type BracketedPaster interface {
+	EnableBracketedPaste()
+	DisableBracketedPaste()
 }

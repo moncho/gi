@@ -114,6 +114,7 @@ func runWithEngineMode(s *store.Store, engine *turn.Engine, cfg config.RuntimeCo
 		return fmt.Errorf("create app: %w", err)
 	}
 	chat.app = app
+	app.SetPasteHandler(chat.handlePaste)
 	cleanup := chat.Init()
 	defer cleanup()
 	app.SetRootComponent(chat)
@@ -254,6 +255,8 @@ type chatTUI struct {
 	runningCheckLines           []string  // transcript at the last running-block check
 	runningCheckResult          bool
 	blockCache                  *transcriptBlockCache // block heights and recently rendered blocks (#34, #31)
+	thinkingMemoKey             string                // effectiveThinking's last model+level and answer
+	thinkingMemoValue           string
 	blocksMemo                  transcriptBlocksMemo              // block list and keys for unchanged transcripts (#34)
 	jumpToLatest                jumpToLatestRect                  // where the cue was drawn (none: width 0)
 	regularPrinted              int
@@ -2787,7 +2790,7 @@ func (c *chatTUI) submitWithIntent(text string, metadata map[string]any, intent 
 	if c.durableDrafts && strings.HasPrefix(text, "/") {
 		if strings.Fields(text)[0] == "/draft" {
 			c.showQueueCommand(c.draftCommand(strings.Fields(text)))
-			if c.input.Text() == text {
+			if c.input.ExpandedText() == text {
 				if d := c.textDrafts[c.sessionID]; d != nil {
 					c.applyDraftSnapshot(d.local)
 				}
@@ -4788,8 +4791,8 @@ func (c *chatTUI) setEditorAsk(key, prompt, prefill string) {
 	c.ensureInput()
 	if !c.editorAskActive {
 		c.editorAskPrevPlaceholder = c.input.placeholder
-		c.editorAskPrevText = c.input.Text()
-		c.editorAskPrevCursor = c.input.cursorPos
+		c.editorAskPrevText = c.input.ExpandedText()
+		c.editorAskPrevCursor = c.input.expandedCursor()
 	}
 	c.editorAskActive = true
 	c.editorAskKey = key

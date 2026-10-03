@@ -177,6 +177,9 @@ func TestImportMapsMessages(t *testing.T) {
 	if call.Content != "Reading.\n[tool_call: read]" || call.Payload["display_text"] != "Reading." || first["id"] != "t1" || fmt.Sprint(first["arguments"]) != "map[path:src/parse.go]" || call.Payload["model"] != "anthropic/claude-sonnet-4-5" {
 		t.Fatalf("tool call %+v", call)
 	}
+	if blocks, _ := call.Payload["thinking_blocks"].([]any); len(blocks) != 1 || call.Payload["stop_reason"] != "toolUse" || call.Payload["usage"] == nil {
+		t.Fatalf("response record %+v", call.Payload)
+	}
 	result := find(func(m store.Message) bool { return m.Role == "tool_result" })
 	if result.Content != "package parse" || result.Payload["tool_call_id"] != "t1" || result.Payload["tool_name"] != "read" {
 		t.Fatalf("tool result %+v", result)
@@ -265,6 +268,26 @@ func TestExportImportRoundTrip(t *testing.T) {
 	// The exported compaction keeps what Pi's did.
 	if !strings.Contains(string(first), `"type":"compaction"`) || !strings.Contains(string(first), `"type":"branch_summary"`) {
 		t.Fatalf("export lacks compaction or branch summary:\n%s", first)
+	}
+}
+
+// Pi's bash is gi's shell, and back on export.
+func TestImportMapsBashToShell(t *testing.T) {
+	ctx := context.Background()
+	s := openStore(t)
+	jsonl := `{"type":"session","version":3,"id":"x","timestamp":"2026-10-03T10:00:00.000Z","cwd":"/w"}
+{"type":"message","id":"a","parentId":null,"timestamp":"2026-10-03T10:00:01.000Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"t","name":"bash","arguments":{"command":"ls"}}],"provider":"openai","model":"gpt-5","stopReason":"toolUse","timestamp":1}}
+{"type":"message","id":"b","parentId":"a","timestamp":"2026-10-03T10:00:02.000Z","message":{"role":"toolResult","toolCallId":"t","toolName":"bash","content":[{"type":"text","text":"a"}],"isError":false,"timestamp":2}}
+`
+	r := importText(t, s, "s1", jsonl)
+	messages, _ := s.ListMessages(ctx, r.Session.ID)
+	calls, _ := messages[0].Payload["tool_calls"].([]any)
+	if call, _ := calls[0].(map[string]any); call["name"] != "shell" || messages[0].Content != "[tool_call: shell]" || messages[1].Payload["tool_name"] != "shell" {
+		t.Fatalf("messages %+v", messages)
+	}
+	out, err := sessionexport.JSONL(ctx, s, r.Session.ID, "/w")
+	if err != nil || strings.Count(string(out), `"bash"`) != 2 || strings.Contains(string(out), `"shell"`) {
+		t.Fatalf("export %s %v", out, err)
 	}
 }
 

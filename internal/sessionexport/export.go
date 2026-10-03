@@ -9,8 +9,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"html"
 	"os"
 	"path/filepath"
 	"strings"
@@ -188,7 +186,7 @@ func reconstructCalls(summary string, following []store.Message, previews map[st
 		}
 		args := map[string]any{}
 		if preview, ok := previews[id]; ok && preview != "" {
-			args["preview"] = preview
+			args = previewArguments(names[len(calls)], preview)
 		}
 		calls = append(calls, toolCall{ID: id, Name: names[len(calls)], Arguments: args, Preview: true})
 	}
@@ -209,6 +207,28 @@ func entryID(sourceID string) string {
 	return hex.EncodeToString(sum[:4])
 }
 
+// piToolName is a gi tool's name in Pi's sessions: gi's shell tool is Pi's
+// bash (the same command argument), so Pi renders it as one.
+func piToolName(name string) string {
+	if name == "shell" {
+		return "bash"
+	}
+	return name
+}
+
+// previewArguments are a legacy call's arguments from its tool.started
+// preview (collapsed whitespace, at most 200 characters), under the key Pi's
+// tool takes.
+func previewArguments(name, preview string) map[string]any {
+	switch name {
+	case "shell", "bash":
+		return map[string]any{"command": preview}
+	case "read", "write", "edit", "ls":
+		return map[string]any{"path": preview}
+	}
+	return map[string]any{"preview": preview}
+}
+
 func splitModel(label string) (provider, model string) {
 	if i := strings.Index(label, "/"); i > 0 {
 		return label[:i], label[i+1:]
@@ -224,40 +244,64 @@ func isoTime(t time.Time) string {
 }
 
 // JSONL serializes a session as Pi session format version 3.
-func JSONL(ctx context.Context, s *store.Store, sessionID, cwd string) ([]byte, error) {
+// Document is a session as Pi's session format: the header and the entries,
+// with model_change and thinking_level_change entries where the model or
+// thinking level of the assistant messages changes.
+func Document(ctx context.Context, s *store.Store, sessionID, cwd string) (Entry, []Entry, error) {
 	sess, err := s.GetSession(ctx, sessionID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	items, err := load(ctx, s, sessionID)
+	if err != nil {
+		return nil, nil, err
+	}
+	header := Entry{"type": "session", "version": 3, "id": sessionID, "timestamp": isoTime(parseTime(sess.CreatedAt)), "cwd": cwd}
+	var entries []Entry
+	var parent any // null for the root entry
+	emit := func(e Entry, sourceID string, at time.Time) {
+		id := entryID(sourceID)
+		e["id"], e["parentId"], e["timestamp"] = id, parent, isoTime(at)
+		parent = id
+		entries = append(entries, e)
+	}
+	if title := strings.TrimSpace(sess.Title); title != "" {
+		emit(Entry{"type": "session_info", "name": title}, sessionID+"#name", parseTime(sess.CreatedAt))
+	}
+	model, thinking := "", ""
+	for _, it := range items {
+		e := it.entry()
+		if e == nil {
+			continue
+		}
+		if it.role == "assistant" {
+			// Pi records model and thinking level changes as entries.
+			if it.model != "" && it.model != model {
+				provider, id := splitModel(it.model)
+				emit(Entry{"type": "model_change", "provider": provider, "modelId": id}, it.sourceID+"#model", it.createdAt)
+				model = it.model
+			}
+			if level, _ := it.source.Payload["thinking_level"].(string); level != "" && level != thinking {
+				emit(Entry{"type": "thinking_level_change", "thinkingLevel": level}, it.sourceID+"#thinking", it.createdAt)
+				thinking = level
+			}
+		}
+		emit(e, it.sourceID, it.createdAt)
+	}
+	return header, entries, nil
+}
+
+// JSONL is a session as Pi's session file.
+func JSONL(ctx context.Context, s *store.Store, sessionID, cwd string) ([]byte, error) {
+	header, entries, err := Document(ctx, s, sessionID, cwd)
 	if err != nil {
 		return nil, err
 	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
-	header := Entry{"type": "session", "version": 3, "id": sessionID, "timestamp": isoTime(parseTime(sess.CreatedAt)), "cwd": cwd}
-	if err := enc.Encode(header); err != nil {
-		return nil, err
-	}
-	var parent any // null for the root entry
-	emit := func(e Entry, sourceID string, at time.Time) error {
-		id := entryID(sourceID)
-		e["id"], e["parentId"], e["timestamp"] = id, parent, isoTime(at)
-		parent = id
-		return enc.Encode(e)
-	}
-	if title := strings.TrimSpace(sess.Title); title != "" {
-		if err := emit(Entry{"type": "session_info", "name": title}, sessionID+"#name", parseTime(sess.CreatedAt)); err != nil {
-			return nil, err
-		}
-	}
-	for _, it := range items {
-		e := it.entry()
-		if e == nil {
-			continue
-		}
-		if err := emit(e, it.sourceID, it.createdAt); err != nil {
+	for _, e := range append([]Entry{header}, entries...) {
+		if err := enc.Encode(e); err != nil {
 			return nil, err
 		}
 	}
@@ -274,25 +318,39 @@ func (it item) entry() Entry {
 		e = Entry{"type": "message", "message": map[string]any{"role": "user", "content": it.text, "timestamp": ms}}
 	case "assistant":
 		content := []any{}
+		// Thinking first, as the model produced it.
+		if blocks, ok := it.source.Payload["thinking_blocks"].([]any); ok {
+			content = append(content, blocks...)
+		}
 		if strings.TrimSpace(it.text) != "" {
 			content = append(content, map[string]any{"type": "text", "text": it.text})
 		}
 		for _, c := range it.calls {
-			content = append(content, map[string]any{"type": "toolCall", "id": c.ID, "name": c.Name, "arguments": c.Arguments})
+			content = append(content, map[string]any{"type": "toolCall", "id": c.ID, "name": piToolName(c.Name), "arguments": c.Arguments})
 		}
 		provider, model := splitModel(it.model)
-		stop := "stop"
-		if len(it.calls) > 0 {
-			stop = "toolUse"
+		stop, _ := it.source.Payload["stop_reason"].(string)
+		if stop == "" {
+			stop = "stop"
+			if len(it.calls) > 0 {
+				stop = "toolUse"
+			}
 		}
-		msg := map[string]any{"role": "assistant", "content": content, "provider": provider, "model": model, "stopReason": stop, "timestamp": ms,
-			"usage": map[string]any{"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0, "cost": map[string]any{"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}}}
+		// Sessions recorded before responses kept their usage export zeros.
+		usage, ok := it.source.Payload["usage"].(map[string]any)
+		if !ok {
+			usage = map[string]any{"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "totalTokens": 0, "cost": map[string]any{"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}}
+		}
+		msg := map[string]any{"role": "assistant", "content": content, "provider": provider, "model": model, "stopReason": stop, "timestamp": ms, "usage": usage}
+		if text, _ := it.source.Payload["error_message"].(string); text != "" {
+			msg["errorMessage"] = text
+		}
 		if m := goai.GetModel(goai.Provider(provider), model); m != nil {
 			msg["api"] = string(m.Api)
 		}
 		e = Entry{"type": "message", "message": msg}
 	case "toolResult":
-		e = Entry{"type": "message", "message": map[string]any{"role": "toolResult", "toolCallId": it.callID, "toolName": it.toolName,
+		e = Entry{"type": "message", "message": map[string]any{"role": "toolResult", "toolCallId": it.callID, "toolName": piToolName(it.toolName),
 			"content": []any{map[string]any{"type": "text", "text": it.text}}, "isError": it.isError, "timestamp": ms}}
 	case "system":
 		// gi notices are not model context: a Pi custom entry, not a message.
@@ -347,68 +405,19 @@ func Entries(ctx context.Context, s *store.Store, sessionID string) ([]SourcedEn
 	return out, nil
 }
 
-// HTML renders a standalone, self-contained transcript.
-func HTML(ctx context.Context, s *store.Store, sessionID string) ([]byte, error) {
-	sess, err := s.GetSession(ctx, sessionID)
+// HTML is the session as Pi's HTML export, in the theme's colours.
+func HTML(ctx context.Context, s *store.Store, sessionID, cwd string, theme Theme) ([]byte, error) {
+	header, entries, err := Document(ctx, s, sessionID, cwd)
 	if err != nil {
 		return nil, err
 	}
-	items, err := load(ctx, s, sessionID)
-	if err != nil {
-		return nil, err
-	}
-	title := strings.TrimSpace(sess.Title)
-	if title == "" {
-		title = sessionID
-	}
-	var b strings.Builder
-	esc := html.EscapeString
-	fmt.Fprintf(&b, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>
-body{font:15px/1.5 system-ui,sans-serif;max-width:52rem;margin:2rem auto;padding:0 1rem;color:#1f2328;background:#fff}
-@media(prefers-color-scheme:dark){body{color:#e6edf3;background:#0d1117}.user{background:#161b22!important}pre{background:#161b22!important}}
-h1{font-size:1.3rem}.meta{color:#8b949e;font-size:.85rem}.msg{margin:1rem 0;padding:.6rem .9rem;border-radius:6px}
-.user{background:#f6f8fa}.system{color:#8b949e;font-style:italic}.who{font-weight:600;font-size:.8rem;text-transform:uppercase;color:#8b949e}
-pre{white-space:pre-wrap;word-break:break-word;background:#f6f8fa;padding:.6rem;border-radius:6px;font:13px/1.45 ui-monospace,monospace}
-details{margin:.4rem 0}summary{cursor:pointer;font:13px ui-monospace,monospace}.error summary{color:#cf222e}
-</style></head><body><h1>%s</h1><p class="meta">%s · exported by gi %s</p>
-`, esc(title), esc(title), esc(sessionID), esc(time.Now().UTC().Format("2006-01-02 15:04 UTC")))
-	for _, it := range items {
-		switch it.role {
-		case "user":
-			fmt.Fprintf(&b, `<div class="msg user"><div class="who">user</div><pre>%s</pre></div>`+"\n", esc(it.text))
-		case "assistant":
-			b.WriteString(`<div class="msg assistant"><div class="who">assistant</div>`)
-			if strings.TrimSpace(it.text) != "" {
-				fmt.Fprintf(&b, `<pre>%s</pre>`, esc(it.text))
-			}
-			for _, c := range it.calls {
-				args, _ := json.MarshalIndent(c.Arguments, "", "  ")
-				fmt.Fprintf(&b, `<details><summary>→ %s</summary><pre>%s</pre></details>`, esc(c.Name), esc(string(args)))
-			}
-			b.WriteString("</div>\n")
-		case "toolResult":
-			class := ""
-			if it.isError {
-				class = ` class="error"`
-			}
-			fmt.Fprintf(&b, `<details%s><summary>← %s result</summary><pre>%s</pre></details>`+"\n", class, esc(it.toolName), esc(it.text))
-		case "system":
-			fmt.Fprintf(&b, `<div class="msg system">%s</div>`+"\n", esc(it.text))
-		case "compaction", "branchSummary":
-			label := map[string]string{"compaction": "Compaction summary", "branchSummary": "Branch summary"}[it.role]
-			fmt.Fprintf(&b, `<details class="msg system"><summary>%s</summary><pre>%s</pre></details>`+"\n", label, esc(it.text))
-		case "customMessage", "bashExecution":
-			fmt.Fprintf(&b, `<div class="msg user"><div class="who">%s</div><pre>%s</pre></div>`+"\n", esc(it.role), esc(it.text))
-		}
-	}
-	b.WriteString("</body></html>\n")
-	return []byte(b.String()), nil
+	return RenderHTML(header, entries, theme)
 }
 
 // Export writes the session to path (resolved against cwd) as JSONL when the
 // path ends in .jsonl and as HTML otherwise, like Pi's /export. An empty path
 // writes gi-session-<session>.html in cwd. It returns the written path.
-func Export(ctx context.Context, s *store.Store, sessionID, cwd, path string) (string, error) {
+func Export(ctx context.Context, s *store.Store, sessionID, cwd, path string, theme Theme) (string, error) {
 	if strings.TrimSpace(path) == "" {
 		path = "gi-session-" + sessionID + ".html"
 	}
@@ -420,7 +429,7 @@ func Export(ctx context.Context, s *store.Store, sessionID, cwd, path string) (s
 	if strings.HasSuffix(strings.ToLower(path), ".jsonl") {
 		data, err = JSONL(ctx, s, sessionID, cwd)
 	} else {
-		data, err = HTML(ctx, s, sessionID)
+		data, err = HTML(ctx, s, sessionID, cwd, theme)
 	}
 	if err != nil {
 		return "", err

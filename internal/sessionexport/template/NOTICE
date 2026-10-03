@@ -1,0 +1,12 @@
+Pi's HTML export template, copied unmodified from
+@earendil-works/pi-coding-agent 1.0.1 dist/core/export-html (MIT License,
+Copyright (c) Mario Zechner / Earendil Works):
+
+- template.html, template.css, template.js
+
+with the libraries Pi vendors alongside it:
+
+- vendor/marked.min.js: marked v18.0.5 (MIT License)
+- vendor/highlight.min.js: highlight.js v11.9.0 (BSD-3-Clause License)
+
+Refresh them from a newer Pi with scripts/golden-export-html.mjs.

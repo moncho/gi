@@ -18,7 +18,7 @@ func (c *chatTUI) exportCommand(text string) string {
 	path := pathCommandArgument(text, "/export")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	written, err := sessionexport.Export(ctx, c.store, c.sessionID, c.cfg.WorkspaceRoot, path)
+	written, err := sessionexport.Export(ctx, c.store, c.sessionID, c.cfg.WorkspaceRoot, path, exportTheme())
 	if err != nil {
 		return fmt.Sprintf("error: Failed to export session: %v", err)
 	}

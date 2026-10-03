@@ -16,7 +16,8 @@ behaviour: `/resume` with no argument opens the session selector (`/sessions`
 remains as an alias), `/name` with no argument shows the current name,
 `/logout` with no argument lists stored providers, and `/quit` exits.
 
-`/export [path]` writes HTML or Pi session JSONL (loadable by Pi),
+`/export [path]` writes Pi's HTML page or Pi session JSONL (loadable by Pi;
+`docs/internal/session-import.md`),
 `/compact [instructions]` passes the focus to the before-compact hook and the
 summary, and `/fork` opens Pi's "Fork from Message" selector (history before
 the chosen message goes to a new session; the message returns to the editor).
@@ -65,7 +66,7 @@ Implemented commands:
 
 Still intentionally absent or deferred:
 
-- `/export` and `/share` rich session export/share affordances;
+- `/share` (secret gist upload);
 - `/changelog` dedicated informational command (`/hotkeys` is implemented);
 - process-extension command dispatch (JS/Joker extension command dispatch is implemented);
 - additional rich forms/widgets beyond the searchable model/session/thinking selectors.
@@ -117,7 +118,7 @@ Implemented:
 Adapted/deferred:
 
 - Pi-style follow-up vs steering split is documented as an adapted gap: Gi currently routes active-session submissions through existing steering/queue semantics;
-- rich export/share UX is deferred.
+- `/share` is deferred.
 
 ## Current transcript/layout surface
 

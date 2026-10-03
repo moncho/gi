@@ -300,7 +300,11 @@ func Import(ctx context.Context, s *store.Store, f *File, sessionID, source stri
 			covered = append(covered, id)
 		}
 	}
+	thinkingLevel := "" // the branch's level so far, recorded on responses
 	for i, e := range path {
+		if e.str("type") == "thinking_level_change" {
+			thinkingLevel = e.str("thinkingLevel")
+		}
 		inContext := true
 		if edit, ok := edits[e.str("id")]; ok {
 			replacement, _ := edit["replacement"].(map[string]any)
@@ -320,13 +324,17 @@ func Import(ctx context.Context, s *store.Store, f *File, sessionID, source stri
 				}
 				add(e, "user", contentText(msg["content"]), payload, inContext, i)
 			case "assistant":
-				add(e, "assistant", "", assistantPayload(msg), inContext, i)
+				payload := assistantPayload(msg)
+				if thinkingLevel != "" {
+					payload["thinking_level"] = thinkingLevel
+				}
+				add(e, "assistant", "", payload, inContext, i)
 				last := &messages[len(messages)-1]
 				last.Content = assistantContent(msg, last.Payload)
 			case "toolResult":
 				callID, _ := msg["toolCallId"].(string)
 				name, _ := msg["toolName"].(string)
-				add(e, "tool_result", contentText(msg["content"]), map[string]any{"kind": "tool_result", "tool_call_id": callID, "tool_name": name, "is_error": msg["isError"] == true}, false, i)
+				add(e, "tool_result", contentText(msg["content"]), map[string]any{"kind": "tool_result", "tool_call_id": callID, "tool_name": giToolName(name), "is_error": msg["isError"] == true}, false, i)
 			case "bashExecution":
 				payload := map[string]any{"kind": "bash_execution", "command": msg["command"], "output": msg["output"], "exit_code": msg["exitCode"],
 					"cancelled": msg["cancelled"] == true, "truncated": msg["truncated"] == true}
@@ -435,7 +443,7 @@ func assistantPayload(msg map[string]any) map[string]any {
 			if args == nil {
 				args = map[string]any{}
 			}
-			calls = append(calls, map[string]any{"id": b["id"], "name": b["name"], "arguments": args})
+			calls = append(calls, map[string]any{"id": b["id"], "name": giToolName(b["name"]), "arguments": args})
 		}
 	}
 	if len(calls) > 0 {
@@ -443,13 +451,33 @@ func assistantPayload(msg map[string]any) map[string]any {
 		payload["tool_calls"] = calls
 		payload["display_text"] = strings.TrimSpace(contentText(msg["content"]))
 	}
-	if stop, _ := msg["stopReason"].(string); stop == "error" || stop == "aborted" {
+	if stop, _ := msg["stopReason"].(string); stop != "" {
 		payload["stop_reason"] = stop
-		if text, _ := msg["errorMessage"].(string); text != "" {
-			payload["error_message"] = text
+	}
+	if text, _ := msg["errorMessage"].(string); text != "" {
+		payload["error_message"] = text
+	}
+	if usage, ok := msg["usage"].(map[string]any); ok {
+		payload["usage"] = usage
+	}
+	var thinking []any
+	for _, raw := range blocks {
+		if b, _ := raw.(map[string]any); b["type"] == "thinking" {
+			thinking = append(thinking, b)
 		}
 	}
+	if len(thinking) > 0 {
+		payload["thinking_blocks"] = thinking
+	}
 	return payload
+}
+
+// giToolName is a Pi tool's name in gi: Pi's bash is gi's shell.
+func giToolName(name any) any {
+	if name == "bash" {
+		return "shell"
+	}
+	return name
 }
 
 // assistantContent is the message as gi records it: the text, with a

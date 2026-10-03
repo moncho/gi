@@ -4352,6 +4352,7 @@ func (r *sessionRunner) runAgentLoop(ctx context.Context, s *store.Store, turnID
 			// both history and the visible timeline.
 			msgID := store.NowID("msg")
 			messagePayload := map[string]any{"kind": "chat", "source": "inference", "model": model, "turn_id": turnID, "agent_id": agentID, "iterations": iter}
+			r.addResponseRecord(ctx, s, turnID, model, result, messagePayload)
 			r.addRecoveryMarker(ctx, sessionID, turnID, messagePayload)
 			if err := s.AddMessage(ctx, msgID, sessionID, "assistant", textContent, messagePayload); err != nil {
 				r.finishTurn(s, turnID, sessionID, agentID, model, "failed", "Persist assistant response: "+err.Error(), "persistence_error")
@@ -4393,11 +4394,13 @@ func (r *sessionRunner) runAgentLoop(ctx context.Context, s *store.Store, turnID
 		for _, tc := range toolCalls {
 			recordedCalls = append(recordedCalls, map[string]any{"id": tc.ID, "name": tc.Name, "arguments": tc.Arguments})
 		}
-		logutil.WarnIfErr("add assistant tool_calls summary", s.AddMessage(ctx, store.NowID("msg"), sessionID, "assistant", toolCallSummary, map[string]any{
+		callsPayload := map[string]any{
 			"kind": "tool_calls", "source": "inference", "model": model,
 			"turn_id": turnID, "agent_id": agentID, "display_text": strings.TrimSpace(textContent),
 			"tool_calls": recordedCalls,
-		}))
+		}
+		r.addResponseRecord(ctx, s, turnID, model, result, callsPayload)
+		logutil.WarnIfErr("add assistant tool_calls summary", s.AddMessage(ctx, store.NowID("msg"), sessionID, "assistant", toolCallSummary, callsPayload))
 
 		outcome := r.executeToolCallsPhase(ctx, s, turnID, sessionID, model, agentID, iter, convCtx, toolCalls, pendingSteering, lastToolFailureSig, repeatedToolFailureCount, &totalUsage)
 		if outcome.terminated {
@@ -4474,6 +4477,50 @@ func (r *sessionRunner) persistContextMeasurement(s *store.Store, turnID, sessio
 		return
 	}
 	r.engine.PublishRuntimeTurnEvent("context_measured", sessionID, turnID, "", "running", "inference", payload)
+}
+
+// addResponseRecord keeps what a response was, as Pi's session entries do:
+// its usage and stop reason, its thinking blocks and the thinking level it
+// was asked for (session export, docs/internal/session-import.md).
+func (r *sessionRunner) addResponseRecord(ctx context.Context, s *store.Store, turnID, model string, result *inference.StreamResult, payload map[string]any) {
+	if result == nil {
+		return
+	}
+	if result.Usage != nil {
+		if raw, err := json.Marshal(result.Usage); err == nil {
+			var usage map[string]any
+			if json.Unmarshal(raw, &usage) == nil {
+				payload["usage"] = usage
+			}
+		}
+	}
+	if msg := result.Message; msg != nil {
+		if msg.StopReason != "" {
+			payload["stop_reason"] = string(msg.StopReason)
+		}
+		var thinking []any
+		for _, b := range msg.Content {
+			if b.Type != "thinking" {
+				continue
+			}
+			block := map[string]any{"type": "thinking", "thinking": b.Thinking}
+			if b.ThinkingSignature != "" {
+				block["thinkingSignature"] = b.ThinkingSignature
+			}
+			if b.Redacted {
+				block["redacted"] = true
+			}
+			thinking = append(thinking, block)
+		}
+		if len(thinking) > 0 {
+			payload["thinking_blocks"] = thinking
+		}
+	}
+	if rec, err := s.GetTurn(ctx, turnID); err == nil && rec.Metadata["selected_thinking_model"] == model {
+		if level, _ := rec.Metadata["selected_thinking_level"].(string); level != "" {
+			payload["thinking_level"] = level
+		}
+	}
 }
 
 func (r *sessionRunner) persistUsage(s *store.Store, turnID, sessionID string, usage *goai.Usage, iterations int) {

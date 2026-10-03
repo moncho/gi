@@ -4,9 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -83,48 +86,110 @@ func TestJSONLFollowsPiSessionFormat(t *testing.T) {
 	if m := msg(2); m["role"] != "user" || m["content"] != "list files" {
 		t.Fatalf("user %v", m)
 	}
-	call := msg(3)["content"].([]any)[0].(map[string]any)
-	if msg(3)["stopReason"] != "toolUse" || msg(3)["provider"] != "github-copilot" || msg(3)["model"] != "gpt-5-mini" ||
-		call["type"] != "toolCall" || call["id"] != "call_1" || call["arguments"].(map[string]any)["command"] != "ls -la" {
-		t.Fatalf("assistant tool call %v", msg(3))
+	// The first assistant message's model is a model change, as in Pi.
+	if e := lines[3]; e["type"] != "model_change" || e["provider"] != "github-copilot" || e["modelId"] != "gpt-5-mini" {
+		t.Fatalf("model change %v", e)
 	}
-	if m := msg(4); m["role"] != "toolResult" || m["toolCallId"] != "call_1" || m["toolName"] != "shell" || m["isError"] != false {
+	// gi's shell tool is Pi's bash.
+	call := msg(4)["content"].([]any)[0].(map[string]any)
+	if msg(4)["stopReason"] != "toolUse" || msg(4)["provider"] != "github-copilot" || msg(4)["model"] != "gpt-5-mini" ||
+		call["type"] != "toolCall" || call["id"] != "call_1" || call["name"] != "bash" || call["arguments"].(map[string]any)["command"] != "ls -la" {
+		t.Fatalf("assistant tool call %v", msg(4))
+	}
+	if m := msg(5); m["role"] != "toolResult" || m["toolCallId"] != "call_1" || m["toolName"] != "bash" || m["isError"] != false {
 		t.Fatalf("tool result %v", m)
 	}
-	legacy := msg(5)["content"].([]any)[0].(map[string]any)
-	if legacy["id"] != "call_2" || legacy["name"] != "read" || legacy["arguments"].(map[string]any)["preview"] != "a.go" {
+	// Legacy calls: the preview under the key Pi's tool takes.
+	legacy := msg(6)["content"].([]any)[0].(map[string]any)
+	if legacy["id"] != "call_2" || legacy["name"] != "read" || legacy["arguments"].(map[string]any)["path"] != "a.go" {
 		t.Fatalf("legacy call %v", legacy)
 	}
-	if m := msg(6); m["toolName"] != "read" || m["isError"] != true {
+	if m := msg(7); m["toolName"] != "read" || m["isError"] != true {
 		t.Fatalf("legacy result %v", m)
 	}
-	if m := msg(7); m["stopReason"] != "stop" || m["content"].([]any)[0].(map[string]any)["text"] != "Two files: <a.go> & b.go" {
+	if m := msg(8); m["stopReason"] != "stop" || m["content"].([]any)[0].(map[string]any)["text"] != "Two files: <a.go> & b.go" {
 		t.Fatalf("assistant text %v", m)
 	}
-	if e := lines[8]; e["type"] != "custom" || e["customType"] != "gi.system" {
+	if e := lines[9]; e["type"] != "custom" || e["customType"] != "gi.system" {
 		t.Fatalf("system notice %v", e)
 	}
 }
 
-// Export picks HTML by default and JSONL for .jsonl paths, resolved against cwd.
-func TestExportPathsAndHTMLEscaping(t *testing.T) {
+// Responses recorded with their usage, stop reason, thinking and thinking
+// level export them as Pi's assistant messages and thinking_level_change
+// entries.
+func TestJSONLExportsResponseRecords(t *testing.T) {
+	ctx := context.Background()
+	s, sid := exportFixture(t)
+	usage := map[string]any{"input": 12, "output": 7, "cacheRead": 3, "cacheWrite": 0, "totalTokens": 22, "cost": map[string]any{"input": 0.1, "output": 0.2, "cacheRead": 0, "cacheWrite": 0, "total": 0.3}}
+	add := func(id, model, level, stop string) {
+		payload := map[string]any{"kind": "chat", "model": model, "usage": usage, "stop_reason": stop, "thinking_level": level,
+			"thinking_blocks": []any{map[string]any{"type": "thinking", "thinking": "Plan.", "thinkingSignature": "sig"}}}
+		if err := s.AddMessage(ctx, id, sid, "assistant", "Answer "+id, payload); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add("r1", "anthropic/claude-sonnet-4-5", "high", "stop")
+	add("r2", "anthropic/claude-sonnet-4-5", "high", "length")
+	add("r3", "anthropic/claude-sonnet-4-5", "low", "stop")
+	_, entries, err := Document(ctx, s, sid, "/work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var kinds []string
+	for _, e := range entries[len(entries)-6:] {
+		kind, _ := e["type"].(string)
+		if m, ok := e["message"].(map[string]any); ok {
+			kind = fmt.Sprint(m["role"], ":", m["stopReason"])
+		}
+		kinds = append(kinds, kind)
+	}
+	if got := strings.Join(kinds, ","); got != "model_change,thinking_level_change,assistant:stop,assistant:length,thinking_level_change,assistant:stop" {
+		t.Fatalf("entries %s", got)
+	}
+	m := entries[len(entries)-1]["message"].(map[string]any)
+	content := m["content"].([]any)
+	if first := content[0].(map[string]any); first["type"] != "thinking" || first["thinking"] != "Plan." || first["thinkingSignature"] != "sig" {
+		t.Fatalf("thinking %v", content)
+	}
+	if fmt.Sprint(m["usage"]) != fmt.Sprint(usage) {
+		t.Fatalf("usage %v", m["usage"])
+	}
+	if e := entries[len(entries)-2]; e["thinkingLevel"] != "low" {
+		t.Fatalf("thinking change %v", e)
+	}
+}
+
+// Export picks Pi's HTML page by default and JSONL for .jsonl paths,
+// resolved against cwd. The page carries the session as base64 data, so no
+// message text reaches the markup.
+func TestExportPathsAndHTML(t *testing.T) {
 	s, sid := exportFixture(t)
 	cwd := t.TempDir()
-	path, err := Export(context.Background(), s, sid, cwd, "")
+	path, err := Export(context.Background(), s, sid, cwd, "", Theme{})
 	if err != nil || path != filepath.Join(cwd, "gi-session-"+sid+".html") {
 		t.Fatalf("default path %q %v", path, err)
 	}
 	page, _ := os.ReadFile(path)
-	if !strings.Contains(string(page), "Two files: &lt;a.go&gt; &amp; b.go") || strings.Contains(string(page), "<a.go>") {
-		t.Fatal("HTML export does not escape content")
+	m := regexp.MustCompile(`id="session-data"[^>]*>([A-Za-z0-9+/=]+)<`).FindSubmatch(page)
+	if m == nil || strings.Contains(string(page), "Two files") {
+		t.Fatal("HTML export does not carry the session as data")
 	}
-	path, err = Export(context.Background(), s, sid, cwd, "out/session.jsonl")
+	decoded, _ := base64.StdEncoding.DecodeString(string(m[1]))
+	var data SessionData
+	if err := json.Unmarshal(decoded, &data); err != nil || data.Header["id"] != sid || !strings.Contains(string(decoded), "Two files: <a.go> & b.go") || data.LeafID != data.Entries[len(data.Entries)-1]["id"] {
+		t.Fatalf("session data %s (%v)", decoded, err)
+	}
+	if !strings.Contains(string(page), "--exportPageBg: rgb(36, 37, 46);") {
+		t.Fatal("no default export colours")
+	}
+	path, err = Export(context.Background(), s, sid, cwd, "out/session.jsonl", Theme{})
 	if err != nil || path != filepath.Join(cwd, "out", "session.jsonl") {
 		t.Fatalf("jsonl path %q %v", path, err)
 	}
-	data, _ := os.ReadFile(path)
+	data2, _ := os.ReadFile(path)
 	var header map[string]any
-	if err := json.Unmarshal([]byte(strings.SplitN(string(data), "\n", 2)[0]), &header); err != nil || header["type"] != "session" {
-		t.Fatalf("jsonl header %.120s (%v)", data, err)
+	if err := json.Unmarshal([]byte(strings.SplitN(string(data2), "\n", 2)[0]), &header); err != nil || header["type"] != "session" {
+		t.Fatalf("jsonl header %.120s (%v)", data2, err)
 	}
 }

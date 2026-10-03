@@ -1,9 +1,47 @@
 # Session import and export
 
-`/export` writes a session as Pi's session format (JSONL, version 3) or an
-HTML transcript (`internal/sessionexport`). `/import <path.jsonl>` reads a Pi
+`/export` writes a session as Pi's session format (JSONL, version 3) or as
+Pi's HTML page (`internal/sessionexport`). `/import <path.jsonl>` reads a Pi
 session file into a new gi session (`internal/sessionimport`), so sessions move
 between Pi and gi both ways.
+
+## /export
+
+As in Pi, `/export [path]` writes HTML unless the path ends in `.jsonl`; the
+default is `gi-session-<session>.html` in the workspace.
+
+The JSONL is the active session as Pi records one:
+
+- Assistant messages carry what the response was. The turn engine records
+  each response's usage and cost, stop reason, thinking blocks (with their
+  signatures) and the thinking level the turn asked for in the message
+  payload (`usage`, `stop_reason`, `thinking_blocks`, `thinking_level`).
+  Thinking blocks come first in the content, as the model produced them.
+- A `model_change` entry precedes the first assistant message and each one
+  whose model differs; a `thinking_level_change` entry likewise for the
+  thinking level.
+- gi's `shell` tool is Pi's `bash` (the same `command` argument), in tool
+  calls and tool results; `/import` maps it back.
+
+The HTML is Pi's export page: Pi's `template.html`, `template.css` and
+`template.js` with the marked and highlight.js builds Pi inlines, copied
+unmodified into `internal/sessionexport/template` (MIT; `NOTICE`). The page
+carries the header, entries and leaf as base64 session data, and the active
+theme as CSS variables: Pi's resolved colours (`getResolvedThemeColors`) in
+the theme's order and its export colours, or colours derived from
+`userMessageBg` (`deriveExportColors`). Built-in themes come from Pi
+(`pi_export_themes_gen.go`); custom and system themes are resolved as Pi
+does, with `""` tokens filled from the terminal's colours or Pi's guess for
+the theme's appearance. Pi assembles the page with `String.replace`, whose
+`$$` and `$&` patterns alter the inlined code (the info panel's cost loses
+its `$`); gi reproduces the same page.
+
+Goldens: `scripts/golden-export-html.mjs` runs Pi's `exportFromFile` on
+`internal/sessionexport/testdata/pi-session.jsonl` and records the page,
+its session data and the theme variables for built-in, custom (every colour
+form, fallbacks, export colours) and system themes, and refreshes gi's copy
+of the template. `TestRenderHTMLMatchesPi` compares gi's page with Pi's,
+`TestExportThemeMatchesPi` the theme colours.
 
 ## /import
 
@@ -67,6 +105,17 @@ keeps the first message its checkpoint does not cover), branch summaries as
 `!` command messages as `bashExecution` messages.
 
 ## Differences from Pi
+
+- Messages recorded before responses kept their records export Pi's zero
+  usage, a stop reason from whether they called tools, and no thinking.
+- Tool calls recorded before full arguments were stored have only the
+  `tool.started` preview: whitespace collapsed and at most 200 characters,
+  exported under `command` (shell) or `path` (read, write, edit, ls), or as
+  `preview` for other tools.
+- The HTML page has no system prompt or tool list, as Pi's
+  `exportFromFile`: gi's `/export` does not reach the engine's prompt. Tools
+  other than Pi's built-ins render with the template's generic renderer, not
+  pre-rendered from gi's TUI.
 
 - gi keeps one copy of a message, so a `context_edit` changes what gi shows,
   not only what the model sees; a removed message is not imported.

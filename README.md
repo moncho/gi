@@ -49,7 +49,7 @@ tsnet web access and Iroh inter-instance chat are planned. The tsnet manager sca
 - `internal/web/` — HTTP server, REST API, SSE streaming, Settings and workspace file APIs
 - `internal/mcp/`, `internal/codemode/` — MCP client and the QuickJS-on-wazero codemode engine
 - `internal/keychain/`, `internal/environment/`, `internal/shellenv/` — encrypted secrets, environment overrides and shell resolution
-- `web/src/` — pinned Piclaw components plus Gi API, host, auth and Settings adapters
+- `references/fixtures-vibes/ui/gi` — the web front-end (pinned Piclaw components plus Gi API, host, auth and Settings adapters), maintained in rcarmo/fixtures-vibes
 - `docs/` — ADRs, the shipped internal reference, the implementation checklist and transcripts
 - `scripts/` — build and check scripts, including the build-time patches applied to Piclaw components
 - `tests/` — functional, browser regression, fixtures-vibes profile and terminal acceptance tests
@@ -168,7 +168,7 @@ The current TUI uses `go-tui`, supports terminal resize handling through the run
 
 ## Web UI
 
-The web UI reuses pinned Piclaw component sources. Gi supplies `web/src/api.ts`, `web/src/app.ts`, auth/Settings modules and CSS overrides. Build-time patches in `scripts/patch-*.mjs` change selected bundled behaviour without editing the supplied components; each patch fails the build if its anchor text changes.
+The web UI reuses pinned Piclaw component sources and is maintained in rcarmo/fixtures-vibes (`ui/gi`), which Gi consumes through its `references/fixtures-vibes` submodule. It supplies `web/src/api.ts`, `web/src/app.ts`, auth/Settings modules and CSS overrides. Build-time patches in `scripts/patch-*.mjs` change selected bundled behaviour without editing the supplied components; each patch fails the build if its anchor text changes.
 
 Workspace tabs are read-only previews with [retained conversation return and keyboard/touch navigation](docs/internal/workspace-tab-transitions.md). Editable documents, dirty-buffer workflows, popouts and docking are not implemented. Composer padding and picker outer bounds follow a [pinned Classic reference](docs/internal/picker-geometry.md), with a documented narrow-desktop containment correction. Session-strip/catalogue structure and full visual styling still differ from Piclaw. The reproduced startup/new-chat focus and loading-retry failures are fixed and covered by [first-Return journeys](docs/internal/startup-return-journeys.md); broader keyboard and visual parity remains open. The [UX audit][audit] records those gaps and the limits of existing tests.
 

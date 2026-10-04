@@ -3,11 +3,11 @@ package web
 import (
 	"context"
 	"database/sql"
-	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	giui "github.com/rcarmo/gi/references/fixtures-vibes/ui/gi"
 	"io"
 	"io/fs"
 	"log"
@@ -29,9 +29,6 @@ import (
 	"github.com/rcarmo/gi/internal/tools"
 	"github.com/rcarmo/gi/internal/turn"
 )
-
-//go:embed all:static
-var staticFS embed.FS
 
 type Server struct {
 	store                 *store.Store
@@ -154,7 +151,7 @@ func (s *Server) StartInboundWorkDispatcher(ctx context.Context) {
 }
 
 func (s *Server) routes() {
-	staticRoot, err := fs.Sub(staticFS, "static")
+	staticRoot, err := giui.Static, error(nil)
 	if err != nil {
 		panic(err)
 	}
@@ -1195,7 +1192,7 @@ func (s *Server) serveManifest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) serveIndex(w http.ResponseWriter, r *http.Request) {
-	data, err := staticFS.ReadFile("static/index.html")
+	data, err := fs.ReadFile(giui.Static, "index.html")
 	if err != nil {
 		http.Error(w, "index.html not found", http.StatusInternalServerError)
 		return

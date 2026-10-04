@@ -16,27 +16,16 @@ internal/
   mcp/, codemode/    MCP client and QuickJS-on-wazero codemode
   keychain/, environment/, shellenv/   secrets, env overrides, shell resolution
   web/               HTTP server, REST API, SSE, Settings, metrics, workspace
-    static/          embedded assets (CSS, JS, fonts, icons)
-web/src/             Piclaw TypeScript source (verbatim) + gi adapters
-  api.ts             gi API adapter (same signatures as Piclaw)
-  app.ts             gi entry point (wires Piclaw components to gi backend)
-  gi-*.ts            gi-owned modules (Settings panes, appearance, drafts, ...)
-  components/        Piclaw components (DO NOT MODIFY)
-  ui/                Piclaw UI utilities (DO NOT MODIFY)
-  panes/             Piclaw pane system (DO NOT MODIFY)
-  vendor/            vendor entry files for build
-  styles/            Piclaw CSS source
 tests/functional/    Playwright functional test suite
 tests/web-regression/  Gi-only browser regressions
 tests/fixtures-vibes/  fixtures-vibes profile, skips and seed script
-references/fixtures-vibes/  shared browser compliance suite (git submodule)
-scripts/             build/check scripts, including patch-*.mjs build-time patches
+references/fixtures-vibes/  shared browser compliance suite and the web front-end (ui/gi; git submodule)
+scripts/             build/check scripts
 docs/
   adr/               architecture decision records
   checklists/        phased implementation checklist
   internal/          shipped internal reference source tree for tools/scripting/hooks/VFS
   reference/         spec transcripts
-build.js             Bun web asset build script
 Makefile             canonical build/test/run interface
 ```
 
@@ -57,7 +46,7 @@ Makefile             canonical build/test/run interface
 ### Piclaw UX parity
 - Parts that are ported must be **100% identical** to Piclaw — same DOM, same classes, same behavior, same visual output
 - No approximations — if it's in gi it matches Piclaw exactly; if it's not ready it simply isn't in gi yet
-- **Never modify Piclaw component files.** Adapt through `api.ts`, `app.ts` and `gi-*.ts` modules; when a supplied component must behave differently, add a build-time patch in `scripts/patch-*.mjs` (chained in `build.js`) that fails if its anchor text changes
+- **The web front-end is not edited here.** Its sources, build, embedded assets and front-end unit tests live in rcarmo/fixtures-vibes `ui/gi` (owned by the fixtures-vibes front-end owner) and reach Gi only through `references/fixtures-vibes`; Go embeds it via `github.com/rcarmo/gi/references/fixtures-vibes/ui/gi` (`giui.Static`, `giui.ThemeCatalogue`). Change it upstream, then bump the submodule.
 - Future Piclaw updates should drop in with zero diff on gi's side
 
 ### Go-native runtime

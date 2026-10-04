@@ -31,7 +31,7 @@ Scenarios Gi does not pass:
 |---|---|---|
 | Known defect | `@ux-timeline-019`–`022`, `@ux-original-024` | Deleting a parent message has no visible-reply cascade confirmation ([gi#35](https://github.com/rcarmo/gi/issues/35)). |
 | Not implemented | `@ux-extra-001` | No `/btw` side conversation ([gi#40](https://github.com/rcarmo/gi/issues/40)). |
-| Capability absent | 84 scenarios | No in-browser editor, web terminal, VNC pane, `/theme` and `/tint` commands, plan sidebar, image annotation, text highlights, agent avatars, agent-posted Adaptive Cards or widgets, or Windows shell detection. |
+| Capability absent | 84 scenarios | Planned, one issue each: web terminal ([gi#45](https://github.com/rcarmo/gi/issues/45)), CodeMirror editor with vim mode ([gi#46](https://github.com/rcarmo/gi/issues/46)), VNC ([gi#47](https://github.com/rcarmo/gi/issues/47)), Plan sidebar ([gi#48](https://github.com/rcarmo/gi/issues/48)), widgets ([gi#49](https://github.com/rcarmo/gi/issues/49)), `/theme` and `/tint` ([gi#51](https://github.com/rcarmo/gi/issues/51)), agent-avatar icons ([gi#52](https://github.com/rcarmo/gi/issues/52)). Windows shell detection is built but not tested on Windows ([gi#50](https://github.com/rcarmo/gi/issues/50)). Image annotation, text highlights and Adaptive Cards were removed from the suite after `f796ddf`; their skips go at the next repin. |
 
 Scenarios with no suite test have no shared browser evidence either way.
 
@@ -102,7 +102,7 @@ The six browser projects are Chromium and WebKit at phone, tablet and desktop si
 | `make test-tui-smoke`, `make test-tui-gherkin` | Terminal smoke and Gherkin checks; other PTY suites have their own targets. |
 | `make check-cross-build` | Local Linux/macOS amd64/arm64 and Windows amd64 builds with `CGO_ENABLED=0`. |
 
-CI runs only for `v*` release tags. It runs fixtures-vibes compliance, the focused browser suites, the passkey suite, native auth checks on Linux and macOS, and Linux/macOS amd64/arm64 builds. Windows builds are local only.
+CI runs only for `v*` release tags. It runs fixtures-vibes compliance, the focused browser suites, the passkey suite, native auth checks on Linux and macOS, and Linux/macOS/Windows amd64/arm64 builds. Windows binaries are built but not tested.
 
 Dated plans and audits keep their original scope: the [UX audit][audit], the [full web/TUI plan][plan] and the [implementation checklist][checklist].
 

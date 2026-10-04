@@ -392,6 +392,13 @@ jobs:
             goarch: amd64
           - goos: darwin
             goarch: arm64
+          # Windows is built and released but not tested (Rui, 2026-10-04).
+          - goos: windows
+            goarch: amd64
+            ext: .exe
+          - goos: windows
+            goarch: arm64
+            ext: .exe
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -426,14 +433,14 @@ jobs:
           go build \
             -trimpath \
             -ldflags "-s -w -X main.version=$VERSION -X main.commit=$COMMIT -X main.date=$DATE" \
-            -o "dist/gi-${{ matrix.goos }}-${{ matrix.goarch }}" \
+            -o "dist/gi-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}" \
             ./cmd/gi
 
       - name: Package artifact
         shell: bash
         run: |
           cd dist
-          tar -czf "gi-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" "gi-${{ matrix.goos }}-${{ matrix.goarch }}"
+          tar -czf "gi-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" "gi-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}"
 
       - name: Upload single-binary artifact
         uses: actions/upload-artifact@v7

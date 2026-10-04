@@ -177,6 +177,31 @@ func SaveIdentity(workspace, revision string, names IdentityNames) (IdentitySnap
 	if err != nil {
 		return IdentitySnapshot{}, err
 	}
+	return saveIdentityDocument(workspace, revision, func(d *identityDocument) {
+		d.assistant["assistantName"], _ = json.Marshal(names.AssistantName)
+		d.user["userName"], _ = json.Marshal(names.UserName)
+	})
+}
+
+// SaveAssistantAvatar sets or, when avatar is empty, removes
+// assistant.assistantAvatar, as Piclaw's /agent-avatar does.
+func SaveAssistantAvatar(workspace, avatar string) (IdentitySnapshot, error) {
+	current, err := ReadIdentity(workspace)
+	if err != nil {
+		return IdentitySnapshot{}, err
+	}
+	return saveIdentityDocument(workspace, current.Revision, func(d *identityDocument) {
+		if avatar == "" {
+			delete(d.assistant, "assistantAvatar")
+		} else {
+			d.assistant["assistantAvatar"], _ = json.Marshal(avatar)
+		}
+	})
+}
+
+// saveIdentityDocument applies change to .piclaw/config.json under the
+// identity lock, refusing the write if revision is no longer current.
+func saveIdentityDocument(workspace, revision string, change func(*identityDocument)) (IdentitySnapshot, error) {
 	if revision == "" {
 		return IdentitySnapshot{}, ErrIdentityConflict
 	}
@@ -214,8 +239,7 @@ func SaveIdentity(workspace, revision string, names IdentityNames) (IdentitySnap
 	if d.snapshot.Revision != revision {
 		return IdentitySnapshot{}, ErrIdentityConflict
 	}
-	d.assistant["assistantName"], _ = json.Marshal(names.AssistantName)
-	d.user["userName"], _ = json.Marshal(names.UserName)
+	change(&d)
 	d.values["assistant"], _ = json.Marshal(d.assistant)
 	d.values["user"], _ = json.Marshal(d.user)
 	body, err := json.MarshalIndent(d.values, "", "  ")
@@ -267,6 +291,15 @@ func SaveIdentity(workspace, revision string, names IdentityNames) (IdentitySnap
 	if err != nil {
 		return IdentitySnapshot{}, fmt.Errorf("config replaced but directory sync failed; reload to verify: %w", err)
 	}
+	saved := d.snapshot
+	for key, target := range map[string]*string{"assistantName": &saved.AssistantName, "userName": &saved.UserName} {
+		section := d.assistant
+		if key == "userName" {
+			section = d.user
+		}
+		_ = json.Unmarshal(section[key], target)
+	}
 	digest := sha256.Sum256(body)
-	return IdentitySnapshot{IdentityNames: names, Revision: hex.EncodeToString(digest[:])}, nil
+	saved.Revision = hex.EncodeToString(digest[:])
+	return saved, nil
 }

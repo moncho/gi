@@ -31,7 +31,7 @@ Scenarios Gi does not pass:
 |---|---|---|
 | Known defect | `@ux-timeline-019`–`022`, `@ux-original-024` | Deleting a parent message has no visible-reply cascade confirmation ([gi#35](https://github.com/rcarmo/gi/issues/35)). |
 | Not implemented | `@ux-extra-001` | No `/btw` side conversation ([gi#40](https://github.com/rcarmo/gi/issues/40)). |
-| Capability absent | 69 scenarios | Planned, one issue each: web terminal ([gi#45](https://github.com/rcarmo/gi/issues/45)), CodeMirror editor with vim mode ([gi#46](https://github.com/rcarmo/gi/issues/46)), VNC ([gi#47](https://github.com/rcarmo/gi/issues/47)), Plan sidebar ([gi#48](https://github.com/rcarmo/gi/issues/48)), widgets ([gi#49](https://github.com/rcarmo/gi/issues/49)), agent-avatar icons ([gi#52](https://github.com/rcarmo/gi/issues/52)). Windows shell detection is built but not tested on Windows ([gi#50](https://github.com/rcarmo/gi/issues/50)). Image annotation, text highlights and Adaptive Cards were removed from the suite after `f796ddf`; their skips go at the next repin. |
+| Capability absent | 67 scenarios | Planned, one issue each: web terminal ([gi#45](https://github.com/rcarmo/gi/issues/45)), CodeMirror editor with vim mode ([gi#46](https://github.com/rcarmo/gi/issues/46)), VNC ([gi#47](https://github.com/rcarmo/gi/issues/47)), Plan sidebar ([gi#48](https://github.com/rcarmo/gi/issues/48)), widgets ([gi#49](https://github.com/rcarmo/gi/issues/49)). Windows shell detection is built but not tested on Windows ([gi#50](https://github.com/rcarmo/gi/issues/50)). Image annotation, text highlights and Adaptive Cards were removed from the suite after `f796ddf`; their skips go at the next repin. |
 
 Scenarios with no suite test have no shared browser evidence either way.
 

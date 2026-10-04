@@ -12,8 +12,6 @@
     { "id": "@ux-original-010", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario.", "issue": "https://github.com/rcarmo/gi/issues/48" },
     { "id": "@ux-original-011", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario.", "issue": "https://github.com/rcarmo/gi/issues/48" },
     { "id": "@ux-original-012", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario.", "issue": "https://github.com/rcarmo/gi/issues/48" },
-    { "id": "@ux-pwa-002", "reason": "capability-absent", "capability": "@cap-agent-avatar", "detail": "Gi's fixture runtime cannot set the agent avatar from the composer for manifest-icon testing.", "issue": "https://github.com/rcarmo/gi/issues/52" },
-    { "id": "@ux-pwa-006", "reason": "capability-absent", "capability": "@cap-agent-avatar", "detail": "Gi's fixture runtime cannot change the agent avatar from the composer for cache-version testing.", "issue": "https://github.com/rcarmo/gi/issues/52" },
     { "id": "@ux-original-024", "reason": "known-defect", "detail": "Gi deletes the parent without a cascade confirmation, so cancellation cannot preserve it and confirmation cannot remove its visible replies.", "issue": "https://github.com/rcarmo/gi/issues/35" },
     {
       "id": "@ux-timeline-019",

@@ -39,6 +39,10 @@ type Server struct {
 	mcpSignIns            webMCPSignIns // /mcp login sign-ins waiting for a redirect
 	cfg                   config.RuntimeConfig
 	mux                   *http.ServeMux
+	avatarMu              sync.Mutex // guards the /agent-avatar override and decoded cache
+	avatarSet             bool
+	agentAvatar           string
+	avatarCache           *agentAvatarImage
 	version               string
 	scriptTool            *tools.ScriptTool
 	auth                  *giauth.Manager
@@ -156,6 +160,7 @@ func (s *Server) routes() {
 	}
 	fileServer := withPrecompressed(staticRoot, http.FileServer(http.FS(staticRoot)))
 	s.mux.HandleFunc("/manifest.json", s.serveManifest)
+	s.mux.HandleFunc("/avatar/agent", s.serveAgentAvatar)
 	s.mux.Handle("/static/icon-192.png", http.StripPrefix("/static", fileServer))
 	s.mux.Handle("/static/icon-512.png", http.StripPrefix("/static", fileServer))
 	// Supplied Adaptive Card renderer's lazy SDK URL (public static asset).
@@ -708,6 +713,9 @@ func (s *Server) handlePrompt(w http.ResponseWriter, r *http.Request, sessionID 
 	if s.handleThemeCommand(w, r, sessionID, req.Prompt) {
 		return
 	}
+	if s.handleAgentAvatarCommand(w, r, sessionID, req.Prompt) {
+		return
+	}
 	expandedPrompt, skillMetadata, skillErr := s.expandWebSkill(req.Prompt)
 	if skillErr != nil {
 		writeJSON(w, 400, map[string]any{"error": skillErr.Error()})
@@ -988,7 +996,7 @@ func (s *Server) handleRuntimeConfig(w http.ResponseWriter, r *http.Request) {
 		"workspace_root":         s.cfg.WorkspaceRoot,
 		"workspace_index":        s.cfg.WorkspaceIndex,
 		"assistant_name":         s.cfg.AssistantName,
-		"assistant_avatar":       s.cfg.AssistantAvatar,
+		"assistant_avatar":       s.currentAgentAvatar(),
 		"user_name":              s.cfg.UserName,
 		"user_avatar":            s.cfg.UserAvatar,
 		"user_avatar_background": s.cfg.UserAvatarBackground,
@@ -1157,15 +1165,7 @@ func (s *Server) serveManifest(w http.ResponseWriter, r *http.Request) {
 	if name == "" {
 		name = "PiClaw"
 	}
-	icons := []map[string]string{}
-	for _, size := range []string{"192", "512"} {
-		for _, purpose := range []string{"any", "maskable"} {
-			icons = append(icons, map[string]string{
-				"src": "/static/icon-" + size + ".png", "sizes": size + "x" + size,
-				"type": "image/png", "purpose": purpose,
-			})
-		}
-	}
+	icons := s.manifestIcons()
 	body, err := json.Marshal(map[string]any{
 		"name": name, "short_name": name,
 		"description": "Slack-like interface for coding agents",

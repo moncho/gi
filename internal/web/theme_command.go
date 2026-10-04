@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	giui "github.com/rcarmo/gi/references/fixtures-vibes/ui/gi"
 	"net/http"
 	"regexp"
 	"strings"
@@ -15,8 +16,7 @@ import (
 // the UI only, never reach the model, and reply in the timeline. Gi keeps
 // appearance in the browser, so the client applies the returned payload.
 
-//go:embed theme_catalogue.json
-var themeCatalogueJSON []byte
+var themeCatalogueJSON = giui.ThemeCatalogue
 
 type themePreset struct {
 	Name  string            `json:"name"`

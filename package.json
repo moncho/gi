@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:web": "bun run build.js",
-    "check:hook-tdz": "bun run scripts/check-hook-tdz.ts"
+    "build:web": "make -C references/fixtures-vibes/ui/gi build",
+    "check:hook-tdz": "make -C references/fixtures-vibes/ui/gi check"
   },
   "dependencies": {
     "@assemblyscript/loader": "0.28.20",

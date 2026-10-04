@@ -1,10 +1,6 @@
 # Binaries
 bin/
 dist/
-!internal/web/static/dist/
-!internal/web/static/dist/**
-!internal/web/static/js/
-!internal/web/static/js/**
 *.exe
 *.dll
 *.so
@@ -29,12 +25,6 @@ node_modules/
 test-results/
 gi-live*.log
 gi-live*.pid
-# Source-tree build intermediates — web/src must never contain compiled JS
-# (only build.js at the repo root and internal/web/static/** are intentional)
-# Exception: genuine .js source files that are not TypeScript (copied from Piclaw)
-web/src/**/*.js
-web/src/**/*.js.map
-!web/src/ui/status-dot.js
 
 # Editors
 .vscode/
@@ -46,5 +36,3 @@ web/src/**/*.js.map
 .tmp/
 artifacts/
 
-# Source maps are opt-in (GI_SOURCEMAPS=1) and never committed
-internal/web/static/**/*.map

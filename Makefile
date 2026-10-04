@@ -356,16 +356,6 @@ test-ux-ended-steer: build-web
 test-idle-queue-steer:
 	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn ./internal/web -run 'IdleQueue|QueueSteer|WebQueueHold'
 
-.PHONY: test-ux-message-reference-labels
-test-ux-message-reference-labels: test-message-reference-labels
-	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/message-reference-labels.spec.mjs'
-
-.PHONY: test-message-reference-labels
-test-message-reference-labels:
-	$(BUN) tests/ux/oracle/piclaw-reference-label-probe.mjs
-	$(GO) test $(RACE) -count=3 ./internal/store -run TestMessageDisplayRows
-	$(BUN) test tests/ux/support/message-reference-label.test.ts
-
 .PHONY: test-piclaw-settings-title test-ux-settings-title
 test-piclaw-settings-title:
 	$(BUN) tests/ux/oracle/piclaw-settings-title-probe.mjs
@@ -767,7 +757,7 @@ test-piclaw-queue-return:
 
 test-ux-queue-return:
 	$(BUN) test tests/ux/support/drafts.test.ts tests/ux/support/queue-return.test.ts
-	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/queue-return.spec.mjs tests/web-regression/message-reference-labels.spec.mjs'
+	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/queue-return.spec.mjs'
 
 .PHONY: diagnose-webkit-unload
 diagnose-webkit-unload:

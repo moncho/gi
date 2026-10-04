@@ -67,6 +67,10 @@ func (e *Engine) ManualCompactionState(ctx context.Context, sessionID string) (m
 	}
 	settings := e.runtimeCfg.Compaction
 	prep := compaction.Prepare(messages, compaction.EstimateMessagesTokens(messages), settings.KeepRecentTokens, settings.ReserveTokens, settings.ThresholdTokens, settings.Strategy)
+	if prep.MessagesToSummarize == 0 {
+		// Everything fits in the kept recent window: nothing to compact yet.
+		return state, nil
+	}
 	// Reuse the exact projection/media guard used by automatic completion.
 	boundary, err := r.compactionBoundary(ctx, sessionID, &goai.Context{Messages: messages}, snapshot, map[string]any{"messages_to_summarize": prep.MessagesToSummarize})
 	if err != nil {
@@ -102,11 +106,12 @@ func (e *Engine) SubmitManualCompactionWithInstructions(ctx context.Context, ses
 	if err != nil {
 		return nil, err
 	}
-	if state["available"] != true {
-		return nil, fmt.Errorf("%w: %s", store.ErrQueueConflict, state["reason"])
-	}
+	// A stale token means the history moved on, whatever the new state allows.
 	if expected == "" || state["token"] != expected {
 		return nil, store.ErrContextChanged
+	}
+	if state["available"] != true {
+		return nil, fmt.Errorf("%w: %s", store.ErrQueueConflict, state["reason"])
 	}
 	session, err := e.store.GetSession(ctx, sessionID)
 	if err != nil {
@@ -151,12 +156,12 @@ func (r *sessionRunner) runManualCompaction(ctx context.Context, run *preparedTu
 		}
 	}
 	if err != nil {
-		status, kind := "failed", "compaction_error"
+		// Piclaw reports the outcome in the timeline ("Compaction cancelled").
+		status, kind, notice := "failed", "compaction_error", fmt.Sprintf("Compaction failed: %v", err)
 		if ctx.Err() != nil || isCancellationError(err) {
-			status = "cancelled"
-			kind = ""
+			status, kind, notice = "cancelled", "", "Compaction cancelled."
 		}
-		r.finishTurn(r.store, run.turnID, run.sessionID, run.agentID, run.model, status, fmt.Sprintf("Manual compaction: %v", err), kind)
+		r.finishTurn(r.store, run.turnID, run.sessionID, run.agentID, run.model, status, notice, kind)
 		return
 	}
 	r.finishTurnOK(r.store, run.turnID, run.sessionID, run.agentID, run.model, 0)

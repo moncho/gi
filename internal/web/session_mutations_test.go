@@ -53,6 +53,12 @@ func TestSessionMetadataMutations(t *testing.T) {
 	mutate(child.ID, `{"action":"restore","unknown":true}`, 400)
 	mutate(child.ID, `{"action":"restore"}{"action":"archive"}`, 400)
 	mutate(child.ID, `{"action":"pin","pinned":"yes"}`, 400)
+	mutate(root.ID, `{"action":"archive"}`, 409) // the last main session stays
+	other, err := s.CreateSession(ctx, "other", "@other", map[string]any{"status": "idle"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutate(other.ID, `{"action":"archive"}`, 200) // another main session remains
 	mutate(root.ID, `{"action":"archive"}`, 409)
 	mutate(child.ID, `{"action":"rename","title":" New display name "}`, 200)
 	mutate(child.ID, `{"action":"pin","pinned":true}`, 200)

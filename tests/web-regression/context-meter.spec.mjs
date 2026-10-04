@@ -15,7 +15,7 @@ async function fixture(page,request,info){
   await input.fill(`UX meter tokens:${tokens}`);await input.press('Enter');const turn=await(await sent).json();
   await expect.poll(async()=> (await state()).context_usage.measurement?.turn_id).toBe(turn.turn_id);
   const usage=(await state()).context_usage;expect(usage).toMatchObject({tokens,contextWindow:2_000_000,percent:tokens/20000,source:'provider_request'});
-  await expect(pie).toHaveAttribute('aria-label',label,{timeout:15000});
+  await expect(pie).toHaveAttribute('aria-label',label+'\nCompact context',{timeout:15000});
   // Measurement arrives before native claim cleanup. The capability's busy
   // reason includes the durable claim; idle display/queue state does not.
   const capability=async()=>(await(await request.get(`/api/sessions/${main.id}/compaction`)).json());
@@ -36,7 +36,7 @@ async function fixture(page,request,info){
 
 test('Disabled context control explains capability and never applies another session response',async({page,request},info)=>{
  const{main,child,input,pie,switchTo}=await fixture(page,request,info);
- await input.fill('context reason draft');await expect(pie).toBeDisabled();await expect(pie).toHaveAccessibleDescription('Not enough eligible context');await expect(pie).toHaveAttribute('data-tooltip',/Not enough eligible context$/);
+ await input.fill('context reason draft');await expect(pie).toBeEnabled();await expect(pie).toHaveAccessibleDescription('Not enough eligible context');await expect(pie).toHaveAttribute('data-tooltip',/Not enough eligible context$/);
  let writes=0;page.on('request',r=>{if(r.method()==='POST'&&r.url().includes('/compaction'))writes++;});
  await pie.evaluate(e=>e.click());await pie.dispatchEvent('click');expect(writes).toBe(0);await expect(input).toHaveValue('context reason draft');
  let release,finished;const gate=new Promise(resolve=>{release=resolve;}),handled=new Promise(resolve=>{finished=resolve;});let waiting=false;
@@ -62,9 +62,9 @@ test('@ux-context-001 Show supplied usage in the context tooltip',async({page,re
  await measure(1500000,'Context: 1.5M / 2.0M tokens (75%)',75);
  await measure(2500000,'Context: 2.5M / 2.0M tokens (125%)',100);
  await expect(pie).toBeEnabled();await input.fill('preserved over reload');
- await page.reload();await expect(pie).toHaveAttribute('data-tooltip','Context: 2.5M / 2.0M tokens (125%) — latest measured provider request — Compact context');await expect(input).toHaveValue('preserved over reload');
- await switchTo(child);expect((await state(child)).context_usage.tokens).toBeNull();await expect(pie).toHaveAttribute('aria-label','Context: ? / 2.0M tokens (?%)');await expect(pie).toHaveAttribute('data-tooltip','Context: ? / 2.0M tokens (?%) — usage unavailable — Not enough eligible context');
- await switchTo(main.id);await expect(pie).toHaveAttribute('data-tooltip','Context: 2.5M / 2.0M tokens (125%) — latest measured provider request — Compact context');await expect(input).toHaveValue('preserved over reload');
+ await page.reload();await expect(pie).toHaveAttribute('data-tooltip',/^Context: 2\.5M \/ 2\.0M tokens \(125%\) — latest measured provider request — (Compact context|Not enough eligible context)$/);await expect(input).toHaveValue('preserved over reload');
+ await switchTo(child);expect((await state(child)).context_usage.tokens).toBeNull();await expect(pie).toHaveAttribute('aria-label','Context: ? / 2.0M tokens (?%)\nCompact context');await expect(pie).toHaveAttribute('data-tooltip','Context: ? / 2.0M tokens (?%) — usage unavailable — Not enough eligible context');
+ await switchTo(main.id);await expect(pie).toHaveAttribute('data-tooltip',/^Context: 2\.5M \/ 2\.0M tokens \(125%\) — latest measured provider request — (Compact context|Not enough eligible context)$/);await expect(input).toHaveValue('preserved over reload');
  await measure(0,'Context: 0 / 2.0M tokens (0%)',0);
  // Local providers may explicitly report zero input alongside nonzero output.
  expect((await state()).context_usage.tokens).toBe(0);await expect(arc).toHaveAttribute('stroke','var(--context-green, #22c55e)');

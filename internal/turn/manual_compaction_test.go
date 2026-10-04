@@ -133,3 +133,24 @@ func TestManualCompactionRecoveryDoesNotReplay(t *testing.T) {
 		t.Fatal(rec, err)
 	}
 }
+
+// A short history inside the kept-recent window has nothing to summarise: the
+// state is unavailable, not a context-changed error (the web polls it).
+func TestManualCompactionStateNothingToCompact(t *testing.T) {
+	s := openTestStore(t)
+	defer s.Close()
+	e := New(s)
+	defer e.Close()
+	e.runtimeCfg.Compaction.KeepRecentTokens = 20000
+	ctx := context.Background()
+	s.CreateSession(ctx, "A", "A", nil)
+	s.AddMessage(ctx, store.NowID("msg"), "A", "user", "hello", nil)
+	s.AddMessage(ctx, store.NowID("msg"), "A", "assistant", "hi", nil)
+	state, err := e.ManualCompactionState(ctx, "A")
+	if err != nil || state["available"] != false || state["reason"] != "Not enough eligible context" {
+		t.Fatal(state, err)
+	}
+	if _, err := e.SubmitManualCompaction(ctx, "A", state["token"].(string)); !errors.Is(err, store.ErrQueueConflict) {
+		t.Fatal(err)
+	}
+}

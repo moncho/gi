@@ -94,6 +94,10 @@ func (s *Server) handleWorkspaceTree(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleWorkspaceFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		s.handleWorkspaceFileWrite(w, r)
+		return
+	}
 	s.handleWorkspacePreview(w, r)
 }
 

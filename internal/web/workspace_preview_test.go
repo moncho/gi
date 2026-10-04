@@ -125,10 +125,8 @@ func TestWorkspacePreviewBoundedKindsAndConfinement(t *testing.T) {
 	if r.Code != 206 || !bytes.Equal(r.Body.Bytes(), pngBytes.Bytes()[1:5]) {
 		t.Fatal(r.Code)
 	}
-	for _, endpoint := range []string{"/api/workspace/file", "/api/workspace/raw"} {
-		if r := call("POST", endpoint, "readme.md", ""); r.Code != 405 {
-			t.Fatal(r.Code)
-		}
+	if r := call("POST", "/api/workspace/raw", "readme.md", ""); r.Code != 405 {
+		t.Fatal(r.Code)
 	}
 	pending, err := srv.auth.StartEnrollment("rui")
 	if err != nil {

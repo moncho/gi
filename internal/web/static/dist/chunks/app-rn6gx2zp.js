@@ -1403,6 +1403,8 @@ function projectConversationMessage(m, fallbackSession) {
     if (!content.trim())
       return null;
   }
+  if (m.role === "assistant" && m.payload?.kind === "compaction")
+    content = compactionReport(content, m.payload);
   const session = m.session_id || fallbackSession;
   const user = m.role === "user";
   return {
@@ -1427,6 +1429,31 @@ function projectConversationMessage(m, fallbackSession) {
       clipped: m.payload?.clipped || false
     }
   };
+}
+function compactNumber(value) {
+  const format = (divisor, suffix) => {
+    const raw = (value / divisor).toFixed(1);
+    return `${raw.endsWith(".0") ? raw.slice(0, -2) : raw}${suffix}`;
+  };
+  const abs = Math.abs(value);
+  if (abs >= 1e9)
+    return format(1e9, "B");
+  if (abs >= 1e6)
+    return format(1e6, "M");
+  if (abs >= 1000)
+    return format(1000, "K");
+  return String(value);
+}
+function compactionReport(summary, payload) {
+  const tokens = Number(payload?.tokens_before);
+  const lines = ["Compaction complete."];
+  if (Number.isFinite(tokens) && tokens > 0)
+    lines.push(`Tokens before: ${compactNumber(tokens)}`);
+  return summary.trim() ? `${lines.join(`
+`)}
+
+${summary}` : lines.join(`
+`);
 }
 function projectConversationEvent(post) {
   if (post?.data?.kind === "queue" && (post?.sender === "system" || post?.data?.type === "system_message"))
@@ -1479,21 +1506,6 @@ function projectActivityStatus(activity) {
     };
   }
   return activity;
-}
-
-// web/src/gi-message-reference-label.ts
-function messageReferenceLabel(id, labels = {}) {
-  const canonical = String(id);
-  if (Object.prototype.hasOwnProperty.call(labels, canonical))
-    return labels[canonical];
-  return canonical.length > 14 ? `${canonical.slice(0, 4)}…${canonical.slice(-6)}` : canonical;
-}
-function messageReferenceLabels(posts) {
-  const labels = Object.create(null);
-  for (const post of posts || [])
-    if (Number.isSafeInteger(post.display_row_id) && post.display_row_id > 0)
-      labels[String(post.id)] = String(post.display_row_id);
-  return labels;
 }
 
 // web/src/utils/storage.ts
@@ -1627,6 +1639,7 @@ function notifyModelSettlement(chatJid) {
 // web/src/gi-session-state.ts
 function sessionPickerAgents(sessions) {
   const byId = new Map(sessions.map((session) => [session.id, session]));
+  const liveRoots = sessions.filter((session) => !session.parent_session_id && !session.state?.archived_at).length;
   return sessions.map((session) => {
     let root = session;
     const visited = new Set([root.id]);
@@ -1649,7 +1662,7 @@ function sessionPickerAgents(sessions) {
       capabilities: {
         rename: !session.state?.archived_at,
         pin: !session.state?.archived_at,
-        archive: Boolean(session.parent_session_id) && !session.state?.archived_at,
+        archive: !session.state?.archived_at && (Boolean(session.parent_session_id) || liveRoots > 1),
         restore: Boolean(session.state?.archived_at)
       }
     };
@@ -2366,7 +2379,7 @@ async function request(url, options = {}) {
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({ error: "Unknown error" }));
-    throw Object.assign(new Error(err.error || `HTTP ${response.status}`), { status: response.status });
+    throw Object.assign(new Error(err.error || `HTTP ${response.status}`), { status: response.status, code: err.code });
   }
   return response.json();
 }
@@ -2477,6 +2490,9 @@ var listKeychain = () => keychainRequest("/api/settings/keychain");
 var saveKeychainEntry = (entry) => keychainRequest("/api/settings/keychain", "POST", entry);
 var deleteKeychainEntry = (name) => keychainRequest("/api/settings/keychain", "DELETE", { name });
 var revealKeychainEntry = (name, masterPassword) => keychainRequest("/api/settings/keychain/reveal", "POST", { name, master_password: masterPassword || undefined });
+var getEnvironmentSettings = () => keychainRequest("/api/settings/environment");
+var setEnvironmentOverride = (name, value) => keychainRequest("/api/settings/environment", "POST", { name, value });
+var clearEnvironmentOverride = (name) => keychainRequest("/api/settings/environment", "POST", { name, clear: true });
 async function getGiCompactionPolicy() {
   return request("/api/settings/compaction");
 }
@@ -2768,20 +2784,56 @@ async function getWorkspaceIndexStatus(scope = "all") {
 async function reindexWorkspace(scope = "all") {
   return request(`/api/workspace/index?scope=${encodeURIComponent(scope)}`, { method: "POST" });
 }
-async function createWorkspaceFile(path, content, _chatJid = null) {
-  return request("/api/workspace/file", { method: "POST", body: JSON.stringify({ path, content }) }).catch(() => null);
+async function createWorkspaceFile(path, name, content = "") {
+  return request("/api/workspace/file", { method: "POST", body: JSON.stringify({ path, name, content }) });
 }
-async function renameWorkspaceFile(_oldPath, _newPath, _chatJid = null) {
-  return null;
+async function renameWorkspaceFile(path, name) {
+  return request("/api/workspace/rename", { method: "POST", body: JSON.stringify({ path, name }) });
 }
-async function moveWorkspaceEntry(_from, _to, _chatJid = null) {
-  return null;
+async function moveWorkspaceEntry(path, target) {
+  return request("/api/workspace/move", { method: "POST", body: JSON.stringify({ path, target }) });
 }
-async function deleteWorkspaceFile(_path, _chatJid = null) {
-  return null;
+async function deleteWorkspaceFile(path) {
+  return request(`/api/workspace/file?path=${encodeURIComponent(path || "")}`, { method: "DELETE" });
 }
-async function uploadWorkspaceFile(_path, _file, _chatJid = null) {
-  return null;
+var MAX_UPLOAD_SIZE = 512 * 1024 * 1024;
+async function uploadWorkspaceFile(file, targetPath = "", options = {}) {
+  if (file?.size > MAX_UPLOAD_SIZE) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(0);
+    const limitMB = (MAX_UPLOAD_SIZE / (1024 * 1024)).toFixed(0);
+    throw Object.assign(new Error(`File too large (${sizeMB} MB). Maximum upload size is ${limitMB} MB.`), { code: "file_too_large" });
+  }
+  const form = new FormData;
+  form.append("file", file);
+  const params = new URLSearchParams;
+  if (targetPath)
+    params.set("path", targetPath);
+  if (options.overwrite)
+    params.set("overwrite", "1");
+  const query = params.toString();
+  const url = API_BASE2 + (query ? `/api/workspace/upload?${query}` : "/api/workspace/upload");
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest;
+    xhr.open("POST", url);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && typeof options.onProgress === "function") {
+        options.onProgress({ loaded: e.loaded, total: e.total, percent: Math.round(e.loaded / e.total * 100) });
+      }
+    };
+    xhr.onload = () => {
+      let body = {};
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {}
+      if (xhr.status >= 200 && xhr.status < 300)
+        resolve(body);
+      else
+        reject(Object.assign(new Error(body.error || `HTTP ${xhr.status}`), { status: xhr.status, code: body.code }));
+    };
+    xhr.onerror = () => reject(new Error("Upload failed (network error)"));
+    xhr.ontimeout = () => reject(new Error("Upload timed out"));
+    xhr.send(form);
+  });
 }
 async function setWorkspaceVisibility(visible, showHidden) {
   return { visible, show_hidden: showHidden };
@@ -7684,6 +7736,7 @@ function Post({ post, onClick, onHashtagClick, onMessageRef, onScrollToMessage, 
   const recoveryMarker = recoveryMarkerBlocks[0] || null;
   const timeoutMarkerBlocks = extractTimeoutMarkerBlocks(blocks);
   const timeoutMarker = timeoutMarkerBlocks[0] || null;
+  const outcomeMarker = (Array.isArray(blocks) ? blocks : []).find((block) => block && typeof block === "object" && block.type === "turn_outcome_marker") || null;
   const singleCardFallback = directCardBlocks.length === 1 && typeof directCardBlocks[0]?.fallback_text === "string" ? directCardBlocks[0].fallback_text.trim() : "";
   const singleSubmissionFallback = submissionBlocks.length === 1 ? buildAdaptiveCardSubmissionFallbackText(submissionBlocks[0]).trim() : "";
   const hideRenderedFallback = Boolean(singleCardFallback) && displayContent?.trim() === singleCardFallback || Boolean(singleSubmissionFallback) && displayContent?.trim() === singleSubmissionFallback;
@@ -7936,6 +7989,12 @@ function Post({ post, onClick, onHashtagClick, onMessageRef, onScrollToMessage, 
                         >
                             timeout
                         </span>
+                    `}
+                    ${outcomeMarker && fe`
+                        <span
+                            class=${`post-recovery-chip post-outcome-chip post-outcome-chip-${String(outcomeMarker.severity || "warning")}`}
+                            title=${String(outcomeMarker.label || outcomeMarker.kind || "issue")}
+                        >${String(outcomeMarker.label || outcomeMarker.kind || "issue")}</span>
                     `}
                 </div>
                 ${isHardTruncated && truncatedInfo && fe`
@@ -9007,7 +9066,7 @@ function contextPresentation(usage, canCompact = false) {
   const percent = known(usage?.percent) ? usage.percent : null;
   const fill = percent == null ? 0 : Math.min(100, percent);
   const label = `Context: ${formatContextCount(usage?.tokens)} / ${formatContextCount(usage?.contextWindow)} tokens (${percent == null ? "?" : percent.toFixed(0)}%)`;
-  const qualifier = usage?.source === "provider_request" ? " — latest measured provider request" : " — usage unavailable";
+  const qualifier = usage?.source === "provider_request" ? " — latest measured provider request" : usage?.source === "estimate" ? " — estimated after compaction" : " — usage unavailable";
   return {
     fill,
     label,
@@ -9726,7 +9785,6 @@ function parseQueuedContent(value) {
   };
 }
 function QueuedFollowupStack({
-  messageReferenceLabels = {},
   items = [],
   busy = false,
   onReturnQueuedFollowup,
@@ -9756,7 +9814,7 @@ function QueuedFollowupStack({
                                         <${FilePill}
                                             key=${"queue-msg-" + id}
                                             prefix="compose"
-                                            label=${"msg:" + messageReferenceLabel(id, messageReferenceLabels)}
+                                            label=${"msg:" + id}
                                             title=${"Message reference: " + id}
                                             icon="message"
                                         />
@@ -9862,7 +9920,6 @@ function ComposeBox({
   onRemoveFileRef,
   onClearFileRefs,
   messageRefs = [],
-  messageReferenceLabels = {},
   onRemoveMessageRef,
   onClearMessageRefs,
   activeModel = null,
@@ -10152,7 +10209,7 @@ function ComposeBox({
   const renameInProgress = Boolean(isRenameSessionInProgress || renameSessionInProgressRef.current);
   const canRenameSession = !searchMode && typeof onRenameSession === "function" && !renameInProgress && currentSessionAgent?.capabilities?.rename !== false;
   const canCreateSession = !searchMode && typeof onCreateSession === "function";
-  const canDeleteSession = !searchMode && typeof onDeleteSession === "function" && !isCurrentRootSession;
+  const canDeleteSession = !searchMode && typeof onDeleteSession === "function" && currentSessionAgent?.capabilities?.archive !== false;
   const showSessionSwitcherButton = !searchMode && (canSwitchSession || canRestoreSession || canRenameSession || canCreateSession || canDeleteSession);
   const modelPickerState = resolveComposeModelPickerState(activeModel, agentModelsPayload);
   const showModelPickerHint = modelPickerState.showPicker;
@@ -10339,13 +10396,14 @@ function ComposeBox({
     try {
       await callback(chat.chat_jid, value);
       if (epoch !== sessionPopupEpoch.current)
-        return;
+        return true;
       setSessionEdit(null);
       setSessionMutationNotice(`${{ rename: "Renamed", pin: value ? "Pinned" : "Unpinned", archive: "Archived", restore: "Restored" }[action]} session.`);
       requestAnimationFrame(() => {
         if (epoch === sessionPopupEpoch.current)
           sessionSearchRef.current?.focus();
       });
+      return true;
     } catch (error) {
       if (epoch === sessionPopupEpoch.current)
         setSessionMutationError(error?.message || `Failed to ${action} session`);
@@ -10356,7 +10414,7 @@ function ComposeBox({
   };
   const handleRestoreSession = async (chatJid) => {
     const chat = switchableChatAgents.find((chat) => chat.chat_jid === chatJid);
-    await runSessionMutation(chat, "restore");
+    return runSessionMutation(chat, "restore");
   };
   const beginSessionEdit = (chat, action) => {
     if (sessionMutationLock.current)
@@ -10558,7 +10616,10 @@ function ComposeBox({
     if (entry.type === "session") {
       const chat = entry.chat;
       if (chat?.archived_at) {
-        handleRestoreSession(chat.chat_jid);
+        handleRestoreSession(chat.chat_jid).then((restored) => {
+          if (restored)
+            handleSessionSwitch(chat.chat_jid);
+        });
       } else {
         handleSessionSwitch(chat.chat_jid);
       }
@@ -11352,7 +11413,6 @@ ${mediaIds.map((id, index) => {
             ${giVoice.status}
             ${showQueueStack && !searchMode && fe`
                 <${QueuedFollowupStack}
-                    messageReferenceLabels=${messageReferenceLabels}
                     items=${followupQueueItems}
                     onInjectQueuedFollowup=${handleInjectQueuedFollowup}
                     onRemoveQueuedFollowup=${onRemoveQueuedFollowup}
@@ -11414,7 +11474,7 @@ ${mediaIds.map((id, index) => {
                                     <${FilePill}
                                         key=${"msg-" + id}
                                         prefix="compose"
-                                        label=${"msg:" + messageReferenceLabel(id, messageReferenceLabels)}
+                                        label=${"msg:" + id}
                                         title=${"Message reference: " + id}
                                         removeTitle="Remove reference"
                                         icon="message"
@@ -11684,7 +11744,10 @@ ${mediaIds.map((id, index) => {
                                                 aria-current=${chat.chat_jid === currentChatJid ? "true" : undefined}
                                                 onClick=${() => {
       if (archived) {
-        handleRestoreSession(chat.chat_jid);
+        handleRestoreSession(chat.chat_jid).then((restored) => {
+          if (restored)
+            handleSessionSwitch(chat.chat_jid);
+        });
         return;
       }
       handleSessionSwitch(chat.chat_jid);
@@ -15974,6 +16037,7 @@ function getWorkspaceTouchStartIntent(event, renamingPath = null) {
 }
 function WorkspaceExplorer({
   onFileSelect,
+  onFolderSelect,
   visible = true,
   active = undefined,
   onOpenEditor,
@@ -16017,6 +16081,7 @@ function WorkspaceExplorer({
   const loadWorkspaceIndexStatusRef = Q_(null);
   const nodeMapRef = Q_(new Map);
   const onFileSelectRef = Q_(onFileSelect);
+  const onFolderSelectRef = Q_(onFolderSelect);
   const onOpenEditorRef = Q_(onOpenEditor);
   const loadPreviewRef = Q_(null);
   const loadSubtreeRef = Q_(null);
@@ -16054,6 +16119,7 @@ function WorkspaceExplorer({
   const pendingProgrammaticFileClickRef = Q_(null);
   const previewRef = Q_(preview);
   onFileSelectRef.current = onFileSelect;
+  onFolderSelectRef.current = onFolderSelect;
   onOpenEditorRef.current = onOpenEditor;
   K_(() => {
     expandedRef.current = expanded;
@@ -17354,6 +17420,14 @@ function WorkspaceExplorer({
     uploadTargetRef.current = target;
     uploadInputRef.current?.click();
   }, [uploading]);
+  const handleFolderHintClick = Y_((event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    const target = event?.currentTarget?.dataset?.folderHintTarget;
+    if (!target)
+      return;
+    onFolderSelectRef.current?.(target, nodeMapRef.current.get(target));
+  }, []);
   const handleUploadButtonClick = Y_(() => {
     if (uploading)
       return;
@@ -17690,6 +17764,19 @@ function WorkspaceExplorer({
                                         ` : fe`<span class="workspace-label"><span class="workspace-label-text">${node.name}</span></span>`}
                                     ${isDir && !isOpen && childCount > 0 && fe`
                                         <span class="workspace-count">${childCount}</span>
+                                    `}
+                                    ${isDir && typeof onFolderSelect === "function" && fe`
+                                        <button
+                                            class="workspace-folder-upload"
+                                            data-folder-hint-target=${node.path}
+                                            title="Add folder hint to compose"
+                                            aria-label=${`Add folder hint for ${node.path}`}
+                                            onClick=${handleFolderHintClick}
+                                        >
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v6"/><path d="M9 14h6"/>
+                                            </svg>
+                                        </button>
                                     `}
                                     ${isDir && fe`
                                         <button
@@ -22906,14 +22993,15 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-qxm2x9z3.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-r47xjezg.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-62r2wf78.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-r0h4mhyb.js").then((module) => module.GiSettingsProviders),
-  keychain: () => import("./gi-settings-keychain-0zjbrrj5.js").then((module) => module.GiSettingsKeychain),
-  authentication: () => import("./gi-settings-authentication-tra13hs5.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-5b2yj489.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-0ff71748.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-27hchzyj.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-vjx66w5d.js").then((module) => module.GiSettingsProviders),
+  keychain: () => import("./gi-settings-keychain-xbgf6919.js").then((module) => module.GiSettingsKeychain),
+  environment: () => import("./gi-settings-environment-4ec3fwtf.js").then((module) => module.GiSettingsEnvironment),
+  authentication: () => import("./gi-settings-authentication-3b8qxnmm.js").then((module) => module.GiSettingsAuthentication)
 };
-var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", keychain: "Keychain", authentication: "Authentication" };
+var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" };
 var components = new Map;
 var pending = new Map;
 function load(section) {
@@ -23159,7 +23247,7 @@ function Dialog({ chatJid, initialSection = "general", onClose, onMutationStart,
                 ${section === "models" && fe`<input ref=${filterRef} type="search" class="settings-header-filter" aria-label="Filter models" placeholder="Filter models…" value=${filter} disabled=${busyScope === searchScope} onInput=${(e) => setFilter(e.target.value)} />`}
                 <button class="settings-dialog-close" aria-label="Close settings" onClick=${onClose}>✕</button></header>
             <div class="settings-dialog-body"><nav class="settings-nav" aria-label="Settings sections">
-                ${["general", "models", "appearance", "compaction", "providers", "keychain", "authentication"].map((id) => fe`<button class=${`settings-nav-item ${section === id ? "active" : ""}`} aria-current=${section === id ? "page" : undefined} onClick=${() => setSection(id)}>${{ general: "General", models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", keychain: "Keychain", authentication: "Authentication" }[id]}</button>`)}
+                ${["general", "models", "appearance", "compaction", "providers", "keychain", "environment", "authentication"].map((id) => fe`<button class=${`settings-nav-item ${section === id ? "active" : ""}`} aria-current=${section === id ? "page" : undefined} onClick=${() => setSection(id)}>${{ general: "General", models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" }[id]}</button>`)}
             </nav><main class="settings-content">
                 ${section === "general" ? fe`<${General} />` : fe`<${LazySettingsPane} key=${section} section=${section} chatJid=${chatJid} filter=${filter} onMutationStart=${() => {
     setBusyScope(searchScope);
@@ -23194,7 +23282,7 @@ function GiSettings({ chatJid, onMutationStart, onMutationEnd, onApplied }) {
         return;
       const detail = event instanceof CustomEvent ? event.detail : null;
       const requested = detail?.section;
-      setInitialSection(["general", "models", "appearance", "compaction", "providers", "keychain", "authentication"].includes(requested) ? requested : "general");
+      setInitialSection(["general", "models", "appearance", "compaction", "providers", "keychain", "environment", "authentication"].includes(requested) ? requested : "general");
       opener.current = detail?.opener instanceof HTMLElement && detail.opener.isConnected ? detail.opener : document.activeElement;
       isOpen.current = true;
       setOpen(true);
@@ -24200,15 +24288,18 @@ function useContextTooltip(root, usage, notice, now, canStop, stop, compact, una
       });
       compose.querySelectorAll(".compose-context-pie").forEach((button) => {
         const active = notice?.intent_key === "compaction";
-        const normal = contextPresentation(usage, typeof compact === "function");
-        const canCompact = typeof compact === "function" && !active;
-        if (button.disabled === canCompact)
-          button.disabled = !canCompact;
+        const actionable = typeof compact === "function";
+        if (button.disabled === actionable)
+          button.disabled = !actionable;
+        const canCompact = actionable && !active && !unavailable;
+        const normal = contextPresentation(usage, canCompact);
         const reason = !canCompact && unavailable ? ` — ${unavailable}` : "";
         const estimate = active ? compactionEstimateLabel(notice) : "";
         const detail = estimate ? ` — ${estimate}` : "";
         const title = active ? `${notice.title} — ${compactionElapsed(notice, now)}${detail} — ${contextPresentation(usage).title}` : normal.title + reason;
-        const label = active ? `${notice.title}${detail} — ${normal.label}` : normal.label;
+        const label = active ? `${normal.label}
+${notice.title || "Smart compaction"}${detail} · ${compactionElapsed(notice, now)}` : `${normal.label}
+${typeof compact === "function" ? "Compact context" : "Context usage"}`;
         if (button.getAttribute("title") !== title)
           button.setAttribute("title", title);
         if (button.getAttribute("aria-label") !== label)
@@ -24222,12 +24313,12 @@ function useContextTooltip(root, usage, notice, now, canStop, stop, compact, una
           button.removeAttribute("aria-description");
         if (button.classList.contains("is-compacting") !== active)
           button.classList.toggle("is-compacting", active);
-        let elapsed = compose.querySelector(".gi-compaction-elapsed");
+        let elapsed = button.querySelector(".gi-compaction-elapsed");
         if (active) {
           if (!elapsed) {
             elapsed = document.createElement("span");
-            elapsed.className = "gi-compaction-elapsed";
-            button.after(elapsed);
+            elapsed.className = "gi-compaction-elapsed compose-context-pie-timer";
+            button.append(elapsed);
           }
           const text = compactionElapsed(notice, now);
           if (elapsed.textContent !== text)
@@ -24446,6 +24537,13 @@ function GiApp() {
     }
   } : null;
   const notice = compactionNotice(activity, activityNow);
+  const compactFromMeter = async () => {
+    if (manualCompact)
+      return manualCompact();
+    if (notice?.intent_key === "compaction")
+      return;
+    setCompactError(compactionUnavailableReason({ fresh: activityFresh, disconnected: streamDisconnected.current, pending: compactPending, status: activity?.status, capability: compactState }) || "Compaction is unavailable");
+  };
   K_(() => {
     if (!activity?.compaction)
       return;
@@ -24477,7 +24575,7 @@ function GiApp() {
         refreshAfterConnection.current();
       }
     }
-  }, manualCompact, compactionUnavailableReason({ fresh: activityFresh, disconnected: streamDisconnected.current, pending: compactPending, status: activity?.status, capability: compactState }));
+  }, streamDisconnected.current ? null : compactFromMeter, compactionUnavailableReason({ fresh: activityFresh, disconnected: streamDisconnected.current, pending: compactPending, status: activity?.status, capability: compactState }));
   const [activeChatAgents, setActiveChatAgents] = F_([]);
   const sessionListRevision = Q_(0);
   const [currentChatBranches, setCurrentChatBranches] = F_([]);
@@ -25184,6 +25282,21 @@ function GiApp() {
     if (revision === sessionListRevision.current)
       setActiveChatAgents(data.agents || []);
   };
+  const handleArchiveCurrentSession = async (chatJid) => {
+    if (!window.confirm("Archive this session? It can be restored from the session picker."))
+      return;
+    const agents = activeChatAgents || [];
+    const current = agents.find((a) => a.chat_jid === chatJid);
+    try {
+      await handleSessionMutation(chatJid, "archive");
+    } catch (error) {
+      setSessionError(error?.message || "Failed to archive session");
+      return;
+    }
+    const next = current?.parent_chat_jid || agents.find((a) => a.chat_jid !== chatJid && !a.parent_chat_jid && !a.archived_at)?.chat_jid;
+    if (next && selection.current() === chatJid.slice(3))
+      handleSwitchChat(next);
+  };
   const mutateQueue = async (action, itemOrIndex, toIndex) => {
     if (queueMutation.current)
       return;
@@ -25352,6 +25465,13 @@ function GiApp() {
     drafts.update(sessionId, { fileRefs: refs });
     setFileRefs(refs);
   }}
+                onFolderSelect=${(path) => {
+    if (!path || path === ".")
+      return;
+    const refs = [...new Set([...getDraft(sessionId).fileRefs, path])];
+    drafts.update(sessionId, { fileRefs: refs });
+    setFileRefs(refs);
+  }}
                 visible=${workspaceOpen}
                 active=${workspaceOpen || editorOpen}
                 onOpenEditor=${openEditor}
@@ -25456,7 +25576,6 @@ function GiApp() {
                     />
                 `}
                 <${RunBoundQueueStack}
-                    messageReferenceLabels=${messageReferenceLabels(posts)}
                     steerEnabled=${connectionStatus === "connected" && activityFresh && (!isAgentTurnActive || !!queueActiveTurnId)}
                     onInjectQueuedFollowup=${(item) => mutateQueue("steer", item)}
                     items=${[...followupQueueItems, ...optimisticQueue.filter((item) => item.chat_jid === currentChatJid && !followupQueueItems.some((stored) => stored.id === item.id || stored.metadata?.client_request_id === item.id))]}
@@ -25575,7 +25694,6 @@ function GiApp() {
   }}
                     fileRefs=${fileRefs}
                     messageRefs=${messageRefs}
-                    messageReferenceLabels=${messageReferenceLabels(posts)}
                     onRemoveFileRef=${(p) => {
     const refs = getDraft(sessionId).fileRefs.filter((x) => x !== p);
     drafts.update(sessionId, { fileRefs: refs });
@@ -25614,6 +25732,7 @@ function GiApp() {
                     onRenameSession=${(chatJid, title) => handleSessionMutation(chatJid, "rename", title)}
                     onPinSession=${(chatJid, pinned) => handleSessionMutation(chatJid, "pin", pinned)}
                     onArchiveSession=${(chatJid) => handleSessionMutation(chatJid, "archive")}
+                    onDeleteSession=${handleArchiveCurrentSession}
                     onRestoreSession=${(chatJid) => handleSessionMutation(chatJid, "restore")}
                     formatBranchPickerLabel=${(b) => b?.label || b?.chat_jid || ""}
                     handleBranchPickerChange=${() => {}}
@@ -25684,6 +25803,9 @@ export {
   saveKeychainEntry,
   deleteKeychainEntry,
   revealKeychainEntry,
+  getEnvironmentSettings,
+  setEnvironmentOverride,
+  clearEnvironmentOverride,
   getGiCompactionPolicy,
   saveGiCompactionPolicy,
   getAgentModels,

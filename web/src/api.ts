@@ -57,7 +57,7 @@ async function request(url: string, options: RequestInit = {}) {
     });
     if (!response.ok) {
         const err = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw Object.assign(new Error(err.error || `HTTP ${response.status}`), {status:response.status});
+        throw Object.assign(new Error(err.error || `HTTP ${response.status}`), {status:response.status, code:err.code});
     }
     return response.json();
 }
@@ -252,6 +252,10 @@ export const saveKeychainEntry = (entry: any) => keychainRequest('/api/settings/
 export const deleteKeychainEntry = (name: string) => keychainRequest('/api/settings/keychain', 'DELETE', { name });
 export const revealKeychainEntry = (name: string, masterPassword?: string) =>
     keychainRequest('/api/settings/keychain/reveal', 'POST', { name, master_password: masterPassword || undefined });
+// Settings → Environment overrides (Piclaw's environment-overrides.ts).
+export const getEnvironmentSettings = () => keychainRequest('/api/settings/environment');
+export const setEnvironmentOverride = (name: string, value: string) => keychainRequest('/api/settings/environment', 'POST', { name, value });
+export const clearEnvironmentOverride = (name: string) => keychainRequest('/api/settings/environment', 'POST', { name, clear: true });
 
 export async function getGiCompactionPolicy() {
     return request('/api/settings/compaction');
@@ -607,24 +611,61 @@ export async function reindexWorkspace(scope = 'all') {
     return request(`/api/workspace/index?scope=${encodeURIComponent(scope)}`, { method: 'POST' });
 }
 
-export async function createWorkspaceFile(path: string, content: string, _chatJid: string | null = null) {
-    return request('/api/workspace/file', { method: 'POST', body: JSON.stringify({ path, content }) }).catch(() => null);
+// Workspace writes mirror Piclaw's explorer client (runtime/web/src/api.ts):
+// same arguments, 409 `file_exists` conflicts and response bodies.
+export async function createWorkspaceFile(path: string, name: string, content = '') {
+    return request('/api/workspace/file', { method: 'POST', body: JSON.stringify({ path, name, content }) });
 }
 
-export async function renameWorkspaceFile(_oldPath: string, _newPath: string, _chatJid: string | null = null) {
-    return null;
+export async function updateWorkspaceFile(path: string, content: string) {
+    return request('/api/workspace/file', { method: 'PUT', body: JSON.stringify({ path, content }) });
 }
 
-export async function moveWorkspaceEntry(_from: string, _to: string, _chatJid: string | null = null) {
-    return null;
+export async function renameWorkspaceFile(path: string, name: string) {
+    return request('/api/workspace/rename', { method: 'POST', body: JSON.stringify({ path, name }) });
 }
 
-export async function deleteWorkspaceFile(_path: string, _chatJid: string | null = null) {
-    return null;
+export async function moveWorkspaceEntry(path: string, target: string) {
+    return request('/api/workspace/move', { method: 'POST', body: JSON.stringify({ path, target }) });
 }
 
-export async function uploadWorkspaceFile(_path: string, _file: File, _chatJid: string | null = null) {
-    return null;
+export async function deleteWorkspaceFile(path: string) {
+    return request(`/api/workspace/file?path=${encodeURIComponent(path || '')}`, { method: 'DELETE' });
+}
+
+const MAX_UPLOAD_SIZE = 512 * 1024 * 1024;
+
+export async function uploadWorkspaceFile(file: File, targetPath = '', options: { overwrite?: boolean, onProgress?: (p: { loaded: number, total: number, percent: number }) => void } = {}) {
+    if (file?.size > MAX_UPLOAD_SIZE) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(0);
+        const limitMB = (MAX_UPLOAD_SIZE / (1024 * 1024)).toFixed(0);
+        throw Object.assign(new Error(`File too large (${sizeMB} MB). Maximum upload size is ${limitMB} MB.`), { code: 'file_too_large' });
+    }
+    const form = new FormData();
+    form.append('file', file);
+    const params = new URLSearchParams();
+    if (targetPath) params.set('path', targetPath);
+    if (options.overwrite) params.set('overwrite', '1');
+    const query = params.toString();
+    const url = API_BASE + (query ? `/api/workspace/upload?${query}` : '/api/workspace/upload');
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && typeof options.onProgress === 'function') {
+                options.onProgress({ loaded: e.loaded, total: e.total, percent: Math.round((e.loaded / e.total) * 100) });
+            }
+        };
+        xhr.onload = () => {
+            let body: any = {};
+            try { body = JSON.parse(xhr.responseText); } catch { /* reported below */ }
+            if (xhr.status >= 200 && xhr.status < 300) resolve(body);
+            else reject(Object.assign(new Error(body.error || `HTTP ${xhr.status}`), { status: xhr.status, code: body.code }));
+        };
+        xhr.onerror = () => reject(new Error('Upload failed (network error)'));
+        xhr.ontimeout = () => reject(new Error('Upload timed out'));
+        xhr.send(form);
+    });
 }
 
 export async function setWorkspaceVisibility(visible: boolean, showHidden: boolean) {
@@ -683,5 +724,7 @@ export async function recordAppPerfRequest(_payload: unknown) {}
 
 export { SSEClient } from './gi-sse-client.js';
 
-export async function getWorkspaceFileStat(_path: string, _chatJid: string | null = null) { return null; }
+export async function getWorkspaceFileStat(path: string) {
+    return request(`/api/workspace/stat?path=${encodeURIComponent(path || '')}`);
+}
 export async function getMediaBlob(..._args: any[]) { return null; }

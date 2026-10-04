@@ -1,11 +1,7 @@
 {
   "runtime": "gi",
-  "fixturesVibes": "3f423f4202e9b2bedfa32f8ea489e3c7fffc219f",
+  "fixturesVibes": "f796ddf00d3e0d92e030399768212f2385a4fa9f",
   "skips": [
-    { "id": "@ux-compaction-001", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
-    { "id": "@ux-compaction-002", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
-    { "id": "@ux-compaction-003", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
-    { "id": "@ux-compaction-004", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
     { "id": "@ux-shell-004", "reason": "capability-absent", "capability": "@cap-terminal", "detail": "Gi has no web Terminal or VNC callbacks." },
     { "id": "@ux-shell-007", "reason": "capability-absent", "capability": "@cap-terminal", "detail": "Gi has read-only preview tabs but no web Terminal pane." },
     { "id": "@ux-theme-001", "reason": "capability-absent", "capability": "@cap-theme-tint", "detail": "Gi uses native appearance preferences, not composer /theme and /tint commands or Piclaw storage keys." },
@@ -33,8 +29,6 @@
     { "id": "@ux-original-012", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario." },
     { "id": "@ux-pwa-002", "reason": "capability-absent", "capability": "@cap-agent-avatar", "detail": "Gi's fixture runtime cannot set the agent avatar from the composer for manifest-icon testing." },
     { "id": "@ux-pwa-006", "reason": "capability-absent", "capability": "@cap-agent-avatar", "detail": "Gi's fixture runtime cannot change the agent avatar from the composer for cache-version testing." },
-    { "id": "@ux-shared-025", "reason": "known-defect", "detail": "Gi's session-scoped messages tool does not support action/query text search; its bounded JSON cannot supply the suite's expected search row list.", "issue": "https://github.com/rcarmo/gi/issues/37" },
-    { "id": "@ux-original-025", "reason": "known-defect", "detail": "Gi lacks the Classic text-search action/output contract and intentionally does not allow all-chat reads through its model-facing messages tool.", "issue": "https://github.com/rcarmo/gi/issues/37" },
     { "id": "@ux-original-024", "reason": "known-defect", "detail": "Gi deletes the parent without a cascade confirmation, so cancellation cannot preserve it and confirmation cannot remove its visible replies.", "issue": "https://github.com/rcarmo/gi/issues/35" },
     {
       "id": "@ux-timeline-019",
@@ -64,6 +58,11 @@
     { "id": "@ux-settings-016", "reason": "known-defect", "detail": "Gi's Settings has no Keyboard section for filtering and editing shortcut bindings.", "issue": "https://github.com/rcarmo/gi/issues/39" },
     { "id": "@ux-settings-018", "reason": "known-defect", "detail": "Gi's Appearance section has no theme presets, custom tint or output padding.", "issue": "https://github.com/rcarmo/gi/issues/39" },
     { "id": "@ux-settings-019", "reason": "known-defect", "detail": "Gi's General section has no editable fields that autosave after a debounce.", "issue": "https://github.com/rcarmo/gi/issues/39" },
-    { "id": "@ux-settings-layering-004", "reason": "known-defect", "detail": "The workspace upload the scenario uses to check layering above the backdrop does not complete in Gi.", "issue": "https://github.com/rcarmo/gi/issues/39" }
+    { "id": "@ux-extra-001", "reason": "not-implemented", "detail": "No /btw side conversation yet (panel UI vendored, no backend).", "issue": "https://github.com/rcarmo/gi/issues/40" },
+    { "id": "@ux-shell-009", "reason": "capability-absent", "capability": "@cap-editor", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor." },
+    { "id": "@ux-workspace-010", "reason": "capability-absent", "capability": "@cap-editor", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor." },
+    { "id": "@ux-workspace-011", "reason": "capability-absent", "capability": "@cap-editor", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor." },
+    { "id": "@ux-workspace-012", "reason": "capability-absent", "capability": "@cap-editor", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor." },
+    { "id": "@ux-workspace-013", "reason": "capability-absent", "capability": "@cap-editor", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor." }
   ]
 }

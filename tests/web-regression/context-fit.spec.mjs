@@ -15,7 +15,7 @@ async function fixture(page,request,info){
  const response=page.waitForResponse(r=>r.url().endsWith(`/api/sessions/${main.id}/prompt`)&&r.request().method()==='POST');
  await input.fill('Measure a real local-provider request');await input.press('Enter');const turn=await(await response).json();
  await expect.poll(async()=> (await state()).context_usage.tokens).toBe(100);
- await expect(page.locator('.compose-context-pie')).toHaveAttribute('aria-label','Context: 100 / 32K tokens (0%)',{timeout:15000});
+ await expect(page.locator('.compose-context-pie')).toHaveAttribute('aria-label','Context: 100 / 32K tokens (0%)\nCompact context',{timeout:15000});
  // Measurement provenance is exposed by the real model API, never seeded in DB.
  expect((await state()).context_usage.measurement).toMatchObject({turn_id:turn.turn_id,model:'ux-local/gate',iteration:1});
  const modelButton=page.getByRole('button',{name:'Open model picker',exact:true});const menu=page.getByRole('listbox',{name:'Models',exact:true});
@@ -40,7 +40,7 @@ test('@gi-settings-006 Settings model fit uses measured native context and keeps
  await choice.selectOption('ux-local/equal');await dialog.getByRole('button',{name:'Apply model'}).click();
  await expect(dialog.getByTestId('settings-current-model')).toHaveText('ux-local/equal');
  await page.keyboard.press('Escape');await expect(input).toHaveValue('settings measured draft');
- await expect(page.locator('.compose-context-pie')).toHaveAttribute('aria-label','Context: 100 / 100 tokens (100%)');
+ await expect(page.locator('.compose-context-pie')).toHaveAttribute('aria-label','Context: 100 / 100 tokens (100%)\nCompact context');
  await switchTo(child);expect((await state(child)).context_usage.tokens).toBeNull();
  await page.keyboard.press('Control+,');await dialog.getByRole('button',{name:'Models',exact:true}).click();
  await dialog.getByLabel('Filter models',{exact:true}).fill('ux-local/small');

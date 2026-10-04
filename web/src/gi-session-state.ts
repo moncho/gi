@@ -1,6 +1,8 @@
 /** Adapt native ancestry before applying Piclaw's picker grouping. */
 export function sessionPickerAgents(sessions: any[]) {
     const byId = new Map(sessions.map(session => [session.id, session]));
+    // Like Piclaw's protected web:default, the last live main session stays.
+    const liveRoots = sessions.filter(session => !session.parent_session_id && !session.state?.archived_at).length;
     return sessions.map(session => {
         let root = session;
         const visited = new Set([root.id]);
@@ -23,7 +25,7 @@ export function sessionPickerAgents(sessions: any[]) {
             capabilities: {
                 rename: !session.state?.archived_at,
                 pin: !session.state?.archived_at,
-                archive: Boolean(session.parent_session_id) && !session.state?.archived_at,
+                archive: !session.state?.archived_at && (Boolean(session.parent_session_id) || liveRoots > 1),
                 restore: Boolean(session.state?.archived_at),
             },
         };

@@ -6,6 +6,7 @@ import {piclawSvgAdapter, patchMarkdownSvg, patchPostSvg, verifyPiclawSvg} from 
 import { patchMarkdownCode } from './scripts/gi-markdown-code-adapter.mjs';
 import { patchTimelineMenu } from './scripts/patch-timeline-menu.mjs';
 import { patchWorkspaceReadonly } from './scripts/patch-workspace-readonly.mjs';
+import { patchWorkspaceFolderHint } from './scripts/patch-workspace-folder-hint.mjs';
 import { patchTabReadonly } from './scripts/patch-tab-readonly.mjs';
 import { patchQuickActionKeys, patchComposePopupKeys } from './scripts/patch-popup-keys.mjs';
 import { patchModelPicker } from './scripts/patch-model-picker.mjs';
@@ -14,7 +15,6 @@ import { patchComposeCommands } from './scripts/patch-compose-commands.mjs';
 import { patchComposeEscape } from './scripts/patch-compose-escape.mjs';
 import { patchComposeRandomId } from './scripts/patch-compose-random-id.mjs';
 import { patchComposeCaptureToken } from './scripts/patch-compose-capture-token.mjs';
-import { patchMessageReferenceLabels } from './scripts/patch-message-reference-labels.mjs';
 import { patchComposeSurface } from './scripts/patch-compose-surface.mjs';
 import { patchModelPanel } from './scripts/patch-model-panel.mjs';
 import { patchModelThinking } from './scripts/patch-model-thinking.mjs';
@@ -115,14 +115,14 @@ const appBuild = await Bun.build({
       contents: patchQuickActionKeys(await Bun.file(args.path).text()), loader: 'ts',
     }));
     build.onLoad({ filter: /[\\/]components[\\/]compose-box\.ts$/ }, async args => ({
-      contents: patchMessageReferenceLabels(patchComposeCaptureToken(patchComposeRandomId(patchModelAccessibility(patchModelThinking(patchVoiceInput(patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(patchComposeEscape(await Bun.file(args.path).text())))))))))))))))), loader: 'ts',
+      contents: (patchComposeCaptureToken(patchComposeRandomId(patchModelAccessibility(patchModelThinking(patchVoiceInput(patchSessionPanel(patchModelPanel(patchComposeSurface(patchComposeCommands(patchPickerGeometry(patchComposePrefillFocus(patchUploadCancel(patchModelPicker(patchComposePopupKeys(patchComposeEscape(await Bun.file(args.path).text())))))))))))))))), loader: 'ts',
     }));
   } }, { name: 'gi-workspace-readonly', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]tab-strip\.ts$/ }, async args => ({
       contents: patchTabReadonly(await Bun.file(args.path).text()), loader: 'ts',
     }));
     build.onLoad({ filter: /[\\/]components[\\/]workspace-explorer\.ts$/ }, async args => ({
-      contents: patchWorkspaceReadonly(await Bun.file(args.path).text()), loader: 'ts',
+      contents: patchWorkspaceFolderHint(patchWorkspaceReadonly(await Bun.file(args.path).text())), loader: 'ts',
     }));
   } }, { name: 'gi-timeline-menu-dismissal', setup(build) {
     build.onLoad({ filter: /[\\/]components[\\/]timeline-menu\.ts$/ }, async args => ({

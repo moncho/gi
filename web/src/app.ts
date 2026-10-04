@@ -4,7 +4,6 @@ import { staleTerminalEvent } from './gi-turn-event.js';
 import { speechPlayback } from './gi-post-speech.js';
 import { useGiNotifications } from './gi-notifications.js';
 import { projectConversationEvent, projectActivityStatus, projectResponsePhase, SYSTEM_AGENT_ID, SYSTEM_AGENT } from './gi-conversation.js';
-import { messageReferenceLabels } from './gi-message-reference-label.js';
 /**
  * app.ts — Gi entry point.
  *
@@ -161,14 +160,21 @@ function useContextTooltip(root: any, usage: any, notice: any, now: number, canS
             compose.querySelectorAll('.send-btn.abort-mode').forEach(button => { if (button.disabled === canStop) button.disabled = !canStop; });
             compose.querySelectorAll('.compose-context-pie').forEach(button => {
                 const active = notice?.intent_key === 'compaction';
-                const normal = contextPresentation(usage, typeof compact === 'function');
-                const canCompact = typeof compact === 'function' && !active;
-                if (button.disabled === canCompact) button.disabled = !canCompact;
+                // Piclaw keeps the meter actionable whenever a compaction callback exists;
+                // an unavailable request reports its reason instead of being disabled.
+                const actionable = typeof compact === 'function';
+                if (button.disabled === actionable) button.disabled = !actionable;
+                const canCompact = actionable && !active && !unavailable;
+                const normal = contextPresentation(usage, canCompact);
                 const reason = !canCompact && unavailable ? ` — ${unavailable}` : '';
                 const estimate = active ? compactionEstimateLabel(notice) : '';
                 const detail = estimate ? ` — ${estimate}` : '';
                 const title = active ? `${notice.title} — ${compactionElapsed(notice, now)}${detail} — ${contextPresentation(usage).title}` : normal.title + reason;
-                const label = active ? `${notice.title}${detail} — ${normal.label}` : normal.label;
+                // Piclaw 3.2.5 names the meter by usage plus its action, or by the
+                // running compaction and its elapsed label (title = aria-label there).
+                const label = active
+                    ? `${normal.label}\n${notice.title || 'Smart compaction'}${detail} · ${compactionElapsed(notice, now)}`
+                    : `${normal.label}\n${typeof compact === 'function' ? 'Compact context' : 'Context usage'}`;
                 if (button.getAttribute('title') !== title) button.setAttribute('title', title);
                 if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
                 if (button.getAttribute('data-tooltip') !== title) button.setAttribute('data-tooltip', title);
@@ -176,9 +182,10 @@ function useContextTooltip(root: any, usage: any, notice: any, now: number, canS
                 if (description && button.getAttribute('aria-description') !== description) button.setAttribute('aria-description', description);
                 if (!description && button.hasAttribute('aria-description')) button.removeAttribute('aria-description');
                 if (button.classList.contains('is-compacting') !== active) button.classList.toggle('is-compacting', active);
-                let elapsed = compose.querySelector('.gi-compaction-elapsed');
+                // The elapsed label sits inside the meter, as Piclaw's compose-context-pie-timer.
+                let elapsed = button.querySelector('.gi-compaction-elapsed');
                 if (active) {
-                    if (!elapsed) { elapsed = document.createElement('span'); elapsed.className = 'gi-compaction-elapsed'; button.after(elapsed); }
+                    if (!elapsed) { elapsed = document.createElement('span'); elapsed.className = 'gi-compaction-elapsed compose-context-pie-timer'; button.append(elapsed); }
                     const text = compactionElapsed(notice, now);
                     if (elapsed.textContent !== text) elapsed.textContent = text;
                 } else elapsed?.remove();
@@ -378,6 +385,11 @@ function GiApp() {
         }
     } : null;
     const notice = compactionNotice(activity, activityNow);
+    const compactFromMeter = async () => {
+        if (manualCompact) return manualCompact();
+        if (notice?.intent_key === 'compaction') return;
+        setCompactError(compactionUnavailableReason({fresh:activityFresh,disconnected:streamDisconnected.current,pending:compactPending,status:activity?.status,capability:compactState}) || 'Compaction is unavailable');
+    };
     useEffect(() => {
         if (!activity?.compaction) return;
         const timer = setInterval(() => setActivityNow(Date.now()), 1000);
@@ -393,7 +405,7 @@ function GiApp() {
             if (stopToken.current === token) { stopToken.current = null; setStopPending(false); }
             if (selection.isCurrent(scope)) { activityRevision.invalidate(); setActivityFresh(false); refreshAfterConnection.current(); }
         }
-    }, manualCompact, compactionUnavailableReason({fresh:activityFresh,disconnected:streamDisconnected.current,pending:compactPending,status:activity?.status,capability:compactState}));
+    }, streamDisconnected.current ? null : compactFromMeter, compactionUnavailableReason({fresh:activityFresh,disconnected:streamDisconnected.current,pending:compactPending,status:activity?.status,capability:compactState}));
     const [activeChatAgents, setActiveChatAgents] = useState<any[]>([]);
     const sessionListRevision = useRef(0);
     const [currentChatBranches, setCurrentChatBranches] = useState<any[]>([]);
@@ -933,6 +945,23 @@ function GiApp() {
         if (revision === sessionListRevision.current) setActiveChatAgents(data.agents || []);
     };
 
+    // Piclaw's "Delete current…": archive this session (after confirmation),
+    // then open its parent, or the most recent remaining main session.
+    const handleArchiveCurrentSession = async (chatJid: string) => {
+        if (!window.confirm('Archive this session? It can be restored from the session picker.')) return;
+        const agents = activeChatAgents || [];
+        const current = agents.find((a: any) => a.chat_jid === chatJid);
+        try {
+            await handleSessionMutation(chatJid, 'archive');
+        } catch (error) {
+            setSessionError(error?.message || 'Failed to archive session');
+            return;
+        }
+        const next = current?.parent_chat_jid
+            || agents.find((a: any) => a.chat_jid !== chatJid && !a.parent_chat_jid && !a.archived_at)?.chat_jid;
+        if (next && selection.current() === chatJid.slice(3)) handleSwitchChat(next);
+    };
+
     const mutateQueue = async (action: 'remove' | 'move' | 'return' | 'steer', itemOrIndex: any, toIndex?: number) => {
         if (queueMutation.current) return;
         if (action === 'steer' && (streamDisconnected.current || !activityFresh || itemOrIndex.pending || (isAgentTurnActive && !queueActiveTurnId))) return;
@@ -1081,6 +1110,11 @@ function GiApp() {
                     const refs = [...new Set([...getDraft(sessionId).fileRefs, path])];
                     drafts.update(sessionId, { fileRefs: refs }); setFileRefs(refs);
                 }}
+                onFolderSelect=${(path: string) => {
+                    if (!path || path === '.') return;
+                    const refs = [...new Set([...getDraft(sessionId).fileRefs, path])];
+                    drafts.update(sessionId, { fileRefs: refs }); setFileRefs(refs);
+                }}
                 visible=${workspaceOpen}
                 active=${workspaceOpen || editorOpen}
                 onOpenEditor=${openEditor}
@@ -1175,7 +1209,6 @@ function GiApp() {
                     />
                 `}
                 <${RunBoundQueueStack}
-                    messageReferenceLabels=${messageReferenceLabels(posts)}
                     steerEnabled=${connectionStatus === 'connected' && activityFresh && (!isAgentTurnActive || !!queueActiveTurnId)}
                     onInjectQueuedFollowup=${(item: any) => mutateQueue('steer', item)}
                     items=${[...followupQueueItems, ...optimisticQueue.filter(item => item.chat_jid === currentChatJid && !followupQueueItems.some(stored => stored.id === item.id || stored.metadata?.client_request_id === item.id))]}
@@ -1274,7 +1307,6 @@ function GiApp() {
                     }}
                     fileRefs=${fileRefs}
                     messageRefs=${messageRefs}
-                    messageReferenceLabels=${messageReferenceLabels(posts)}
                     onRemoveFileRef=${(p: string) => {
                         const refs = getDraft(sessionId).fileRefs.filter((x: string) => x !== p);
                         drafts.update(sessionId, { fileRefs: refs }); setFileRefs(refs);
@@ -1307,6 +1339,7 @@ function GiApp() {
                     onRenameSession=${(chatJid, title) => handleSessionMutation(chatJid, 'rename', title)}
                     onPinSession=${(chatJid, pinned) => handleSessionMutation(chatJid, 'pin', pinned)}
                     onArchiveSession=${chatJid => handleSessionMutation(chatJid, 'archive')}
+                    onDeleteSession=${handleArchiveCurrentSession}
                     onRestoreSession=${chatJid => handleSessionMutation(chatJid, 'restore')}
                     formatBranchPickerLabel=${(b: any) => b?.label || b?.chat_jid || ''}
                     handleBranchPickerChange=${() => {}}

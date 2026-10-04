@@ -10,7 +10,8 @@ export function contextPresentation(usage: any, canCompact = false) {
     const percent = known(usage?.percent) ? usage.percent : null;
     const fill = percent == null ? 0 : Math.min(100, percent);
     const label = `Context: ${formatContextCount(usage?.tokens)} / ${formatContextCount(usage?.contextWindow)} tokens (${percent == null ? '?' : percent.toFixed(0)}%)`;
-    const qualifier = usage?.source === 'provider_request' ? ' — latest measured provider request' : ' — usage unavailable';
+    const qualifier = usage?.source === 'provider_request' ? ' — latest measured provider request'
+        : usage?.source === 'estimate' ? ' — estimated after compaction' : ' — usage unavailable';
     return { fill, label, title: label + qualifier + (canCompact ? ' — Compact context' : ''),
         color: percent == null ? 'var(--text-secondary)' : percent > 90 ? 'var(--context-red, #ef4444)' : percent > 75 ? 'var(--context-amber, #f59e0b)' : 'var(--context-green, #22c55e)' };
 }

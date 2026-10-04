@@ -236,7 +236,7 @@ test('@ux-reconnect-002 Refresh authoritative chat state after reconnect',async(
   env.resume();await expect(page.locator('.compose-connection-status')).toHaveCount(0,{timeout:15000});
   await expect(page.locator(`[data-queue-id="${queue.turn_id}"]`)).toBeVisible();await expect(page.locator(`[data-queue-id="${oldQ.turn_id}"]`)).toHaveCount(0);
   const stop=page.getByRole('button',{name:'Stop response',exact:true});await expect(stop).toBeEnabled();
-  await expect(page.locator('.compose-context-pie')).toHaveAttribute('aria-label','Context: 100 / 32K tokens (0%)');
+  await expect(page.locator('.compose-context-pie')).toHaveAttribute('aria-label','Context: 100 / 32K tokens (0%)\nCompact context');
   await expect(page.getByText(`UX steer gate:${newToken}`,{exact:true})).toBeVisible();
   const lateResponse=page.waitForResponse(r=>r.url().includes(`/api/sessions/${main.id}/messages?`));unblock();await delivery;await(await lateResponse).finished();await page.unrouteAll({behavior:'wait'});
   await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
@@ -300,7 +300,7 @@ test('@ux-reconnect-003 Search survives reconnect without a main-timeline refres
   env.resume();await expect(page.locator('.compose-connection-status')).toHaveCount(0,{timeout:15000});await expect(search).toHaveValue('needle');await expect(page.getByText('needle offline queue',{exact:true})).toBeVisible();expect(timelines).toBe(0);
   await expect.poll(()=>fresh.size).toBe(3);await expect(page.locator(`[data-queue-id="${nextQueue.turn_id}"]`)).toBeVisible();
   await expect(page.getByText(`UX steer gate:${nextToken}`,{exact:true})).toHaveCount(0);
-  await search.press('Escape');await expect(input).toHaveValue('preserved search draft');await expect(page.locator('.compose-file-pill[title="search.txt"]')).toBeVisible();await expect(page.locator('.compose-context-pie')).toHaveAttribute('aria-label','Context: 100 / 32K tokens (0%)');await expect(page.getByText(`UX steer gate:${nextToken}`,{exact:true})).toBeVisible();
+  await search.press('Escape');await expect(input).toHaveValue('preserved search draft');await expect(page.locator('.compose-file-pill[title="search.txt"]')).toBeVisible();await expect(page.locator('.compose-context-pie')).toHaveAttribute('aria-label','Context: 100 / 32K tokens (0%)\nCompact context');await expect(page.getByText(`UX steer gate:${nextToken}`,{exact:true})).toBeVisible();
   env.release(nextToken);
  }finally{releaseOld();await env.close();}
 });

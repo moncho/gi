@@ -334,6 +334,12 @@ func referencedNames(texts []string) map[string]bool {
 // NAME=value; a variable already in the process environment keeps its
 // value. Without a master key it is empty.
 func (k *Keychain) Environment(ctx context.Context, command string) ([]string, error) {
+	return k.EnvironmentFor(ctx, command, func(name string) bool { _, set := os.LookupEnv(name); return set })
+}
+
+// EnvironmentFor is Environment against a command environment other than the
+// process's: has reports whether a variable is already set there.
+func (k *Keychain) EnvironmentFor(ctx context.Context, command string, has func(string) bool) ([]string, error) {
 	named := referencedNames([]string{command})
 	if len(named) == 0 {
 		return nil, nil
@@ -347,7 +353,7 @@ func (k *Keychain) Environment(ctx context.Context, command string) ([]string, e
 		if e.EnvVar == "" || !named[e.EnvVar] {
 			continue
 		}
-		if _, set := os.LookupEnv(e.EnvVar); set {
+		if has(e.EnvVar) {
 			continue
 		}
 		entry, err := k.Get(ctx, e.Name)
@@ -461,6 +467,21 @@ func (k *Keychain) ResolvePlaceholders(ctx context.Context, input string) (strin
 		input = strings.ReplaceAll(input, p, values[p])
 	}
 	return input, nil
+}
+
+// EnvNames are the variables the keychain injects (nothing is decrypted).
+func (k *Keychain) EnvNames(ctx context.Context) map[string]bool {
+	entries, err := k.List(ctx)
+	if err != nil {
+		return nil
+	}
+	names := map[string]bool{}
+	for _, e := range entries {
+		if e.EnvVar != "" {
+			names[e.EnvVar] = true
+		}
+	}
+	return names
 }
 
 // PrepareShell is a shell command as it runs: its placeholders resolved,

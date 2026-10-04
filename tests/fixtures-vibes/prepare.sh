@@ -10,6 +10,11 @@ mkdir -p "$FIXTURES_ROOT/bin" "$FIXTURES_ROOT/workspace/.pi" "$FIXTURES_ROOT/wor
 cp "$(dirname "$0")/../ux/fixtures/skills/.gi/skills/proof/SKILL.md" "$FIXTURES_ROOT/workspace/.gi/skills/proof/SKILL.md"
 mkdir -p "$FIXTURES_ROOT/workspace/.gi/skills/review"
 printf '%s\n' '---' 'name: review' 'description: Examine the vermilion verification marker' '---' 'Canonical skill body: VERMILION_NATIVE_SKILL_V1.' > "$FIXTURES_ROOT/workspace/.gi/skills/review/SKILL.md"
+# Shared editor specs open a visible workspace README.
+printf '%s\n' '# Fixture workspace' '' 'Sample workspace file.' > "$FIXTURES_ROOT/workspace/README.md"
+# Shared compose specs reference a visible (non-root) workspace folder.
+mkdir -p "$FIXTURES_ROOT/workspace/notes"
+printf '%s\n' '# Notes' '' 'Fixture folder.' > "$FIXTURES_ROOT/workspace/notes/index.md"
 printf '%s\n' '{"defaultProvider":"fixture-vibes","defaultModel":"fixture-vibes/fixture-1","defaultThinkingLevel":"low","enabledModels":["fixture-vibes/fixture-1","fixture-vibes/fixture-2"],"maxIterations":4,"inboundWork":{"enabled":false}}' > "$FIXTURES_ROOT/workspace/.pi/settings.json"
 printf '%s\n' '{"assistant":{"assistantName":"Gi Fixture"},"user":{"userName":"Fixture User"}}' > "$FIXTURES_ROOT/workspace/.piclaw/config.json"
 printf '%s\n' '{"fixture-vibes":{"type":"api_key","apiKey":"fixture-only"}}' > "$FIXTURES_ROOT/home/.pi/agent/auth.json"

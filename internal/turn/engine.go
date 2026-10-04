@@ -26,11 +26,11 @@ import (
 	"github.com/rcarmo/gi/internal/config"
 	"github.com/rcarmo/gi/internal/connectivity"
 	"github.com/rcarmo/gi/internal/inference"
-	"github.com/rcarmo/gi/internal/keychain"
 	"github.com/rcarmo/gi/internal/peering"
 	"github.com/rcarmo/gi/internal/routing"
 	"github.com/rcarmo/gi/internal/routing/routedsession"
 	"github.com/rcarmo/gi/internal/scripting"
+	"github.com/rcarmo/gi/internal/shellenv"
 	"github.com/rcarmo/gi/internal/store"
 	storeaudit "github.com/rcarmo/gi/internal/store/audit"
 	"github.com/rcarmo/gi/internal/store/internalx"
@@ -4215,10 +4215,11 @@ func (e *Engine) registerDefaultTools() {
 		Weight:      "heavy",
 		Activation:  "default",
 		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
-			var prepare tools.ShellPreparer
+			var db *sql.DB
 			if rt.Store != nil {
-				prepare = keychain.New(rt.Store.DB()).PrepareShell
+				db = rt.Store.DB()
 			}
+			prepare := shellenv.Preparer(db, e.runtimeCfg.ShellPath)
 			return tools.ExecuteShellPrepared(ctx, rt.WorkspaceRoot, call, rt.OnOutput, prepare)
 		},
 	})
@@ -4570,12 +4571,32 @@ func (r *sessionRunner) broadcastPost(sessionID, turnID, msgID, content, agentID
 }
 
 func (r *sessionRunner) broadcastSystemPost(sessionID, turnID, msgID, content string) {
+	r.broadcastSystemPostWithBlocks(sessionID, turnID, msgID, content, nil)
+}
+
+func (r *sessionRunner) broadcastSystemPostWithBlocks(sessionID, turnID, msgID, content string, blocks []any) {
+	data := map[string]any{"type": "system_message", "content": content, "turn_id": turnID}
+	if len(blocks) > 0 {
+		data["content_blocks"] = blocks
+	}
 	r.engine.broadcast(sessionID, map[string]any{
 		"type": "new_post", "id": msgID, "chat_jid": "gi:" + sessionID,
 		"content": content, "timestamp": time.Now().UTC().Format(time.RFC3339Nano),
 		"sender": "system",
-		"data":   map[string]any{"type": "system_message", "content": content, "turn_id": turnID},
+		"data":   data,
 	})
+}
+
+// turnOutcomeMarker is Piclaw's turn_outcome_marker content block: the chip
+// after a terminal post's timestamp naming how the turn ended.
+func turnOutcomeMarker(status, failureKind string) map[string]any {
+	switch status {
+	case "failed":
+		return map[string]any{"type": "turn_outcome_marker", "kind": tools.FirstNonEmpty(failureKind, "error"), "severity": "error", "label": "failed"}
+	case "cancelled":
+		return map[string]any{"type": "turn_outcome_marker", "kind": "cancelled", "severity": "warning", "label": "cancelled"}
+	}
+	return nil
 }
 
 // PostSystemMessage stores a system message in a session's timeline and
@@ -4645,10 +4666,14 @@ func (r *sessionRunner) finishTurnWithPayload(s *store.Store, turnID, sessionID,
 	}
 	if systemMsg != "" {
 		msgID := store.NowID("msg")
-		logutil.WarnIfErr("add terminal system message", s.AddMessage(bgCtx, msgID, sessionID, "system", systemMsg, map[string]any{
-			"kind": "chat", "source": "system", "turn_id": turnID, "agent_id": agentID,
-		}))
-		r.broadcastSystemPost(sessionID, turnID, msgID, systemMsg)
+		msgPayload := map[string]any{"kind": "chat", "source": "system", "turn_id": turnID, "agent_id": agentID}
+		var blocks []any
+		if marker := turnOutcomeMarker(status, failureKind); marker != nil {
+			blocks = []any{marker}
+			msgPayload["content_blocks"] = blocks
+		}
+		logutil.WarnIfErr("add terminal system message", s.AddMessage(bgCtx, msgID, sessionID, "system", systemMsg, msgPayload))
+		r.broadcastSystemPostWithBlocks(sessionID, turnID, msgID, systemMsg, blocks)
 	}
 	if failureKind != "" {
 		logutil.WarnIfErr("turn failure mark", s.MarkTurnFailureWithFallbackErr(r.engine.backgroundContext(), nil, turnID, sessionID, failureKind, "none", systemMsg))

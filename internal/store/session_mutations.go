@@ -64,7 +64,14 @@ func (s *Store) MutateSession(ctx context.Context, sessionID string, mutation Se
 		patch["pinned"] = *mutation.Pinned
 	case "archive":
 		if !parent.Valid || parent.String == "" {
-			return fmt.Errorf("%w: main sessions cannot be archived", ErrSessionMutationConflict)
+			// Piclaw archives main sessions too, but keeps one (web:default).
+			var others int
+			if err := tx.QueryRowContext(ctx, `select count(*) from sessions where id <> ? and coalesce(parent_session_id,'') = '' and json_extract(coalesce(state_json,'{}'),'$.archived_at') is null`, sessionID).Scan(&others); err != nil {
+				return err
+			}
+			if others == 0 {
+				return fmt.Errorf("%w: the last main session cannot be archived", ErrSessionMutationConflict)
+			}
 		}
 		var busy bool
 		if err := tx.QueryRowContext(ctx, `select exists(select 1 from turns where session_id = ? and status in ('queued', 'running')) or exists(select 1 from session_active_turns where session_id = ?)`, sessionID, sessionID).Scan(&busy); err != nil {

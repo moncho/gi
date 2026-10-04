@@ -15,6 +15,7 @@ export function projectConversationMessage(m: any, fallbackSession?: string) {
         else content = content.split(/(?:^|\n)\[tool_call:/, 1)[0];
         if (!content.trim()) return null;
     }
+    if (m.role === 'assistant' && m.payload?.kind === 'compaction') content = compactionReport(content, m.payload);
     const session = m.session_id || fallbackSession;
     const user = m.role === 'user';
     return {
@@ -26,6 +27,23 @@ export function projectConversationMessage(m: any, fallbackSession?: string) {
             ...projectMessageMedia(m.payload,session),link_previews:projectLinkPreviews(m.payload),
             content_meta:null,kind:m.payload?.kind||null,source:m.payload?.source||null,clipped:m.payload?.clipped||false},
     };
+}
+
+// Piclaw's /compact reply: "Compaction complete." and the tokens before it.
+// Gi stores the summary itself (it is the context checkpoint), so show it below.
+function compactNumber(value: number): string {
+    const format = (divisor: number, suffix: string) => { const raw = (value / divisor).toFixed(1); return `${raw.endsWith('.0') ? raw.slice(0, -2) : raw}${suffix}`; };
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000_000) return format(1_000_000_000, 'B');
+    if (abs >= 1_000_000) return format(1_000_000, 'M');
+    if (abs >= 1_000) return format(1_000, 'K');
+    return String(value);
+}
+export function compactionReport(summary: string, payload: any): string {
+    const tokens = Number(payload?.tokens_before);
+    const lines = ['Compaction complete.'];
+    if (Number.isFinite(tokens) && tokens > 0) lines.push(`Tokens before: ${compactNumber(tokens)}`);
+    return summary.trim() ? `${lines.join('\n')}\n\n${summary}` : lines.join('\n');
 }
 
 // new_post system_message frames previously bypassed the history projection.

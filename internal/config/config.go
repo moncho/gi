@@ -44,6 +44,9 @@ type RuntimeConfig struct {
 	ModelCatalogURL string `json:"model_catalog_url,omitempty"`
 	// ExternalEditor is Pi's externalEditor setting (project, else user).
 	ExternalEditor string `json:"external_editor,omitempty"`
+	// ShellPath is Pi's shellPath setting (project, else user): the shell
+	// the agent's shell tool runs instead of the detected one.
+	ShellPath string `json:"shell_path,omitempty"`
 	// HideThinkingBlock is Pi's hideThinkingBlock: thinking shows as a
 	// "Thinking..." label (project setting, else user).
 	HideThinkingBlock bool `json:"hide_thinking_block,omitempty"`
@@ -147,6 +150,7 @@ type piSettings struct {
 	TUIMode string `json:"tuiMode"`
 	// ExternalEditor is Pi's externalEditor (Ctrl+G).
 	ExternalEditor string `json:"externalEditor"`
+	ShellPath      string `json:"shellPath"`
 	// HideThinkingBlock is Pi's hideThinkingBlock (Ctrl+T toggles it).
 	HideThinkingBlock *bool `json:"hideThinkingBlock"`
 	// ModelCatalogURL is gi's modelCatalogUrl (user settings only).
@@ -241,6 +245,7 @@ func Load(workspaceRoot string) RuntimeConfig {
 		cfg.Theme = strings.TrimSpace(ps.Theme)
 		cfg.TUIMode = strings.TrimSpace(ps.TUIMode)
 		cfg.ExternalEditor = strings.TrimSpace(ps.ExternalEditor)
+		cfg.ShellPath = strings.TrimSpace(ps.ShellPath)
 		cfg.QuietStartup = parseQuietStartup(ps.QuietStartup)
 		cfg.TreeFilterMode = strings.TrimSpace(ps.TreeFilterMode)
 		projectTools, projectExtensions, projectCodemode = ps.DefaultTools, ps.Extensions, ps.Codemode
@@ -504,6 +509,9 @@ func applyGlobalPiSettings(cfg *RuntimeConfig) {
 	}
 	if cfg.TUIMode == "" {
 		cfg.TUIMode = strings.TrimSpace(global.TUIMode)
+	}
+	if cfg.ShellPath == "" {
+		cfg.ShellPath = strings.TrimSpace(global.ShellPath)
 	}
 	if cfg.ExternalEditor == "" {
 		cfg.ExternalEditor = strings.TrimSpace(global.ExternalEditor)

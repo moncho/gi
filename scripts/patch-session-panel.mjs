@@ -16,6 +16,10 @@ export function patchSessionPanel(source){
         if (!showSessionPopup) return;
         const preferred = resolveSessionPickerSearchInitialIndex`);
  replace('                                ref=${sessionSearchRef}\n                                type="search"','                                ref=${sessionSearchRef}\n                                id="gi-session-search"\n                                type="search"');
+ // Piclaw 3.2.5: any session whose capabilities allow archiving can be removed,
+ // main sessions included (the host keeps the last one).
+ replace("const canDeleteSession = !searchMode && typeof onDeleteSession === 'function' && !isCurrentRootSession;",
+  "const canDeleteSession = !searchMode && typeof onDeleteSession === 'function' && currentSessionAgent?.capabilities?.archive !== false;");
  replace('<div id="compose-session-results" class="compose-model-popup-menu"','<div id="compose-session-results" class="compose-model-popup-menu compose-session-popup-results"');
  replace('<div class="compose-session-section-label">${group.label}</div>','<div class="compose-session-section-heading" role="presentation">${group.label}</div>');
  const pin=`                                                \${!archived && chat.capabilities?.pin !== false && typeof onPinSession === 'function' && html\`

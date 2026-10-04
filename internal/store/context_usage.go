@@ -41,3 +41,12 @@ func (s *Store) LatestContextMeasurement(ctx context.Context, sessionID string) 
 	measurement.TurnID, measurement.ObservedAt = turnID, at
 	return &measurement, nil
 }
+
+// ContextMeasurementStale reports whether a completed, durable compaction
+// replaced the history after the latest provider measurement. Pi then treats
+// the measured usage as obsolete until the next response.
+func (s *Store) ContextMeasurementStale(ctx context.Context, sessionID string) (bool, error) {
+	var stale bool
+	err := s.db.QueryRowContext(ctx, `select exists(select 1 from turn_events c where c.session_id = ? and c.event_type = 'compaction.completed' and coalesce(json_extract(c.payload_json,'$.durable_context'),0) = 1 and c.rowid > coalesce((select max(m.rowid) from turn_events m where m.session_id = c.session_id and m.event_type = 'context.measured'),0))`, sessionID).Scan(&stale)
+	return stale, err
+}

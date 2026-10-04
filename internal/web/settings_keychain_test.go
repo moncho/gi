@@ -89,7 +89,7 @@ func TestWebShellToolUsesKeychain(t *testing.T) {
 	if err := srv.keychain().Set(t.Context(), keychain.Entry{Name: "deploy/token", Secret: "tok-1"}); err != nil {
 		t.Fatal(err)
 	}
-	out := executeShellTool(t.Context(), srv.keychain(), `printf '%s|%s|' "$DEPLOY_TOKEN" keychain:deploy/token; env | grep -c tok-1`)
+	out := executeShellTool(t.Context(), srv.store.DB(), "", `printf '%s|%s|' "$DEPLOY_TOKEN" keychain:deploy/token; env | grep -c tok-1`)
 	if out.Result != "tok-1|tok-1|1\n" {
 		t.Fatalf("%+v", out)
 	}

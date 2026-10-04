@@ -242,11 +242,11 @@ for(const id of ['@ux-compaction-001','@ux-compaction-002','@ux-compaction-004',
    await expect(pie).toHaveAttribute('data-tooltip',/latest measured provider request/);
    const measured=(await(await request.get(`/api/sessions/${main.id}/model`)).json()).context_usage;expect(measured.source).toBe('provider_request');expect(measured.tokens).not.toBe(native.tokens_before);
    await expect(page.locator('.gi-compaction-elapsed')).toHaveText(/\d+:\d\d/);await expect(page.getByRole('button',{name:'Compacting context — Stop response',exact:true})).toBeVisible();
-   await expect(pie).toBeDisabled(); // manual compaction capability still absent
+   await expect(pie).toBeEnabled(); // Piclaw 3.2.5: the meter stays actionable; an unavailable request reports why
    const first=await page.locator('.gi-compaction-elapsed').textContent();await expect.poll(()=>page.locator('.gi-compaction-elapsed').textContent(),{timeout:4000}).not.toBe(first);
    release();await expect.poll(async()=> (await turns()).find(t=>t.id===turn.turn_id).status).toBe('completed');
    await expect(pie).not.toHaveClass(/is-compacting/);await expect(page.locator('.gi-compaction-elapsed')).toHaveCount(0);await expect(pie).not.toHaveAttribute('data-tooltip',/estimated history/);
-   await expect(pie).toHaveAttribute('aria-label','Context: 180 / 32K tokens (1%)',{timeout:15000});
+   await expect(pie).toHaveAttribute('aria-label','Context: 180 / 32K tokens (1%)\nCompact context',{timeout:15000});
    await expect(input).toHaveValue('preserved draft during compaction');await expect(page.locator('.compose-file-pill[title="keep.txt"]')).toBeVisible();
    const messages=(await(await request.get(`/api/sessions/${main.id}/messages`)).json()).messages;
    expect(messages.some(m=>m.payload?.kind==='compaction'&&m.payload?.turn_id===turn.turn_id)).toBe(true);
@@ -266,7 +266,7 @@ test('@ux-context-003 Manual Compact capability, callback and preserved draft',a
  const turns=async()=>(await(await request.get(`/api/sessions/${main.id}/turns`)).json()).turns||[];
  await page.addInitScript(id=>localStorage.setItem('gi_session_id',id),main.id);await page.goto('/');
  const input=page.getByRole('textbox',{name:inputName,exact:true}),pie=page.locator('.compose-context-pie');
- await expect(pie).toBeDisabled();await expect(pie).toHaveAttribute('data-tooltip',/Not enough eligible context/);
+ await expect(pie).toBeEnabled();await expect(pie).toHaveAttribute('data-tooltip',/Not enough eligible context/);
  for(let i=0;i<2;i++){const res=await(await request.post(`/api/sessions/${main.id}/prompt`,{data:{prompt:`manual history ${i}`,model:'ux-local/gate'}})).json();await expect.poll(async()=> (await turns()).find(t=>t.id===res.turn_id).status).toBe('completed');}
  await expect(pie).toBeEnabled({timeout:15000});await expect(pie).not.toHaveAttribute('aria-description',/.+/);await expect(pie).toHaveAttribute('data-tooltip',/Compact context/);
  await input.fill('unsent manual draft');await page.locator('.compose-box input[type=file]').setInputFiles({name:'manual.txt',mimeType:'text/plain',buffer:Buffer.from('keep')});
@@ -275,7 +275,7 @@ test('@ux-context-003 Manual Compact capability, callback and preserved draft',a
  let releaseRequest;const requestGate=new Promise(resolve=>{releaseRequest=resolve;});let posts=0;
  await page.route(`**/api/sessions/${main.id}/compaction`,async route=>{if(route.request().method()==='POST'){posts++;await requestGate;}await route.continue();});
  const sent=page.waitForResponse(r=>r.url().endsWith(`/api/sessions/${main.id}/compaction`)&&r.request().method()==='POST');
- try{await pie.click();await expect(pie).toBeDisabled();await expect(pie).toHaveAccessibleDescription('Compaction request pending');await expect(pie).toHaveAttribute('data-tooltip',/Compaction request pending$/);await pie.dispatchEvent('click');expect(posts).toBe(1);}finally{releaseRequest();}
+ try{await pie.click();await expect(pie).toBeEnabled();await expect(pie).toHaveAccessibleDescription('Compaction request pending');await expect(pie).toHaveAttribute('data-tooltip',/Compaction request pending$/);await pie.dispatchEvent('click');expect(posts).toBe(1);}finally{releaseRequest();}
  const response=await sent;expect(response.status()).toBe(202);const manual=await response.json();await page.unroute(`**/api/sessions/${main.id}/compaction`);
  const gate=resolve('test-results/ux-parity/queue-gates',`manual-${main.id}`);mkdirSync(resolve(gate,'..'),{recursive:true});
  try{
@@ -285,7 +285,8 @@ test('@ux-context-003 Manual Compact capability, callback and preserved draft',a
   await expect(pie).not.toHaveClass(/is-compacting/);await expect(input).toHaveValue('unsent manual draft');
   const after=(await(await request.get(`/api/sessions/${main.id}/messages`)).json()).messages;for(const m of beforeMessages)expect(after.find(x=>x.id===m.id)).toEqual(m);
   expect(after.filter(m=>m.payload?.turn_id===manual.turn_id&&m.role==='user')).toHaveLength(0);expect(after.some(m=>m.payload?.turn_id===manual.turn_id&&m.payload?.durable_context)).toBe(true);
-  expect((await(await request.get(`/api/sessions/${main.id}/model`)).json()).context_usage).toEqual(beforeUsage);
+  // Piclaw 3.2.5: after a durable compaction the stale measurement gives way to the local estimate.
+  {const after=(await(await request.get(`/api/sessions/${main.id}/model`)).json()).context_usage;expect(after.source).toBe('estimate');expect(Number.isSafeInteger(after.tokens)&&after.tokens>0).toBe(true);expect(after.contextWindow).toBe(beforeUsage.contextWindow);}
   expect(await turns()).toHaveLength(3);await page.reload();await expect(input).toHaveValue('unsent manual draft');await expect(page.locator('.compose-file-pill[title="manual.txt"]')).toBeVisible();
  }finally{writeFileSync(gate,'go');}
 });

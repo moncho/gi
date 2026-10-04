@@ -48,10 +48,14 @@ tool does:
   entries map to one variable, the first by name keeps it.
 - **Injection.** A secret enters a command's environment only when the command text names its variable literally:
   `$NAME`, `${NAME}`, `$env:NAME` (PowerShell) or `%NAME%` (cmd). Indirect expansion, `printenv` and environment
-  enumeration see nothing else. A variable already set in gi's own environment keeps its value.
+  enumeration see nothing else. A variable already set in the command's environment (gi's own, with Settings →
+  Environment overrides) keeps its value. Entries are decrypted only when a command names them.
 - **Placeholders.** `keychain:<name>` in the command text is replaced by the entry's secret,
   `keychain:<name>:username` or `:user` by its username, and `:secret`, `:password` or `:token` by its secret. A
   placeholder naming no entry, or a username the entry lacks, fails the command before it runs, with Piclaw's message.
+
+The shell, environment overrides and the order of these steps are described in
+[shell-environment.md](shell-environment.md).
 
 `scripts/golden-keychain.mjs` records Piclaw 3.2.5's own results (sealed rows, variable names, injected environments
 and placeholder substitutions) for `TestMatchesPiclaw`.

@@ -1110,7 +1110,7 @@ export function ComposeBox({
         setSessionMutationNotice('');
         try {
             await callback(chat.chat_jid, value);
-            if (epoch !== sessionPopupEpoch.current) return;
+            if (epoch !== sessionPopupEpoch.current) return true;
             setSessionEdit(null);
             setSessionMutationNotice(`${{ rename: 'Renamed', pin: value ? 'Pinned' : 'Unpinned', archive: 'Archived', restore: 'Restored' }[action]} session.`);
             // The row can move groups after mutation. Focus the stable search,
@@ -1118,6 +1118,7 @@ export function ComposeBox({
             requestAnimationFrame(() => {
                 if (epoch === sessionPopupEpoch.current) sessionSearchRef.current?.focus();
             });
+            return true;
         } catch (error) {
             if (epoch === sessionPopupEpoch.current) setSessionMutationError(error?.message || `Failed to ${action} session`);
         } finally {
@@ -1128,7 +1129,7 @@ export function ComposeBox({
 
     const handleRestoreSession = async (chatJid) => {
         const chat = switchableChatAgents.find(chat => chat.chat_jid === chatJid);
-        await runSessionMutation(chat, 'restore');
+        return runSessionMutation(chat, 'restore');
     };
 
     const beginSessionEdit = (chat, action) => {
@@ -1265,7 +1266,8 @@ export function ComposeBox({
         if (entry.type === 'session') {
             const chat = entry.chat;
             if (chat?.archived_at) {
-                void handleRestoreSession(chat.chat_jid);
+                // Piclaw 3.2.5: choosing an archived entry restores and opens it.
+                void handleRestoreSession(chat.chat_jid).then((restored) => { if (restored) handleSessionSwitch(chat.chat_jid); });
             } else {
                 handleSessionSwitch(chat.chat_jid);
             }
@@ -2321,7 +2323,7 @@ export function ComposeBox({
                                                 aria-current=${chat.chat_jid === currentChatJid ? 'true' : undefined}
                                                 onClick=${() => {
                                                     if (archived) {
-                                                        void handleRestoreSession(chat.chat_jid);
+                                                        void handleRestoreSession(chat.chat_jid).then((restored) => { if (restored) handleSessionSwitch(chat.chat_jid); });
                                                         return;
                                                     }
                                                     handleSessionSwitch(chat.chat_jid);

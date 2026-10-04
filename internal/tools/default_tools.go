@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -78,28 +77,39 @@ func ExecuteShellOutput(ctx context.Context, workspaceRoot string, call goai.Too
 	return ExecuteShellPrepared(ctx, workspaceRoot, call, onOutput, nil)
 }
 
-// ShellPreparer rewrites a shell command before it runs and returns the
-// environment it adds (the keychain's placeholders and variables).
-type ShellPreparer func(ctx context.Context, command string) (string, []string, error)
+// PreparedShell is a shell command as it runs: the command text (keychain
+// placeholders resolved), its full environment (nil: the process's) and the
+// configured shell path ("" to detect one).
+type PreparedShell struct {
+	Command   string
+	Env       []string
+	ShellPath string
+}
+
+// ShellPreparer prepares a shell command before it runs.
+type ShellPreparer func(ctx context.Context, command string) (PreparedShell, error)
 
 // ExecuteShellPrepared runs the shell tool's command after prepare (nil for
-// none).
+// none) in the detected shell.
 func ExecuteShellPrepared(ctx context.Context, workspaceRoot string, call goai.ToolCall, onOutput func(string) error, prepare ShellPreparer) (string, error) {
 	command, _ := call.Arguments["command"].(string)
 	if command == "" {
 		return "", fmt.Errorf("shell: command is required")
 	}
-	var env []string
+	prepared := PreparedShell{Command: command}
 	if prepare != nil {
 		var err error
-		if command, env, err = prepare(ctx, command); err != nil {
+		if prepared, err = prepare(ctx, command); err != nil {
 			return "", fmt.Errorf("shell: %w", err)
 		}
 	}
-	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	cmd, err := ShellCommand(ctx, prepared.ShellPath, prepared.Command)
+	if err != nil {
+		return "", fmt.Errorf("shell: %w", err)
+	}
 	cmd.Dir = workspaceRoot
-	if len(env) > 0 {
-		cmd.Env = append(os.Environ(), env...)
+	if prepared.Env != nil {
+		cmd.Env = prepared.Env
 	}
 	if onOutput == nil {
 		out, err := cmd.CombinedOutput()
@@ -112,7 +122,7 @@ func ExecuteShellPrepared(ctx context.Context, workspaceRoot string, call goai.T
 	cmd.Cancel = func() error { killShellProcess(cmd); return nil }
 	output := &toolOutputWriter{notify: onOutput, cancel: func() { killShellProcess(cmd) }}
 	cmd.Stdout, cmd.Stderr = output, output
-	err := cmd.Run()
+	err = cmd.Run()
 	if output.err != nil {
 		return output.text.String(), output.err
 	}

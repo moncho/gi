@@ -7,9 +7,9 @@ test('@ux-context-002 Keep unknown usage values visibly unknown',async({page,req
  await page.addInitScript(id=>localStorage.setItem('gi_session_id',id),session.id);
  await page.goto('/');
  const meter=page.locator('.compose-context-pie');
- await expect(meter).toBeVisible();await expect(meter).toBeDisabled();
+ await expect(meter).toBeVisible();await expect(meter).toBeEnabled();
  await expect(meter).toHaveAttribute('title','Context: ? / ? tokens (?%) — usage unavailable — Not enough eligible context');
- await expect(meter).toHaveAttribute('aria-label','Context: ? / ? tokens (?%)');
+ await expect(meter).toHaveAttribute('aria-label','Context: ? / ? tokens (?%)\nCompact context');
  let state=await(await request.get(`/api/sessions/${session.id}/model`)).json();
  expect(state.context_usage).toMatchObject({tokens:null,percent:null,contextWindow:null,source:'unavailable'});
  const input=page.getByRole('textbox',{name:'Message (Enter to send, Shift+Enter for newline)...',exact:true});

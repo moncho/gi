@@ -158,7 +158,7 @@ function Dialog({ chatJid, initialSection = 'general', onClose, onMutationStart,
                 ${section === 'models' && html`<input ref=${filterRef} type="search" class="settings-header-filter" aria-label="Filter models" placeholder="Filter models…" value=${filter} disabled=${busyScope === searchScope} onInput=${e => setFilter(e.target.value)} />`}
                 <button class="settings-dialog-close" aria-label="Close settings" onClick=${onClose}>✕</button></header>
             <div class="settings-dialog-body"><nav class="settings-nav" aria-label="Settings sections">
-                ${['general', 'models', 'appearance', 'compaction', 'providers', 'keychain', 'authentication'].map(id => html`<button class=${`settings-nav-item ${section === id ? 'active' : ''}`} aria-current=${section === id ? 'page' : undefined} onClick=${() => setSection(id)}>${{ general: 'General', models: 'Models', appearance: 'Appearance', compaction: 'Compaction', providers: 'Providers', keychain: 'Keychain', authentication: 'Authentication' }[id]}</button>`)}
+                ${['general', 'models', 'appearance', 'compaction', 'providers', 'keychain', 'environment', 'authentication'].map(id => html`<button class=${`settings-nav-item ${section === id ? 'active' : ''}`} aria-current=${section === id ? 'page' : undefined} onClick=${() => setSection(id)}>${{ general: 'General', models: 'Models', appearance: 'Appearance', compaction: 'Compaction', providers: 'Providers', keychain: 'Keychain', environment: 'Environment', authentication: 'Authentication' }[id]}</button>`)}
             </nav><main class="settings-content">
                 ${section === 'general' ? html`<${General} />` : html`<${LazySettingsPane} key=${section} section=${section} chatJid=${chatJid} filter=${filter} onMutationStart=${() => { setBusyScope(searchScope); return onMutationStart(); }} onMutationEnd=${token => { setBusyScope(previous => previous === searchScope ? null : previous); onMutationEnd(token); }} onApplied=${onApplied} />`}
             </main></div>
@@ -188,7 +188,7 @@ export function GiSettings({ chatJid, onMutationStart, onMutationEnd, onApplied 
             if (isOpen.current) return;
             const detail = event instanceof CustomEvent ? event.detail : null;
             const requested = detail?.section;
-            setInitialSection(['general','models','appearance','compaction','providers','keychain','authentication'].includes(requested) ? requested : 'general');
+            setInitialSection(['general','models','appearance','compaction','providers','keychain','environment','authentication'].includes(requested) ? requested : 'general');
             opener.current = detail?.opener instanceof HTMLElement && detail.opener.isConnected ? detail.opener : document.activeElement as HTMLElement;
             isOpen.current = true; setOpen(true);
         };

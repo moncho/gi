@@ -65,3 +65,31 @@ func TestContextMeasurementUnknownScopeReopenAndModelFit(t *testing.T) {
 		t.Fatal("shared selection skipped context gate")
 	}
 }
+
+// After a durable compaction the earlier measurement is stale: report the
+// local estimate of the compacted context instead (Piclaw), marked "estimate".
+func TestContextUsageEstimatesAfterCompaction(t *testing.T) {
+	ctx := context.Background()
+	s, err := store.Open(filepath.Join(t.TempDir(), "context.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	s.CreateSession(ctx, "A", "A", nil)
+	s.CreateTurn(ctx, "one", "A", "hello", nil)
+	s.AddMessage(ctx, "m1", "A", "user", "hello there", nil)
+	s.AppendTurnEvent(ctx, "one", "A", "context.measured", map[string]any{"tokens": 10, "input": 10})
+	s.AppendTurnEvent(ctx, "one", "A", "compaction.completed", map[string]any{"durable_context": false})
+	if u, _ := SessionContextUsage(ctx, s, "A", 1000); u["tokens"] != 10 || u["source"] != "provider_request" {
+		t.Fatal("non-durable compaction made the measurement stale", u)
+	}
+	s.AppendTurnEvent(ctx, "one", "A", "compaction.completed", map[string]any{"durable_context": true})
+	u, err := SessionContextUsage(ctx, s, "A", 1000)
+	if err != nil || u["source"] != "estimate" || u["tokens"] == 10 || u["tokens"].(int) <= 0 {
+		t.Fatal(u, err)
+	}
+	s.AppendTurnEvent(ctx, "one", "A", "context.measured", map[string]any{"tokens": 42, "input": 42})
+	if u, _ := SessionContextUsage(ctx, s, "A", 1000); u["tokens"] != 42 || u["source"] != "provider_request" {
+		t.Fatal("new measurement not preferred", u)
+	}
+}

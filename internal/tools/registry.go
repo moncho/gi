@@ -39,6 +39,8 @@ type ToolRuntime struct {
 	// ToolCallID is the model's ID for this call (the parent of codemode's
 	// nested calls).
 	ToolCallID string
+	// PublishMessage broadcasts a message only after its durable write succeeds.
+	PublishMessage func(store.Message)
 	// SetDetails attaches structured details to the result for renderers
 	// (nil outside turns), e.g. codemode's nested calls.
 	SetDetails func(map[string]any)
@@ -75,6 +77,9 @@ type RegisteredTool struct {
 	// PromptSnippet and PromptGuidelines are the tool's contribution to the
 	// system prompt's tools and rules sections (Pi's promptSnippet and
 	// promptGuidelines), used while the tool is declared.
+	// CompletesTurn marks tools that publish the assistant response themselves.
+	// The runner still drains the admitted tool-call batch before completion.
+	CompletesTurn    bool
 	PromptSnippet    string
 	PromptGuidelines []string
 }

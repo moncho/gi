@@ -289,7 +289,7 @@ func (e *Engine) ExecuteToolByName(ctx context.Context, name, sessionID string, 
 	if !ok {
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
-	return tool.Executor(ctx, tools.ToolRuntime{Store: e.store, SessionID: sessionID, WorkspaceRoot: e.runtimeCfg.WorkspaceRoot}, goai.ToolCall{Name: name, Arguments: args})
+	return tool.Executor(ctx, tools.ToolRuntime{Store: e.store, SessionID: sessionID, WorkspaceRoot: e.runtimeCfg.WorkspaceRoot, PublishMessage: e.publishWidgetMessage}, goai.ToolCall{Name: name, Arguments: args})
 }
 func (e *Engine) executeToolsTool(args map[string]any) (string, error) {
 	return tools.ExecuteToolsTool(e.tools, args, e.SetActiveTools, e.ActiveTools, e.ResetActiveTools)
@@ -4088,6 +4088,7 @@ func (e *Engine) registerDefaultTools() {
 	})
 	registerDiscoveredTools()
 	must(tools.MessagesTool())
+	must(tools.DashboardWidgetTool())
 	must(tools.RegisteredTool{
 		Name:        "read",
 		Description: tools.ReadToolDescription,
@@ -4453,16 +4454,17 @@ func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.Too
 		return "", fmt.Errorf("unknown tool: %s", call.Name)
 	}
 	return tool.Executor(ctx, tools.ToolRuntime{
-		Store:         r.store,
-		SessionID:     sessionID,
-		TurnID:        turnID,
-		WorkspaceRoot: r.engine.runtimeCfg.WorkspaceRoot,
-		OnOutput:      onOutput,
-		AttachImage:   images.attachFunc(),
-		AddTools:      images.addToolsFunc(),
-		ToolCallID:    call.ID,
-		SetDetails:    images.setDetailsFunc(),
-		AddUsage:      images.addUsageFunc(),
+		Store:          r.store,
+		SessionID:      sessionID,
+		TurnID:         turnID,
+		WorkspaceRoot:  r.engine.runtimeCfg.WorkspaceRoot,
+		OnOutput:       onOutput,
+		AttachImage:    images.attachFunc(),
+		AddTools:       images.addToolsFunc(),
+		ToolCallID:     call.ID,
+		SetDetails:     images.setDetailsFunc(),
+		AddUsage:       images.addUsageFunc(),
+		PublishMessage: r.engine.publishWidgetMessage,
 	}, call)
 }
 
@@ -5272,6 +5274,7 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 	defer func() {
 		_, _ = r.engine.emitHook(ctx, HookRequest{Name: HookToolExecutionEnd, SessionID: sessionID, TurnID: turnID, AgentID: agentID, Model: model, Iteration: iter, Payload: map[string]any{"count": len(toolCalls)}})
 	}()
+	responsePosted := false
 	for _, call := range toolCalls {
 		if ctx.Err() != nil {
 			r.finishTurn(s, turnID, sessionID, agentID, model, "cancelled", "Turn cancelled during tool execution", "")
@@ -5464,9 +5467,20 @@ func (r *sessionRunner) executeToolCallsPhase(ctx context.Context, s *store.Stor
 			logutil.WarnIfErr("add successful tool_result message", s.AddMessage(ctx, store.NowID("msg"), sessionID, "tool_result", displayResult+images.transcriptSuffix(), images.withDetails(map[string]any{
 				"kind": "tool_result", "tool_call_id": call.ID, "tool_name": call.Name, "is_error": false, "turn_id": turnID,
 			})))
+			if tool, ok := r.engine.tools.GetRegistered(call.Name); ok && tool.CompletesTurn {
+				responsePosted = true
+			}
 			outcome.lastToolFailureSig = ""
 			outcome.repeatedToolFailureCount = 0
 		}
+	}
+	if responsePosted {
+		// Leave steering queued for the normal final checkpoint/handoff; do not
+		// dequeue it into a model continuation that this UI-only response replaces.
+		r.persistUsage(s, turnID, sessionID, totalUsage, iter)
+		r.finishTurnOK(s, turnID, sessionID, agentID, model, iter)
+		outcome.terminated = true
+		return outcome
 	}
 	// Pi drains the assistant's tool-call batch before polling steering for the
 	// next model turn. A message queued during one tool must not suppress later

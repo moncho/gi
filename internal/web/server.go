@@ -317,6 +317,12 @@ func (s *Server) handleSessionSubroutes(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	switch parts[1] {
+	case "widgets":
+		if len(parts) == 3 && parts[2] != "" {
+			s.handleDashboardWidget(w, r, sessionID, parts[2])
+		} else {
+			http.NotFound(w, r)
+		}
 	case "search":
 		s.handleSessionSearch(w, r, sessionID)
 	case "messages":

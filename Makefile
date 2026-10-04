@@ -1003,3 +1003,8 @@ fmt-tool-paths:
 	$(GO) fmt ./internal/tools
 test-tool-paths:
 	$(GO) test $(RACE) ./internal/tools -count=1
+
+# Backend-only widget persistence, lookup/auth and turn/SSE tests.
+.PHONY: test-dashboard-widgets
+test-dashboard-widgets:
+	$(GO) test $(RACE) ./internal/store ./internal/tools ./internal/turn ./internal/web -run TestDashboardWidget

@@ -46,6 +46,8 @@ The dated entries below are a working log; their test counts describe the code a
   - Removed Gi's copies of the shared Gherkin (`features/ux/`), the upstream snapshots and their provenance checks; the passkey ledger reads the suite's feature.
   - Retired the Piclaw 3.2.4 pins: the vendored SVG and status sources are re-pinned to 3.2.5 (only the status panel's `i18n.ts` changed), and the 3.2.4 oracle probes and their `test-piclaw-*` targets are removed.
 
+- [x] gi#48 backend: session Plan Markdown, read/write/edit/patch/update tool, authenticated Plan API and session-scoped change events; front-end acceptance belongs to @fixtures-vibes; gi#48 stays open.
+
 - [x] gi#49 backend: `send_dashboard_widget`, durable HTML content blocks, session-scoped widget lookup, SSE publication and backend tests. Front-end lifecycle/bridge belongs to @fixtures-vibes; gi#49 stays open until browser acceptance.
 
 - [x] gi#35: confirm deletion of visible replies; delete the parent and its replies atomically, preserving audit/media and resetting context checkpoints. Cover cancel, 409 retry, reload, session isolation and busy-session rejection.

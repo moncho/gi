@@ -1008,3 +1008,8 @@ test-tool-paths:
 .PHONY: test-dashboard-widgets
 test-dashboard-widgets:
 	$(GO) test $(RACE) ./internal/store ./internal/tools ./internal/turn ./internal/web -run TestDashboardWidget
+
+# Backend-only Plan parser, persistence, tool, API and change events.
+.PHONY: test-session-plan
+test-session-plan:
+	$(GO) test $(RACE) ./internal/plan ./internal/store ./internal/tools ./internal/turn ./internal/web -run Plan

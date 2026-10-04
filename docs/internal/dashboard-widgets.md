@@ -67,7 +67,7 @@ Front-end bridge contract:
 - `widget.request_refresh`: fetch the stored artifact and deliver a host update to the iframe. No server-side JavaScript execution or arbitrary callback dispatch.
 - `widget.close`: close the pane locally. No HTTP request and no queue mutation.
 
-The front-end must isolate widget scripts from the parent application's origin and verify the sending iframe when accepting bridge messages. These controls are separate from backend session authentication.
+The front-end follows Piclaw 3.2.5's sandbox and bridge policy. Interactive frames use scripts and same-origin permissions; keyed messages are matched by session key, and source-window checking applies to unkeyed messages. This permits access to the application origin. Rui's cross-runtime sandbox decision is separate from the backend contract.
 
 ## Verification
 

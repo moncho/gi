@@ -41,6 +41,8 @@ type ToolRuntime struct {
 	ToolCallID string
 	// PublishMessage broadcasts a message only after its durable write succeeds.
 	PublishMessage func(store.Message)
+	// PublishPlan announces a committed session plan mutation.
+	PublishPlan func(store.SessionPlan, string, string)
 	// SetDetails attaches structured details to the result for renderers
 	// (nil outside turns), e.g. codemode's nested calls.
 	SetDetails func(map[string]any)

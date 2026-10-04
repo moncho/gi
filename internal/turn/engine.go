@@ -213,6 +213,7 @@ func NewWithRuntimeConfig(s *store.Store, cfg config.RuntimeConfig, systemPrompt
 		subs:              map[string]map[chan map[string]any]bool{},
 	}
 	e.registerDefaultTools()
+	e.registerSessionPlanContext()
 	e.registerCodemodeTool()
 	e.startTopicBridge()
 	// User-level skills live outside the workspace; the prompt tells the model
@@ -289,7 +290,7 @@ func (e *Engine) ExecuteToolByName(ctx context.Context, name, sessionID string, 
 	if !ok {
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
-	return tool.Executor(ctx, tools.ToolRuntime{Store: e.store, SessionID: sessionID, WorkspaceRoot: e.runtimeCfg.WorkspaceRoot, PublishMessage: e.publishWidgetMessage}, goai.ToolCall{Name: name, Arguments: args})
+	return tool.Executor(ctx, tools.ToolRuntime{Store: e.store, SessionID: sessionID, WorkspaceRoot: e.runtimeCfg.WorkspaceRoot, PublishMessage: e.publishWidgetMessage, PublishPlan: e.PublishPlanChanged}, goai.ToolCall{Name: name, Arguments: args})
 }
 func (e *Engine) executeToolsTool(args map[string]any) (string, error) {
 	return tools.ExecuteToolsTool(e.tools, args, e.SetActiveTools, e.ActiveTools, e.ResetActiveTools)
@@ -4089,6 +4090,7 @@ func (e *Engine) registerDefaultTools() {
 	registerDiscoveredTools()
 	must(tools.MessagesTool())
 	must(tools.DashboardWidgetTool())
+	must(tools.PlanTool())
 	must(tools.RegisteredTool{
 		Name:        "read",
 		Description: tools.ReadToolDescription,
@@ -4465,6 +4467,7 @@ func (r *sessionRunner) executeToolWithImages(ctx context.Context, call goai.Too
 		SetDetails:     images.setDetailsFunc(),
 		AddUsage:       images.addUsageFunc(),
 		PublishMessage: r.engine.publishWidgetMessage,
+		PublishPlan:    r.engine.PublishPlanChanged,
 	}, call)
 }
 

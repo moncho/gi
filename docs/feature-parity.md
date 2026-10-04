@@ -17,13 +17,13 @@ Gi shares pinned Piclaw browser components and Pi/Piclaw configuration files, bu
 
 `make fixtures-vibes` runs the suite pinned at `references/fixtures-vibes` (`f796ddf`) on Chromium and WebKit at phone, tablet and desktop sizes. `tests/fixtures-vibes/profile.json` declares the capabilities Gi claims, and `tests/fixtures-vibes/skips.json` lists every scenario Gi does not pass, with its reason. A failure that is not listed, a capability skip that is not listed, or a listed scenario that now passes fails the report gate.
 
-The last full run (2026-10-04, 09:18 UTC, tree at `019619c` with the Settings work in progress) reported:
+The last full run (2026-10-04, 13:24 UTC, commit `88e5b13`, 57.7 minutes) reported:
 
 | Scenarios | Passed | Failed | Skipped | Listed failing | No suite test yet |
 |---:|---:|---:|---:|---:|---:|
-| 329 | 150 | 1 | 90 | 10 | 78 |
+| 329 | 158 | 1 | 85 | 7 | 78 |
 
-`f106199` addressed that run's gate problems. It fixed `@ux-compose-011` (on phone and tablet the timeline lost its bottom anchor while the composer grew) and `@ux-settings-004/016/018/019`, which then passed in all six projects. It listed the 52 unlisted capability skips and claimed `@cap-touch`. A full rerun on `f106199` has not completed yet.
+The one failure was `@ux-chat-lifecycle-009` on webkit-phone only: `page.goto` stopped with "WebKit encountered an internal error" while opening the second session. It passed in the other five projects, in every earlier run, and in 10 of 10 repeats on webkit-phone afterwards. There are no other gate problems: every unpassed scenario is listed. Compared with the 09:18 UTC run on `019619c`, `@ux-compose-011` and `@ux-settings-004/016/018/019` now pass in all six projects, the 52 previously unlisted capability skips are listed, and `@cap-touch` is claimed (`@ux-mobile-001/004/005/006` pass; `@ux-mobile-002` is gi#42).
 
 Scenarios Gi does not pass:
 

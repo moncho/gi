@@ -17,7 +17,7 @@ test('@gi-settings-028 supported session thinking is explicit, durable and reach
   let prompts=0;page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/prompt'))prompts++});
   await h.open();await expect(page.getByRole('combobox',{name:'Session thinking level',exact:true})).toHaveCount(0);
   await page.getByRole('listbox',{name:'Session model',exact:true}).selectOption('ux-local/reasoner');await page.getByRole('button',{name:'Apply model',exact:true}).click();
-  const select=page.getByRole('combobox',{name:'Session thinking level',exact:true});await expect(select).toBeEnabled();expect(await select.locator('option').allTextContents()).toEqual(['Provider default','low','high']);
+  const select=page.getByRole('combobox',{name:'Session thinking level',exact:true});await expect(select).toBeEnabled();expect(await select.locator('option').allTextContents()).toEqual(['Default (high)','low','high']);
   await select.selectOption('high');expect((await h.model()).thinking_level).toBe('');await page.getByRole('button',{name:'Apply thinking',exact:true}).click();
   await expect(page.getByText('Thinking applied to future turns in this session.',{exact:true})).toBeVisible();await expect(select).toHaveValue('high');expect(prompts).toBe(0);
   expect(await h.model()).toMatchObject({current:'ux-local/reasoner',thinking_level:'high',thinking_levels:['low','high'],supports_thinking:true});
@@ -29,7 +29,9 @@ test('@gi-settings-028 supported session thinking is explicit, durable and reach
   await expect(page.locator('.post').filter({hasText:'Provider model reasoner thinking high:'})).toBeVisible();expect(prompts).toBe(1);
   await h.open();await select.selectOption('');await page.getByRole('button',{name:'Apply thinking',exact:true}).click();await expect(select).toHaveValue('');await expect(page.getByRole('button',{name:'Apply thinking',exact:true})).toBeDisabled();await h.closeSettings();
   await h.input.fill('provider default next');const second=page.waitForResponse(r=>r.request().method()==='POST'&&r.url().endsWith(`/api/sessions/${h.id}/prompt`));await h.input.press('Enter');const next=await(await second).json();
-  await expect.poll(async()=>(await h.read(`/api/sessions/${h.id}/turns`)).turns.find(t=>t.id===next.turn_id)?.status).toBe('completed');await expect(page.locator('.post').filter({hasText:'Provider model reasoner thinking absent:'})).toBeVisible();expect(prompts).toBe(2);
+  await expect.poll(async()=>(await h.read(`/api/sessions/${h.id}/turns`)).turns.find(t=>t.id===next.turn_id)?.status).toBe('completed');// No session level: Pi's default (medium) clamped to the model's levels.
+  expect((await h.model()).default_thinking_level).toBe('high');
+  await expect(page.locator('.post').filter({hasText:'Provider model reasoner thinking high:'}).filter({hasText:'provider default next'})).toBeVisible();expect(prompts).toBe(2);
  }finally{await h.close()}
 });
 
@@ -50,7 +52,8 @@ test('@gi-settings-029 model switching resets thinking without dispatching the e
   await expect(levels).toHaveValue('');await h.closeSettings();
   await h.input.fill('after model switch');const response=page.waitForResponse(r=>r.request().method()==='POST'&&r.url().endsWith(`/api/sessions/${h.id}/prompt`));await h.input.press('Enter');const admitted=await(await response).json();
   await expect.poll(async()=>(await h.read(`/api/sessions/${h.id}/turns`)).turns.find(t=>t.id===admitted.turn_id)?.status).toBe('completed');
-  await expect(page.locator('.post').filter({hasText:'Provider model reasoner thinking absent:'})).toBeVisible();
+  // The reset level falls back to Pi's default thinking level, clamped to the model.
+  await expect(page.locator('.post').filter({hasText:'Provider model reasoner thinking high:'}).filter({hasText:'after model switch'})).toBeVisible();
  }finally{await h.close()}
 });
 

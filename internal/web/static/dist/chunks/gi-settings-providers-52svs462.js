@@ -6,7 +6,7 @@ import {
   getGiProviders,
   saveGiProviderKey,
   removeGiProviderKey
-} from "./app-dbj801ab.js";
+} from "./app-0y8n023b.js";
 
 // web/src/gi-settings-providers.ts
 function GiSettingsProviders() {

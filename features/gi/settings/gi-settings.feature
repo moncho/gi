@@ -62,7 +62,7 @@ Feature: Gi settings backed by native capabilities
   Scenario: A model switch clears the old model-bound thinking choice
     Given session "main" has an applied supported thinking level and an unsent composer draft
     When I select a different model and activate Apply model
-    Then the accepted native model selection resets thinking to provider default
+    Then the accepted native model selection resets thinking to the default level
     And the old model-bound level is not carried into a later provider request
     And the composer draft remains unsent and unchanged
 

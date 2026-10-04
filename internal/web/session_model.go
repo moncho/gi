@@ -35,7 +35,10 @@ func (s *Server) sessionModelPayload(ctx context.Context, session *store.Session
 		return nil, err
 	}
 	levels := inference.ThinkingLevels(current)
-	return map[string]any{"thinking_levels": levels, "thinking_token": store.SessionThinkingToken(session.ID, session.State), "thinking_configurable": len(levels) > 0, "model_options": options, "models": options, "model": current, "current": current, "thinking_level": thinking, "thinking_level_label": thinking, "supports_thinking": selected.Reasoning, "context_window": selected.ContextWindow, "context_usage": usage}, nil
+	// The level a turn uses when the session has none: Pi's defaultThinkingLevel
+	// (medium when unset), clamped to the model, as admission applies it.
+	defaultThinking, _ := inference.EffectiveThinking(current, s.cfg.DefaultThinkingLevel)
+	return map[string]any{"thinking_levels": levels, "default_thinking_level": defaultThinking, "thinking_token": store.SessionThinkingToken(session.ID, session.State), "thinking_configurable": len(levels) > 0, "model_options": options, "models": options, "model": current, "current": current, "thinking_level": thinking, "thinking_level_label": thinking, "supports_thinking": selected.Reasoning, "context_window": selected.ContextWindow, "context_usage": usage}, nil
 }
 
 func (s *Server) selectSessionModel(r *http.Request, sessionID, requested string) (map[string]any, error) {

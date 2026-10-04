@@ -5,6 +5,11 @@ import { getAgentModels, selectAgentModel, selectAgentThinking } from "./api.js"
 import { modelContextBlocked } from "./gi-context-usage.js";
 import { subscribeModelSettlement } from './gi-model-invalidation.js';
 
+// No session level: turns use Pi's default thinking level, clamped to the model.
+export function defaultThinkingLabel(data: any) {
+    return data?.default_thinking_level ? `Default (${data.default_thinking_level})` : 'Default';
+}
+
 export function Models({ chatJid, filter = '', onMutationStart, onMutationEnd, onApplied }) {
     const [data, setData] = useState<any>(null);
     const [chosen, setChosen] = useState('');
@@ -106,7 +111,7 @@ export function Models({ chatJid, filter = '', onMutationStart, onMutationEnd, o
         <button disabled=${busy || reading} onClick=${refresh}>Refresh models</button>
         ${data && html`
             <dl class="gi-settings-values">${(!query || String(data.current || '').toLowerCase().includes(query)) && html`<dt>Current model</dt><dd data-testid="settings-current-model">${data.current}</dd>`}
-            ${data.supports_thinking && html`<dt>Thinking</dt><dd>${data.thinking_level || 'Provider default'}</dd>`}
+            ${data.supports_thinking && html`<dt>Thinking</dt><dd>${data.thinking_level || defaultThinkingLabel(data)}</dd>`}
             <dt>Context capacity</dt><dd data-testid="settings-context-capacity">${Number.isFinite(data.context_window) && data.context_window > 0 ? data.context_window : 'Unknown'}</dd></dl>
             <label>Session model<select aria-label="Session model" size=${Math.max(2, Math.min(8, Math.min(matching.length, 50) + 1))} value=${chosen} disabled=${busy} onChange=${e => { dirty.current = true; setChosen(e.target.value); setNotice(''); }}>
                 <option value="" disabled>Choose a model</option>
@@ -117,7 +122,7 @@ export function Models({ chatJid, filter = '', onMutationStart, onMutationEnd, o
             ${blocked && html`<p role="status">This model cannot fit the measured context. Compact the session before changing models.</p>`}
             <button disabled=${busy || reading || !!readError || !selected || blocked || chosen === data.current} onClick=${apply}>${busy ? 'Applying…' : 'Apply model'}</button>
             ${data.thinking_configurable && html`<label>Thinking for current model<select aria-label="Session thinking level" value=${thinking} disabled=${busy || reading || !!readError || chosen !== data.current} onChange=${e => {thinkingDirty.current = true;setThinking(e.target.value);setNotice('');}}>
-                <option value="">Provider default</option>
+                <option value="">${defaultThinkingLabel(data)}</option>
                 ${(data.thinking_levels || []).map(level => html`<option value=${level}>${level}</option>`)}
             </select></label>
             <button disabled=${busy || reading || !!readError || chosen !== data.current || thinking === (data.thinking_level || '') || (!!thinking && !data.thinking_levels?.includes(thinking))} onClick=${applyThinking}>Apply thinking</button>`}

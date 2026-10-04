@@ -11,7 +11,7 @@ import {
   saveKeyboardShortcutBindings,
   resetKeyboardShortcutBindings,
   readAllKeyboardShortcutBindings
-} from "./app-dbj801ab.js";
+} from "./app-0y8n023b.js";
 
 // web/src/ui/keyboard-shortcut-settings.ts
 function readKeyboardShortcutDrafts() {

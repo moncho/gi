@@ -9366,6 +9366,15 @@ async function refreshAgentModelStateBestEffort(getAgentModels, chatJid, emitMod
 }
 
 // web/src/components/compose-box.ts
+var pageUnloading = false;
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () => {
+    pageUnloading = true;
+  });
+  window.addEventListener("pageshow", () => {
+    pageUnloading = false;
+  });
+}
 var COMPOSE_HISTORY_STORAGE_KEY = "piclaw_compose_history";
 function resolveComposePrefillRequest(prefillRequest, lastHandledToken, searchMode = false) {
   if (searchMode)
@@ -10822,7 +10831,7 @@ ${mediaIds.map((id, index) => {
           return;
         }
         const uncertain = requestDispatched && ["TypeError", "AbortError"].includes(error?.name);
-        if (uncertain && !mountedRef.current)
+        if (uncertain && pageUnloading)
           return;
         const message = uncertain ? `Delivery is unknown; check the timeline before resending. ${detail}` : detail;
         if (clearAfterSubmit) {
@@ -11673,7 +11682,7 @@ ${mediaIds.map((id, index) => {
                             <div class="compose-model-catalogue-footer">
                                 <div class="compose-model-catalogue-footer-start">
                                     ${supportsThinking && fe`<label class="compose-model-catalogue-thinking"><span>Thinking</span><select aria-label="Thinking level" value=${thinkingState?.thinking_level || ""} disabled=${loadingModels || switchingModel || !thinkingState?.thinking_configurable || thinkingState.current !== activeModel || !thinkingState.thinking_token} onChange=${handleSelectThinking}>
-                                        <option value="">Provider default</option>
+                                        <option value="">${thinkingState?.default_thinking_level ? "Default (" + thinkingState.default_thinking_level + ")" : "Default"}</option>
                                         ${(thinkingState?.thinking_levels || []).map((level) => fe`<option value=${level}>${level}</option>`)}
                                     </select></label>`}
                                 </div>
@@ -23151,14 +23160,14 @@ function NumberStepper({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-kmz3h5dd.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-cwtfhq68.js").then((module) => module.Appearance),
-  keyboard: () => import("./keyboard-nd6nc798.js").then((module) => module.KeyboardSection),
-  compaction: () => import("./gi-settings-compaction-6v2je6tg.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-jaq676df.js").then((module) => module.GiSettingsProviders),
-  keychain: () => import("./gi-settings-keychain-s5jhc53a.js").then((module) => module.GiSettingsKeychain),
-  environment: () => import("./gi-settings-environment-zmn47m5g.js").then((module) => module.GiSettingsEnvironment),
-  authentication: () => import("./gi-settings-authentication-m9sw96y0.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-d4f1kxtv.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-hdwy0yz8.js").then((module) => module.Appearance),
+  keyboard: () => import("./keyboard-6gr019v7.js").then((module) => module.KeyboardSection),
+  compaction: () => import("./gi-settings-compaction-neh0dj3x.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-52svs462.js").then((module) => module.GiSettingsProviders),
+  keychain: () => import("./gi-settings-keychain-ffy7gc1h.js").then((module) => module.GiSettingsKeychain),
+  environment: () => import("./gi-settings-environment-eva9yepk.js").then((module) => module.GiSettingsEnvironment),
+  authentication: () => import("./gi-settings-authentication-pdz5jmkm.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", keyboard: "Keyboard", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" };
 var components = new Map;

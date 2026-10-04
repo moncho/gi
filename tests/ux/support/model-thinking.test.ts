@@ -12,7 +12,7 @@ test('thinking adapter uses validated token/model path and preserves guarded sup
  const result=patchModelThinking(base);
  expect(result).toContain('selectAgentThinking(currentChatJid, activeModel, requested, thinkingState.thinking_token)');
  expect(result).toContain('thinkingState.current !== activeModel');expect(result).toContain('modelMutationRef.current');
- expect(result).toContain('Provider default');expect(result).not.toContain('Thinking level (read-only)');
+ expect(result).toContain('thinkingState?.default_thinking_level');expect(result).not.toContain('Provider default');expect(result).not.toContain('Thinking level (read-only)');
  expect(readFileSync('web/src/components/compose-box.ts','utf8')).toBe(source);
  for(const bad of ['',base+base,result])expect(()=>patchModelThinking(bad)).toThrow('anchor changed');
 });

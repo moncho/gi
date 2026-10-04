@@ -9,9 +9,12 @@ import {
   selectAgentThinking,
   selectAgentModel,
   modelContextBlocked
-} from "./app-dbj801ab.js";
+} from "./app-0y8n023b.js";
 
 // web/src/gi-settings-models.ts
+function defaultThinkingLabel(data) {
+  return data?.default_thinking_level ? `Default (${data.default_thinking_level})` : "Default";
+}
 function Models({ chatJid, filter = "", onMutationStart, onMutationEnd, onApplied }) {
   const [data, setData] = F_(null);
   const [chosen, setChosen] = F_("");
@@ -154,7 +157,7 @@ function Models({ chatJid, filter = "", onMutationStart, onMutationEnd, onApplie
         <button disabled=${busy || reading} onClick=${refresh}>Refresh models</button>
         ${data && fe`
             <dl class="gi-settings-values">${(!query || String(data.current || "").toLowerCase().includes(query)) && fe`<dt>Current model</dt><dd data-testid="settings-current-model">${data.current}</dd>`}
-            ${data.supports_thinking && fe`<dt>Thinking</dt><dd>${data.thinking_level || "Provider default"}</dd>`}
+            ${data.supports_thinking && fe`<dt>Thinking</dt><dd>${data.thinking_level || defaultThinkingLabel(data)}</dd>`}
             <dt>Context capacity</dt><dd data-testid="settings-context-capacity">${Number.isFinite(data.context_window) && data.context_window > 0 ? data.context_window : "Unknown"}</dd></dl>
             <label>Session model<select aria-label="Session model" size=${Math.max(2, Math.min(8, Math.min(matching.length, 50) + 1))} value=${chosen} disabled=${busy} onChange=${(e) => {
     dirty.current = true;
@@ -173,7 +176,7 @@ function Models({ chatJid, filter = "", onMutationStart, onMutationEnd, onApplie
     setThinking(e.target.value);
     setNotice("");
   }}>
-                <option value="">Provider default</option>
+                <option value="">${defaultThinkingLabel(data)}</option>
                 ${(data.thinking_levels || []).map((level) => fe`<option value=${level}>${level}</option>`)}
             </select></label>
             <button disabled=${busy || reading || !!readError || chosen !== data.current || thinking === (data.thinking_level || "") || !!thinking && !data.thinking_levels?.includes(thinking)} onClick=${applyThinking}>Apply thinking</button>`}

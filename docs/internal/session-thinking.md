@@ -2,13 +2,16 @@
 
 Settings → Models can apply a thinking level to future turns in the selected
 session. Available choices come from the current model's go-ai catalogue. The
-control is absent for unsupported models. Provider default leaves the reasoning
-option unset; it does not mean a fabricated zero or an explicit off value.
+control is absent for unsupported models. With no session level, turns use Pi's
+`defaultThinkingLevel` (`medium` when unset), clamped to the levels the model
+supports; Settings and the composer picker label that choice `Default (<level>)`.
+Since `6ac1890` an empty session level no longer leaves the reasoning option unset.
 
 ## HTTP and storage
 
-`GET /api/sessions/<id>/model` adds `thinking_levels`, `thinking_configurable` and
-`thinking_token`. The displayed level is effective only when it is validated and
+`GET /api/sessions/<id>/model` adds `thinking_levels`, `thinking_configurable`,
+`thinking_token` and `default_thinking_level` (the effective level used when the
+session has none). The displayed level is effective only when it is validated and
 bound to the current model. Raw legacy strings are not shown as effective provider
 configuration. Model identity uses the same configured fallback for GET, PATCH
 and omitted-model prompt admission; native test-model/bootstrap sentinels remain
@@ -21,7 +24,7 @@ bare rather than becoming provider calls.
 ```
 
 Thinking requires an exact canonical catalogue model, a currently supported level
-(or empty string for provider default), and the current session-scoped token.
+(or empty string for the default level), and the current session-scoped token.
 Invalid, null, unavailable and unsupported choices fail before mutation. Changed
 model/thinking snapshots return 409. No prompt, provider call, global settings
 write or other-session mutation occurs when applying a choice.
@@ -30,7 +33,7 @@ The token hashes session identity and relevant model/thinking fields, including
 `selection_revision`. A SQLite writer transaction reads/checks the token and stores
 `thinking_model`/`thinking_level` with an incremented revision. Selection changes
 away and back invalidate old tokens. Unrelated status/queue-count writes do not.
-Model Apply atomically resets thinking to provider default. A legacy writer that
+Model Apply atomically resets thinking to the default level. A legacy writer that
 sets thinking without a model binding clears the web binding, preventing a TUI
 pass-through string from silently becoming a new effective provider configuration.
 
@@ -67,7 +70,8 @@ This slice does not publish or deploy local-only TUI WIP `2a87a79`.
   forged caller metadata.
 - `make test-ux-thinking`: 30 Chromium/WebKit cases across three sizes. Actual
   local OpenAI-compatible request bodies contain `reasoning_effort: high/low`;
-  provider-default requests omit it. Tests cover explicit Apply, reload, no prompt
+  default-level requests carry the clamped default (`high` for the low/high fixture
+  model). Originally provider-default requests omitted it; updated for gi#43. Tests cover explicit Apply, reload, no prompt
   on selection, draft/media retention, unsupported and stale writes, foreign
   sessions, bare default model, lost acknowledgement and delayed old-session reply.
 - `make test-ux-model-panel`: 42 passes.

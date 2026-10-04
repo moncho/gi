@@ -5,7 +5,7 @@ test('composer thinking picker commits explicit choice, retains draft, rejects f
  try{
   await page.goto(env.origin);const input=page.locator('.compose-box textarea');await expect(input).toBeFocused();await input.fill('unsent thinking draft');
   const id=await page.evaluate(()=>localStorage.getItem('gi_session_id'));await request.patch(`${env.origin}/api/sessions/${id}/model`,{data:{model:'ux-local/reasoner'}});await page.reload();await expect(input).toHaveValue('unsent thinking draft');
-  const trigger=page.getByRole('button',{name:'Open model picker',exact:true});await trigger.click();const select=page.getByRole('combobox',{name:'Thinking level',exact:true});await expect(select).toBeEnabled();await expect(select.locator('option')).toHaveText(['Provider default','low','high']);
+  const trigger=page.getByRole('button',{name:'Open model picker',exact:true});await trigger.click();const select=page.getByRole('combobox',{name:'Thinking level',exact:true});await expect(select).toBeEnabled();await expect(select.locator('option')).toHaveText(['Default (high)','low','high']);
   let calls=0;const gate=new Promise(r=>unblock=r);await page.route('**/api/sessions/*/model',async r=>{if(r.request().method()==='PATCH'){calls++;await gate;}await r.continue();});
   await select.focus();await select.selectOption('high');await expect(select).toBeDisabled();await expect(page.getByRole('listbox',{name:'Models'})).toBeVisible();expect(calls).toBe(1);unblock();await expect(select).toBeEnabled();await expect(select).toHaveValue('high');await expect(select).toBeFocused();await expect(input).toHaveValue('unsent thinking draft');
   await page.unroute('**/api/sessions/*/model');

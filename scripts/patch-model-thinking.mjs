@@ -50,7 +50,7 @@ export function patchModelThinking(source){
 
     const handleCycleModel = async () => {`);
  replace(`\${supportsThinking && thinkingLevel && html\`<label class="compose-model-catalogue-thinking" title="Thinking level is read-only in Gi"><span>Thinking</span><select aria-label="Thinking level (read-only)" disabled><option value=\${thinkingLevel}>\${thinkingLevel}</option></select></label>\`}`,`\${supportsThinking && html\`<label class="compose-model-catalogue-thinking"><span>Thinking</span><select aria-label="Thinking level" value=\${thinkingState?.thinking_level || ''} disabled=\${loadingModels || switchingModel || !thinkingState?.thinking_configurable || thinkingState.current !== activeModel || !thinkingState.thinking_token} onChange=\${handleSelectThinking}>
-                                        <option value="">Provider default</option>
+                                        <option value="">\${thinkingState?.default_thinking_level ? 'Default (' + thinkingState.default_thinking_level + ')' : 'Default'}</option>
                                         \${(thinkingState?.thinking_levels || []).map(level => html\`<option value=\${level}>\${level}</option>\`)}
                                     </select></label>\`}`);
  return "import { selectAgentThinking } from '../api.js';\n"+s;

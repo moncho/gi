@@ -92,12 +92,12 @@ func (c *chatTUI) createGist(dir, file string) {
 		c.appendTranscript("sys: Share cancelled")
 	})
 	go func() {
-		defer os.RemoveAll(dir)
 		var stdout, stderr bytes.Buffer
 		cmd := ghCommand(ctx, "gist", "create", "--public=false", file)
 		cmd.Stdout, cmd.Stderr = &stdout, &stderr
 		cmd.WaitDelay = time.Second // a killed gh's children may hold its output open
 		err := cmd.Run()
+		os.RemoveAll(dir) // before the result is shown
 		if ctx.Err() != nil {
 			return
 		}

@@ -96,7 +96,7 @@ func Open(path string) (*Store, error) {
 	// database/sql opens additional connections lazily. These pragmas and the
 	// transaction mode must apply to every connection, not just the first Exec.
 	options := url.Values{}
-	for _, pragma := range []string{"busy_timeout(5000)", "foreign_keys(ON)", "synchronous(NORMAL)", "temp_store(MEMORY)"} {
+	for _, pragma := range []string{"busy_timeout(5000)", "foreign_keys(ON)", "secure_delete(ON)", "synchronous(NORMAL)", "temp_store(MEMORY)"} {
 		options.Add("_pragma", pragma)
 	}
 	// File-backed WAL transactions reserve the writer before reading. Shared

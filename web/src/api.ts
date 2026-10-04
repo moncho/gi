@@ -236,6 +236,23 @@ export async function removeGiProviderKey(provider: string, revision: string) {
     return request('/api/settings/providers', { method: 'DELETE', body: JSON.stringify({ provider, revision }) });
 }
 
+// Settings → Keychain (Piclaw's /agent/keychain). Responses come back with
+// their status: reveal answers 401 with needs_master_password.
+async function keychainRequest(url: string, method = 'GET', body?: any) {
+    const response = await fetch(API_BASE + url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+    return { status: response.status, data };
+}
+export const listKeychain = () => keychainRequest('/api/settings/keychain');
+export const saveKeychainEntry = (entry: any) => keychainRequest('/api/settings/keychain', 'POST', entry);
+export const deleteKeychainEntry = (name: string) => keychainRequest('/api/settings/keychain', 'DELETE', { name });
+export const revealKeychainEntry = (name: string, masterPassword?: string) =>
+    keychainRequest('/api/settings/keychain/reveal', 'POST', { name, master_password: masterPassword || undefined });
+
 export async function getGiCompactionPolicy() {
     return request('/api/settings/compaction');
 }

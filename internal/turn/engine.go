@@ -26,6 +26,7 @@ import (
 	"github.com/rcarmo/gi/internal/config"
 	"github.com/rcarmo/gi/internal/connectivity"
 	"github.com/rcarmo/gi/internal/inference"
+	"github.com/rcarmo/gi/internal/keychain"
 	"github.com/rcarmo/gi/internal/peering"
 	"github.com/rcarmo/gi/internal/routing"
 	"github.com/rcarmo/gi/internal/routing/routedsession"
@@ -4214,7 +4215,11 @@ func (e *Engine) registerDefaultTools() {
 		Weight:      "heavy",
 		Activation:  "default",
 		Executor: func(ctx context.Context, rt tools.ToolRuntime, call goai.ToolCall) (string, error) {
-			return tools.ExecuteShellOutput(ctx, rt.WorkspaceRoot, call, rt.OnOutput)
+			var prepare tools.ShellPreparer
+			if rt.Store != nil {
+				prepare = keychain.New(rt.Store.DB()).PrepareShell
+			}
+			return tools.ExecuteShellPrepared(ctx, rt.WorkspaceRoot, call, rt.OnOutput, prepare)
 		},
 	})
 }

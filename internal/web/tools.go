@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rcarmo/gi/internal/keychain"
 	"github.com/rcarmo/gi/internal/tools"
 )
 
@@ -116,7 +117,7 @@ func (s *Server) handleToolExecute(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
-		output := executeShellTool(r.Context(), input.Command)
+		output := executeShellTool(r.Context(), s.keychain(), input.Command)
 		writeJSON(w, http.StatusOK, output)
 
 	default:
@@ -157,14 +158,24 @@ func executeWriteTool(ctx context.Context, s *Server, path string, content strin
 	return "written", nil
 }
 
-func executeShellTool(ctx context.Context, command string) toolOutput {
+func executeShellTool(ctx context.Context, kc *keychain.Keychain, command string) toolOutput {
 	command = strings.TrimSpace(command)
 	if command == "" {
 		return toolOutput{Error: "command is required"}
 	}
 	execCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
+	var env []string
+	if kc != nil {
+		var err error
+		if command, env, err = kc.PrepareShell(execCtx, command); err != nil {
+			return toolOutput{Error: err.Error()}
+		}
+	}
 	cmd := exec.CommandContext(execCtx, "sh", "-c", command)
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	out, err := cmd.CombinedOutput()
 	output := string(out)
 	if err != nil {

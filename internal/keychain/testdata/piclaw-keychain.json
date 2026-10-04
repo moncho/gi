@@ -1,0 +1,306 @@
+{
+ "key": "golden-master",
+ "entries": [
+  {
+   "name": "fixtures/kc-x.v1",
+   "type": "basic",
+   "secret": "s3cret",
+   "username": "octo"
+  },
+  {
+   "name": "STRIPE_KEY",
+   "type": "token",
+   "secret": "sk_live"
+  },
+  {
+   "name": "lower_case",
+   "type": "secret",
+   "secret": "lc-value"
+  },
+  {
+   "name": "a-b",
+   "type": "secret",
+   "secret": "first"
+  },
+  {
+   "name": "a.b",
+   "type": "secret",
+   "secret": "second"
+  },
+  {
+   "name": "9lives",
+   "type": "password",
+   "secret": "cat"
+  },
+  {
+   "name": "ns:inner",
+   "type": "secret",
+   "secret": "colon-secret",
+   "username": "colon-user"
+  },
+  {
+   "name": "weird name!",
+   "type": "secret",
+   "secret": "w"
+  },
+  {
+   "name": "quote's",
+   "type": "secret",
+   "secret": "it's $HOME `x` \"q\""
+  }
+ ],
+ "rows": [
+  {
+   "name": "9lives",
+   "type": "password",
+   "ciphertext": "ijwC3QxmQ2rgrLjEtx6dQyjZHPuVZfc+IiDyMtEogpE55q+ur3tSZBSJMDkJS1IR",
+   "nonce": "bWDZ1LEnZyZFcKj9",
+   "salt": "7IzHnr8lr/gs7J66dYGHaA==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  },
+  {
+   "name": "STRIPE_KEY",
+   "type": "token",
+   "ciphertext": "bW0r4ILakxRgVYXsK6R6NUj8rcHsakt7w3zuB7qn9z5r8yAPXIHYK04P0XZ/ZhTczBHH+Q==",
+   "nonce": "l6lNJkqk0dzXRI0k",
+   "salt": "vD9XJ34hhmssh6wm7yQ7cA==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  },
+  {
+   "name": "a-b",
+   "type": "secret",
+   "ciphertext": "9nWjB6nALyDx0XyFMrQrmRH4OeVvtwnbha6aPc4Ek+PNJ/PmBREgisInjfBzdKqLz5U=",
+   "nonce": "h5P3QxLUsfSRgoW1",
+   "salt": "yjkEUbscLv0hagxwvHqwQg==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  },
+  {
+   "name": "a.b",
+   "type": "secret",
+   "ciphertext": "WCIxetA2Yo8/BEoaC+dLOuHsbvkqQMIArWJv28z9PtZTSZvjUAazfTx1XyN8pt07cJ59",
+   "nonce": "m+FV5dyVReAbx/Sx",
+   "salt": "isSUjpOJNdFG3ktbHNA0zQ==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  },
+  {
+   "name": "fixtures/kc-x.v1",
+   "type": "basic",
+   "ciphertext": "D0EA/8TO7d0PfN8WfaVvjV2C/i51xoW4jDEUrn4/67fhDjo+DxZdyrUG+w7H73o2LkA8o00=",
+   "nonce": "rQk6lkhJUkc0l2YT",
+   "salt": "CtYmIn1ahvduzV8PUOfwAA==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  },
+  {
+   "name": "lower_case",
+   "type": "secret",
+   "ciphertext": "EFghlYQLcRU9lZUhKkG+BZbyTURFjxAjTKSvFICND41w2+bVPTrj5/22380PTP+vZI49cC4=",
+   "nonce": "11LG38Np+92QREUL",
+   "salt": "X5gjwB6vRjBAyAO/pDy6kQ==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  },
+  {
+   "name": "ns:inner",
+   "type": "secret",
+   "ciphertext": "mCrmRNAlcVkcOC2PnOwGWXcjDa6TFaeHZnxgjH2I/qmbBAhQAXG5FJKhIIFYheItBGhkXDLTs4Kpa4h4onLsYbE=",
+   "nonce": "FFnfYfxkAFXgq02r",
+   "salt": "2yXSMYBvnGOUvFyXJp7A7w==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  },
+  {
+   "name": "quote's",
+   "type": "secret",
+   "ciphertext": "ihXrQsymLddSuKrgfpKdtAjMFlfovdIDYiT2w7MrW5RkCK5vRnga/i6AVeh8QjwPTKD76OJBXSqbte8mrRE+uGE=",
+   "nonce": "29ZfuD48m6k5PgUH",
+   "salt": "yuHMUb2u2jFgnpeGWo2idQ==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  },
+  {
+   "name": "weird name!",
+   "type": "secret",
+   "ciphertext": "wH+MAs5DiLDz/Ap+u9ATySuNY7AxKGfwsSRmEqf1NUWzgYqB0IV73/n0gv/cXA==",
+   "nonce": "3og823OhUuT/MBB+",
+   "salt": "WZ+86/+il4oWYmcJrEgH2A==",
+   "kdf": "pbkdf2-sha256",
+   "kdf_iterations": 150000
+  }
+ ],
+ "injectable": [
+  {
+   "envName": "STRIPE_KEY",
+   "keychainName": "STRIPE_KEY"
+  },
+  {
+   "envName": "A_B",
+   "keychainName": "a-b"
+  },
+  {
+   "envName": "FIXTURES_KC_X_V1",
+   "keychainName": "fixtures/kc-x.v1"
+  },
+  {
+   "envName": "lower_case",
+   "keychainName": "lower_case"
+  },
+  {
+   "envName": "NSINNER",
+   "keychainName": "ns:inner"
+  },
+  {
+   "envName": "QUOTES",
+   "keychainName": "quote's"
+  },
+  {
+   "envName": "WEIRDNAME",
+   "keychainName": "weird name!"
+  }
+ ],
+ "envNames": {
+  "fixtures/kc-x.v1": "FIXTURES_KC_X_V1",
+  "a//b..c": "A_B_C",
+  "-lead": "_LEAD",
+  "9abc": null,
+  "x9": "X9",
+  "": null,
+  "///": "_",
+  "é-accent": "_ACCENT",
+  "with space": "WITHSPACE",
+  "under_score": "UNDER_SCORE",
+  "MiXeD.case": "MIXED_CASE",
+  "a:b": "AB"
+ },
+ "shell": [
+  {
+   "command": "echo \"$FIXTURES_KC_X_V1\"",
+   "env": {
+    "FIXTURES_KC_X_V1": "s3cret"
+   },
+   "resolved": "echo \"$FIXTURES_KC_X_V1\"",
+   "error": null
+  },
+  {
+   "command": "echo ${FIXTURES_KC_X_V1}",
+   "env": {
+    "FIXTURES_KC_X_V1": "s3cret"
+   },
+   "resolved": "echo ${FIXTURES_KC_X_V1}",
+   "error": null
+  },
+  {
+   "command": "echo $env:STRIPE_KEY",
+   "env": {
+    "STRIPE_KEY": "sk_live"
+   },
+   "resolved": "echo $env:STRIPE_KEY",
+   "error": null
+  },
+  {
+   "command": "echo %lower_case%",
+   "env": {
+    "lower_case": "lc-value"
+   },
+   "resolved": "echo %lower_case%",
+   "error": null
+  },
+  {
+   "command": "echo $A_B $WEIRDNAME",
+   "env": {
+    "A_B": "first",
+    "WEIRDNAME": "w"
+   },
+   "resolved": "echo $A_B $WEIRDNAME",
+   "error": null
+  },
+  {
+   "command": "v=STRIPE_KEY; echo ${!v}",
+   "env": {},
+   "resolved": "v=STRIPE_KEY; echo ${!v}",
+   "error": null
+  },
+  {
+   "command": "printenv",
+   "env": {},
+   "resolved": "printenv",
+   "error": null
+  },
+  {
+   "command": "echo $FIXTURES_KC_X_V1_SUFFIX",
+   "env": {},
+   "resolved": "echo $FIXTURES_KC_X_V1_SUFFIX",
+   "error": null
+  },
+  {
+   "command": "echo keychain:fixtures/kc-x.v1",
+   "env": {},
+   "resolved": "echo s3cret",
+   "error": null
+  },
+  {
+   "command": "echo keychain:fixtures/kc-x.v1:username keychain:fixtures/kc-x.v1:user",
+   "env": {},
+   "resolved": "echo octo octo",
+   "error": null
+  },
+  {
+   "command": "echo keychain:fixtures/kc-x.v1:secret keychain:fixtures/kc-x.v1:password keychain:fixtures/kc-x.v1:token",
+   "env": {},
+   "resolved": "echo s3cret s3cret s3cret",
+   "error": null
+  },
+  {
+   "command": "curl -H 'Authorization: Bearer keychain:STRIPE_KEY' https://x",
+   "env": {},
+   "resolved": "curl -H 'Authorization: Bearer sk_live' https://x",
+   "error": null
+  },
+  {
+   "command": "echo keychain:ns:inner keychain:ns:inner:user",
+   "env": {},
+   "resolved": null,
+   "error": "Invalid keychain reference: keychain:ns:inner"
+  },
+  {
+   "command": "echo keychain: keychain:",
+   "env": {},
+   "resolved": "echo keychain: keychain:",
+   "error": null
+  },
+  {
+   "command": "echo keychain:missing",
+   "env": {},
+   "resolved": null,
+   "error": "Keychain entry not found: missing"
+  },
+  {
+   "command": "echo keychain:STRIPE_KEY:username",
+   "env": {},
+   "resolved": null,
+   "error": "Keychain entry STRIPE_KEY has no username."
+  },
+  {
+   "command": "echo keychain:fixtures/kc-x.v1:bogus",
+   "env": {},
+   "resolved": null,
+   "error": "Invalid keychain reference: keychain:fixtures/kc-x.v1:bogus"
+  },
+  {
+   "command": "echo keychain:STRIPE_KEY:keychain:lower_case",
+   "env": {},
+   "resolved": "echo sk_live:lc-value",
+   "error": null
+  },
+  {
+   "command": "echo 'keychain:quote's'",
+   "env": {},
+   "resolved": null,
+   "error": "Keychain entry not found: quote"
+  }
+ ]
+}

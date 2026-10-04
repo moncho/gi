@@ -24,6 +24,7 @@ import (
 	gotui "github.com/grindlemire/go-tui"
 	"github.com/rcarmo/gi/internal/config"
 	"github.com/rcarmo/gi/internal/inference"
+	"github.com/rcarmo/gi/internal/keychain"
 	gisession "github.com/rcarmo/gi/internal/session"
 	"github.com/rcarmo/gi/internal/skills"
 	"github.com/rcarmo/gi/internal/store"
@@ -3462,9 +3463,20 @@ func (c *chatTUI) localShellShortcutLines(command string) []string {
 	startedAt := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	run := command
+	var env []string
+	if c.store != nil {
+		var err error
+		if run, env, err = keychain.New(c.store.DB()).PrepareShell(ctx, command); err != nil {
+			return c.bashBlockLines(command, err.Error(), "error", err, startedAt, time.Now())
+		}
+	}
+	cmd := exec.CommandContext(ctx, "sh", "-c", run)
 	if root := strings.TrimSpace(c.cfg.WorkspaceRoot); root != "" {
 		cmd.Dir = root
+	}
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
 	}
 	out, err := cmd.CombinedOutput()
 	status := "ok"

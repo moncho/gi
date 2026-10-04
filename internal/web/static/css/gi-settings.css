@@ -222,3 +222,30 @@
 .gi-passkey-row small { color: var(--text-secondary); }
 .gi-passkey-confirm, .gi-passkey-edit { border: 1px solid var(--border-color); padding: 10px; }
 @media(max-width: 600px) { .gi-authentication-pane button { min-height: 44px; } }
+/* Settings → Keychain (gi-settings-keychain.ts). */
+.gi-keychain-toolbar { display: flex; gap: 8px; align-items: center; }
+.settings-content .gi-keychain-toolbar input { margin-top: 0; flex: 1; }
+.settings-content .gi-keychain-toolbar button { flex: none; }
+.gi-keychain-count { color: var(--text-secondary); }
+.gi-keychain-add { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; margin: 12px 0; align-items: start; }
+.settings-content .gi-keychain-add input, .settings-content .gi-keychain-add select { margin-top: 0; }
+.gi-keychain-add textarea { box-sizing: border-box; width: 100%; padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; resize: vertical; }
+.gi-keychain-table-wrap { overflow-x: auto; }
+.gi-keychain-table { width: 100%; border-collapse: collapse; font-size: .9em; }
+.gi-keychain-table th { text-align: left; color: var(--text-secondary); font-weight: 500; }
+.gi-keychain-table th, .gi-keychain-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+.gi-keychain-name { word-break: break-all; }
+.gi-keychain-type { padding: 1px 6px; border: 1px solid var(--border-color); border-radius: 999px; font-size: .85em; }
+.gi-keychain-actions { white-space: nowrap; }
+.settings-content .gi-keychain-actions button { padding: 3px 8px; margin-left: 4px; }
+.gi-keychain-detail td { background: var(--bg-secondary); }
+.settings-content .gi-keychain-detail label { margin: 4px 0 8px; }
+.gi-keychain-field { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+.gi-keychain-field code { word-break: break-all; }
+.gi-keychain-empty { color: var(--text-secondary); }
+.gi-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.settings-dialog-narrow .gi-keychain-add { grid-template-columns: minmax(0, 1fr); }
+.settings-dialog-narrow .gi-keychain-table thead { display: none; }
+.settings-dialog-narrow .gi-keychain-table tr { display: block; border-bottom: 1px solid var(--border-color); }
+.settings-dialog-narrow .gi-keychain-table td { display: block; border: 0; padding: 3px 4px; }
+.settings-dialog-narrow .gi-keychain-actions { white-space: normal; }

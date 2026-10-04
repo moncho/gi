@@ -2464,6 +2464,19 @@ async function saveGiProviderKey(provider, revision, key) {
 async function removeGiProviderKey(provider, revision) {
   return request("/api/settings/providers", { method: "DELETE", body: JSON.stringify({ provider, revision }) });
 }
+async function keychainRequest(url, method = "GET", body) {
+  const response = await fetch(API_BASE2 + url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+  return { status: response.status, data };
+}
+var listKeychain = () => keychainRequest("/api/settings/keychain");
+var saveKeychainEntry = (entry) => keychainRequest("/api/settings/keychain", "POST", entry);
+var deleteKeychainEntry = (name) => keychainRequest("/api/settings/keychain", "DELETE", { name });
+var revealKeychainEntry = (name, masterPassword) => keychainRequest("/api/settings/keychain/reveal", "POST", { name, master_password: masterPassword || undefined });
 async function getGiCompactionPolicy() {
   return request("/api/settings/compaction");
 }
@@ -22893,13 +22906,14 @@ function TimelineQuickActions({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-px3pn556.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-qrb4hqvm.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-j58dxcxr.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-n716ya7k.js").then((module) => module.GiSettingsProviders),
-  authentication: () => import("./gi-settings-authentication-cyzp81fn.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-qxm2x9z3.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-r47xjezg.js").then((module) => module.Appearance),
+  compaction: () => import("./gi-settings-compaction-62r2wf78.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-r0h4mhyb.js").then((module) => module.GiSettingsProviders),
+  keychain: () => import("./gi-settings-keychain-0zjbrrj5.js").then((module) => module.GiSettingsKeychain),
+  authentication: () => import("./gi-settings-authentication-tra13hs5.js").then((module) => module.GiSettingsAuthentication)
 };
-var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" };
+var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", keychain: "Keychain", authentication: "Authentication" };
 var components = new Map;
 var pending = new Map;
 function load(section) {
@@ -23140,12 +23154,12 @@ function Dialog({ chatJid, initialSection = "general", onClose, onMutationStart,
     if (e.target === e.currentTarget)
       onClose();
   }}>
-        <div ref=${dialog} class=${`settings-dialog${layoutMode.compact ? " settings-dialog-compact" : ""}${layoutMode.narrow ? " settings-dialog-narrow" : ""}`} role="dialog" aria-modal="true" aria-labelledby="gi-settings-title" onKeyDown=${(e) => e.stopPropagation()}>
+        <div ref=${dialog} data-testid="settings-dialog" class=${`settings-dialog${layoutMode.compact ? " settings-dialog-compact" : ""}${layoutMode.narrow ? " settings-dialog-narrow" : ""}`} role="dialog" aria-modal="true" aria-labelledby="gi-settings-title" onKeyDown=${(e) => e.stopPropagation()}>
             <header class="settings-dialog-header"><span class="settings-dialog-title" id="gi-settings-title">Settings</span>
                 ${section === "models" && fe`<input ref=${filterRef} type="search" class="settings-header-filter" aria-label="Filter models" placeholder="Filter models…" value=${filter} disabled=${busyScope === searchScope} onInput=${(e) => setFilter(e.target.value)} />`}
                 <button class="settings-dialog-close" aria-label="Close settings" onClick=${onClose}>✕</button></header>
             <div class="settings-dialog-body"><nav class="settings-nav" aria-label="Settings sections">
-                ${["general", "models", "appearance", "compaction", "providers", "authentication"].map((id) => fe`<button class=${`settings-nav-item ${section === id ? "active" : ""}`} aria-current=${section === id ? "page" : undefined} onClick=${() => setSection(id)}>${{ general: "General", models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", authentication: "Authentication" }[id]}</button>`)}
+                ${["general", "models", "appearance", "compaction", "providers", "keychain", "authentication"].map((id) => fe`<button class=${`settings-nav-item ${section === id ? "active" : ""}`} aria-current=${section === id ? "page" : undefined} onClick=${() => setSection(id)}>${{ general: "General", models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", keychain: "Keychain", authentication: "Authentication" }[id]}</button>`)}
             </nav><main class="settings-content">
                 ${section === "general" ? fe`<${General} />` : fe`<${LazySettingsPane} key=${section} section=${section} chatJid=${chatJid} filter=${filter} onMutationStart=${() => {
     setBusyScope(searchScope);
@@ -23180,7 +23194,7 @@ function GiSettings({ chatJid, onMutationStart, onMutationEnd, onApplied }) {
         return;
       const detail = event instanceof CustomEvent ? event.detail : null;
       const requested = detail?.section;
-      setInitialSection(["general", "models", "appearance", "compaction", "providers", "authentication"].includes(requested) ? requested : "general");
+      setInitialSection(["general", "models", "appearance", "compaction", "providers", "keychain", "authentication"].includes(requested) ? requested : "general");
       opener.current = detail?.opener instanceof HTMLElement && detail.opener.isConnected ? detail.opener : document.activeElement;
       isOpen.current = true;
       setOpen(true);
@@ -25655,6 +25669,7 @@ export {
   K_,
   W_,
   Q_,
+  u_,
   fe,
   cleanupLocalNotifications,
   subscribeModelSettlement,
@@ -25665,6 +25680,10 @@ export {
   getGiProviders,
   saveGiProviderKey,
   removeGiProviderKey,
+  listKeychain,
+  saveKeychainEntry,
+  deleteKeychainEntry,
+  revealKeychainEntry,
   getGiCompactionPolicy,
   saveGiCompactionPolicy,
   getAgentModels,

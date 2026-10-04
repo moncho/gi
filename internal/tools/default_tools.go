@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -74,12 +75,32 @@ func ExecuteShell(ctx context.Context, workspaceRoot string, call goai.ToolCall)
 }
 
 func ExecuteShellOutput(ctx context.Context, workspaceRoot string, call goai.ToolCall, onOutput func(string) error) (string, error) {
+	return ExecuteShellPrepared(ctx, workspaceRoot, call, onOutput, nil)
+}
+
+// ShellPreparer rewrites a shell command before it runs and returns the
+// environment it adds (the keychain's placeholders and variables).
+type ShellPreparer func(ctx context.Context, command string) (string, []string, error)
+
+// ExecuteShellPrepared runs the shell tool's command after prepare (nil for
+// none).
+func ExecuteShellPrepared(ctx context.Context, workspaceRoot string, call goai.ToolCall, onOutput func(string) error, prepare ShellPreparer) (string, error) {
 	command, _ := call.Arguments["command"].(string)
 	if command == "" {
 		return "", fmt.Errorf("shell: command is required")
 	}
+	var env []string
+	if prepare != nil {
+		var err error
+		if command, env, err = prepare(ctx, command); err != nil {
+			return "", fmt.Errorf("shell: %w", err)
+		}
+	}
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = workspaceRoot
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	if onOutput == nil {
 		out, err := cmd.CombinedOutput()
 		if err != nil {

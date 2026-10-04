@@ -362,6 +362,20 @@ func initSchema(db *sql.DB) error {
 		`create index if not exists idx_hook_invocations_turn on hook_invocations(turn_id, id);`,
 		`create index if not exists idx_hook_invocations_phase on hook_invocations(hook_phase, created_at);`,
 		`create index if not exists idx_hook_invocations_session on hook_invocations(session_id, created_at);`,
+		// Piclaw's keychain (internal/keychain): sealed secrets, plain notes.
+		`create table if not exists keychain_entries (
+			name text primary key,
+			type text not null,
+			ciphertext blob not null,
+			nonce blob not null,
+			salt blob not null,
+			kdf text not null,
+			kdf_iterations integer not null,
+			user_note text not null default '',
+			agent_note text not null default '',
+			created_at text not null,
+			updated_at text not null
+		);`,
 	}
 	// Existing tables may lack columns used by today's indexes. Keep the
 	// additive upgrade atomic and create indexes only after the ALTERs.

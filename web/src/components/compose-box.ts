@@ -14,6 +14,13 @@ import { useConnectionStatusPresentation } from '../ui/connection-status.js';
 import { FilePill } from './file-pill.js';
 import { refreshAgentModelStateBestEffort } from './compose-model-refresh.js';
 
+// Set while the page is being left (reload, navigation); cleared if restored from bfcache.
+let pageUnloading = false;
+if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => { pageUnloading = true; });
+    window.addEventListener('pageshow', () => { pageUnloading = false; });
+}
+
 /**
  * Slash command definitions for autocomplete.
  * Kept in sync with agent-control/command-registry.ts.
@@ -1467,8 +1474,9 @@ export function ComposeBox({
                 const uncertain = requestDispatched && ['TypeError', 'AbortError'].includes(error?.name);
                 // A navigation can cancel both the POST response and its receipt
                 // lookup after the server accepted the turn. Keep the persisted
-                // capture for the next page's receipt reconciliation.
-                if (uncertain && !mountedRef.current) return;
+                // capture for the next page's receipt reconciliation. A session
+                // switch only unmounts this box: the page stays, so restore now.
+                if (uncertain && pageUnloading) return;
                 const message = uncertain ? `Delivery is unknown; check the timeline before resending. ${detail}` : detail;
                 if (clearAfterSubmit) {
                     restoreDraft(message);

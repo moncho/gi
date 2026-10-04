@@ -19,7 +19,7 @@ const state=await load('tests/ux/fixtures/compose-pixel-state.json');
 const reference=await load('tests/ux/fixtures/compose-pixel-reference.json');
 const refRoot=process.env.PICLAW_PIXEL_ROOT;
 if(!refRoot)throw Error('PICLAW_PIXEL_ROOT must point to the pinned Piclaw runtime directory');
-const candidateRoot=resolve(repo,'references/fixtures-vibes/ui/gi/internal/web/static');
+const candidateRoot=resolve(repo,'references/fixtures-vibes/ui/classic/static');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const select=(env,allowed)=>{const result=(process.env[env]||allowed.join(',')).split(',');if(result.some(v=>!allowed.includes(v))||new Set(result).size!==result.length)throw Error(`Invalid ${env}`);return result;};
 const viewports=select('PIXEL_VIEWPORTS',Object.keys(state.viewports));

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	giui "github.com/rcarmo/gi/references/fixtures-vibes/ui/gi"
+	giui "github.com/rcarmo/gi/references/fixtures-vibes/ui/classic"
 	"io"
 	"io/fs"
 	"log"

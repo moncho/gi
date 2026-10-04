@@ -40,4 +40,4 @@ Run browser tests with `PI_CODING_AGENT_DIR` and `GI_CODING_AGENT_DIR` unset, so
 
 ## Shared front-end module
 
-Gi imports its embedded UI from `references/fixtures-vibes/ui/gi`. Front-end sources, build scripts and source-dependent unit tests are maintained there by the fixtures-vibes owner. `make build-web` delegates to that module; `make test-web-adapters` runs both the retained backend adapter tests and the module's front-end tests. Browser integration tests remain in Gi and run against its backend.
+Gi imports its embedded UI from `references/fixtures-vibes/ui/classic`. Front-end sources, build scripts and source-dependent unit tests are maintained there by the fixtures-vibes owner. `make build-web` delegates to that module; `make test-web-adapters` runs both the retained backend adapter tests and the module's front-end tests. Browser integration tests remain in Gi and run against its backend.

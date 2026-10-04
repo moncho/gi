@@ -24,7 +24,7 @@ const (
 	startupHeaderKind = "startup"
 )
 
-// giLogoBlue is the blue of gi's gopher avatar (fixtures-vibes ui/gi internal/web/static/icon-*.png).
+// giLogoBlue is the blue of gi's gopher avatar (fixtures-vibes ui/classic static/icon-*.png).
 // The wordmark follows the avatar's blue/white/black: a blue "g" and an "i"
 // in the theme's text colour (white on dark themes, black on light ones).
 var giLogoBlue = piRGB(64, 128, 192)

@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:web": "make -C references/fixtures-vibes/ui/gi build",
-    "check:hook-tdz": "make -C references/fixtures-vibes/ui/gi check"
+    "build:web": "make -C references/fixtures-vibes/ui/classic build",
+    "check:hook-tdz": "make -C references/fixtures-vibes/ui/classic check"
   },
   "dependencies": {
     "@assemblyscript/loader": "0.28.20",

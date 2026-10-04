@@ -1,6 +1,6 @@
 // Piclaw 3.2.5 explorer: each folder row offers "Add folder hint for <path>",
 // which hands the folder to the composer (onFolderSelect). Backported to the
-// supplied 3.2.4 explorer without editing its source bytes.
+// supplied explorer (from 3.2.4) without editing its source bytes.
 export function patchWorkspaceFolderHint(source) {
     const edits = [
         ['export function WorkspaceExplorer({\n    onFileSelect,\n', 'export function WorkspaceExplorer({\n    onFileSelect,\n    onFolderSelect,\n'],

@@ -8,9 +8,9 @@ const replace=(source,from,to)=>{
  return source.replace(from,to);
 };
 export function verifyPiclawSvg(root=resolve('.')){
- const base=resolve(root,'web/piclaw-svg-3.2.4');
+ const base=resolve(root,'web/piclaw-svg-3.2.5');
  const manifest=JSON.parse(readFileSync(resolve(base,'MANIFEST.json'),'utf8'));
- if(manifest.release!=='piclaw-3.2.4-linux-x64-baseline'||manifest.sourceMapSha256!=='c53092cfb75415f30b4c6b16b758cab68fed9bbc546953e5916a91b382acb32b')throw Error('Piclaw SVG provenance changed');
+ if(manifest.release!=='piclaw-3.2.5-linux-x64-baseline'||manifest.sourceMapSha256!=='6fa35edad38ab67f75b9defd53699b02bb6fa0c330aa353327456bef25ede769')throw Error('Piclaw SVG provenance changed');
  for(const file of manifest.files){const target=resolve(root,file.target);if(!target.startsWith(base+'/')||hash(readFileSync(target))!==file.sha256)throw Error('Pinned Piclaw SVG source changed: '+file.target)}
  return base;
 }
@@ -27,7 +27,7 @@ export function patchMarkdownSvg(source){
 
 `;
  source=replace(source,anchor,wrapper+anchor);
- return "import {renderSvgFences, escapeSvgSource, encodeSvgSource} from '../piclaw-svg-3.2.4/utils/svg-images.js';\n"+source;
+ return "import {renderSvgFences, escapeSvgSource, encodeSvgSource} from '../piclaw-svg-3.2.5/utils/svg-images.js';\n"+source;
 }
 export function patchPostSvg(source){
  source=replace(source,`        renderMermaidDiagrams(contentRef.current);
@@ -35,11 +35,11 @@ export function patchPostSvg(source){
         const unbindSvg = bindSvgImageThemes(contentRef.current);
         const unbindCopy = enhanceCodeBlocks(contentRef.current);
         return () => { unbindSvg(); unbindCopy(); };`);
- return "import {bindSvgImageThemes} from '../../piclaw-svg-3.2.4/utils/svg-images.js';\n"+source;
+ return "import {bindSvgImageThemes} from '../../piclaw-svg-3.2.5/utils/svg-images.js';\n"+source;
 }
 export function piclawSvgAdapter(root=resolve('.')){
  const base=verifyPiclawSvg(root);
- return {name:'piclaw-3.2.4-svg',setup(build){
+ return {name:'piclaw-3.2.5-svg',setup(build){
   build.onResolve({filter:/^\.\.\/ui\/svg-theme\.js$/},args=>{
    if(args.importer===resolve(base,'utils/svg-images.ts'))return{path:resolve(base,'ui/svg-theme.ts')};
   });

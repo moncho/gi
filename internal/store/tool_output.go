@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 )
 
-// ToolOutputPreview follows the installed Piclaw 3.2.4 status window: the last
+// ToolOutputPreview follows the Piclaw 3.2.5 status window: the last
 // 100 source lines, then the final 12 KiB decoded as text. The decoded UTF-8
 // can be up to six bytes longer when orphaned continuation bytes become U+FFFD. This is
 // a preview, never model history.

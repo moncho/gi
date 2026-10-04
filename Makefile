@@ -334,15 +334,6 @@ test-tool-input-contract:
 	$(BUN) tests/ux/oracle/pi-tool-input-probe.mjs
 	$(GO) test $(RACE) -count=3 ./internal/inference -run 'ToolInput'
 
-.PHONY: test-piclaw-stop-queue
-test-piclaw-stop-queue:
-	$(BUN) tests/ux/oracle/piclaw-stop-queue-probe.mjs
-	$(BUN) tests/ux/oracle/piclaw-stop-ui-probe.mjs
-
-.PHONY: test-piclaw-idle-steer
-test-piclaw-idle-steer:
-	$(BUN) tests/ux/oracle/piclaw-idle-steer-probe.mjs
-
 .PHONY: test-ux-idle-steer
 test-ux-idle-steer: test-idle-queue-steer
 	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/queue-idle-steer.spec.mjs'
@@ -356,140 +347,11 @@ test-ux-ended-steer: build-web
 test-idle-queue-steer:
 	$(GO) test $(RACE) -count=3 ./internal/store ./internal/turn ./internal/web -run 'IdleQueue|QueueSteer|WebQueueHold'
 
-.PHONY: test-piclaw-settings-title test-ux-settings-title
-test-piclaw-settings-title:
-	$(BUN) tests/ux/oracle/piclaw-settings-title-probe.mjs
-
-.PHONY: test-piclaw-settings-shell test-piclaw-settings-shortcut test-piclaw-settings-reopen test-piclaw-settings-stepper test-piclaw-settings-pane-load test-piclaw-settings-layering test-piclaw-non-ipad-lightbox test-piclaw-direct-delete test-piclaw-markdown-table test-piclaw-code-copy test-piclaw-remote-links test-piclaw-outcome-chip
-test-piclaw-settings-shell:
-	$(BUN) tests/ux/oracle/piclaw-settings-shell-probe.mjs
-
-test-piclaw-settings-shortcut:
-	$(BUN) tests/ux/oracle/piclaw-settings-shortcut-probe.mjs
-
-test-piclaw-settings-reopen:
-	$(BUN) tests/ux/oracle/piclaw-settings-reopen-probe.mjs
-
-test-piclaw-settings-stepper:
-	$(BUN) tests/ux/oracle/piclaw-settings-stepper-probe.mjs
-
-test-piclaw-settings-pane-load:
-	$(BUN) tests/ux/oracle/piclaw-settings-pane-load-probe.mjs
-
-test-piclaw-settings-layering:
-	$(BUN) tests/ux/oracle/piclaw-settings-layering-probe.mjs
-
-test-piclaw-non-ipad-lightbox:
-	$(BUN) tests/ux/oracle/piclaw-non-ipad-lightbox-probe.mjs
-
-test-piclaw-direct-delete:
-	$(BUN) tests/ux/oracle/piclaw-direct-delete-probe.mjs
-
-test-piclaw-markdown-table:
-	$(BUN) tests/ux/oracle/piclaw-markdown-table-probe.mjs
-
-test-piclaw-code-copy:
-	$(BUN) tests/ux/oracle/piclaw-code-copy-probe.mjs
-
-test-piclaw-remote-links:
-	$(BUN) tests/ux/oracle/piclaw-remote-links-probe.mjs
-
-test-piclaw-outcome-chip:
-	$(BUN) tests/ux/oracle/piclaw-outcome-chip-probe.mjs
-
-.PHONY: test-piclaw-editor-tabs
-test-piclaw-editor-tabs:
-	$(BUN) tests/ux/oracle/piclaw-editor-tabs-probe.mjs
-
-.PHONY: test-piclaw-login-policy test-piclaw-login-preemption test-piclaw-oobe-panel test-piclaw-invitation-totp test-piclaw-invitation-boundaries test-piclaw-invitation-passkey test-piclaw-family-privacy test-piclaw-pwa-icons test-piclaw-swipe-selection test-piclaw-session-picker-dismiss test-piclaw-session-groups test-piclaw-session-restore
-test-piclaw-login-policy:
-	$(BUN) tests/ux/oracle/piclaw-login-policy-probe.mjs
-
-test-piclaw-login-preemption:
-	$(BUN) tests/ux/oracle/piclaw-login-preemption-probe.mjs
-
-test-piclaw-oobe-panel:
-	$(BUN) tests/ux/oracle/piclaw-oobe-panel-probe.mjs
-
-test-piclaw-invitation-totp:
-	$(BUN) tests/ux/oracle/piclaw-invitation-totp-probe.mjs
-
-test-piclaw-invitation-boundaries:
-	$(BUN) tests/ux/oracle/piclaw-invitation-boundaries-probe.mjs
-
-test-piclaw-invitation-passkey:
-	$(BUN) tests/ux/oracle/piclaw-invitation-passkey-probe.mjs
-
-test-piclaw-family-privacy:
-	$(BUN) tests/ux/oracle/piclaw-family-privacy-probe.mjs
-
-test-piclaw-pwa-icons:
-	$(BUN) tests/ux/oracle/piclaw-pwa-icons-probe.mjs
-
-test-piclaw-swipe-selection:
-	$(BUN) tests/ux/oracle/piclaw-swipe-selection-probe.mjs
-
-test-piclaw-session-picker-dismiss:
-	$(BUN) tests/ux/oracle/piclaw-session-picker-dismiss-probe.mjs
-
-test-piclaw-session-groups:
-	$(BUN) tests/ux/oracle/piclaw-session-groups-probe.mjs
-
-test-piclaw-session-restore:
-	$(BUN) tests/ux/oracle/piclaw-session-restore-probe.mjs
-
-.PHONY: test-piclaw-notification-presence test-piclaw-notification-leader
-test-piclaw-notification-presence:
-	$(BUN) tests/ux/oracle/piclaw-notification-presence-probe.mjs
-
-test-piclaw-notification-leader:
-	$(BUN) tests/ux/oracle/piclaw-notification-leader-probe.mjs
-
-.PHONY: test-piclaw-recovery-classic-shapes
-test-piclaw-recovery-classic-shapes:
-	$(BUN) tests/ux/oracle/piclaw-recovery-classic-shapes-probe.mjs
-
-.PHONY: test-piclaw-recovery-display
-test-piclaw-recovery-display:
-	$(BUN) tests/ux/oracle/piclaw-recovery-display-probe.mjs
-
-.PHONY: test-piclaw-card-rejection
-test-piclaw-card-rejection:
-	$(BUN) tests/ux/oracle/piclaw-card-rejection-probe.mjs
-
-.PHONY: test-piclaw-card-identity
-test-piclaw-card-identity:
-	$(BUN) tests/ux/oracle/piclaw-card-submission-identity-probe.mjs
-
-.PHONY: test-piclaw-btw-panel
-test-piclaw-btw-panel:
-	$(BUN) tests/ux/oracle/piclaw-btw-panel-probe.mjs
-
-.PHONY: test-piclaw-widget-events test-piclaw-widget-persisted
-test-piclaw-widget-events:
-	$(BUN) tests/ux/oracle/piclaw-widget-lifecycle-probe.mjs
-
-test-piclaw-widget-persisted:
-	$(BUN) tests/ux/oracle/piclaw-widget-persisted-probe.mjs
+.PHONY: test-ux-settings-title
 
 UX_SETTINGS_PROJECTS ?=
-test-ux-settings-title: test-piclaw-settings-title
+test-ux-settings-title:
 	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/settings-shell.spec.mjs tests/web-regression/gi-settings.spec.mjs $(UX_SETTINGS_PROJECTS)'
-
-.PHONY: test-piclaw-output-oracle test-piclaw-failed-tool-wait
-test-piclaw-output-oracle: build-web
-	$(BUN) tests/ux/oracle/piclaw-output-contract.mjs
-
-test-piclaw-failed-tool-wait:
-	$(BUN) tests/ux/oracle/piclaw-failed-tool-wait-probe.mjs
-
-.PHONY: test-piclaw-tool-output test-piclaw-tool-output-window
-test-piclaw-tool-output-window:
-	$(BUN) tests/ux/oracle/piclaw-tool-output-window-probe.mjs
-
-test-piclaw-tool-output:
-	$(GO) test $(RACE) -count=3 ./internal/store ./internal/tools ./internal/turn -run 'TestToolOutput|TestShellToolOutput'
-	$(BUN) test tests/ux/support/conversation.test.ts tests/ux/support/piclaw-status-adapter.test.ts
 
 .PHONY: test-conversation-projection
 test-conversation-projection:
@@ -723,9 +585,7 @@ test-ux-speech-contract:
 capture-gi-chat-baseline:
 	$(BUN) tests/ux/oracle/gi-chat-baseline-probe.mjs
 
-.PHONY: test-pi-piclaw-queue-oracle test-pi-idle-escape-oracle test-pi-tool-boundary-steer test-pi-direct-reply-steer test-pi-steering-modes test-pi-abort-steering test-pi-steering-mode-switch test-pi-preparation-steer
-test-pi-piclaw-queue-oracle:
-	$(BUN) tests/ux/oracle/pi-piclaw-queue-probe.mjs
+.PHONY: test-pi-idle-escape-oracle test-pi-tool-boundary-steer test-pi-direct-reply-steer test-pi-steering-modes test-pi-abort-steering test-pi-steering-mode-switch test-pi-preparation-steer
 
 test-pi-idle-escape-oracle:
 	$(BUN) tests/ux/oracle/pi-idle-escape-pty.mjs
@@ -748,12 +608,7 @@ test-pi-steering-mode-switch:
 test-pi-preparation-steer:
 	$(BUN) tests/ux/oracle/pi-preparation-steer-probe.mjs
 
-.PHONY: test-piclaw-queue-reorder test-piclaw-queue-return test-ux-queue-return
-test-piclaw-queue-reorder:
-	$(BUN) tests/ux/oracle/piclaw-queue-reorder-probe.mjs
-
-test-piclaw-queue-return:
-	$(BUN) tests/ux/oracle/piclaw-return-probe.mjs
+.PHONY: test-ux-queue-return
 
 test-ux-queue-return:
 	$(BUN) test tests/ux/support/drafts.test.ts tests/ux/support/queue-return.test.ts
@@ -762,20 +617,6 @@ test-ux-queue-return:
 .PHONY: diagnose-webkit-unload
 diagnose-webkit-unload:
 	$(BUN) tests/ux/oracle/webkit-unload-diagnostic.mjs
-
-.PHONY: test-piclaw-chat-lifecycle
-test-piclaw-chat-lifecycle:
-	$(BUN) tests/ux/oracle/piclaw-chat-lifecycle-probe.mjs
-
-.PHONY: test-piclaw-oracle-basic
-test-piclaw-oracle-basic:
-	$(BUN) test tests/ux/oracle/piclaw-basic-contract.test.mjs
-	$(BUN) tests/ux/oracle/piclaw-basic-probe.mjs
-
-.PHONY: test-piclaw-oracle-matrix
-test-piclaw-oracle-matrix:
-	$(BUN) test tests/ux/oracle/piclaw-basic-contract.test.mjs
-	@set -e; for browser in chromium webkit; do for viewport in phone tablet desktop; do ORACLE_BROWSER=$$browser ORACLE_VIEWPORT=$$viewport $(BUN) tests/ux/oracle/piclaw-basic-probe.mjs > test-results/ux-oracle-$$browser-$$viewport.log; done; done
 
 test-ux-parity-regression:
 	@mkdir -p test-results/ux-parity/queue-gates
@@ -985,58 +826,11 @@ test-ux-session-panel: build-web
 test-model-panel-helpers:
 	$(BUN) test tests/ux/support/model-panel.test.ts tests/ux/support/model-picker.test.ts tests/ux/support/model-accessibility.test.ts tests/ux/support/model-thinking.test.ts
 
-.PHONY: test-piclaw-quick-action-prefill test-piclaw-typeahead-exclusions test-piclaw-upload-state test-piclaw-copy-controls
-test-piclaw-quick-action-prefill:
-	$(BUN) tests/ux/oracle/piclaw-quick-action-prefill-probe.mjs
-
-test-piclaw-typeahead-exclusions:
-	$(BUN) tests/ux/oracle/piclaw-typeahead-exclusions-probe.mjs
-
-test-piclaw-upload-state:
-	$(BUN) tests/ux/oracle/piclaw-upload-state-probe.mjs
-
-test-piclaw-copy-controls:
-	$(BUN) tests/ux/oracle/piclaw-copy-ui-probe.mjs
-
-.PHONY: test-piclaw-stale-terminal
-test-piclaw-stale-terminal:
-	$(BUN) tests/ux/oracle/piclaw-stale-terminal-probe.mjs
-
-.PHONY: test-piclaw-speech-ui
-test-piclaw-speech-ui:
-	$(BUN) tests/ux/oracle/piclaw-speech-ui-probe.mjs
-
-.PHONY: test-piclaw-concurrent-tools
-test-piclaw-concurrent-tools:
-	$(BUN) tests/ux/oracle/piclaw-concurrent-tools-probe.mjs
-
-.PHONY: test-piclaw-svg-adversarial
-test-piclaw-svg-adversarial:
-	$(BUN) tests/ux/oracle/piclaw-svg-adversarial-probe.mjs
-
-.PHONY: test-piclaw-theme-handler
-test-piclaw-theme-handler:
-	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-theme-handler-probe.mjs
-
-.PHONY: test-piclaw-theme-combined
-test-piclaw-theme-combined:
-	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-theme-combined-probe.mjs
-
-.PHONY: test-piclaw-message-retrieval
-test-piclaw-message-retrieval:
-	PICLAW_DB_IN_MEMORY=1 $(BUN) tests/ux/oracle/piclaw-message-retrieval-probe.mjs
-
-.PHONY: test-piclaw-compose-escape test-ux-compose-escape
-test-piclaw-compose-escape:
-	$(BUN) tests/ux/oracle/piclaw-compose-escape-probe.mjs
+.PHONY: test-ux-compose-escape
 
 test-ux-compose-escape: build-web
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
 	GI_UX_COMPOSE_ESCAPE=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config=playwright.web-regression.config.mjs tests/web-regression/compose-escape.spec.mjs $(UX_PARITY_ARGS)
-
-.PHONY: test-piclaw-picker-thinking
-test-piclaw-picker-thinking:
-	$(BUN) tests/ux/oracle/piclaw-picker-thinking-probe.mjs
 
 .PHONY: test-ux-picker-thinking
 test-ux-picker-thinking: build-web

@@ -50,7 +50,7 @@ for(const id of ['@gi-preview-002']) test(`${id} Native streamed thought and dra
       await expect(thought).toHaveAttribute('data-expanded','true');await expect(draft).toHaveAttribute('data-expanded','false');
       text=await thought.locator('.agent-thinking-body').textContent();
     }
-    // Installed 3.2.4 uses a generic disclosure, not omitted-line counts.
+    // Piclaw 3.2.5 uses a generic disclosure, not omitted-line counts.
     const title=thought.locator('.agent-thinking-title');await title.click();await page.keyboard.press('Escape');await expect(thought).toHaveAttribute('data-expanded','false');
     await thought.getByRole('button',{name:'more…',exact:true}).click();
     // Escape in an editable target and modified Escape do not consume disclosure.

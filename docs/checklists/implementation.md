@@ -44,6 +44,7 @@ The dated entries below are a working log; their test counts describe the code a
   - Web: Piclaw-format keychain with Settings → Keychain and shell substitution; shell environment overrides; Settings General (upload limit), Models filter, Appearance presets/tint/output padding, Keyboard; Piclaw 3.2.5 context meter; numeric message references; messages tool search/get.
   - Tests: owner UX suite migrated onto fixtures-vibes, now pinned at `f796ddf`; unpassed scenarios listed in `tests/fixtures-vibes/skips.json` with issues.
   - Removed Gi's copies of the shared Gherkin (`features/ux/`), the upstream snapshots and their provenance checks; the passkey ledger reads the suite's feature.
+  - Retired the Piclaw 3.2.4 pins: the vendored SVG and status sources are re-pinned to 3.2.5 (only the status panel's `i18n.ts` changed), and the 3.2.4 oracle probes and their `test-piclaw-*` targets are removed.
 
 - [x] Fenced SVG bounded Piclaw oracle: pinned installed 3.2.4 sanitizer/theme/CSS with manifest and source-map provenance; build-only adapter keeps supplied Markdown/post bytes unchanged. Installed basic probe 6/6; native rendering 42/42 across six Chromium/WebKit viewports, including source/copy, resize, surface changes, hostile/malformed/oversized fallback and stripped unsafe attributes; `make check ux-parity-inventory` 144 functional/11 skipped and 214 support/7977 assertions. Failed/incomplete attempts retained in `docs/internal/svg-fences-2026-09-28.md`. No parity remap or deployment; full web UX remains open.
 

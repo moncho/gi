@@ -8,7 +8,7 @@ import (
 )
 
 // codexPayloadHook preserves user hooks, then removes the output limit rejected
-// by the ChatGPT Codex endpoint. Piclaw 3.2.4's Codex builder omits this field;
+// by the ChatGPT Codex endpoint. Piclaw 3.2.5's Codex builder omits this field;
 // our pinned go-ai builder adds it even when no token limit was requested.
 // Other Responses APIs still support it and must keep their original payload.
 func codexPayloadHook(next func(any, *goai.Model) (any, error)) func(any, *goai.Model) (any, error) {

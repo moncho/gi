@@ -1,0 +1,29 @@
+{
+  "release": "piclaw-3.2.5-linux-x64-baseline",
+  "sourceMap": "app/runtime/web/static/classic/dist/app.bundle.js.map",
+  "sourceMapSha256": "6fa35edad38ab67f75b9defd53699b02bb6fa0c330aa353327456bef25ede769",
+  "files": [
+    {
+      "source": "../../../src/utils/svg-images.ts",
+      "target": "web/piclaw-svg-3.2.5/utils/svg-images.ts",
+      "sha256": "d3377411259e5f39b587e7c611464ddabd59c894b1deb8ee30f41026f020a969",
+      "bytes": 14385
+    },
+    {
+      "source": "../../../src/ui/svg-theme.ts",
+      "target": "web/piclaw-svg-3.2.5/ui/svg-theme.ts",
+      "sha256": "ec0cf66d39b0cffdf61eed8959eb7ea4ec4feb717f965608e316ba5d3ec80cfb",
+      "bytes": 2955
+    },
+    {
+      "source": "app/runtime/web/static/classic/dist/app.bundle.css",
+      "sourceRange": [
+        370780,
+        371872
+      ],
+      "target": "web/piclaw-svg-3.2.5/css/svg-fences.css",
+      "sha256": "039a6f2fec4fd0a507b6ecaead157d891a2917cd47604047abfe43d24abfc831",
+      "bytes": 1092
+    }
+  ]
+}

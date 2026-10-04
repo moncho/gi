@@ -1,7 +1,7 @@
 import {test,expect} from 'bun:test';
 import {readFileSync} from 'node:fs';
 import {patchPinnedStatusResize} from '../../../scripts/patch-pinned-status-resize.mjs';
-const path='web/piclaw-status-3.2.4/components/status.ts';
+const path='web/piclaw-status-3.2.5/components/status.ts';
 const source=readFileSync(path,'utf8');
 test('pinned renderer keeps resize safety via guarded adapter, with no source edits',()=>{
  const patched=patchPinnedStatusResize(source);

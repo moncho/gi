@@ -30,3 +30,7 @@ Snapshots restore running Output after reload. A terminal tool in an active turn
 `make test-piclaw-tool-output-window` exercises the installed translator's whitespace, line and byte windows separately. `make test-piclaw-output-oracle` executes the installed translator and shipped browser assets independently of the vendored copy, then compares Output DOM, text and selected computed styles against Gi. It covers collapsed/expanded content, sanitisation, waiting and idle transitions in Chromium and WebKit at three viewport sizes. It does not compare screenshot bytes.
 
 Native tool lifecycle, Thoughts/Draft, store reload/identity, failure and race tests remain separate gates. This decision does not accept the entire web UX, multi-tool concurrency, provider/device parity or the still-failing older WebKit reload oracle.
+
+## Update 2026-10-04: Piclaw 3.2.5
+
+The pinned copy moved to `web/piclaw-status-3.2.5/`. Against the installed 3.2.5 source map, every file is unchanged except `utils/i18n.ts`, which adds the General upload-limit strings. The `test-piclaw-*` oracle targets above ran against the 3.2.4 release and have been removed. Piclaw behaviour is now checked by the fixtures-vibes suite and its oracle.

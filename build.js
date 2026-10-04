@@ -164,9 +164,9 @@ if (existsSync(phtmAlias)) rmSync(phtmAlias);
 });
 
 // Pinned renderer stylesheet; original supplied stylesheet is left untouched.
-copyFileSync('web/piclaw-status-3.2.4/css/agent.css', 'internal/web/static/css/piclaw-status-3.2.4.css');
+copyFileSync('web/piclaw-status-3.2.5/css/agent.css', 'internal/web/static/css/piclaw-status-3.2.5.css');
 verifyPiclawSvg(__dirname);
-copyFileSync('web/piclaw-svg-3.2.4/css/svg-fences.css','internal/web/static/css/piclaw-svg-3.2.4.css');
+copyFileSync('web/piclaw-svg-3.2.5/css/svg-fences.css','internal/web/static/css/piclaw-svg-3.2.5.css');
 
 // ── CSS bundle ────────────────────────────────────────────────────────────
 // CSS bundle — all Piclaw CSS is served from /css/styles.css (with @import partials).

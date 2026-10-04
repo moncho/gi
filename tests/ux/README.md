@@ -32,6 +32,8 @@ Gi-only browser tests live in `tests/web-regression/` and use `playwright.web-re
 
 Gi keeps no copy of the shared Gherkin. `features/` holds only Gi-specific, terminal and search contracts, and `support/feature-tree.test.ts` fails if a `features/ux/` copy reappears. Gi's passkey criterion ledger reads the suite's `single-user-passkey-settings.feature` directly.
 
+Two Piclaw sources are vendored verbatim and pinned to the installed 3.2.5 release: the SVG fence renderer (`web/piclaw-svg-3.2.5/`) and the status panel (`web/piclaw-status-3.2.5/`). `support/piclaw-svg-adapter.test.ts` and `support/piclaw-status-adapter.test.ts` check the manifests; the SVG test also compares the files against the 3.2.5 source map when that release is installed (or `PICLAW_325_STATIC_ROOT` is set). The Piclaw 3.2.4 oracle probes are gone; `oracle/` keeps only Pi terminal probes and Gi diagnostics.
+
 ## Run hygiene
 
 Run browser tests with `PI_CODING_AGENT_DIR` and `GI_CODING_AGENT_DIR` unset, so the operator's Pi settings cannot change the results. A full fixtures-vibes run takes about 75 minutes on the development host.

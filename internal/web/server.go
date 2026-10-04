@@ -705,6 +705,9 @@ func (s *Server) handlePrompt(w http.ResponseWriter, r *http.Request, sessionID 
 	if s.handleMCPCommand(w, r, sessionID, req.Prompt) {
 		return
 	}
+	if s.handleThemeCommand(w, r, sessionID, req.Prompt) {
+		return
+	}
 	expandedPrompt, skillMetadata, skillErr := s.expandWebSkill(req.Prompt)
 	if skillErr != nil {
 		writeJSON(w, 400, map[string]any{"error": skillErr.Error()})

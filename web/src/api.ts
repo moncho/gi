@@ -495,9 +495,12 @@ export async function sendAgentMessage(agentId: string, content: string, _thread
     }
     const activity = composeTransfers.begin(sessionId, 'send');
     try {
-        return await request(`/api/sessions/${encodeURIComponent(sessionId)}/prompt`, {
+        const response = await request(`/api/sessions/${encodeURIComponent(sessionId)}/prompt`, {
             method: 'POST', body: JSON.stringify(payload),
         });
+        // /theme and /tint: gi-appearance.ts applies the payload in this browser.
+        if (response?.ui_only && response.command?.payload) window.dispatchEvent(new CustomEvent('gi:theme-command', { detail: response.command.payload }));
+        return response;
     } catch (error) {
         // Recover a proven admission after a lost transport reply. No POST retry.
         // HTTP errors remain explicit failures, not candidates for inference.

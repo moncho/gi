@@ -9,7 +9,7 @@ import {
   appearancePresetLabels,
   persistAppearance,
   subscribeAppearance
-} from "./app-z959mk0b.js";
+} from "./app-4wvh62wj.js";
 
 // web/src/gi-settings-appearance.ts
 function Appearance() {

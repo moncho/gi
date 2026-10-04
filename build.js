@@ -168,6 +168,20 @@ copyFileSync('web/piclaw-status-3.2.5/css/agent.css', 'internal/web/static/css/p
 verifyPiclawSvg(__dirname);
 copyFileSync('web/piclaw-svg-3.2.5/css/svg-fences.css','internal/web/static/css/piclaw-svg-3.2.5.css');
 
+// Theme catalogue for the server-side /theme and /tint commands. THEME_PRESETS
+// is module-private in the supplied theme.ts, so export it from a temporary copy.
+{
+  const tmp = resolve(__dirname, 'web/src/ui/.gi-theme-catalogue.ts');
+  writeFileSync(tmp, readFileSync(resolve(__dirname, 'web/src/ui/theme.ts'), 'utf8') + '\nexport { THEME_PRESETS };\n');
+  try {
+    const { THEME_PRESETS } = await import(tmp);
+    const keys = ['bgPrimary', 'bgSecondary', 'textPrimary', 'textSecondary', 'borderColor', 'accent', 'danger', 'success'];
+    const pick = palette => palette && Object.fromEntries(keys.filter(k => typeof palette[k] === 'string').map(k => [k, palette[k]]));
+    const catalogue = Object.entries(THEME_PRESETS).map(([name, p]) => ({ name, label: p.label, mode: p.mode, light: pick(p.light), dark: pick(p.dark) }));
+    writeFileSync(resolve(__dirname, 'internal/web/theme_catalogue.json'), JSON.stringify(catalogue, null, 1) + '\n');
+  } finally { rmSync(tmp, { force: true }); }
+}
+
 // ── CSS bundle ────────────────────────────────────────────────────────────
 // CSS bundle — all Piclaw CSS is served from /css/styles.css (with @import partials).
 // app.bundle.css is kept minimal — only Gi-specific overrides go here.

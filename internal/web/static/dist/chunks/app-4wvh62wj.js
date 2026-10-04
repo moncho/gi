@@ -2671,10 +2671,13 @@ async function sendAgentMessage(agentId, content, _threadId = null, _mediaIds = 
   }
   const activity = composeTransfers.begin(sessionId, "send");
   try {
-    return await request(`/api/sessions/${encodeURIComponent(sessionId)}/prompt`, {
+    const response = await request(`/api/sessions/${encodeURIComponent(sessionId)}/prompt`, {
       method: "POST",
       body: JSON.stringify(payload)
     });
+    if (response?.ui_only && response.command?.payload)
+      window.dispatchEvent(new CustomEvent("gi:theme-command", { detail: response.command.payload }));
+    return response;
   } catch (error) {
     if (["TypeError", "AbortError"].includes(error?.name)) {
       const recovered = await recoverSubmittedPrompt(sessionId, payload.client_request_id, (path) => request(path, { signal: AbortSignal.timeout(3000) }));
@@ -3751,6 +3754,7 @@ function saveAppearance(storage, value, presets) {
 // web/src/gi-appearance.ts
 var appearancePresets = Object.keys(THEME_PRESETS);
 var changeEvent = "gi:appearance-changed";
+var themeCommandEvent = "gi:theme-command";
 function readStoredAppearance() {
   try {
     return readAppearance(window.localStorage, appearancePresets);
@@ -3781,6 +3785,29 @@ function persistAppearance(value) {
   render(saved);
   return saved;
 }
+function tintToHex(value) {
+  if (/^#[0-9a-f]{6}$/i.test(value))
+    return value.toLowerCase();
+  if (!globalThis.CSS?.supports?.("color", value))
+    return "";
+  const context = document.createElement("canvas").getContext("2d");
+  if (!context)
+    return "";
+  context.fillStyle = value;
+  const hex = String(context.fillStyle);
+  return /^#[0-9a-f]{6}$/i.test(hex) ? hex.toLowerCase() : "";
+}
+function applyThemeCommandPayload(payload) {
+  if (!payload || typeof payload.theme !== "string" || !appearancePresets.includes(payload.theme))
+    return;
+  const tint = typeof payload.tint === "string" ? tintToHex(payload.tint) : "";
+  const next = validateAppearance({ ...currentAppearance(), theme: payload.theme, tint }, appearancePresets);
+  try {
+    persistAppearance(next);
+  } catch {
+    render(next);
+  }
+}
 function subscribeAppearance(onChange) {
   const listener = (event) => onChange(event.detail);
   window.addEventListener(changeEvent, listener);
@@ -3800,7 +3827,12 @@ function initGiAppearance() {
       render(defaultAppearance);
   };
   window.addEventListener("storage", storage);
-  return () => window.removeEventListener("storage", storage);
+  const command = (event) => applyThemeCommandPayload(event.detail);
+  window.addEventListener(themeCommandEvent, command);
+  return () => {
+    window.removeEventListener("storage", storage);
+    window.removeEventListener(themeCommandEvent, command);
+  };
 }
 
 // web/src/ui/chat-window.ts
@@ -23079,14 +23111,14 @@ function NumberStepper({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-k78bkfxd.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-ybw40cgc.js").then((module) => module.Appearance),
-  keyboard: () => import("./keyboard-2qd5p6mh.js").then((module) => module.KeyboardSection),
-  compaction: () => import("./gi-settings-compaction-tynwkwcy.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-gkbq1h3g.js").then((module) => module.GiSettingsProviders),
-  keychain: () => import("./gi-settings-keychain-2257kjd3.js").then((module) => module.GiSettingsKeychain),
-  environment: () => import("./gi-settings-environment-czbvwtyr.js").then((module) => module.GiSettingsEnvironment),
-  authentication: () => import("./gi-settings-authentication-etx5q0pd.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-ed0dxsp2.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-gcktme1q.js").then((module) => module.Appearance),
+  keyboard: () => import("./keyboard-fraz0vgm.js").then((module) => module.KeyboardSection),
+  compaction: () => import("./gi-settings-compaction-ny24rms9.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-81jghrkn.js").then((module) => module.GiSettingsProviders),
+  keychain: () => import("./gi-settings-keychain-5c7b2jkc.js").then((module) => module.GiSettingsKeychain),
+  environment: () => import("./gi-settings-environment-cx26z6nz.js").then((module) => module.GiSettingsEnvironment),
+  authentication: () => import("./gi-settings-authentication-8cs5cnpt.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", keyboard: "Keyboard", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" };
 var components = new Map;

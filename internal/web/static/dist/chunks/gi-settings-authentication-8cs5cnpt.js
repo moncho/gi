@@ -9,7 +9,7 @@ import {
   passkeyUnavailable,
   runPasskey,
   parseAuthPolicy
-} from "./app-z959mk0b.js";
+} from "./app-4wvh62wj.js";
 
 // web/src/gi-settings-setup.ts
 function GiSettingsSetup({ available, disabled, onComplete, onBusy }) {

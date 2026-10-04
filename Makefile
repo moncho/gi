@@ -139,7 +139,7 @@ help:
 		"  make test-tui-sessions Verify draft isolation and compact picker sizes" \
 		"  make test-ux-parity   Alias for pinned shared Classic compliance" \
 		"  make fixtures-vibes   Run pinned shared Classic compliance (six projects)" \
-		"  make test-web-adapters Run Gi adapter and frozen provenance checks" \
+		"  make test-web-adapters Run Gi web adapter unit tests" \
 		"  make test-web-regression Run Gi-only browser regressions" \
 		"" \
 		"Isolated test instance" \

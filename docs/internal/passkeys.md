@@ -298,7 +298,7 @@ concurrent removal, native route authority and failed-write preservation. Existi
 TOTP/browser suites remain separate. CDP supplies virtual authenticator operations;
 WebKit and physical native prompts are not covered by this passkey suite.
 
-The 26 pinned [Settings scenarios](../../features/ux/additions/piclaw-2026-09-24/README.md)
+The 26 pinned [Settings scenarios](passkey-contract.md)
 include Visual-skin, device and policy cases not established by the current tests.
 The first-owner journey now starts unenrolled, verifies a manually entered TOTP
 key in Settings, registers a CDP passkey, then signs in afresh with both factors.

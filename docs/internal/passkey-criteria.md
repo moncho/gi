@@ -1,19 +1,16 @@
 # Passkey criterion ledger
 
-The [JSON ledger](passkey-criteria.json) links all 26 additive scenarios to
-individual assertions or named gaps. It records 169 scenario steps, four shared
-Background steps and 40 example rows. Gherkin expansion produces 56 cases.
-These counts describe the source contract; the latest browser suite has 189
-executions and uses a different test grouping.
+The [JSON ledger](passkey-criteria.json) links all 26 scenarios of the
+[shared feature](../../references/fixtures-vibes/features/classic/settings/single-user-passkey-settings.feature)
+to individual assertions or named gaps. It records 169 scenario steps, four
+Background steps and 38 example rows. Gherkin expansion produces 54 cases.
 
 Initial source-evidence baseline: `e7d9b0450db9dc2c103dc06797dd5387ab9f81d7`.
 Later tested changes update individual dispositions and anchors in the ledger.
-Source hash:
-`bd48cab9126778763cab3ddfd8ee04a89bd8c29da62e3bc4188cf24dc3a55b82`.
-The [frozen feature](../../features/ux/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature)
-is unchanged. All 26 full-scenario mappings remain unawarded. Classic/shared
-mapping counts remain 101 of236 Classic scenario IDs (256 expanded cases) and
-30 of42 shared cases, including the separately disputed Classic008 mapping.
+Source hash, checked by `tests/ux/support/passkey-criteria.test.ts`:
+`416239a729210d8e670923d1e28de6a96efe4956b2fc6f253e564714456041fc`.
+Until fixtures-vibes `f796ddf` the ledger read Gi's own copy of the feature,
+which also had Visual-skin example rows for `@ux-single-passkeys-001` and `-016`.
 
 ## Reading a row
 

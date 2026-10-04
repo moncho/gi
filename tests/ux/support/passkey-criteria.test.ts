@@ -21,10 +21,10 @@ const checkDisposition=(row:any)=>{
 
 test('additive passkey ledger pins every Background, criterion and example without granting frozen parity',()=>{
  expect(ledger.schemaVersion).toBe(1);
- expect(ledger.source.path).toBe('features/ux/additions/piclaw-2026-09-24/piclaw-single-user-passkey-settings.feature');
- expect(createHash('sha256').update(text).digest('hex')).toBe('bd48cab9126778763cab3ddfd8ee04a89bd8c29da62e3bc4188cf24dc3a55b82');
- expect(ledger.source.sha256).toBe('bd48cab9126778763cab3ddfd8ee04a89bd8c29da62e3bc4188cf24dc3a55b82');
- expect(messages.filter(m=>m.parseError)).toEqual([]);expect(messages.filter(m=>m.pickle)).toHaveLength(56);
+ expect(ledger.source.path).toBe('references/fixtures-vibes/features/classic/settings/single-user-passkey-settings.feature');
+ expect(createHash('sha256').update(text).digest('hex')).toBe('416239a729210d8e670923d1e28de6a96efe4956b2fc6f253e564714456041fc');
+ expect(ledger.source.sha256).toBe('416239a729210d8e670923d1e28de6a96efe4956b2fc6f253e564714456041fc');
+ expect(messages.filter(m=>m.parseError)).toEqual([]);expect(messages.filter(m=>m.pickle)).toHaveLength(54);
  const source=collect(feature.children);expect(source).toHaveLength(26);expect(ledger.scenarios).toHaveLength(26);
  expect(new Set(ledger.scenarios.map((s:any)=>s.id)).size).toBe(26);
  const matchSteps=(actual:any[],expected:any[])=>{
@@ -39,7 +39,7 @@ test('additive passkey ledger pins every Background, criterion and example witho
   expect(row.examples.map(({line,values}:any)=>({line,values}))).toEqual(examples);row.examples.forEach(checkDisposition);
  }
  expect(ledger.scenarios.reduce((n:number,s:any)=>n+s.criteria.length,0)).toBe(169);
- expect(ledger.scenarios.reduce((n:number,s:any)=>n+s.examples.length,0)).toBe(40);
+ expect(ledger.scenarios.reduce((n:number,s:any)=>n+s.examples.length,0)).toBe(38);
  expect(ledger.terminal.idleRows).toBe(0);
  // This ledger is additive; it is deliberately not added to existing sets.
 });

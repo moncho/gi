@@ -6,7 +6,7 @@ Browser compliance uses the shared [fixtures-vibes](https://github.com/rcarmo/fi
 make fixtures-vibes       # Chromium/WebKit × phone/tablet/desktop, zero retries, report gate
 make test-ux-parity       # alias for fixtures-vibes
 make check                # Go, vet, web build, hook checks, adapters, functional tests
-make test-web-adapters    # runtime/adapter unit tests and frozen provenance
+make test-web-adapters    # web adapter unit tests
 make test-web-regression  # Gi-only browser race/recovery regressions
 ```
 
@@ -30,7 +30,7 @@ Gi-only browser tests live in `tests/web-regression/` and use `playwright.web-re
 
 `tests/ux/support/` holds Bun unit tests for the web adapters and Gi feature criteria. The opt-in real-provider functional and terminal acceptance probes are separate.
 
-The frozen files in `features/ux/upstream/` and `web/upstream/` are read-only historical provenance; `support/provenance.mjs` verifies their hashes. The Piclaw 3.2.4 SVG asset pin is unchanged. Comparing those assets with that release requires `PICLAW_324_STATIC_ROOT`; the installed 3.2.5 release is not a substitute. The asset-integrity tests run unconditionally.
+Gi keeps no copy of the shared Gherkin. `features/` holds only Gi-specific, terminal and search contracts, and `support/feature-tree.test.ts` fails if a `features/ux/` copy reappears. Gi's passkey criterion ledger reads the suite's `single-user-passkey-settings.feature` directly.
 
 ## Run hygiene
 

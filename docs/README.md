@@ -28,7 +28,7 @@ The first eight ADRs set the architecture; 0009–0060 record later decisions on
 
 * [Feature and parity matrix](feature-parity.md) — current implementation, compliance results, limits and requested integrations.
 * [Browser test guide](../tests/ux/README.md) — fixtures-vibes compliance, Gi regressions and runners.
-* [Multi-passkey contract](../features/ux/additions/piclaw-2026-09-24/README.md) — required enrolment, sign-in and lockout-safety tests; the [per-case review](internal/passkey-scenario-review.md) records partial and manual gaps.
+* [Multi-passkey contract](internal/passkey-contract.md) — required enrolment, sign-in and lockout-safety tests; the [per-case review](internal/passkey-scenario-review.md) records partial and manual gaps.
 * [Passkey backend](internal/passkeys.md) — opt-in RP/origin configuration, APIs, storage and browser-test limits.
 * [tsnet plan](internal/peering-tsnet-plan.md) — the existing scaffold and remote-access work.
 * [UX audit](internal/ux-test-audit-2026-09-24.md) and [full web/TUI plan](internal/full-web-tui-parity-plan.md) — dated September 2026 reviews; their test counts and gaps describe the code at that time.

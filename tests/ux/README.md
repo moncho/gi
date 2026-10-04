@@ -1,10 +1,10 @@
-# Gi browser verification
+# Gi browser tests
 
-Classic compliance uses the shared suite at `references/fixtures-vibes`, pinned to **`0874ea2`** (the coordinator-authorised post-v0.1.0 patch). Gi does not maintain a second Classic scenario catalogue or parity report.
+Browser compliance uses the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite, checked out at `references/fixtures-vibes` and pinned to **`f796ddf`** (Piclaw 3.2.5 scenarios). Gi keeps no second scenario catalogue or parity report.
 
 ```sh
-make fixtures-vibes       # Chromium/WebKit × phone/tablet/desktop, zero retries
-make test-ux-parity       # compatibility alias for fixtures-vibes
+make fixtures-vibes       # Chromium/WebKit × phone/tablet/desktop, zero retries, report gate
+make test-ux-parity       # alias for fixtures-vibes
 make check                # Go, vet, web build, hook checks, adapters, functional tests
 make test-web-adapters    # runtime/adapter unit tests and frozen provenance
 make test-web-regression  # Gi-only browser race/recovery regressions
@@ -12,26 +12,26 @@ make test-web-regression  # Gi-only browser race/recovery regressions
 
 ## Shared compliance
 
-`tests/fixtures-vibes/profile.json` declares lifecycle commands, capabilities, selectors and tool names. `skips.json` lists absent capabilities and issue-linked defects per scenario. A listed skip does not prevent execution, and a passing listed scenario fails the stale-skip gate.
+`tests/fixtures-vibes/profile.json` declares lifecycle commands, the capabilities Gi claims, selectors and tool names. `tests/fixtures-vibes/skips.json` lists every scenario Gi does not pass, with a reason: `capability-absent` (with the capability), `known-defect` or `not-implemented` (with the Gi issue). Listed scenarios still run. The report gate fails on an unlisted failure, an unlisted capability skip, or a listed scenario that passes.
 
-Results are written under `references/fixtures-vibes/test-results/`:
+`make fixtures-vibes` builds `bin/gi-fixtures-vibes` with the `fixtures_vibes` build tag, so the suite's fixture model and seeded workspace are available. Results are written under `references/fixtures-vibes/test-results/`:
 
-- `compliance-report-gi.md` and `.json`: per-scenario status and gate;
+- `compliance-report-gi.md` and `.json`: per-scenario status and gate problems;
 - `evidence-gi.json`: passing test titles by scenario and project;
 - Playwright results and retained failure artifacts.
 
-The shared suite replaces the owner-side `tests/ux/*.spec.mjs`, `support/catalogue.mjs` and `scripts/ux-parity-report.mjs`. Legacy `test-shared-*-evidence` targets also use this gate. Scenarios reported as `no-suite-test` have no shared browser evidence.
+The latest results and the list of unpassed scenarios are in [the feature matrix](../../docs/feature-parity.md#shared-browser-compliance). Scenarios reported as `no-suite-test` have no shared browser evidence.
+
+To debug one scenario without a full run, start a disposable stack with the fixture model and a `fixtures_vibes` build, then run Playwright from `references/fixtures-vibes` with `--grep "@ux-..."` and a profile that points at it.
 
 ## Gi regressions
 
-Non-duplicated Gi tests live in `tests/web-regression/`, using `playwright.web-regression.config.mjs`. They cover native configuration, authentication, receipts, stale responses, draft recovery, tool timing, IndexedDB failures and adapter boundaries. Local Classic cases with no shared spec yet are also kept here until the coordinator ports them into a tag and that replacement passes. Their results do not award Classic scenario credit. Specialised `test-ux-*` targets run these isolated regressions; targets whose owner spec was retired delegate to shared compliance.
+Gi-only browser tests live in `tests/web-regression/` and use `playwright.web-regression.config.mjs`. They cover native configuration, authentication, receipts, stale responses, draft recovery, tool timing, IndexedDB failures, Settings panes and adapter boundaries. They award no shared scenario credit. The `test-ux-*` targets run them against isolated instances; several (for example `test-ux-thinking` and `test-ux-compose-surface`) start the deterministic Go server in `tests/ux/server/` with feature flags.
 
-`tests/ux/server/` remains the deterministic Go runtime used by these regressions and some functional tests. `tests/ux/support/` retains adapter tests and Gi feature/criterion checks. The opt-in real-provider functional and TUI acceptance probes remain separate.
+`tests/ux/support/` holds Bun unit tests for the web adapters and Gi feature criteria. The opt-in real-provider functional and terminal acceptance probes are separate.
 
-Frozen `features/ux/upstream/` and `web/upstream/` files remain read-only historical provenance. `support/provenance.mjs` verifies their hashes without loading an active scenario catalogue. The Piclaw 3.2.4 SVG asset pin is unchanged. Comparing those assets to a historical release requires `PICLAW_324_STATIC_ROOT`; the installed 3.2.5 release is not a substitute. The asset-integrity tests run unconditionally.
+The frozen files in `features/ux/upstream/` and `web/upstream/` are read-only historical provenance; `support/provenance.mjs` verifies their hashes. The Piclaw 3.2.4 SVG asset pin is unchanged. Comparing those assets with that release requires `PICLAW_324_STATIC_ROOT`; the installed 3.2.5 release is not a substitute. The asset-integrity tests run unconditionally.
 
-## Scope
+## Run hygiene
 
-Gi #35 tracks cascade deletion. Gi #37 tracks the messages tool's missing all-chat text-search contract. The profile keeps both user-visible capabilities claimed and lists affected scenarios explicitly.
-
-Compaction is claimed. Scenarios 001–004 have an agreed `environment-limit` listing: Gi summarises natively without a model call, so the fixture model cannot hold its compaction in progress. Scenarios 006–008 run. The disposable fixture build registers both models with the shared 128K context contract and is built once before workers start. Settings parity, family features and iPad annotation are outside this task.
+Run browser tests with `PI_CODING_AGENT_DIR` and `GI_CODING_AGENT_DIR` unset, so the operator's Pi settings cannot change the results. A full fixtures-vibes run takes about 75 minutes on the development host.

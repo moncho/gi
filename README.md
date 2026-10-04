@@ -12,18 +12,22 @@ So this was the result. If you like `pi`, you should feel very much at home. If 
 
 ## Status
 
-Gi runs a web UI and a terminal UI from one pure-Go binary, with embedded web assets and SQLite-backed sessions, messages and turns. Bun is needed to build the browser assets, but there is no Node or Bun runtime dependency.
+Gi runs a terminal UI (the default) and a web UI (`gi -web`) from one pure-Go binary, with embedded web assets and SQLite-backed sessions, messages and turns. Bun is needed to build the browser assets; there is no Node or Bun runtime dependency.
 
-Piclaw parity is partial. Gi reuses pinned Piclaw components and implements its own backend, adapters and host UI. Composer/picker layout and several keyboard journeys still need work; sharing component source does not make the applications interchangeable. See the dated [feature and parity matrix][parity] for what works, what differs and what is planned.
+The terminal follows Pi 1.0.1 and the browser follows Piclaw 3.2.5. Gi reuses pinned Piclaw web components and implements its own backend, adapters and host UI, so the applications are not interchangeable. Browser behaviour is measured against the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite; the [feature and parity matrix][parity] has the latest results, the known differences and the open issues.
 
 ## Features
 
-* Streaming chat, session-local models, durable follow-up queues and run-bound steering use the same Go turn engine. Reconnect refreshes authoritative state; automatic and manual compaction retain the visible conversation.
-* The browser has durable drafts and attachments, session selection and management, scoped search, Markdown/code rendering, image lightboxes and read-only workspace tabs. Settings covers models, appearance, instance identity, compaction and OpenAI/Anthropic API keys; it does not yet cover every Piclaw pane.
-* The terminal offers fullscreen transcript navigation or native-scrollback mode, draft-preserving session/model selectors, compact session actions and file attachments. The regular-mode idle editor/footer uses five rows; selectors and actions are temporary.
+* Streaming chat, session-local models and thinking levels, durable follow-up queues and run-bound steering share one Go turn engine. Reconnect refreshes state from the server. Automatic and manual compaction write model-generated summaries, as Pi does, and keep the visible conversation.
+* The terminal has Pi's selectors and commands: `/model`, `/scoped-models`, `/settings`, `/tree`, `/fork`, `/clone`, `/resume`, `/compact`, `/login`, `/logout`, `/export`, `/import`, `/share`, custom themes and Pi's default keybindings. It offers a fullscreen transcript or native scrollback (`-tui-mode regular`).
+* The browser has durable drafts and attachments, session selection and management, scoped search, Markdown/code rendering, image lightboxes, read-only workspace tabs and numeric message references (`msg:42`). Settings has General, Models, Appearance, Keyboard, Compaction, Providers, Keychain, Environment and Authentication sections.
+* MCP servers (stdio and Streamable HTTP, with OAuth) use Pi's `mcp.json`, direct and deferred tools, `tool_search` and a QuickJS codemode tool; `gi mcp` and `/mcp` manage them. See the [MCP reference](docs/internal/mcp.md).
+* An encrypted keychain in Piclaw's format supplies secrets to shell commands by name; Settings also stores shell environment overrides. See the [keychain](docs/internal/keychain.md) and [shell environment](docs/internal/shell-environment.md) contracts.
 * Single-user TOTP sign-in uses an HttpOnly browser cookie and transactional auth storage. Tools and extensions run through Go, embedded Joker/JavaScript or explicitly configured subprocesses, with workspace files and managed `vfs://` references.
 
-**Passkeys are opt-in, with login and Settings enrolment controls.** Settings can add, list, rename and remove credentials after recent authentication. Browser tests verify two independent keys after restart, further enrolment without TOTP, cancellation and lockout-safe removal. Physical-device and synced-key checks are still outstanding. See the [backend contract](docs/internal/passkeys.md) for configuration and limits. tsnet web access, Iroh inter-instance chat and a token-saving MCP gateway are planned; the tsnet manager scaffold has no HTTP listener wiring. These integrations keep Gi's runtime pure Go and add no idle terminal rows.
+**Passkeys are opt-in, with login and Settings enrolment controls.** Settings can add, list, rename and remove credentials after recent authentication. Browser tests verify two independent keys after restart, further enrolment without TOTP, cancellation and lockout-safe removal. Physical-device and synced-key checks are still outstanding. See the [backend contract](docs/internal/passkeys.md) for configuration and limits.
+
+tsnet web access and Iroh inter-instance chat are planned. The tsnet manager scaffold has no HTTP listener wiring, and Gi has no Iroh transport. Both must keep Gi's runtime pure Go and add no idle terminal rows.
 
 ## Goals
 
@@ -36,20 +40,23 @@ Piclaw parity is partial. Gi reuses pinned Piclaw components and implements its 
 
 ## Architecture
 
-- `cmd/gi/` — main binary entrypoint for web server or TUI mode (`-tui`)
-- `internal/config/` — Pi/Piclaw config loader (settings, auth, AGENTS.md)
+- `cmd/gi/` — main binary: terminal UI by default, web server with `-web`, `gi mcp` subcommands
+- `internal/config/` — Pi/Piclaw configuration loader (settings, auth, context files)
 - `internal/store/` — SQLite state store (sessions, messages, turns, events)
-- `internal/turn/` — append-only turn engine with queue/cancel/streaming
-- `internal/inference/` — go-ai inference with provider auth and SSE broadcasting
-- `internal/web/` — HTTP server, REST API, SSE streaming, workspace file APIs
-- `web/src/` -- pinned Piclaw components plus Gi API, host, auth and Settings adapters
-- `docs/` — ADRs, internal shipped-reference source docs, implementation checklist, transcripts
-- `scripts/` — build/check scripts (hook TDZ checker)
-- `tests/` -- Go-backed functional, browser parity and terminal acceptance tests
+- `internal/turn/` — append-only turn engine with queue, cancel and streaming
+- `internal/inference/` — go-ai inference, provider auth and SSE broadcasting
+- `internal/tui/` — terminal UI on `go-tui`
+- `internal/web/` — HTTP server, REST API, SSE streaming, Settings and workspace file APIs
+- `internal/mcp/`, `internal/codemode/` — MCP client and the QuickJS-on-wazero codemode engine
+- `internal/keychain/`, `internal/environment/`, `internal/shellenv/` — encrypted secrets, environment overrides and shell resolution
+- `web/src/` — pinned Piclaw components plus Gi API, host, auth and Settings adapters
+- `docs/` — ADRs, the shipped internal reference, the implementation checklist and transcripts
+- `scripts/` — build and check scripts, including the build-time patches applied to Piclaw components
+- `tests/` — functional, browser regression, fixtures-vibes profile and terminal acceptance tests
 
 ## Terminal rendering
 
-`gi -tui -tui-mode regular` keeps completed output in native terminal scrollback with a five-row idle editor/footer; the terminal owns wheel, selection and copy. `fullscreen` remains the default and supports in-app paging and tool-output folding. Regular mode prints retained output fully expanded after native completion and uses a temporary three-row preview while active. See [ADR-0031](docs/adr/0031-regular-terminal-scrollback.md) for retention and resize limits.
+`gi -tui-mode regular` keeps completed output in native terminal scrollback with a five-row idle editor/footer; the terminal owns wheel, selection and copy. `fullscreen` remains the default and supports in-app paging and tool-output folding. Regular mode prints retained output fully expanded after native completion and uses a temporary three-row preview while active. See [ADR-0031](docs/adr/0031-regular-terminal-scrollback.md) for retention and resize limits.
 
 Fullscreen `Ctrl+Shift+F` searches rendered transcript rows without submitting a prompt. Enter/Shift+Enter move between matches; Escape restores the draft and reading position. `Ctrl+Shift+Up/Down` jump between user prompts. See [ADR-0032](docs/adr/0032-fullscreen-transcript-search.md) for rendered-row and retention limits.
 
@@ -57,19 +64,17 @@ In fullscreen mode, drag to select transcript text and hold at a viewport edge t
 
 ## Internal reference
 
-The repo includes a growing internal documentation subtree under `docs/internal/`.
+`docs/internal/` is shipped in the binary as the read-only `vfs://reference/...` tree for the agent (for example `vfs://reference/README.md` and `vfs://reference/tools/read.md`).
 
-This is shipped in the binary as the read-only `vfs://reference/...` surface for the agent itself (for example `vfs://reference/README.md` and `vfs://reference/tools/read.md`).
-
-If a change adds or materially changes an internal tool, scripting bridge capability, hook, managed `vfs://` behavior, or skill/package contract, the same change should update `docs/internal/`.
+A change that adds or materially changes an internal tool, scripting bridge capability, hook, managed `vfs://` behaviour, or skill/package contract updates `docs/internal/` in the same commit.
 
 ## Development
 
 ### Prerequisites
 
-* Go 1.26.8 or newer, as declared in `go.mod`
+* Go 1.27.1 or newer, as declared in `go.mod`
 * Bun (build-time only, not runtime)
-* Playwright + Chromium for functional tests; Chromium and WebKit for the six-project parity matrix
+* Playwright with Chromium for functional tests; Chromium and WebKit for the six-project fixtures-vibes matrix
 * tmux for the terminal acceptance scripts
 
 ### Targets
@@ -104,8 +109,8 @@ That installs Go/Bun dependencies, installs Playwright Chromium, and builds `gi`
 | `make test-ux-picker-geometry` | Pinned Classic composer/picker bounds, responsive transitions and dismissal; required browser CI step |
 | `make test-ux-slash` | Native command catalogue and composer/Quick Actions keyboard ownership; required browser CI step |
 | `make test-ux-workspace-tabs` | Read-only preview/conversation transitions, keyboard/touch tabs and lifecycle; required browser CI step |
-| `make fixtures-vibes` | Pinned shared Classic compliance across six browser/viewport projects |
-| `make test-ux-parity` | Compatibility alias for shared Classic compliance |
+| `make fixtures-vibes` | Shared fixtures-vibes compliance across six browser/viewport projects, with its report gate |
+| `make test-ux-parity` | Alias for `make fixtures-vibes` |
 | `make test-web-adapters` | Gi adapter tests and frozen provenance |
 | `make test-web-regression` | Gi-specific browser race and recovery probes |
 | `make test-ux-auth` | Isolated TOTP/browser-auth regression suite |
@@ -140,11 +145,13 @@ make start PORT=3000 BIND=0.0.0.0 MODEL=github-copilot/gpt-5-mini WORKSPACE=/wor
 | `-acme-http-listen` | `:http` | ACME HTTP-01/redirect listener; empty disables |
 | `-web` | `false` | Run the web UI server instead of the terminal UI (required for the web-only flags above and `-pid-file`) |
 | `-tui` | `true` | Terminal UI (the default; accepted for compatibility) |
-| `-tui-mode` | `fullscreen` | Terminal-owned scrollback (`regular`) or in-app transcript (`fullscreen`) |
-| `-db` | `./gi.db` | SQLite database path |
-| `-workspace` | `/workspace` | Workspace root |
+| `-tui-mode` | `tuiMode` setting, else `fullscreen` | Terminal-owned scrollback (`regular`) or in-app transcript (`fullscreen`) |
+| `-db` | `$XDG_STATE_HOME/gi/gi.db` (else `~/.local/state/gi/gi.db`) | SQLite database path |
+| `-workspace` | current directory | Workspace root |
 | `-log-file` | (none) | Log file path |
 | `-pid-file` | (none) | PID file path |
+
+`gi --version` prints the version. `gi mcp add|remove|list|login|logout` manages MCP servers without starting a UI.
 
 ### TUI mode
 
@@ -161,7 +168,7 @@ The current TUI uses `go-tui`, supports terminal resize handling through the run
 
 ## Web UI
 
-The web UI reuses pinned Piclaw component sources. Gi supplies `web/src/api.ts`, `web/src/app.ts`, auth/Settings modules and CSS overrides; narrowly guarded build adapters also change selected bundled behaviour without editing supplied components. Component provenance and runtime parity are separate checks.
+The web UI reuses pinned Piclaw component sources. Gi supplies `web/src/api.ts`, `web/src/app.ts`, auth/Settings modules and CSS overrides. Build-time patches in `scripts/patch-*.mjs` change selected bundled behaviour without editing the supplied components; each patch fails the build if its anchor text changes.
 
 Workspace tabs are read-only previews with [retained conversation return and keyboard/touch navigation](docs/internal/workspace-tab-transitions.md). Editable documents, dirty-buffer workflows, popouts and docking are not implemented. Composer padding and picker outer bounds follow a [pinned Classic reference](docs/internal/picker-geometry.md), with a documented narrow-desktop containment correction. Session-strip/catalogue structure and full visual styling still differ from Piclaw. The reproduced startup/new-chat focus and loading-retry failures are fixed and covered by [first-Return journeys](docs/internal/startup-return-journeys.md); broader keyboard and visual parity remains open. The [UX audit][audit] records those gaps and the limits of existing tests.
 
@@ -222,9 +229,9 @@ make check      # standard verification suite
 
 The `test-ux` target creates a fresh database, workspace and configuration for each run. Gi-specific race and recovery probes live in `tests/web-regression/`; see [the browser suite guide][ux].
 
-Classic compliance uses `references/fixtures-vibes`, pinned to the coordinator-authorised post-v0.1.0 patch `0874ea2`. `make fixtures-vibes` runs its six-project Chromium/WebKit matrix and report gate. Results and skips are recorded per shared scenario; rows without a suite test remain visible. Release-tag CI runs this gate separately from the native and Gi-specific browser checks. Frozen local feature snapshots remain historical provenance.
+Browser compliance uses the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite, checked out at `references/fixtures-vibes` and pinned to `f796ddf` (Piclaw 3.2.5 scenarios). `make fixtures-vibes` runs it on Chromium and WebKit at phone, tablet and desktop sizes, then applies its report gate. `tests/fixtures-vibes/profile.json` declares the capabilities Gi claims; `tests/fixtures-vibes/skips.json` lists each absent capability and each known defect with its issue. Release-tag CI runs this gate separately from the native and Gi-specific browser checks. Older local feature snapshots under `features/ux/upstream/` are historical provenance only.
 
-The `test-tui-smoke` target launches `gi -tui` inside tmux, captures the pane, submits input, verifies blur handling, exercises transcript scrolling keys, resizes the terminal, and writes pane captures plus session artifacts under `test-results/tui-smoke/`. Mouse click focus is covered in unit tests.
+The `test-tui-smoke` target launches `gi` inside tmux, captures the pane, submits input, verifies blur handling, exercises transcript scrolling keys, resizes the terminal, and writes pane captures plus session artifacts under `test-results/tui-smoke/`. Mouse click focus is covered in unit tests.
 
 The smoke workspace is isolated from `SMOKE_LOWER` (default `/workspace`) with a kernel overlay (`sudo -n`), falling back to `fuse-overlayfs`, a `--reflink=auto` copy (`SMOKE_COPY_LOWER=1`), or an empty scratch workspace where overlayfs, root or the lower directory are unavailable. The chosen mode is written to `test-results/tui-smoke/workspace-mode.txt`.
 
@@ -234,7 +241,7 @@ See the [documentation index][docs], [feature and parity matrix][parity], and [i
 
 ## License
 
-TBD
+MIT. See [LICENSE](LICENSE).
 
 [parity]: docs/feature-parity.md
 [audit]: docs/internal/ux-test-audit-2026-09-24.md

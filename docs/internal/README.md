@@ -2,48 +2,35 @@
 
 This subtree contains Gi's shipped internal reference for runtime features that the agent can use or extend.
 
-Priority incident: [basic web send on HTTP hosts](web-http-send.md) records the
-secure-context UUID failure, repair and native end-to-end acceptance.
-[HTTP delivery recovery and run controls](web-delivery-recovery.md) records
-same-session lost-ack reconciliation and attachment/Stop/reconnect checks.
-[Bounded native send receipts](web-send-receipts.md) covers routed/steered reply
-recovery without chat-history scans; it is not submission idempotency.
-[Cross-tab draft write fencing](web-cross-tab-drafts.md) defines revision conflicts,
-version-2 IndexedDB migration and full-reload recovery.
-[Web Stop and Resume queue](web-stop-queue.md) describes captured-run cancellation,
-durable queued-work preservation and explicit fenced resume.
-[Tool terminal provenance](tool-terminal-provenance.md) records occurrence-bound
-cancellation/abort timing without inferring completion from a turn ending.
-[Bounded message retrieval](message-retrieval.md) covers durable numeric identities,
-runtime-session scope, bounded content and chronological pagination.
-[Session thinking](session-thinking.md) covers validated Settings choices, captured
-turn ownership and provider request evidence.
-[Context estimate provenance](context-estimate-provenance.md) separates native
-compaction history estimates from measured request usage and records Shared35 evidence.
+For release status and fixtures-vibes compliance results, see [features and Piclaw parity](../feature-parity.md). Dated plans, audits and slice logs (files with a date in the name, and `ux-reaudit-2026-09-26/`) keep their original scope; the contracts below describe current behaviour.
 
-[Terminal-derived TUI themes](tui-terminal-theme.md) records detection, bounded startup probing, Pi's generated system theme, and the remaining custom-theme scope.
+### Runtime contracts
 
-For the current product comparison, see [features and Piclaw parity](../feature-parity.md).
-The [full web/TUI plan](full-web-tui-parity-plan.md) and
-[UX audit](ux-test-audit-2026-09-24.md) distinguish implemented slices from
-remaining browser and terminal work. Older dated fit-gap notes below retain
-their historical scope. [Held-turn retry admission](held-turn-retry.md)
-records exclusive reservations and atomic recovery. [Terminal held retry](tui-held-retry.md)
-records bounded check/run/release commands, session guards and PTY acceptance.
-[Terminal pre-admission guards](tui-submit-guards.md) records no-model draft retention.
-[Plaintext journal prerequisite](tui-text-journal.md) records revision/claim storage;
-terminal autosave is not wired yet.
-[Explicit terminal queue commands](tui-queue-commands.md)
-records bounded durable inspection/removal/steering. [Durable terminal attachment references](tui-media-journal.md)
-records transactional staging and conservative admission recovery. [Reuse unchanged terminal editor layout](tui-editor-layout-cache.md)
-records cache ownership, benchmarks and PTY evidence. [Bounded terminal editor viewport](tui-editor-viewport.md)
-records cursor-following height limits and exact-draft PTY checks. [Complete link targets across terminal wraps](tui-wrapped-links.md)
-records OSC8 projection, safety and PTY scope. [Fullscreen word and line selection](tui-word-selection.md)
-records multiclick ownership and PTY evidence. [Search across renderer soft wraps](tui-search-wrap.md)
-records the bounded terminal search extension. [Pinned theme text contrast](theme-text-contrast.md)
-records the palette calculation and remaining pixel failures. [Disabled context-control explanations](context-control.md)
-records native capability and stale-session guards. [Inline model context in Alt-M](tui-model-metadata.md)
-records the conditional row metadata and six-PTY footprint checks.
+- [MCP client](mcp.md) and [codemode engine](codemode.md) — `mcp.json` lookup, transports, OAuth, deferred tools, `tool_search` and the QuickJS-on-wazero codemode tool; the model reads [codemode scripts](codemode-scripts.md)
+- [Keychain](keychain.md) and [shell environment](shell-environment.md) — Piclaw-format encrypted secrets, shell substitution, environment overrides and shell resolution
+- [Configuration files](config-files.md) and [system prompt](system-prompt.md) — `.gi` then `.pi` lookup, write locations, Pi's structured prompt and context files
+- [Compaction](compaction.md) — Pi's cut point and model-written summaries
+- [Session import, export and sharing](session-import.md) — Pi JSONL v3 and HTML export, `/import` and `/share`
+- [Bounded message retrieval](message-retrieval.md) — numeric message row IDs, session scope, bounded content and pagination
+- [Session thinking](session-thinking.md) — validated choices, captured turn ownership and provider request evidence
+- [Held-turn retry](held-turn-retry.md) — exclusive reservations and atomic recovery of interrupted turns
+
+### Web contracts
+
+- [Basic web send on HTTP hosts](web-http-send.md), [HTTP delivery recovery](web-delivery-recovery.md) and [send receipts](web-send-receipts.md) — secure-context failures, lost-acknowledgement reconciliation and routed/steered reply recovery
+- [Cross-tab draft write fencing](web-cross-tab-drafts.md) — revision conflicts, IndexedDB migration and reload recovery
+- [Web Stop and Resume queue](web-stop-queue.md) — captured-run cancellation and fenced resume
+- [Tool terminal provenance](tool-terminal-provenance.md) — occurrence-bound cancellation and abort timing
+- [Context estimate provenance](context-estimate-provenance.md) — compaction estimates versus measured request usage
+- [Gi settings](gi-settings-plan.md) — Settings dialog layout and Gi-owned panes
+
+### Terminal contracts
+
+- [Keybindings](keybindings.md), [/settings](tui-settings.md), [/tree](tui-tree.md), [/login and /logout](tui-oauth-login.md) and [searchable selectors](tui-selectors.md)
+- [Terminal-derived themes](tui-terminal-theme.md) — detection, bounded startup probing and Pi's generated system theme
+- [Terminal held retry](tui-held-retry.md), [pre-admission guards](tui-submit-guards.md), [queue commands](tui-queue-commands.md), [plaintext journal](tui-text-journal.md) (terminal autosave is not wired) and [attachment references](tui-media-journal.md)
+- [Editor layout cache](tui-editor-layout-cache.md), [editor viewport](tui-editor-viewport.md), [wrapped links](tui-wrapped-links.md), [word and line selection](tui-word-selection.md), [search across wraps](tui-search-wrap.md), [inline model context in Alt-M](tui-model-metadata.md)
+- [Pinned theme text contrast](theme-text-contrast.md) and [disabled context-control explanations](context-control.md)
 
 It is written for:
 - the agent running inside gi

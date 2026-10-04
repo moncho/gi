@@ -1,30 +1,36 @@
 # gi
 
-You are a coding agent working on the gi project — a Go-based coding agent with a Piclaw-compatible web UI.
+You are a coding agent working on the gi project: a Go coding agent with a Pi-style terminal UI and a Piclaw-compatible web UI.
 
 ## Repository layout
 
 ```
-cmd/gi/              main binary entrypoint (TUI by default, web server via `-web`)
+cmd/gi/              main binary entrypoint (TUI by default, web server via `-web`, `gi mcp`)
 cmd/gi-tui/          compatibility wrapper for TUI mode
 internal/
   tui/               terminal UI implementation (go-tui)
-  config/            Pi/Piclaw config loader
+  config/            Pi/Piclaw config loader (.gi, then .pi)
   store/             SQLite WAL state store
   turn/              append-only turn engine with queue/cancel
   inference/         go-ai streaming inference with auth
-  web/               HTTP server, REST API, SSE, metrics, workspace
+  mcp/, codemode/    MCP client and QuickJS-on-wazero codemode
+  keychain/, environment/, shellenv/   secrets, env overrides, shell resolution
+  web/               HTTP server, REST API, SSE, Settings, metrics, workspace
     static/          embedded assets (CSS, JS, fonts, icons)
 web/src/             Piclaw TypeScript source (verbatim) + gi adapters
   api.ts             gi API adapter (same signatures as Piclaw)
   app.ts             gi entry point (wires Piclaw components to gi backend)
+  gi-*.ts            gi-owned modules (Settings panes, appearance, drafts, ...)
   components/        Piclaw components (DO NOT MODIFY)
   ui/                Piclaw UI utilities (DO NOT MODIFY)
   panes/             Piclaw pane system (DO NOT MODIFY)
   vendor/            vendor entry files for build
   styles/            Piclaw CSS source
 tests/functional/    Playwright functional test suite
-scripts/             build/check scripts (hook TDZ checker)
+tests/web-regression/  Gi-only browser regressions
+tests/fixtures-vibes/  fixtures-vibes profile, skips and seed script
+references/fixtures-vibes/  shared browser compliance suite (git submodule)
+scripts/             build/check scripts, including patch-*.mjs build-time patches
 docs/
   adr/               architecture decision records
   checklists/        phased implementation checklist
@@ -51,7 +57,7 @@ Makefile             canonical build/test/run interface
 ### Piclaw UX parity
 - Parts that are ported must be **100% identical** to Piclaw — same DOM, same classes, same behavior, same visual output
 - No approximations — if it's in gi it matches Piclaw exactly; if it's not ready it simply isn't in gi yet
-- **Never modify Piclaw component files** — adapt only `api.ts` or `app.ts`
+- **Never modify Piclaw component files.** Adapt through `api.ts`, `app.ts` and `gi-*.ts` modules; when a supplied component must behave differently, add a build-time patch in `scripts/patch-*.mjs` (chained in `build.js`) that fails if its anchor text changes
 - Future Piclaw updates should drop in with zero diff on gi's side
 
 ### Go-native runtime
@@ -62,11 +68,12 @@ Makefile             canonical build/test/run interface
 - The main `gi` binary starts the TUI by default; `-web` runs the web UI server
 
 ### Configuration compatibility
-- Read existing Pi/Piclaw files without modification:
+- Read existing Pi/Piclaw files without modification; `.gi/` locations take precedence over `.pi/` ones (see `docs/internal/config-files.md`):
   - `.piclaw/config.json` — assistant/user identity and avatar
   - `.pi/settings.json` — provider, model, thinking level
   - `~/.pi/agent/auth.json` — provider auth tokens
-  - `AGENTS.md` — system prompt
+  - `~/.pi/agent/mcp.json`, `.pi/mcp.json` — MCP servers
+  - `AGENTS.md` / `CLAUDE.md` — context files for the system prompt
 - Preserve Pi model/provider naming semantics exactly
 
 ## Workflow: spec → code → test → ship
@@ -97,14 +104,25 @@ Run tests **one at a time, through the Makefile only** (see *CPU throttling* bel
 
 **For now, web (Playwright) tests are not run on the ChromeOS (Crostini) laptop** used for development: `make test-ux` and the other browser targets are skipped there. Verify web-facing changes on that laptop with Go tests (for example `internal/web` handler tests), and run browser acceptance on another host. This is temporary and specific to that laptop; other machines run the web suites as usual.
 
-Before committing:
+Before committing, one at a time:
 ```sh
-go test ./...       # Go unit tests
-go vet ./...        # Go vet
+make test           # Go unit tests (TEST_RUN=... for a focused run)
+make vet            # Go vet
 make build-web      # Bun web bundle
-make test-ux        # Playwright functional tests (55+ tests)
+make test-ux        # Playwright functional tests (21 files, about 130 tests)
 make bun-checks     # Hook TDZ checker
 ```
+
+Run browser targets with `PI_CODING_AGENT_DIR` and `GI_CODING_AGENT_DIR` unset (`env -u PI_CODING_AGENT_DIR -u GI_CODING_AGENT_DIR make ...`), so the host agent's settings do not leak into test instances.
+
+#### Shared browser compliance (fixtures-vibes)
+
+`make fixtures-vibes` runs the shared suite pinned at `references/fixtures-vibes` across six Chromium/WebKit projects and applies its report gate (about 75 minutes). Run focused scenarios first; run the full suite at most once every four hours. Do not rebuild bundles or `bin/gi-fixtures-vibes` while it runs.
+
+- Make Gi match Piclaw rather than loosening a scenario. Report suspected suite bugs to the fixtures-vibes coordinator with evidence.
+- Every scenario Gi does not pass is listed in `tests/fixtures-vibes/skips.json` with a reason: `capability-absent` (with the capability), `known-defect` or `not-implemented` (with a Gi issue). `intentional-divergence` needs the owner's approval.
+- Remove a skip in the same change that makes its scenario pass; the gate fails on listed scenarios that pass.
+- Claim a capability in `tests/fixtures-vibes/profile.json` only when Gi implements it.
 
 ### 4. Ship
 
@@ -148,6 +166,9 @@ make bun-checks     # Hook TDZ checker
 | `make test-ux` | Start isolated instance → run Playwright → stop and clean up (artifacts under `test-results/`) |
 | `make test-tui-smoke` | Run the tmux-based TUI smoke harness (startup/resize artifacts under `test-results/tui-smoke/`) |
 | `make test-tui-gherkin` | Run the TUI gherkin harness |
+| `make fixtures-vibes` | Shared browser compliance (six projects, report gate) |
+| `make test-web-regression` | Gi-only browser race/recovery regressions |
+| `make test-web-adapters` | Bun adapter tests under `tests/ux/support/` |
 
 ### Isolated test instance
 | Target | Description |
@@ -183,17 +204,18 @@ make start PORT=3000 BIND=127.0.0.1 MODEL=github-copilot/gpt-5-mini WORKSPACE=/w
 
 Tests live in `tests/functional/` and are numbered by feature area:
 
-| File | Area | Tests |
-|---|---|---|
-| `01-app-shell.spec.ts` | Page load, JS errors, CSS, bundles, theme, favicon, cache busters | 10 |
-| `02-config-and-session.spec.ts` | Runtime config, Pi settings, session auto-create | 6 |
-| `03-chat-flow.spec.ts` | Send/receive, content rendering, persistence, avatars | 9 |
-| `04-sse-and-streaming.spec.ts` | SSE connection, event persistence, turn completion | 4 |
-| `05-system-meters.spec.ts` | Metrics API, CPU/RAM/swap, poll interval, HUD | 7 |
-| `06-workspace.spec.ts` | Tree API, file read, path traversal, workspace toggle | 6 |
-| `07-compose-interaction.spec.ts` | Keyboard behavior, focus, sequential messages | 4 |
-| `08-turn-lifecycle.spec.ts` | Turn events, checkpoints, metadata, prompt match | 5 |
-| `09-frontend-logging.spec.ts` | Log endpoint, error handler | 4 |
+| File | Area |
+|---|---|
+| `01-app-shell.spec.ts` | Page load, JS errors, CSS, bundles, appearance, favicon, cache busters |
+| `02-config-and-session.spec.ts` | Runtime config, Pi settings, session auto-create |
+| `03-chat-flow.spec.ts` | Send/receive, content rendering, persistence, avatars |
+| `04-sse-and-streaming.spec.ts` | SSE connection, event persistence, turn completion |
+| `05-system-meters.spec.ts` | Metrics API, CPU/RAM/swap, poll interval, HUD |
+| `06-workspace.spec.ts` | Tree API, file read, path traversal, workspace toggle |
+| `07-compose-interaction.spec.ts` | Keyboard behaviour, focus, sequential messages |
+| `08-turn-lifecycle.spec.ts` | Turn events, checkpoints, metadata, prompt match |
+| `09-frontend-logging.spec.ts` | Log endpoint, error handler |
+| `10-scripting.spec.ts` – `21-conversation-projection.spec.ts` | Scripting, media, remote links, outcomes, recovery controls and placeholders, card rejection, auth gate, HTTP send and delivery, provider retry, conversation projection |
 
 ### Rules
 - **Add tests when adding features** — no feature ships without functional test coverage
@@ -217,8 +239,8 @@ Tests live in `tests/functional/` and are numbered by feature area:
 - `json_extract()` expression indexes for queried paths
 - ISO 8601 text timestamps
 - Foreign keys with cascade delete
-- IDs: `prefix_<unix_nano>` strings
-- Tables: `sessions`, `messages`, `turns`, `turn_events`
+- IDs: `prefix_<unix_nano>` strings; `message_rows` assigns each message a numeric row ID, which message references (`msg:42`) and the messages tool use
+- Core tables: `sessions`, `messages`, `turns`, `turn_events`; also `kv_store` (settings), `keychain_entries`, `media`, `vfs_files` and the workspace index tables
 
 ### SSE event model (`/sse/stream`)
 - `connected`, `heartbeat` — connection lifecycle
@@ -237,9 +259,9 @@ Tests live in `tests/functional/` and are numbered by feature area:
 
 ### Inference
 - `go-ai` with streaming via `goai.Stream()`
-- Auth from `~/.pi/agent/auth.json`
+- Auth from `auth.json` in `~/.gi/agent`, else `~/.pi/agent`
 - GitHub Copilot: token exchange (refresh → session token + enterprise endpoint detection)
-- System prompt from `AGENTS.md`
+- Pi's structured system prompt, with context files (`AGENTS.md`/`CLAUDE.md`) as project instructions
 - Token/cost tracked per turn in event payloads
 - Conversation history built from session messages
 

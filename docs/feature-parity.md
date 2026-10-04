@@ -1,178 +1,114 @@
 # Gi features and Piclaw parity
 
-Updated: 2026-09-26. This describes the repository after the workspace-motion and
-native auth persistence repairs. Multi-passkey APIs and Settings/login controls now have browser integration tests;
-lockout-safe policy controls are implemented; physical devices, remote networking
-and MCP have work outstanding.
+Updated: 2026-10-04, at commit `f106199`. Gi's terminal follows Pi 1.0.1 (`@earendil-works/pi-coding-agent`) and its browser follows Piclaw 3.2.5. Browser behaviour is measured with the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite.
 
-Gi shares pinned Piclaw browser components and configuration conventions, but has
-its own Go runtime, SQLite state and terminal UI. It is not a drop-in Piclaw
-replacement. The browser and terminal share the turn engine; their interaction
-coverage is tracked separately.
+Gi shares pinned Piclaw browser components and Pi/Piclaw configuration files, but has its own Go runtime, SQLite state and terminal UI. It does not replace Piclaw. The browser and the terminal share one turn engine; their interaction coverage is tracked separately.
 
-## Reading the status
+## Status terms
 
 | Status | Meaning |
 |---|---|
-| Implemented | Native behaviour exists with tests for the stated scope. This does not cover every related Piclaw workflow. |
-| Partial | A usable subset exists; the row names the missing or differing behaviour. |
+| Implemented | Native behaviour exists with tests for the stated scope. Related Piclaw workflows may still differ. |
+| Partial | A usable subset exists; the row names what is missing or different. |
 | Scaffold | Configuration or internal types exist without an end-to-end user workflow. |
-| Planned | Requested behaviour has no working implementation in Gi. |
+| Planned | No working implementation in Gi. |
 
-Historical slice reports contain their own test totals. Those runs are not one
-combined, current full-suite pass. The [UX audit][audit] reviewed 200 files and
-found missing user journeys, weak assertions and tests tied to Gi's older layout.
+## Shared browser compliance
 
-Shared38 now has a combined six-project web mapping for bounded current-session
-numeric message retrieval: exact cap/continuation, multi-anchor context union,
-window and byte bounds, foreign isolation and quoted-data handling. Runtime
-`05e287f` is deployed; mapping `8196355` passed whole-product CI and all four builds
-without production changes or another restart. Shared mappings are 33/42; Classic
-remains 101/236, with Classic025's all-chat/family authorization still unmapped.
-See [the retrieval contract](internal/message-retrieval.md).
+`make fixtures-vibes` runs the suite pinned at `references/fixtures-vibes` (`f796ddf`) on Chromium and WebKit at phone, tablet and desktop sizes. `tests/fixtures-vibes/profile.json` declares the capabilities Gi claims, and `tests/fixtures-vibes/skips.json` lists every scenario Gi does not pass, with its reason. A failure that is not listed, a capability skip that is not listed, or a listed scenario that now passes fails the report gate.
+
+The last full run (2026-10-04, 09:18 UTC, tree at `019619c` with the Settings work in progress) reported:
+
+| Scenarios | Passed | Failed | Skipped | Listed failing | No suite test yet |
+|---:|---:|---:|---:|---:|---:|
+| 329 | 150 | 1 | 90 | 10 | 78 |
+
+`f106199` addressed that run's gate problems. It fixed `@ux-compose-011` (on phone and tablet the timeline lost its bottom anchor while the composer grew) and `@ux-settings-004/016/018/019`, which then passed in all six projects. It listed the 52 unlisted capability skips and claimed `@cap-touch`. A full rerun on `f106199` has not completed yet.
+
+Scenarios Gi does not pass:
+
+| Reason | Scenarios | Detail |
+|---|---|---|
+| Known defect | `@ux-timeline-019`–`022`, `@ux-original-024` | Deleting a parent message has no visible-reply cascade confirmation ([gi#35](https://github.com/rcarmo/gi/issues/35)). |
+| Known defect | `@ux-mobile-002` | The session popup is a menu, not Piclaw's listbox ([gi#42](https://github.com/rcarmo/gi/issues/42)). |
+| Not implemented | `@ux-extra-001` | No `/btw` side conversation ([gi#40](https://github.com/rcarmo/gi/issues/40)). |
+| Capability absent | 84 scenarios | No in-browser editor, web terminal, VNC pane, `/theme` and `/tint` commands, plan sidebar, image annotation, text highlights, agent avatars, agent-posted Adaptive Cards or widgets, or Windows shell detection. |
+
+Scenarios with no suite test have no shared browser evidence either way.
 
 ## Browser and runtime
 
-| Area | Gi status and available behaviour | Piclaw parity limits / next work |
+| Area | Gi status and behaviour | Differences and open work |
 |---|---|---|
-| Runtime and distribution | Implemented: one pure-Go binary, embedded browser assets, SQLite/WAL sessions, messages, turn events and recovery; `go-ai` inference. | Gi owns its runtime and storage. Piclaw extensions are not automatically compatible. Bun is build-time only. |
-| Chat and streaming | Implemented: native prompt admission, SSE status/draft/thought updates, reconnect reconciliation, bounded timeline paging and scoped search. Startup/new-chat focus and explicit loading-retry repairs have an empty-store, six-project browser gate. | The [first-Return journeys](internal/startup-return-journeys.md) verify exact session/turn identity. Conversation-level shortcut ownership and current-Piclaw visual equivalence remain open. |
-| Composer and drafts | Partial: persistent browser-local text/media/references, failed-send recovery, file/folder/message references, upload progress/cancel/retry and byte-identical upload reuse. | Composer inline padding now follows the pinned Classic reference; session-strip structure and full visual styling still differ. Native slash catalogue, Tab/Enter/Escape and keyboard ownership now have a six-project CI suite. Physical IME and prefill-policy conflicts remain open. |
-| Sessions | Partial: selection, child creation, grouping/search/typeahead, capability-gated pin/rename/archive/restore and draft isolation. | Session picker outer bounds now follow the pinned Classic reference, including fixed mobile panels. Row structure/styles and complete session-management UI remain incomplete. |
-| Models and context | Partial: session-local model selection, registry/context metadata, fit checks, usage meter and model commands. | Model picker outer geometry follows the pinned reference with an explicit intermediate-width containment correction. Settings thinking now reaches captured provider requests; active compaction history estimates have a separate provenance label. Shared35 has a six-project combined web proof, deployed at `d415541` after whole-product CI; unavailable metadata stays unknown. Catalogue structure and broader workflows are incomplete. |
-| Queue and Stop | Partial: durable browser follow-ups, reorder/cancel, run-bound steering, queue return-to-draft, reconciliation and run-bound Stop. | Web Stop preserves pending work behind durable explicit Resume, deployed at `caa83c7` after product CI. Shared-36 is mapped with six-project reconnect evidence; generic/TUI cancellation still advances. See [contract and evidence](internal/web-stop-queue.md). |
-| Compaction | Implemented: automatic/manual native compaction, persisted context checkpoints, progress/cancel and shared browser/terminal engine behaviour. | Broad Settings parity and every upstream compaction workflow are not complete. |
-| Timeline and media | Partial: Markdown/tables/code copy, image lightbox, stored media/resource links, tool timing, recovered-response labels, idle single-message deletion and browser speech controls. | No iPad annotation workflow. Speech tests use a controlled browser boundary; physical audio is not verified. |
-| Cards and widgets | Partial: supplied Adaptive Cards rendering and truthful rejection of unsupported Submit. | Accepted card actions and the full agent-authored widget/attachment tool surface are not implemented. |
-| Workspace | Partial: rooted tree/hidden files, bounded previews, read-only tabs, retained preview/conversation switching, keyboard/touch tab navigation, MRU/pinning/context actions and explicit scoped lexical index/reindex. | No document editing, dirty-buffer save, popouts or docking. Automatic external-change freshness and vector search are not complete. |
-| Workspace motion | Implemented: desktop collapse stays left-anchored; chat and toggle interpolate together, including rapid reversal and reduced motion. | Deliberate correction of an inherited Piclaw CSS defect. It does not close broader workspace-tab workflow gaps. |
-| Settings | Partial: General identity, session Models, local Appearance, compaction controls/policy and guarded OpenAI/Anthropic API-key management. | Other/custom provider setup and browser OAuth flows, richer panes and remaining focus paths are incomplete. |
-| Browser authentication | Partial: single-user TOTP sign-in, HttpOnly/Strict cookie, transport/origin checks, transactional auth persistence and browser-owner proof. Settings logout revokes only this browser, confirms native status and reconciles uncertain results without replay; drafts and other sessions stay intact. | Initial owner Settings setup uses a manual TOTP key with a ten-minute display lifetime, atomic owner/session creation and explicit uncertain-response recovery, restricted to loopback. QR/physical setup, broader session-management UI and family mode are not implemented. Opt-in WebAuthn APIs are tested separately. |
-| Multiple passkeys | Partial: pure-Go WebAuthn registration/login/reauth APIs, RP-scoped storage, add/list/rename/remove with fresh proof and atomic last-factor protection. Real Chromium API tests verify independent credentials after restart and further passkey-only enrolment. | Settings add/list/rename/remove/reauth and login controls pass Chromium virtual-authenticator journeys. Policy UI now enforces fresh current-policy proof, revision checks and write-time usable factors. WebKit ceremonies, Visual skin and physical-device validation are outstanding. The [26-scenario review](internal/passkey-scenario-review.md) records remaining gaps; formal mappings are outstanding. |
-| Skills, tools and scripting | Partial: native tools, embedded Joker/JavaScript bridges, process extensions/hooks, skills, managed VFS and browser skill commands. | No general Piclaw/Pi package or extension compatibility. Classic skill-prefill semantics are disputed against the shared contract. |
-| Operator integrations | Partial backend routing/topics/inbound-work primitives. | The complete Piclaw plan, scheduled-task, dashboard, SSH/Proxmox/Portainer and remote-agent operator surfaces are not ported. |
+| Runtime and distribution | Implemented: one pure-Go binary with embedded browser assets; SQLite/WAL sessions, messages, turn events and recovery; `go-ai` 1.0.1 inference. Interrupted turns are held for review, not replayed. | Piclaw extensions do not run in Gi. Bun is build-time only. |
+| Chat and streaming | Implemented: prompt admission, SSE status/draft/thought updates, reconnect reconciliation, bounded timeline paging and scoped search. The timeline follows new replies while pinned to the bottom and keeps the reading position otherwise. | Conversation-level shortcuts and full visual equivalence with Piclaw are not verified. |
+| Composer and drafts | Implemented: persistent browser-local text, media and references; failed-send recovery; file, folder and message references; upload progress, cancel and retry. Message references carry the numeric message row ID (`msg:42`). | Physical IME input is untested. |
+| Sessions | Partial: selection, child sessions, grouping, search and typeahead, pin, rename, archive (except the last main session), restore and per-session drafts. | The session popup uses menu semantics ([gi#42](https://github.com/rcarmo/gi/issues/42)). `/fork` and `/clone` create a new `@agentN` ([gi#20](https://github.com/rcarmo/gi/issues/20)). |
+| Models and context | Implemented: session-local model and thinking selection, registry and context metadata, fit checks, and Piclaw 3.2.5's context meter. The meter can start compaction and shows an estimate after one. | The thinking regression tests predate Pi's effective default level and need updating. |
+| Queue and Stop | Implemented: durable follow-ups, reorder and cancel, run-bound steering, return to draft and run-bound Stop with explicit Resume. See [contract](internal/web-stop-queue.md). | — |
+| Compaction | Implemented: automatic and manual compaction with model-written summaries (Pi's cut point and prompts), persisted context checkpoints, progress and cancel. See [compaction](internal/compaction.md). | — |
+| Timeline and media | Partial: Markdown, tables and code copy; image lightbox; stored media and resource links; tool timing; turn-outcome chips; single-message deletion; browser speech. | No cascade deletion ([gi#35](https://github.com/rcarmo/gi/issues/35)), iPad annotation or text highlights. Physical audio is unverified. |
+| Cards and widgets | Partial: Adaptive Cards render, and unsupported Submit actions are rejected visibly. | No tool or API posts cards or dashboard widgets. |
+| Workspace | Partial: rooted tree with hidden files, bounded previews, read-only tabs, folder hints, uploads within a configurable limit, explicit lexical index and reindex. | No document editing, popouts or docking. Plain code workspaces index nothing by default ([gi#22](https://github.com/rcarmo/gi/issues/22)). No vector search. |
+| Settings | Implemented: General (identity, upload limit), Models (filtered), Appearance (theme presets, tint, output padding; stored in the browser), Keyboard (shortcut editing), Compaction, Providers (OpenAI and Anthropic API keys), Keychain, Environment and Authentication. | Providers cannot set up OAuth or custom providers; use `/login` in the terminal. |
+| Keychain and shell environment | Implemented: Piclaw-format encrypted keychain, shell substitution of named secrets, and environment overrides applied to every shell path. See [keychain](internal/keychain.md) and [shell environment](internal/shell-environment.md). | — |
+| MCP and codemode | Implemented: stdio and Streamable HTTP servers from Pi's `mcp.json`, OAuth sign-in, direct and deferred tools with `tool_search`, resources, the QuickJS-on-wazero codemode tool, `gi mcp` and `/mcp` in both UIs. See [MCP](internal/mcp.md) and [codemode](internal/codemode.md). | Servers that use provider authentication (`auth.provider`) are not supported ([gi#29](https://github.com/rcarmo/gi/issues/29)). Codemode has no dedicated renderer ([gi#30](https://github.com/rcarmo/gi/issues/30)). |
+| Browser authentication | Partial: single-user TOTP sign-in, HttpOnly/Strict cookie, transport and origin checks, transactional auth storage, browser-owner proof, Settings logout and loopback-only initial owner setup. | No QR setup, family accounts or broader session management. |
+| Multiple passkeys | Partial: pure-Go WebAuthn registration, login and re-authentication; add, list, rename and remove with fresh proof; last-factor protection; Settings and login controls tested with Chromium virtual authenticators. See [contract](internal/passkeys.md). | WebKit ceremonies and physical or synced keys are untested. |
+| Skills, tools and scripting | Partial: native tools (including Pi's edit tool and the messages tool), embedded Joker/JavaScript bridges, process extensions and hooks, user and project skills, managed VFS and browser skill commands. | No general Pi or Piclaw package compatibility. |
+| Operator integrations | Partial: backend routing, topics and inbound-work primitives. | Piclaw's plan sidebar, scheduled tasks, dashboard, SSH/Proxmox/Portainer and remote-agent surfaces are not ported. |
 
-An unenrolled instance permits application access. CLI binding defaults to
-loopback; `make start` defaults to `0.0.0.0`. Use `BIND=127.0.0.1` until access and
-authentication are configured. Serving HTTPS does not itself enrol the owner.
+An instance with no enrolled owner permits application access. The CLI binds to loopback by default; `make start` binds to `0.0.0.0`. Use `BIND=127.0.0.1` until authentication is configured. Serving HTTPS does not enrol an owner.
 
-## Terminal adaptations
+## Terminal
 
-The terminal target is pi-tui's compact appearance and keyboard ownership, using
-Go widgets. Web overlays do not become permanent terminal panels.
+The terminal follows Pi 1.0.1's layout, colours and keyboard handling, using Go widgets. Web overlays do not become permanent terminal panels.
 
-| Interaction | Implemented adaptation | Limits |
+| Area | Behaviour | Limits |
 |---|---|---|
-| Transcript | Fullscreen paging, tool folding, Pi-style message/tool bands, rendered search with occurrence navigation, validated single-paragraph soft-wrap matches and prompt jumps. | Cross-wrap for prewrapped Markdown/inline-code layouts, mutation-stable reflow/eviction anchors and light-theme parity need further work. |
-| File-tool output | Theme-aware read/write syntax highlighting by explicit file extension; Pi-style read folding and write-content previews, including reopened sessions. | Older records without arguments keep plain previews. Lexer tokens use Chroma, not highlight.js; prewrapped code has row-local search. See [contract](internal/tui-tool-syntax.md). |
-| Native scrollback | Opt-in `-tui-mode regular`; terminal-owned history, selection and copy, with five idle editor/footer rows. | Fullscreen features are not all available in regular mode. Retained completion output follows documented retention limits. |
-| Editor | Cursor-following visible window capped at 30% of terminal rows (five-line default minimum, clamped to available space), grapheme/cell wrapping and unchanged draft bytes. | Full-draft layout cost, richer grapheme editing and extremely short fixed-widget layouts need further work. |
-| Session/model choice | `Alt-S` / `Alt-M`, at most six visible results, native selection and draft/cursor preservation. Alt-M adds known context inline only when the full key and suffix fit; blocked reasons take priority. | Regular-mode selectors use a temporary alternate screen. Remaining picker differences are tracked independently of browser tests. |
-| Session actions | Bounded Pin/Unpin, Archive/Restore and Rename controls, including native capability checks. | No permanent action panel and no full session-management parity. |
-| Queue | On-demand `/queue` pages six durable rows; guarded removal and Steer by IDs, plus before/after moves against the last current-visit snapshot. | No retry UI or persisted queued text drafts; Stop-policy differences remain. |
-| Compaction/index | `Alt-C` and `/compact`; `Alt-I` transient explicit index actions. | No background index-progress panel or automatic freshness guarantee. |
-| Files | Durable session-local pending media refs, `/attachments`, reference-only `/detach`, native stored-byte admission and held unresolved claims after restart. | Plain-text/queue-draft restart recovery, automatic replay of ambiguous claims and general clipboard-image/drag-drop parity are not provided. |
-| Copy and links | `/copy` for latest assistant source, fullscreen drag/copy/edge scroll, word/line multiclick for eligible text, opt-in native/OSC52 clipboard, safe OSC8 targets for supported complete parenthesised links, including long tokens wrapped by the terminal renderer. | Host clipboard/URL activation depends on the terminal. Complex inline-code/table links, physical terminal activation, cross-wrap word selection and locale-specific segmentation parity are incomplete. |
-| Authentication | Local terminal access uses the local runtime; no idle login panel. | Passkey management must use authenticated browser Settings. No terminal emulation of WebAuthn or bypass of recent proof. |
+| Pi commands | `/settings`, `/model`, `/thinking`, `/scoped-models`, `/tree`, `/fork`, `/clone`, `/resume`, `/new`, `/name`, `/session`, `/compact`, `/copy`, `/export` (HTML or JSONL), `/import`, `/share` (secret gist), `/login`, `/logout`, `/hotkeys`, `/reload`, `/quit`, with Pi's argument completions. | `/bug`, `/changelog` and `/trust` have no Gi equivalent yet ([gi#16](https://github.com/rcarmo/gi/issues/16)). |
+| Gi commands | `/abort`, `/queue`, `/retry`, `/draft`, `/attach`, `/attachments`, `/detach`, `/paste-image`, `/tools`, `/mcp`, `/codemode`, `/skills`, `/agents`, `/spawn`, `/switch`, `/send`, `/where`, `/plugins`, `/scrollback`. | — |
+| Themes and keys | Pi's dark, light and terminal-derived themes, custom theme files with live reload, and Pi's default keybindings, kill ring, undo and jump. | — |
+| Transcript | Fullscreen paging, tool folding, Pi-style message and tool bands, rendered search with occurrence navigation, prompt jumps and the "Jump to latest message" cue. | Search across wraps of prewrapped Markdown and inline code is incomplete. |
+| Native scrollback | `-tui-mode regular` (or the `tuiMode` setting): terminal-owned history, selection and copy. | Not every fullscreen feature is available. |
+| Editor | Cursor-following window capped at 30% of the rows, grapheme-aware wrapping, Pi's large-paste markers, unchanged draft bytes. | — |
+| Files and copy | Durable pending media references, `/copy`, drag selection with edge scroll, word and line selection, OSC 52 clipboard by default, OSC 8 links. | Clipboard and link activation depend on the terminal emulator. |
+| Authentication | Local terminal access uses the local runtime. `/login` handles provider OAuth and API keys. | Passkey management needs the browser. |
 
-PTY tests cover fullscreen/regular cases at 60x18, 100x22 and 140x36, including
-resize, cursor/draft preservation and idle footprint. Protocol-byte checks for
-OSC52/OSC8 do not prove every terminal emulator's behaviour. See the [TUI plan][tui]
-and [clipboard/media contract][media].
+PTY tests cover fullscreen and regular modes at 60×18, 100×22 and 140×36. Protocol-byte checks for OSC 52 and OSC 8 do not prove every terminal emulator's behaviour. See the [TUI plan][tui] and the [clipboard and media contract][media].
 
 ## Requested integrations
 
 | Workstream | Current state | Acceptance target |
 |---|---|---|
-| tsnet remote access | Scaffold: `internal/peering` wraps `tailscale.com/tsnet` and exposes status. No runtime start/listener wiring provides remote UI access. | Opt-in tailnet HTTPS for the existing UI/API/SSE, persistent node state, secret references, joined shutdown and existing app authentication. No public exposure/Funnel by default. |
-| Iroh inter-instance chat | Planned; no Iroh transport in Gi. `tmc/go-iroh` is a candidate requiring version-pinned interoperability tests. | Explicit pairing, receiver-owned policies, signed bounded messages/files, epochs/revocation, durable retries/deduplication and one-hop peer/agent addresses. Gi-to-Piclaw interoperability scope still needs confirmation. |
-| Token-saving MCP | Planned; no MCP client/gateway in Gi. The official Go SDK is the first transport candidate. | One model-visible gateway, compact paginated search/list, explicit schema describe, lazy stdio/Streamable HTTP connections, auth/config-aware metadata cache and bounded recoverable outputs. Measure actual model request size and total discovery/call cost. |
-| Multi-passkey management | Partial: native backend plus Settings/login controls; [contract](internal/passkeys.md). Lockout-safe policy controls exist; initial owner bootstrap and physical-device validation are outstanding. | Native Go WebAuthn verification, session-bound five-minute proof, one-use challenges, two-key independent sign-in after restart and concurrent last-key protection. Virtual and physical authenticator results reported separately. |
+| tsnet remote access | Scaffold: `internal/peering` wraps `tailscale.com/tsnet` and reports status. Nothing starts a tailnet listener. See [plan](internal/peering-tsnet-plan.md). | Opt-in tailnet HTTPS for the existing UI, API and SSE, with persistent node state, secret references and the existing app authentication. No public exposure by default. |
+| Iroh inter-instance chat | Planned; Gi has no Iroh transport. | Explicit pairing, receiver-owned policies, signed bounded messages and files, durable retries and one-hop peer and agent addresses. Interoperability with Piclaw's remote-peer add-on needs confirmation. |
 
-These are separate integrations. tsnet carries operator web access; Iroh carries
-peer messages; MCP connects tools. None may silently grant the authority of
-another. The runtime requirement is pure Go, without CGO, native Rust libraries
-or sidecars. An explicitly configured external MCP stdio server may use its own
-runtime.
+tsnet carries operator web access and Iroh carries peer messages. Neither grants the other's authority. The runtime stays pure Go, without CGO, native Rust libraries or sidecars.
 
-Piclaw references are its remote-peer add-on 0.3.4 and shipping
-`pi-mcp-adapter` 2.15.0. Gi's MCP design intentionally omits schemas from search by
-default and avoids the adapter's first-cache connect-all behaviour. OAuth,
-resources/prompts, Apps, sampling and elicitation need separate scope and tests;
-implementing `tools/call` alone will not establish full adapter parity.
+Choose the production HTTPS hostname before enrolling real passkeys. A key registered for `localhost` generally cannot sign in at a later tailnet hostname.
 
-The [browser-owner proof prerequisite](internal/browser-auth-proof.md) distinguishes
-browser sessions from bearer/legacy tokens and refreshes five-minute TOTP proof
-for one session without extending login expiry. The native passkey backend now
-and Settings controls use this authority boundary.
+## Verification
 
-Choose the production HTTPS hostname/RP before enrolling real passkeys. A key
-registered for localhost generally cannot sign in at a future tailnet hostname.
-Development must use disposable accounts and origins, without changing the
-operator's live authentication policy.
-
-## Frozen feature coverage
-
-| Contract | Inventory | Source mappings | Unmapped |
-|---|---:|---:|---:|
-| Piclaw Classic, pinned `70d33bc93ab540845bbcf5f80503ca8125c71594` | 236 IDs / 256 expanded cases | 101 IDs | 135 IDs |
-| Shared Tau/Vibes interaction contract | 42 cases | 32 | 10 |
-| Additional single-user passkey Settings contract | 26 scenarios/outlines | 0 | 26 |
-
-These are mappings in `tests/ux/support/catalogue.mjs`, not a pass percentage or a
-complete current run. Classic `@ux-original-008` is included in the 101 but disputed:
-its skill test preserves a draft under the shared contract, whereas Classic's
-inherited prefill path requires replacement. Conflicting criteria stay visible;
-the frozen sources are not edited to make Gi pass.
-
-The additive passkey contract is pinned separately and retains upstream
-`@implemented` / `@browser-verified` tags. Those tags describe Piclaw, not Gi.
-[Its README][passkeys] gives provenance, the required two-authenticator journey
-and manual-device limits.
-
-### Verification and remaining work
-
-The most recent bounded workspace/Settings regression passed 204 browser cases;
-the subsequent tightened motion check passed six cases. Functional validation
-passed 100 tests with five fixture-dependent skips, and the auth suite passed 18.
-Native CI run 36071594429 passed the main test job, auth tests on Linux/macOS/Windows
-and five platform builds. These are distinct runs, with details in the
-[implementation checklist][checklist]. No combined full-matrix result is claimed.
-
-The six browser projects are Chromium and WebKit at phone, tablet and desktop
-sizes. Motion-specific tests temporarily use 1024/1440/1920px widths and restore
-the original viewport. Most saved screenshots are diagnostic artifacts; they do
-not compare against a controlled current-Piclaw visual baseline.
+The six browser projects are Chromium and WebKit at phone, tablet and desktop sizes. Saved screenshots are diagnostic; they are not compared against a controlled Piclaw visual baseline.
 
 | Command | Scope |
 |---|---|
 | `make check` | Go tests, vet, web build, hook checks and functional browser/API tests. |
-| `make test-ux` | Fresh isolated functional instance; excludes `tests/ux/`. |
-| `make ux-parity-inventory` | Frozen hashes and scenario inventory. |
-| `make test-ux-parity` | Default six-project browser suite; specialised suites require their own flags/targets. |
-| `make test-ux-auth` | Isolated native TOTP/browser authentication. |
-| `make test-ux-journey` | Empty-store startup/new-chat/Return and explicit recovery; Chromium/WebKit at three sizes, required in CI. |
-| `make test-ux-picker-geometry` | Pinned composer/picker outer geometry and dismissal; required browser CI step. |
-| `make test-ux-slash` | Native slash catalogue and keyboard ownership with Quick Actions/Settings/search; required browser CI step. |
-| `make test-ux-workspace-tabs` | Read-only tab keyboard/touch/lifecycle and conversation return; required browser CI step. |
-| `make test-ux-passkeys` | Chromium virtual-authenticator WebAuthn API and Settings/login tests at three sizes; required in CI. |
-| `make test-tui-smoke test-tui-gherkin` | Terminal smoke and Gherkin checks; specialised PTY suites are separate Make targets. |
-| `make check-cross-build` | Optional local Linux/macOS amd64/arm64 and Windows amd64 builds with `CGO_ENABLED=0`; Windows is excluded from CI. |
+| `make test-ux` | Functional browser/API tests on a fresh isolated instance. |
+| `make fixtures-vibes` | Shared browser compliance and its report gate. |
+| `make test-web-regression` | Gi-only browser race and recovery regressions. |
+| `make test-ux-auth`, `make test-ux-passkeys` | Native TOTP and browser authentication; Chromium virtual-authenticator WebAuthn. |
+| `make test-ux-journey`, `make test-ux-picker-geometry`, `make test-ux-slash`, `make test-ux-workspace-tabs` | Focused browser suites run in release CI. |
+| `make test-tui-smoke`, `make test-tui-gherkin` | Terminal smoke and Gherkin checks; other PTY suites have their own targets. |
+| `make check-cross-build` | Local Linux/macOS amd64/arm64 and Windows amd64 builds with `CGO_ENABLED=0`. |
 
-CI gates builds on the isolated passkey browser suite, startup/Return Chromium/WebKit
-journeys, pinned picker geometry, slash-key ownership, read-only workspace tabs and native Linux/macOS auth checks. It builds Linux/macOS amd64/arm64 artifacts. Windows CI tests, builds and
-release artifacts were removed at the owner's request; local cross-build support
-remains. CI does not run the full browser UX matrix. Remaining priorities include
-remaining current-Piclaw composer/picker structure and styling, conversation shortcuts,
-Settings focus, full Piclaw editor/workspace equivalence beyond read-only transitions,
-disputed command/skill-prefill policies, and an
-explicit full-suite runner with skip accounting. See the [suite guide][ux] and
-[full web/TUI plan][plan].
+CI runs only for `v*` release tags. It runs fixtures-vibes compliance, the focused browser suites, the passkey suite, native auth checks on Linux and macOS, and Linux/macOS amd64/arm64 builds. Windows builds are local only.
+
+Dated plans and audits keep their original scope: the [UX audit][audit], the [full web/TUI plan][plan] and the [implementation checklist][checklist].
 
 [audit]: internal/ux-test-audit-2026-09-24.md
 [tui]: internal/tui-pi-parity-plan.md
 [media]: internal/tui-clipboard-media.md
-[passkeys]: ../features/ux/additions/piclaw-2026-09-24/README.md
 [checklist]: checklists/implementation.md
-[ux]: ../tests/ux/README.md
 [plan]: internal/full-web-tui-parity-plan.md

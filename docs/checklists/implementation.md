@@ -13,19 +13,19 @@
 - [x] Bound terminal colour probing on silent Unix PTYs; validate OSC values and COLORFGBG indices.
 - [x] Apply independent Markdown, tool/diff, user and custom-message roles with built-in light/dark selection.
 - [x] Add Bun-only real-PTY acceptance for negotiation, fallback, explicit/auto settings and light/dark native UI.
-- [ ] Load Pi custom theme JSON with vars/OKHSL/OKLCH; add live switching.
+- [x] Load Pi custom theme JSON with vars/OKHSL/OKLCH; add live switching and theme file reloads (`39840fd`).
 - [x] Derive Pi's default `system` theme from the terminal's colours and OSC 4 palette (#31); golden-tested against Pi's generator, 13 real-PTY scenarios.
 - [ ] Windows console querying/input preservation remain open.
-- Contract and verification: [terminal themes](../internal/tui-terminal-theme.md). Issue #12 remains open.
+- Contract and verification: [terminal themes](../internal/tui-terminal-theme.md). Issue #12 was closed with `39840fd`; Windows console querying is the remaining item.
 
 # gi implementation checklist
 
 - [x] Make `/settings` and `/config` explicitly identify the live runtime summary; preserve full workspace paths, distinguish effective/configured thinking and theme, show wheel scrolling, normalized provider retry policy and complete compaction budgets. [Contract](../internal/tui-settings.md).
 
-- [x] Upgrade Joker and go-ai to pinned upstream commits; add a whole-interpreter WASI evaluation/cancellation smoke target. [Scope and WASI bootstrap fix](../internal/scripting/joker-wasi.md). No production codemode or MCP support claimed.
+- [x] Upgrade Joker and go-ai to pinned upstream commits; add a whole-interpreter WASI evaluation/cancellation smoke target. [Scope and WASI bootstrap fix](../internal/scripting/joker-wasi.md). (Codemode later shipped on QuickJS under wazero; see below.)
 - [x] Split large generated Joker WASI bootstrap initializers via a reproducible build overlay; preserve initialization dependencies and verify evaluation/cancellation on interpreter and ARM64 native compiler backends.
-- [ ] Replace go-ai Pi 0.99.2 parity commit pin with a proper upstream release tag when available.
-- [ ] Complete Joker WASI capability isolation, bounded host/output handling, authorized MCP broker and performance evaluation before production codemode integration.
+- [x] Replace go-ai Pi 0.99.2 parity commit pin with a proper upstream release tag: `go-ai` v1.0.1 (`4f40216`).
+- [ ] Complete Joker WASI capability isolation, bounded host/output handling and performance evaluation before Joker becomes a codemode engine. Production codemode uses QuickJS under wazero ([codemode](../internal/codemode.md)); MCP shipped separately ([MCP](../internal/mcp.md)).
 - [x] Retain thinking Markdown source and reproject to the padded inner width on render/resize; cover orphan-word double wrapping, table margins, streaming and completed blocks. [Contract and evidence](../internal/tui-thinking-wrap.md). Full TUI suite has an unrelated rejected-route history failure.
 
 - [x] Default fullscreen mouse-selection copy to OSC 52 when clipboard mode is unset; preserve explicit off/native/auto and transcript-only `/copy`, report terminal dispatch truthfully, and add fresh-workspace/opt-out regression coverage. Go tests/vet/build/hook checks pass. [Policy and validation limits](../internal/tui-clipboard-media.md#selection-default-regression-coverage).
@@ -33,7 +33,16 @@
 
 Status: Active
 Date: 2026-04-22
-Last updated: 2026-09-28
+Last updated: 2026-10-04
+
+The dated entries below are a working log; their test counts describe the code at the time. Current status and fixtures-vibes results are in [the feature matrix](../feature-parity.md).
+
+- [x] 2026-09-29 – 2026-10-04, Pi 1.0.1 and Piclaw 3.2.5 alignment (one line per area; details in the commits and linked contracts):
+  - MCP client (stdio, Streamable HTTP, OAuth), deferred tools with `tool_search`, `gi mcp`, `/mcp` in both UIs ([MCP](../internal/mcp.md)); QuickJS-on-wazero codemode ([codemode](../internal/codemode.md)).
+  - Terminal: `gi` starts the TUI by default; Pi's chrome, colours, selectors, keybindings, `/settings`, `/tree`, `/fork`, `/clone`, `/scoped-models`, `/login`, `/logout`, `/compact [instructions]`, `/export`, `/import`, `/share`, custom themes; idle CPU from about 21% to 3%.
+  - Runtime: model-written compaction summaries; interrupted turns held instead of replayed; Pi's structured system prompt and context files; `.gi` then `.pi` configuration lookup; Copilot model list and catalogue refresh; `go-ai` v1.0.1.
+  - Web: Piclaw-format keychain with Settings → Keychain and shell substitution; shell environment overrides; Settings General (upload limit), Models filter, Appearance presets/tint/output padding, Keyboard; Piclaw 3.2.5 context meter; numeric message references; messages tool search/get.
+  - Tests: owner UX suite migrated onto fixtures-vibes, now pinned at `f796ddf`; unpassed scenarios listed in `tests/fixtures-vibes/skips.json` with issues.
 
 - [x] Fenced SVG bounded Piclaw oracle: pinned installed 3.2.4 sanitizer/theme/CSS with manifest and source-map provenance; build-only adapter keeps supplied Markdown/post bytes unchanged. Installed basic probe 6/6; native rendering 42/42 across six Chromium/WebKit viewports, including source/copy, resize, surface changes, hostile/malformed/oversized fallback and stripped unsafe attributes; `make check ux-parity-inventory` 144 functional/11 skipped and 214 support/7977 assertions. Failed/incomplete attempts retained in `docs/internal/svg-fences-2026-09-28.md`. No parity remap or deployment; full web UX remains open.
 
@@ -652,9 +661,9 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 - [ ] No auto-resume after crash
 
 ### Keychain
-- [ ] Port Piclaw encryption model
-- [ ] Store encrypted secrets in SQLite
-- [ ] Implement env/bootstrap unlock path
+- [x] Port Piclaw encryption model (`8e3b6b4`; [contract](../internal/keychain.md))
+- [x] Store encrypted secrets in SQLite (`keychain_entries`)
+- [x] Implement env/bootstrap unlock path (`GI_KEYCHAIN_KEY`, `GI_KEYCHAIN_KEY_FILE`, Piclaw's variables as fallback)
 - [ ] Implement interactive unlock path
 - [ ] Start in degraded mode when locked
 - [ ] Emit unlock UI prompt when secret is needed
@@ -678,7 +687,7 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 - [x] Add bootstrap docs for tools, scripting, VFS, and skills
 - [ ] Document every built-in tool contract under `docs/internal/tools/`
 - [ ] Document hook lifecycle and extension contracts under `docs/internal/hooks/`
-- [ ] Embed `docs/internal/` as read-only runtime reference content (for example `vfs://reference/...`)
+- [x] Embed `docs/internal/` as read-only runtime reference content (`vfs://reference/...`)
 - [ ] Add a doc-maintenance check so new internal surfaces cannot land undocumented
 
 ---
@@ -694,15 +703,15 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 - [x] File pills in timeline
 - [ ] Interactive widgets
 - [ ] Inline charting
-- [ ] Search UI
+- [x] Search UI (scoped timeline search)
 - [ ] Schedule management commands
 - [ ] Messages inspection UI
 
 ### TUI
-- [ ] Evaluate `go-tui` fit/gaps
-- [ ] Basic chat surface
-- [ ] Good scrollback
-- [ ] Expandable input
+- [x] Evaluate `go-tui` fit/gaps ([decision](../internal/tui-stack-evaluation.md))
+- [x] Basic chat surface
+- [x] Good scrollback (fullscreen paging and `-tui-mode regular`)
+- [x] Expandable input (bounded editor viewport)
 - [ ] Status/progress parity subset
 - [ ] Forms support
 - [ ] Advanced-terminal image preview path
@@ -764,7 +773,7 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 - [ ] Preserve prompt template semantics
 - [x] Preserve structured message/content model (via Piclaw components)
 - [ ] Preserve intents/queue/steer conventions
-- [ ] Preserve keychain env injection semantics
+- [x] Preserve keychain env injection semantics (named `$VAR` references in shell commands)
 
 ### Testing
 - [x] Unit tests (Go)

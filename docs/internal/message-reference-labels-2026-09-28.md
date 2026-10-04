@@ -1,5 +1,7 @@
 # Compact message-reference labels
 
+Superseded. `019619c` removed these display labels, and `f106199` (2026-10-04) made the reference itself the numeric row ID: chips show `msg:<row id>` and submissions carry `message:<row id>`, as in Piclaw. The text below records the 2026-09-28 design.
+
 The long-ID report affected the composer and queued-message reference pills. Installed Piclaw renders `msg:<numeric id>` with the full reference in the tooltip. Gi stores canonical string IDs such as `msg_<nanoseconds>`; replacing those identifiers would break drafts, links and API consumers.
 
 Conversation paging/search now exposes the existing unique `message_rows.row_id` as optional `display_row_id`. The supplied compose component receives a display-label map through a guarded build adapter. Loaded references display `msg:<row number>`. References outside loaded history use an explicit middle ellipsis rather than inventing a numeric ID. The full canonical ID remains in the tooltip.

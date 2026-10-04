@@ -2,6 +2,8 @@
 
 Scope confirmed 2026-09-21: finish the whole imported corpus, not just the currently mapped session flows. Frozen acceptance criteria are unchanged.
 
+Status 2026-10-04: this plan tracked the earlier owner-side corpus (`tests/ux/support/catalogue.mjs`, since removed). Browser acceptance now uses the shared fixtures-vibes suite; see [features and Piclaw parity](../feature-parity.md#shared-browser-compliance). The mapping counts below are historical.
+
 ## Completion gates
 
 - Classic: 236 scenario IDs / 256 expanded cases from 24 pinned files. Every applicable browser case must pass Chromium and WebKit at phone, tablet and desktop sizes. Unsupported features remain gaps; do not mark them passed or silently omit them.

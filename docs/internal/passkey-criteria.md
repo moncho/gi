@@ -86,7 +86,7 @@ classification.
 
 ## Validation
 
-Run `make test-passkey-criteria` for this ledger or `make ux-parity-inventory`
+Run `make test-passkey-criteria` for this ledger or `make test-web-adapters`
 for all support checks. The existing CI passkey-browser target now requires this
 ledger check before running its browser matrix. The test checks the pinned hash,
 Gherkin parse, all Background/scenario steps and example values, unique IDs,

@@ -252,6 +252,9 @@ export const saveKeychainEntry = (entry: any) => keychainRequest('/api/settings/
 export const deleteKeychainEntry = (name: string) => keychainRequest('/api/settings/keychain', 'DELETE', { name });
 export const revealKeychainEntry = (name: string, masterPassword?: string) =>
     keychainRequest('/api/settings/keychain/reveal', 'POST', { name, master_password: masterPassword || undefined });
+// Settings → General instance configuration (Piclaw's /agent/settings/general).
+export const getGeneralSettings = () => keychainRequest('/api/settings/general');
+export const saveGeneralSettings = (settings: any) => keychainRequest('/api/settings/general', 'POST', settings);
 // Settings → Environment overrides (Piclaw's environment-overrides.ts).
 export const getEnvironmentSettings = () => keychainRequest('/api/settings/environment');
 export const setEnvironmentOverride = (name: string, value: string) => keychainRequest('/api/settings/environment', 'POST', { name, value });
@@ -633,7 +636,8 @@ export async function deleteWorkspaceFile(path: string) {
     return request(`/api/workspace/file?path=${encodeURIComponent(path || '')}`, { method: 'DELETE' });
 }
 
-const MAX_UPLOAD_SIZE = 512 * 1024 * 1024;
+// The server enforces Settings -> General's upload limit; this is its maximum.
+const MAX_UPLOAD_SIZE = 1024 * 1024 * 1024;
 
 export async function uploadWorkspaceFile(file: File, targetPath = '', options: { overwrite?: boolean, onProgress?: (p: { loaded: number, total: number, percent: number }) => void } = {}) {
     if (file?.size > MAX_UPLOAD_SIZE) {

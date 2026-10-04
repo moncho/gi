@@ -494,7 +494,11 @@ test('@ux-compose-008 Serialize text, file, folder and message references and se
   const {main,input}=await fixture(page,request,info);
   await createReferenceFolder(request);await history(request,main.id);await page.reload();
   const message=page.locator('.timeline .post').first();const messageId=(await message.getAttribute('id')).slice(5);
+  // References carry the message's numeric row ID (as Piclaw's do), not its text ID.
+  const conversation=await(await request.get(`/api/sessions/${main.id}/messages?view=conversation&limit=50`)).json();
+  const messageRef=conversation.messages.find(m=>m.id===messageId).display_row_id;expect(Number.isInteger(messageRef)).toBe(true);
   await message.locator('.post-time').click();
+  await expect(page.locator(`.compose-file-pill[title="Message reference: ${messageRef}"]`)).toBeVisible();
   await attachWorkspaceFile(page,request);
   await showWorkspace(page);
   const folder=page.locator('.workspace-row[data-path="reference-folder"]');
@@ -509,7 +513,7 @@ test('@ux-compose-008 Serialize text, file, folder and message references and se
   await input.fill('  multiline draft\n第二行  ');
   const sent=page.waitForRequest(req=>req.method()==='POST'&&req.url().endsWith(`/api/sessions/${main.id}/prompt`));
   await input.press('Enter');const body=(await sent).postDataJSON();
-  const expected=`multiline draft\n第二行\n\nFiles:\n- draft-reference.txt\n- reference-folder\n\nReferenced messages:\n- message:${messageId}`;
+  const expected=`multiline draft\n第二行\n\nFiles:\n- draft-reference.txt\n- reference-folder\n\nReferenced messages:\n- message:${messageRef}`;
   expect(body.prompt).toBe(expected);expect(body.media).toEqual([]);
   await completedPrompt(request,main.id,expected);
   expect((await messages(request,main.id)).filter(m=>m.role==='user').map(m=>m.content)).toContain(expected);

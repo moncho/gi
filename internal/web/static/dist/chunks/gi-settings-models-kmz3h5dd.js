@@ -9,7 +9,7 @@ import {
   selectAgentThinking,
   selectAgentModel,
   modelContextBlocked
-} from "./app-rn6gx2zp.js";
+} from "./app-dbj801ab.js";
 
 // web/src/gi-settings-models.ts
 function Models({ chatJid, filter = "", onMutationStart, onMutationEnd, onApplied }) {
@@ -86,7 +86,8 @@ function Models({ chatJid, filter = "", onMutationStart, onMutationEnd, onApplie
     setAttempt((value) => value + 1);
   }
   const options = data?.model_options || data?.models || [];
-  const matching = options.filter((option) => `${option.label || option.id} ${option.provider || ""}`.toLowerCase().includes(filter.trim().toLowerCase()));
+  const query = filter.trim().toLowerCase();
+  const matching = options.filter((option) => `${option.label || option.id} ${option.provider || ""}`.toLowerCase().includes(query));
   const selected = options.find((option) => (option.label || option.id) === chosen);
   const blocked = modelContextBlocked({ contextWindow: selected?.context_window ?? selected?.contextWindow }, data?.context_usage);
   async function apply() {
@@ -152,10 +153,10 @@ function Models({ chatJid, filter = "", onMutationStart, onMutationEnd, onApplie
         ${error && fe`<div role="alert">${error}</div>`}
         <button disabled=${busy || reading} onClick=${refresh}>Refresh models</button>
         ${data && fe`
-            <dl class="gi-settings-values"><dt>Current model</dt><dd data-testid="settings-current-model">${data.current}</dd>
+            <dl class="gi-settings-values">${(!query || String(data.current || "").toLowerCase().includes(query)) && fe`<dt>Current model</dt><dd data-testid="settings-current-model">${data.current}</dd>`}
             ${data.supports_thinking && fe`<dt>Thinking</dt><dd>${data.thinking_level || "Provider default"}</dd>`}
             <dt>Context capacity</dt><dd data-testid="settings-context-capacity">${Number.isFinite(data.context_window) && data.context_window > 0 ? data.context_window : "Unknown"}</dd></dl>
-            <label>Session model<select aria-label="Session model" value=${chosen} disabled=${busy} onChange=${(e) => {
+            <label>Session model<select aria-label="Session model" size=${Math.max(2, Math.min(8, Math.min(matching.length, 50) + 1))} value=${chosen} disabled=${busy} onChange=${(e) => {
     dirty.current = true;
     setChosen(e.target.value);
     setNotice("");

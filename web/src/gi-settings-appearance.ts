@@ -1,44 +1,60 @@
-// Gi-owned lazy Appearance pane; storage remains browser-local.
+// Gi-owned lazy Appearance pane after Piclaw 3.2.5 settings/appearance.ts
+// (MIT): theme presets as radios that apply at once, a custom tint for the
+// default theme and output padding. Storage remains browser-local.
 import { html, useState, useEffect, useRef } from "./vendor/preact-htm.js";
-import { appearancePresets, currentAppearance, persistAppearance, subscribeAppearance } from "./gi-appearance.js";
-import { defaultAppearance } from "./gi-appearance-state.js";
+import { appearancePresets, appearancePresetLabels, currentAppearance, persistAppearance, subscribeAppearance } from "./gi-appearance.js";
+import { normalizeOutputPad } from "./gi-appearance-state.js";
 
 export function Appearance() {
-    const [draft, setDraft] = useState(currentAppearance);
+    const [value, setValue] = useState(currentAppearance);
     const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
-    const dirty = useRef(false);
     const ownSave = useRef(false);
-    useEffect(() => subscribeAppearance(value => {
-        if (ownSave.current) return;
-        if (dirty.current) setNotice('Appearance changed in another tab. Your unsaved fields are unchanged. Save to overwrite or reset to defaults.');
-        else { setDraft(value); setNotice('Appearance updated from another tab.'); }
-    }), []);
-    const update = patch => {
-        dirty.current = true; setDraft(previous => ({ ...previous, ...patch })); setError(''); setNotice('');
+    useEffect(() => subscribeAppearance(next => { if (!ownSave.current) setValue(next); }), []);
+    const apply = (patch: any) => {
+        const next = { ...value, ...patch };
+        setError(''); ownSave.current = true;
+        try { setValue(persistAppearance(next)); }
+        catch (err) {
+            // Re-render so native radio/colour controls return to the applied state.
+            setError(`Appearance was not saved: ${err.message}`); setValue(previous => ({ ...previous }));
+        }
+        finally { ownSave.current = false; }
     };
-    const save = value => {
-        setError(''); setNotice(''); ownSave.current = true;
-        try {
-            const saved = persistAppearance(value);
-            dirty.current = false; setDraft(saved); setNotice('Appearance saved in this browser.');
-        } catch (error) {
-            setError(`Appearance was not saved: ${error.message}`);
-        } finally { ownSave.current = false; }
-    };
-    return html`<section aria-labelledby="gi-appearance-title">
+    const pad = normalizeOutputPad(value.outputPad);
+    return html`<section aria-labelledby="gi-appearance-title" class="settings-section settings-appearance">
         <h2 id="gi-appearance-title">Appearance</h2>
-        <p>Browser settings · this origin, across all sessions</p>
-        <p>Only this browser profile changes. Server configuration, other devices and the terminal theme are unchanged. Default follows your system colour mode.</p>
-        <label>Theme preset<select aria-label="Theme preset" value=${draft.theme} onChange=${e => update({ theme: e.target.value, tint: '' })}>
-            ${appearancePresets.map(theme => html`<option value=${theme}>${theme}</option>`)}
-        </select></label>
-        <label>Custom tint<input aria-label="Custom tint" type="text" placeholder="#RRGGBB" maxLength="7" disabled=${draft.theme !== 'default'} value=${draft.tint} onInput=${e => update({ tint: e.target.value })} /></label>
-        <p>Default theme only. Use #RGB or #RRGGBB, or leave empty for no tint.</p>
-        <button onClick=${() => save(draft)}>Save appearance</button>
-        <button onClick=${() => save(defaultAppearance)}>Reset appearance</button>
+        <p>Browser settings · this origin, across all sessions. Changes apply at once and stay in this browser profile.</p>
         ${error && html`<p role="alert">${error}</p>`}
-        ${notice && html`<p role="status">${notice}</p>`}
+        <div class="settings-tint-row">
+            <label class="settings-tint-label">
+                <input type="radio" name="gi-settings-theme" checked=${value.theme === 'default'} onChange=${() => apply({ theme: 'default' })} />
+                <strong>Default</strong> <span class="settings-hint">auto light/dark</span>
+            </label>
+            <div class="settings-tint-picker">
+                <label class="settings-hint" for="gi-settings-tint">Tint</label>
+                <input id="gi-settings-tint" type="color" value=${value.tint || '#1d9bf0'}
+                    onInput=${e => apply({ theme: 'default', tint: e.target.value })} />
+                ${value.tint && html`<button class="settings-tint-clear" title="Clear tint" aria-label="Clear tint" onClick=${() => apply({ theme: 'default', tint: '' })}>✕</button>`}
+                <span class="settings-tint-hex">${value.tint || 'none'}</span>
+            </div>
+        </div>
+        <div class="settings-output-pad-row">
+            <label class="settings-output-pad-label" for="gi-settings-output-pad"><strong>Output padding</strong>
+                <span class="settings-hint">Extra space around timeline posts.</span></label>
+            <div class="settings-output-pad-control">
+                <input id="gi-settings-output-pad" type="range" min="0" max="24" step="1" value=${pad} onInput=${e => apply({ outputPad: normalizeOutputPad(e.target.value) })} />
+                <input class="settings-output-pad-number" aria-label="Output padding (px)" type="number" min="0" max="24" step="1" value=${pad} onInput=${e => apply({ outputPad: normalizeOutputPad(e.target.value) })} />
+                <span class="settings-hint">px</span>
+            </div>
+        </div>
+        <table class="settings-table settings-borderless settings-theme-table">
+            <thead><tr><th scope="col"><span class="gi-visually-hidden">Selected</span></th><th scope="col">Theme</th></tr></thead>
+            <tbody>
+                ${appearancePresets.filter(name => name !== 'default').map(name => html`<tr class=${name === value.theme ? 'settings-row-active' : ''} style="cursor:pointer" onClick=${() => apply({ theme: name, tint: '' })}>
+                    <td><input type="radio" name="gi-settings-theme" aria-label=${appearancePresetLabels[name] || name} checked=${name === value.theme} onChange=${() => apply({ theme: name, tint: '' })} /></td>
+                    <td><strong>${appearancePresetLabels[name] || name}</strong></td>
+                </tr>`)}
+            </tbody>
+        </table>
     </section>`;
 }
-

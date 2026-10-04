@@ -101,6 +101,7 @@ import {newMessageWindow,mergeMessagePages,captureTimelineAnchor,restoreTimeline
 import {bindWorkspaceVisibility} from './gi-workspace-visibility.js';
 import { composeTransfers, bindComposeSending } from './gi-compose-transfer.js';
 import { ownsHorizontalGesture } from './gi-scroll-gesture.js';
+import { messageReference, scrollToReferencedPost } from './gi-message-reference.js';
 
 const DEFAULT_SESSION_TITLE = 'default';
 const SESSION_KEY = 'gi_session_id';
@@ -334,6 +335,7 @@ function GiApp() {
     const pageRefreshPending=useRef(false);
     const scrollRestore=useRef<any>(null);
     const readingAnchor=useRef<any>(null);
+    const pinnedBottom=useRef(true);
     const searchView=useRef(createSearchView()).current;
     const [searchState,setSearchState]=useState(searchView.capture());
     const [searchError,setSearchError]=useState('');
@@ -504,7 +506,7 @@ function GiApp() {
     useLayoutEffect(() => {
         const pending=scrollRestore.current;scrollRestore.current=null;
         if(!pending||!selection.isCurrent(pending.scope)||!searchView.isCurrent(pending.view)||pending.connection!==connectionRevision.current)return;
-        if(pending.bottom&&timelineRef.current){timelineRef.current.scrollTop=0;readingAnchor.current=null;}
+        if(pending.bottom&&timelineRef.current){timelineRef.current.scrollTop=0;readingAnchor.current=null;pinnedBottom.current=true;}
         else {restoreTimelineAnchor(pending.anchor);readingAnchor.current=pending.anchor;}
     },[posts]);
 
@@ -529,7 +531,7 @@ function GiApp() {
                     const data=await getTimeline(50,older?cursor:null,sessionToChatJid(scope.sessionId),!older&&!initial?cursor:null);
                     if(!valid())return;
                     const root=timelineRef.current;
-                    scrollRestore.current={scope,view,connection,anchor:captureTimelineAnchor(root,readingAnchor.current),bottom:!older&&(initial||!root||Math.abs(root.scrollTop)<80)};
+                    scrollRestore.current={scope,view,connection,anchor:captureTimelineAnchor(root,readingAnchor.current),bottom:!older&&(initial||!root||pinnedBottom.current)};
                     const incoming=data.posts||[];
                     setPosts(prev=>deletions.filter(mergeMessagePages(prev,incoming),deletingAnimation.current));
                     if(initial){messageWindow.current={loaded:true,before:data.before,after:data.after,hasMore:data.hasMore};}
@@ -553,12 +555,20 @@ function GiApp() {
     // Own native negative-scroll paging at the existing host without editing it.
     useEffect(() => {
         const root=timelineRef.current;if(!root||searchState.active)return;
+        // A pinned-to-bottom timeline stays pinned when it resizes (the composer
+        // growing with a wrapped draft): browser scroll anchoring would otherwise
+        // move it off the bottom, and the next reply would not be followed.
+        // Scrolls caused by the resize itself do not change whether it was pinned.
+        let height=root.clientHeight;
         const onScroll=()=>{const distance=root.scrollHeight-root.clientHeight+root.scrollTop;
+            if(root.clientHeight===height)pinnedBottom.current=Math.abs(root.scrollTop)<80;
             if(messageWindow.current.hasMore&&distance<200)void loadPosts({older:true});};
+        const resized=typeof ResizeObserver==='function'?new ResizeObserver(()=>{height=root.clientHeight;if(pinnedBottom.current&&root.scrollTop!==0)root.scrollTop=0;}):null;
+        resized?.observe(root);
         const userScroll=()=>{readingAnchor.current=null;};
         root.addEventListener('scroll',onScroll,{passive:true});
         root.addEventListener('wheel',userScroll,{passive:true});root.addEventListener('touchstart',userScroll,{passive:true});root.addEventListener('pointerdown',userScroll);root.addEventListener('keydown',userScroll);window.addEventListener('resize',userScroll);
-        return ()=>{root.removeEventListener('scroll',onScroll);root.removeEventListener('wheel',userScroll);root.removeEventListener('touchstart',userScroll);root.removeEventListener('pointerdown',userScroll);root.removeEventListener('keydown',userScroll);window.removeEventListener('resize',userScroll);};
+        return ()=>{resized?.disconnect();root.removeEventListener('scroll',onScroll);root.removeEventListener('wheel',userScroll);root.removeEventListener('touchstart',userScroll);root.removeEventListener('pointerdown',userScroll);root.removeEventListener('keydown',userScroll);window.removeEventListener('resize',userScroll);};
     },[posts,searchState.active,loadPosts]);
 
     const runSearch = async (query?:string,scopeValue?:string) => {
@@ -619,7 +629,7 @@ function GiApp() {
     const scrollToBottom = useCallback(() => {
         const el = timelineRef.current;
         if (!el) return;
-        if(Math.abs(el.scrollTop)<80)el.scrollTop=0;
+        if(pinnedBottom.current)el.scrollTop=0;
     }, []);
 
     const refreshSessionLists = useCallback(async (sid: string | null) => {
@@ -673,7 +683,7 @@ function GiApp() {
         if (eventType === 'new_post' || eventType === 'agent_response') {
             if (data?.id && data?.data && !searchView.capture().active) {
                 const root=timelineRef.current;
-                scrollRestore.current={scope:selection.capture(),view:searchView.capture(),connection:connectionRevision.current,anchor:captureTimelineAnchor(root,readingAnchor.current),bottom:!root||Math.abs(root.scrollTop)<80};
+                scrollRestore.current={scope:selection.capture(),view:searchView.capture(),connection:connectionRevision.current,anchor:captureTimelineAnchor(root,readingAnchor.current),bottom:!root||pinnedBottom.current};
                 const post = projectConversationEvent(data);
                 if (post) {
                     setPosts((prev: any[]) => mergeMessagePages(prev,[post]));
@@ -861,7 +871,7 @@ function GiApp() {
         if(linkedURL.searchParams.has('chat_jid')){linkedURL.searchParams.set('chat_jid',sessionToChatJid(nextSessionId));history.replaceState(null,'',linkedURL);}
         activationRefresh.select(selection.capture().generation);streamDisconnected.current=true;setConnectionStatus('disconnected');
         setSearchState(searchView.close());setSearchError('');
-        messageWindow.current=newMessageWindow();readingAnchor.current=null;pageRequest.current=null;pageRefreshPending.current=false;scrollRestore.current=null;
+        messageWindow.current=newMessageWindow();readingAnchor.current=null;pinnedBottom.current=true;pageRequest.current=null;pageRefreshPending.current=false;scrollRestore.current=null;
         timelineRevision.invalidate();
         stopToken.current = null; setStopPending(false); setStopError('');
         compactToken.current=null; setCompactPending(false); setCompactError(''); setCompactState(null);
@@ -1168,10 +1178,13 @@ function GiApp() {
                     timelineRef=${timelineRef}
                     onHashtagClick=${() => {}}
                     onMessageRef=${(id: any) => {
-                        const refs = [...new Set([...getDraft(sessionId).messageRefs, id])];
+                        // References use the numeric row ID, as Piclaw's do: short to read
+                        // and what the messages tool takes (row_ids).
+                        const ref = messageReference(posts, id);
+                        const refs = [...new Set([...getDraft(sessionId).messageRefs, ref])];
                         drafts.update(sessionId, { messageRefs: refs }); setMessageRefs(refs);
                     }}
-                    onScrollToMessage=${() => {}}
+                    onScrollToMessage=${(ref: any) => scrollToReferencedPost(posts, ref)}
                     onFileRef=${openEditor}
                     onPostClick=${undefined}
                     onDeletePost=${handleDeletePost}

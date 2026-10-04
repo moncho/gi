@@ -18,8 +18,7 @@ import (
 // so symlinks and concurrent renames cannot escape the workspace.
 
 const (
-	workspaceMaxEditBytes   = 256 * 1024
-	workspaceMaxUploadBytes = 512 * 1024 * 1024
+	workspaceMaxEditBytes = 256 * 1024
 )
 
 type workspaceResult struct {
@@ -204,6 +203,8 @@ func (s *Server) handleWorkspaceUpload(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+	// Settings -> General "Upload limit (MB)" (Piclaw's workspaceUploadLimitMb).
+	workspaceMaxUploadBytes := int64(s.generalSettings(r.Context()).WorkspaceUploadLimitMB) << 20
 	r.Body = http.MaxBytesReader(w, r.Body, workspaceMaxUploadBytes+1<<20)
 	file, header, err := r.FormFile("file")
 	if err != nil {

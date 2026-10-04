@@ -9,7 +9,7 @@ import {
   saveKeychainEntry,
   deleteKeychainEntry,
   revealKeychainEntry
-} from "./app-rn6gx2zp.js";
+} from "./app-dbj801ab.js";
 
 // web/src/gi-settings-keychain.ts
 var TYPES = ["secret", "token", "password", "basic"];

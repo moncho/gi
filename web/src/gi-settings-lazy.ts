@@ -3,13 +3,14 @@ import { html, useState, useEffect } from './vendor/preact-htm.js';
 const loaders = {
     models: () => import('./gi-settings-models.js').then(module => module.Models),
     appearance: () => import('./gi-settings-appearance.js').then(module => module.Appearance),
+    keyboard: () => import('./components/settings/keyboard.js').then(module => module.KeyboardSection),
     compaction: () => import('./gi-settings-compaction.js').then(module => module.GiSettingsCompaction),
     providers: () => import('./gi-settings-providers.js').then(module => module.GiSettingsProviders),
     keychain: () => import('./gi-settings-keychain.js').then(module => module.GiSettingsKeychain),
     environment: () => import('./gi-settings-environment.js').then(module => module.GiSettingsEnvironment),
     authentication: () => import('./gi-settings-authentication.js').then(module => module.GiSettingsAuthentication),
 };
-const labels = { models: 'Models', appearance: 'Appearance', compaction: 'Compaction', providers: 'Providers', keychain: 'Keychain', environment: 'Environment', authentication: 'Authentication' };
+const labels = { models: 'Models', appearance: 'Appearance', keyboard: 'Keyboard', compaction: 'Compaction', providers: 'Providers', keychain: 'Keychain', environment: 'Environment', authentication: 'Authentication' };
 const components = new Map<string, any>();
 const pending = new Map<string, Promise<any>>();
 

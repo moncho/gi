@@ -16,7 +16,7 @@ test('@gi-settings-028 supported session thinking is explicit, durable and reach
   await h.input.fill('thinking draft Ω');await page.locator('.compose-box input[type=file]').setInputFiles({name:'thinking.txt',mimeType:'text/plain',buffer:Buffer.from('keep thinking media')});
   let prompts=0;page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/prompt'))prompts++});
   await h.open();await expect(page.getByRole('combobox',{name:'Session thinking level',exact:true})).toHaveCount(0);
-  await page.getByRole('combobox',{name:'Session model',exact:true}).selectOption('ux-local/reasoner');await page.getByRole('button',{name:'Apply model',exact:true}).click();
+  await page.getByRole('listbox',{name:'Session model',exact:true}).selectOption('ux-local/reasoner');await page.getByRole('button',{name:'Apply model',exact:true}).click();
   const select=page.getByRole('combobox',{name:'Session thinking level',exact:true});await expect(select).toBeEnabled();expect(await select.locator('option').allTextContents()).toEqual(['Provider default','low','high']);
   await select.selectOption('high');expect((await h.model()).thinking_level).toBe('');await page.getByRole('button',{name:'Apply thinking',exact:true}).click();
   await expect(page.getByText('Thinking applied to future turns in this session.',{exact:true})).toBeVisible();await expect(select).toHaveValue('high');expect(prompts).toBe(0);
@@ -36,7 +36,7 @@ test('@gi-settings-028 supported session thinking is explicit, durable and reach
 test('@gi-settings-029 model switching resets thinking without dispatching the existing draft',async({page},info)=>{
  const h=await setup(page,info);try{
   await h.input.fill('keep this model switch draft Ω');
-  await h.open();const model=page.getByRole('combobox',{name:'Session model',exact:true});
+  await h.open();const model=page.getByRole('listbox',{name:'Session model',exact:true});
   await model.selectOption('ux-local/reasoner');await page.getByRole('button',{name:'Apply model',exact:true}).click();
   const levels=page.getByRole('combobox',{name:'Session thinking level',exact:true});await expect(levels).toBeEnabled();
   await levels.selectOption('high');await page.getByRole('button',{name:'Apply thinking',exact:true}).click();

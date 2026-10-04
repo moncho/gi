@@ -142,7 +142,7 @@ test('Gi read-only editor-pane inline code uses the code font across native appe
  });
  const check=async()=>{const value=await fonts();expect(value.font).toBe(value.expected);expect(value.font).not.toBe(value.parent);expect(Math.abs(value.narrow-value.wide)).toBeLessThan(0.2);};
  await check();
- await page.keyboard.press('Control+,');const settings=page.getByRole('dialog',{name:'Settings',exact:true});await expect(settings).toBeVisible();await settings.getByRole('button',{name:'Appearance',exact:true}).click();await settings.getByLabel('Theme preset',{exact:true}).selectOption('monokai');await settings.getByRole('button',{name:'Save appearance',exact:true}).click();await expect(page.locator('html')).toHaveAttribute('data-color-theme','monokai');await page.keyboard.press('Escape');await expect(settings).toHaveCount(0);await check();await f.preserved();await f.untouched();
+ await page.keyboard.press('Control+,');const settings=page.getByRole('dialog',{name:'Settings',exact:true});await expect(settings).toBeVisible();await settings.getByRole('button',{name:'Appearance',exact:true}).click();await settings.getByRole('radio',{name:/^monokai$/i}).check();await expect(page.locator('html')).toHaveAttribute('data-color-theme','monokai');await page.keyboard.press('Escape');await expect(settings).toHaveCount(0);await check();await f.preserved();await f.untouched();
  await page.reload();await expect(f.input).toHaveValue('tabs keep this draft');await f.open(f.paths[0]);await f.settle();await expect(page.locator('html')).toHaveAttribute('data-color-theme','monokai');await check();await f.preserved();await f.untouched();await page.screenshot({path:info.outputPath('preview-code-font.png')});
 });
 

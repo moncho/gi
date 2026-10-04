@@ -75,12 +75,11 @@ test.describe('App shell', () => {
     await page.keyboard.press('Control+,');
     const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
     await dialog.getByRole('button', { name: 'Appearance', exact: true }).click();
-    await dialog.getByLabel('Theme preset').selectOption('monokai');
-    await dialog.getByRole('button', { name: 'Save appearance' }).click();
-    await expect(dialog.getByRole('status')).toContainText('saved in this browser');
+    await dialog.getByRole('radio', { name: /^monokai$/i }).check();
+    await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'monokai');
     await page.reload(); await waitForAppShell(page);
     await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'monokai');
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('gi_browser_appearance_v1') || 'null'))).toEqual({ version: 1, theme: 'monokai', tint: '' });
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('gi_browser_appearance_v1') || 'null'))).toEqual({ version: 1, theme: 'monokai', tint: '', outputPad: 0 });
   });
 
   test('page loads without JS errors', async ({ page }) => {

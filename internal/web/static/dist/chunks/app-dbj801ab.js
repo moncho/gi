@@ -2490,6 +2490,8 @@ var listKeychain = () => keychainRequest("/api/settings/keychain");
 var saveKeychainEntry = (entry) => keychainRequest("/api/settings/keychain", "POST", entry);
 var deleteKeychainEntry = (name) => keychainRequest("/api/settings/keychain", "DELETE", { name });
 var revealKeychainEntry = (name, masterPassword) => keychainRequest("/api/settings/keychain/reveal", "POST", { name, master_password: masterPassword || undefined });
+var getGeneralSettings = () => keychainRequest("/api/settings/general");
+var saveGeneralSettings = (settings) => keychainRequest("/api/settings/general", "POST", settings);
 var getEnvironmentSettings = () => keychainRequest("/api/settings/environment");
 var setEnvironmentOverride = (name, value) => keychainRequest("/api/settings/environment", "POST", { name, value });
 var clearEnvironmentOverride = (name) => keychainRequest("/api/settings/environment", "POST", { name, clear: true });
@@ -2796,7 +2798,7 @@ async function moveWorkspaceEntry(path, target) {
 async function deleteWorkspaceFile(path) {
   return request(`/api/workspace/file?path=${encodeURIComponent(path || "")}`, { method: "DELETE" });
 }
-var MAX_UPLOAD_SIZE = 512 * 1024 * 1024;
+var MAX_UPLOAD_SIZE = 1024 * 1024 * 1024;
 async function uploadWorkspaceFile(file, targetPath = "", options = {}) {
   if (file?.size > MAX_UPLOAD_SIZE) {
     const sizeMB = (file.size / (1024 * 1024)).toFixed(0);
@@ -3714,7 +3716,11 @@ function getThemeMode() {
 
 // web/src/gi-appearance-state.ts
 var APPEARANCE_KEY = "gi_browser_appearance_v1";
-var defaultAppearance = { version: 1, theme: "default", tint: "" };
+var defaultAppearance = { version: 1, theme: "default", tint: "", outputPad: 0 };
+function normalizeOutputPad(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(24, Math.max(0, Math.round(parsed))) : 0;
+}
 function validateAppearance(value, presets) {
   if (!value || value.version !== 1 || typeof value.theme !== "string" || !presets.includes(value.theme)) {
     throw new Error("Choose a supported theme preset.");
@@ -3726,7 +3732,7 @@ function validateAppearance(value, presets) {
     throw new Error("Use #RGB or #RRGGBB for the tint, or leave it empty.");
   if (tint.length === 4)
     tint = "#" + [...tint.slice(1)].map((c) => c + c).join("");
-  return { version: 1, theme: value.theme, tint: value.theme === "default" ? tint : "" };
+  return { version: 1, theme: value.theme, tint: value.theme === "default" ? tint : "", outputPad: normalizeOutputPad(value.outputPad) };
 }
 function readAppearance(storage, presets) {
   try {
@@ -3757,10 +3763,17 @@ function currentAppearance() {
   if (stored)
     return stored;
   const theme = document.documentElement.dataset.colorTheme || "default";
-  return { version: 1, theme: appearancePresets.includes(theme) ? theme : "default", tint: document.documentElement.dataset.tint || "" };
+  return { version: 1, theme: appearancePresets.includes(theme) ? theme : "default", tint: document.documentElement.dataset.tint || "", outputPad: normalizeOutputPad(document.documentElement.dataset.outputPad) };
+}
+var appearancePresetLabels = Object.fromEntries(Object.entries(THEME_PRESETS).map(([name, preset]) => [name, preset?.label || name]));
+function applyOutputPad(value) {
+  const pad = normalizeOutputPad(value);
+  document.documentElement.style.setProperty("--output-pad", `${pad}px`);
+  document.documentElement.dataset.outputPad = String(pad);
 }
 function render(value) {
   applyThemeState(value, { persist: false });
+  applyOutputPad(value.outputPad);
   window.dispatchEvent(new CustomEvent(changeEvent, { detail: value }));
 }
 function persistAppearance(value) {
@@ -14144,7 +14157,7 @@ function useLocale() {
   }, []);
   return [locale, (value) => setLocale(value)];
 }
-function useTranslation() {
+function useTranslation2() {
   const [locale, setLocaleValue] = useLocale();
   return {
     locale,
@@ -14734,7 +14747,7 @@ function formatElapsed(isoString, nowMs = Date.now()) {
   return `${s}s`;
 }
 function AgentStatus({ status, draft, plan, thought, pendingRequest, intent, extensionPanels = [], pendingPanelActions = new Set, onExtensionPanelAction, turnId, steerQueued, onPanelToggle, showCorePanels = true, showExtensionPanels = true, loadWorkspaceBranch = getWorkspaceBranch }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation2();
   const THOUGHT_MAX_LINES = 9;
   const DRAFT_MAX_LINES = 9;
   const TOOL_OUTPUT_MAX_LINES = 6;
@@ -21917,7 +21930,7 @@ function useLocale2() {
   }, []);
   return [locale, (value) => setLocale2(value)];
 }
-function useTranslation2() {
+function useTranslation() {
   const [locale, setLocaleValue] = useLocale2();
   return {
     locale,
@@ -21938,7 +21951,7 @@ function LanguageSwitcher({
   variant = "inline",
   onChange
 } = {}) {
-  const { locale, setLocale, t } = useTranslation2();
+  const { locale, setLocale, t } = useTranslation();
   const options = buildLanguageOptions(locale);
   const handleChange = (event) => {
     const next = event?.currentTarget?.value;
@@ -21973,7 +21986,7 @@ function TimelineMenu({
   onOpenTerminalTab,
   onOpenVncTab
 }) {
-  const { t } = useTranslation2();
+  const { t } = useTranslation();
   const [open, setOpen] = F_(false);
   const [pwaDisplayScalePercent, setPwaDisplayScalePercent] = F_(() => readStoredPwaDisplayScalePercent());
   const [pwaDisplayScaleDraft, setPwaDisplayScaleDraft] = F_(() => String(readStoredPwaDisplayScalePercent()));
@@ -22372,6 +22385,12 @@ function normalizeShortcutBindingString(value) {
   segments.push(parsed.key);
   return segments.join("+");
 }
+function parseShortcutBindingList(value) {
+  return String(value || "").split(/[\n,]/).map((entry) => normalizeShortcutBindingString(entry)).filter((entry) => Boolean(entry));
+}
+function formatShortcutBindingList(bindings) {
+  return bindings.join(", ");
+}
 function readStoredShortcutConfig() {
   const stored = getLocalStorageJSON(STORAGE_KEY);
   if (!stored || typeof stored !== "object")
@@ -22386,6 +22405,12 @@ function readStoredShortcutConfig() {
   }
   return next;
 }
+function writeStoredShortcutConfig(config) {
+  setLocalStorageItem(STORAGE_KEY, JSON.stringify(config));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("piclaw:keyboard-shortcuts-changed", { detail: { config } }));
+  }
+}
 function getKeyboardShortcutAction(actionId) {
   return ACTION_MAP.get(actionId);
 }
@@ -22394,6 +22419,33 @@ function getKeyboardShortcutBindings(actionId) {
   if (Array.isArray(stored))
     return stored;
   return [...getKeyboardShortcutAction(actionId).defaultBindings];
+}
+function saveKeyboardShortcutBindings(actionId, bindings) {
+  const config = readStoredShortcutConfig();
+  const defaults = getKeyboardShortcutAction(actionId).defaultBindings;
+  const normalized = [...new Set(bindings.map((entry) => normalizeShortcutBindingString(entry)).filter((entry) => Boolean(entry)))];
+  if (normalized.length === defaults.length && normalized.every((entry, index) => entry === defaults[index])) {
+    delete config[actionId];
+  } else {
+    config[actionId] = normalized;
+  }
+  writeStoredShortcutConfig(config);
+}
+function resetKeyboardShortcutBindings(actionId) {
+  if (!actionId) {
+    writeStoredShortcutConfig({});
+    return;
+  }
+  const config = readStoredShortcutConfig();
+  delete config[actionId];
+  writeStoredShortcutConfig(config);
+}
+function readAllKeyboardShortcutBindings() {
+  const result = {};
+  for (const action of KEYBOARD_SHORTCUT_ACTIONS) {
+    result[action.id] = getKeyboardShortcutBindings(action.id);
+  }
+  return result;
 }
 function normalizeEventKey(key) {
   const raw = typeof key === "string" ? key : "";
@@ -22991,17 +23043,124 @@ function TimelineQuickActions({
     `;
 }
 
+// web/src/gi-number-stepper.ts
+function toFiniteNumber(value, fallback) {
+  if (value === "" || value === null || value === undefined)
+    return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+function clampNumberValue(value, { min = -Infinity, max = Infinity } = {}) {
+  const parsedMin = Number.isFinite(Number(min)) ? Number(min) : -Infinity;
+  const parsedMax = Number.isFinite(Number(max)) ? Number(max) : Infinity;
+  return Math.min(parsedMax, Math.max(parsedMin, Number(value)));
+}
+function normalizeNumberValue(value, { fallback = 0, min = -Infinity, max = Infinity } = {}) {
+  const next = toFiniteNumber(value, fallback);
+  return clampNumberValue(next, { min, max });
+}
+function stepNumberValue(value, {
+  direction = 1,
+  step = 1,
+  fallback = 0,
+  min = -Infinity,
+  max = Infinity
+} = {}) {
+  const base = normalizeNumberValue(value, { fallback, min, max });
+  const delta = Math.abs(toFiniteNumber(step, 1)) || 1;
+  const signedDirection = Number(direction) < 0 ? -1 : 1;
+  return clampNumberValue(base + signedDirection * delta, { min, max });
+}
+function NumberStepper({
+  value,
+  min,
+  max,
+  step = 1,
+  fallback,
+  width = "80px",
+  disabled = false,
+  label,
+  id,
+  onChange
+}) {
+  const effectiveFallback = Number.isFinite(Number(fallback)) ? Number(fallback) : normalizeNumberValue(value, { fallback: 0, min, max });
+  const [localValue, setLocalValue] = F_(String(value ?? effectiveFallback));
+  const editingRef = Q_(false);
+  K_(() => {
+    if (!editingRef.current) {
+      setLocalValue(String(value ?? effectiveFallback));
+    }
+  }, [value, effectiveFallback]);
+  const commit = Y_((raw) => {
+    editingRef.current = false;
+    const normalized = normalizeNumberValue(raw, { fallback: effectiveFallback, min, max });
+    setLocalValue(String(normalized));
+    onChange?.(normalized);
+  }, [effectiveFallback, min, max, onChange]);
+  const nudge = Y_((direction) => {
+    editingRef.current = false;
+    const next = stepNumberValue(value, { direction, step, fallback: effectiveFallback, min, max });
+    setLocalValue(String(next));
+    onChange?.(next);
+  }, [effectiveFallback, max, min, onChange, step, value]);
+  return fe`
+        <span class="settings-number-stepper">
+            <button
+                type="button"
+                class="settings-number-step-btn"
+                aria-label=${`Decrease ${label || "value"}`}
+                title=${`Decrease ${label || "value"}`}
+                disabled=${disabled}
+                onClick=${() => nudge(-1)}
+            >−</button>
+            <input
+                id=${id}
+                aria-label=${label || undefined}
+                aria-invalid=${editingRef.current && (localValue.trim() === "" || !Number.isFinite(Number(localValue)) || min != null && Number(localValue) < min || max != null && Number(localValue) > max) ? "true" : undefined}
+                class="settings-number-input"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                value=${localValue}
+                disabled=${disabled}
+                style=${`width:${width}`}
+                onInput=${(e) => {
+    editingRef.current = true;
+    setLocalValue(e.target.value);
+  }}
+                onBlur=${(e) => commit(e.target.value)}
+                onKeyDown=${(e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit(e.target.value);
+      e.target.blur();
+    }
+  }}
+            />
+            <button
+                type="button"
+                class="settings-number-step-btn"
+                aria-label=${`Increase ${label || "value"}`}
+                title=${`Increase ${label || "value"}`}
+                disabled=${disabled}
+                onClick=${() => nudge(1)}
+            >+</button>
+        </span>
+    `;
+}
+
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-5b2yj489.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-0ff71748.js").then((module) => module.Appearance),
-  compaction: () => import("./gi-settings-compaction-27hchzyj.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-vjx66w5d.js").then((module) => module.GiSettingsProviders),
-  keychain: () => import("./gi-settings-keychain-xbgf6919.js").then((module) => module.GiSettingsKeychain),
-  environment: () => import("./gi-settings-environment-4ec3fwtf.js").then((module) => module.GiSettingsEnvironment),
-  authentication: () => import("./gi-settings-authentication-3b8qxnmm.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-kmz3h5dd.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-cwtfhq68.js").then((module) => module.Appearance),
+  keyboard: () => import("./keyboard-nd6nc798.js").then((module) => module.KeyboardSection),
+  compaction: () => import("./gi-settings-compaction-6v2je6tg.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-jaq676df.js").then((module) => module.GiSettingsProviders),
+  keychain: () => import("./gi-settings-keychain-s5jhc53a.js").then((module) => module.GiSettingsKeychain),
+  environment: () => import("./gi-settings-environment-zmn47m5g.js").then((module) => module.GiSettingsEnvironment),
+  authentication: () => import("./gi-settings-authentication-m9sw96y0.js").then((module) => module.GiSettingsAuthentication)
 };
-var labels = { models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" };
+var labels = { models: "Models", appearance: "Appearance", keyboard: "Keyboard", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" };
 var components = new Map;
 var pending = new Map;
 function load(section) {
@@ -23046,6 +23205,10 @@ function LazySettingsPane({ section, chatJid, filter, onMutationStart, onMutatio
 
 // web/src/gi-settings.ts
 var generalCache = null;
+var FILTERS = {
+  models: { label: "Filter models", placeholder: "Filter models…" },
+  keyboard: { label: "Filter shortcuts", placeholder: "Filter shortcuts…" }
+};
 function Identity() {
   const [snapshot, setSnapshot] = F_(null);
   const [draft, setDraft] = F_({ assistant_name: "", user_name: "" });
@@ -23125,6 +23288,64 @@ function Identity() {
         ${notice && fe`<p role="status">${notice}</p>`}
     </section>`;
 }
+function InstanceConfig() {
+  const [limit, setLimit] = F_(null);
+  const [applied, setApplied] = F_(false);
+  const [error, setError] = F_("");
+  const saved = Q_(null);
+  const timer = Q_(null);
+  const alive = Q_(true);
+  K_(() => () => {
+    alive.current = false;
+    clearTimeout(timer.current);
+  }, []);
+  K_(() => {
+    getGeneralSettings().then(({ data }) => {
+      const value = data?.settings?.workspaceUploadLimitMb;
+      if (alive.current && Number.isFinite(value)) {
+        saved.current = value;
+        setLimit(value);
+      }
+    }).catch(() => alive.current && setError("Failed to load instance settings."));
+  }, []);
+  K_(() => {
+    if (limit === null || limit === saved.current)
+      return;
+    clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      try {
+        const { status, data } = await saveGeneralSettings({ workspaceUploadLimitMb: limit });
+        if (!alive.current)
+          return;
+        if (status < 200 || status >= 300 || !data?.ok)
+          throw new Error(data?.error || `Failed to save general settings (${status})`);
+        saved.current = data.settings?.workspaceUploadLimitMb ?? limit;
+        setError("");
+        setApplied(true);
+        setTimeout(() => {
+          if (alive.current)
+            setApplied(false);
+        }, 4000);
+      } catch (err) {
+        if (alive.current) {
+          setApplied(false);
+          setError(`Failed to save: ${err?.message || err}`);
+        }
+      }
+    }, 800);
+    return () => clearTimeout(timer.current);
+  }, [limit]);
+  return fe`<div class="gi-settings-instance">
+        <h3>Instance Configuration</h3>
+        ${applied && fe`<div class="settings-general-applied-notice" role="status" aria-live="polite">Settings applied. Changes take effect on the next upload.</div>`}
+        ${error && fe`<div role="alert">${error}</div>`}
+        ${limit !== null && fe`<div class="settings-row">
+            <label for="gi-general-upload-limit">Upload limit (MB)</label>
+            <${NumberStepper} id="gi-general-upload-limit" label="Upload limit (MB)" value=${limit} min=${1} max=${1024} fallback=${256} width="80px" onChange=${setLimit} />
+            <span class="settings-hint">Applies to workspace uploads.</span>
+        </div>`}
+    </div>`;
+}
 function General() {
   const [data, setData] = F_(generalCache);
   const [error, setError] = F_("");
@@ -23160,6 +23381,7 @@ function General() {
             <dt>Build</dt><dd>${data.version || "Unknown"}</dd>
         </dl>`}
         <${Identity} />
+        <${InstanceConfig} />
     </section>`;
 }
 function Dialog({ chatJid, initialSection = "general", onClose, onMutationStart, onMutationEnd, onApplied }) {
@@ -23192,7 +23414,7 @@ function Dialog({ chatJid, initialSection = "general", onClose, onMutationStart,
   }, []);
   W_(() => {
     setFilter("");
-    if (section === "models")
+    if (section in FILTERS)
       filterRef.current?.focus();
   }, [section, chatJid]);
   W_(() => {
@@ -23244,10 +23466,10 @@ function Dialog({ chatJid, initialSection = "general", onClose, onMutationStart,
   }}>
         <div ref=${dialog} data-testid="settings-dialog" class=${`settings-dialog${layoutMode.compact ? " settings-dialog-compact" : ""}${layoutMode.narrow ? " settings-dialog-narrow" : ""}`} role="dialog" aria-modal="true" aria-labelledby="gi-settings-title" onKeyDown=${(e) => e.stopPropagation()}>
             <header class="settings-dialog-header"><span class="settings-dialog-title" id="gi-settings-title">Settings</span>
-                ${section === "models" && fe`<input ref=${filterRef} type="search" class="settings-header-filter" aria-label="Filter models" placeholder="Filter models…" value=${filter} disabled=${busyScope === searchScope} onInput=${(e) => setFilter(e.target.value)} />`}
+                ${section in FILTERS && fe`<input ref=${filterRef} type="search" class="settings-header-filter" aria-label=${FILTERS[section].label} placeholder=${FILTERS[section].placeholder} value=${filter} disabled=${busyScope === searchScope} onInput=${(e) => setFilter(e.target.value)} />`}
                 <button class="settings-dialog-close" aria-label="Close settings" onClick=${onClose}>✕</button></header>
             <div class="settings-dialog-body"><nav class="settings-nav" aria-label="Settings sections">
-                ${["general", "models", "appearance", "compaction", "providers", "keychain", "environment", "authentication"].map((id) => fe`<button class=${`settings-nav-item ${section === id ? "active" : ""}`} aria-current=${section === id ? "page" : undefined} onClick=${() => setSection(id)}>${{ general: "General", models: "Models", appearance: "Appearance", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" }[id]}</button>`)}
+                ${["general", "models", "appearance", "keyboard", "compaction", "providers", "keychain", "environment", "authentication"].map((id) => fe`<button class=${`settings-nav-item ${section === id ? "active" : ""}`} aria-current=${section === id ? "page" : undefined} onClick=${() => setSection(id)}>${{ general: "General", models: "Models", appearance: "Appearance", keyboard: "Keyboard", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" }[id]}</button>`)}
             </nav><main class="settings-content">
                 ${section === "general" ? fe`<${General} />` : fe`<${LazySettingsPane} key=${section} section=${section} chatJid=${chatJid} filter=${filter} onMutationStart=${() => {
     setBusyScope(searchScope);
@@ -23282,7 +23504,7 @@ function GiSettings({ chatJid, onMutationStart, onMutationEnd, onApplied }) {
         return;
       const detail = event instanceof CustomEvent ? event.detail : null;
       const requested = detail?.section;
-      setInitialSection(["general", "models", "appearance", "compaction", "providers", "keychain", "environment", "authentication"].includes(requested) ? requested : "general");
+      setInitialSection(["general", "models", "appearance", "keyboard", "compaction", "providers", "keychain", "environment", "authentication"].includes(requested) ? requested : "general");
       opener.current = detail?.opener instanceof HTMLElement && detail.opener.isConnected ? detail.opener : document.activeElement;
       isOpen.current = true;
       setOpen(true);
@@ -24213,6 +24435,21 @@ function ownsHorizontalGesture(target, boundary) {
   return false;
 }
 
+// web/src/gi-message-reference.ts
+function messageReference(posts, id) {
+  const row = Number(posts.find((p) => p.id === id)?.display_row_id);
+  return Number.isInteger(row) && row > 0 ? row : id;
+}
+function scrollToReferencedPost(posts, ref) {
+  const post = posts.find((p) => String(p.display_row_id) === String(ref) || p.id === ref);
+  const el = post && document.getElementById("post-" + post.id);
+  if (!el)
+    return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("post-highlight");
+  setTimeout(() => el.classList.remove("post-highlight"), 2000);
+}
+
 // web/src/app.ts
 paneRegistry.register(workspacePreviewPaneExtension);
 paneRegistry.register(workspaceMarkdownPreviewPaneExtension);
@@ -24473,6 +24710,7 @@ function GiApp() {
   const pageRefreshPending = Q_(false);
   const scrollRestore = Q_(null);
   const readingAnchor = Q_(null);
+  const pinnedBottom = Q_(true);
   const searchView = Q_(createSearchView()).current;
   const [searchState, setSearchState] = F_(searchView.capture());
   const [searchError, setSearchError] = F_("");
@@ -24694,6 +24932,7 @@ function GiApp() {
     if (pending.bottom && timelineRef.current) {
       timelineRef.current.scrollTop = 0;
       readingAnchor.current = null;
+      pinnedBottom.current = true;
     } else {
       restoreTimelineAnchor(pending.anchor);
       readingAnchor.current = pending.anchor;
@@ -24726,7 +24965,7 @@ function GiApp() {
           if (!valid())
             return;
           const root = timelineRef.current;
-          scrollRestore.current = { scope, view, connection, anchor: captureTimelineAnchor(root, readingAnchor.current), bottom: !older && (initial || !root || Math.abs(root.scrollTop) < 80) };
+          scrollRestore.current = { scope, view, connection, anchor: captureTimelineAnchor(root, readingAnchor.current), bottom: !older && (initial || !root || pinnedBottom.current) };
           const incoming = data.posts || [];
           setPosts((prev) => deletions.filter(mergeMessagePages(prev, incoming), deletingAnimation.current));
           if (initial) {
@@ -24761,11 +25000,20 @@ function GiApp() {
     const root = timelineRef.current;
     if (!root || searchState.active)
       return;
+    let height = root.clientHeight;
     const onScroll = () => {
       const distance = root.scrollHeight - root.clientHeight + root.scrollTop;
+      if (root.clientHeight === height)
+        pinnedBottom.current = Math.abs(root.scrollTop) < 80;
       if (messageWindow.current.hasMore && distance < 200)
         loadPosts({ older: true });
     };
+    const resized = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
+      height = root.clientHeight;
+      if (pinnedBottom.current && root.scrollTop !== 0)
+        root.scrollTop = 0;
+    }) : null;
+    resized?.observe(root);
     const userScroll = () => {
       readingAnchor.current = null;
     };
@@ -24776,6 +25024,7 @@ function GiApp() {
     root.addEventListener("keydown", userScroll);
     window.addEventListener("resize", userScroll);
     return () => {
+      resized?.disconnect();
       root.removeEventListener("scroll", onScroll);
       root.removeEventListener("wheel", userScroll);
       root.removeEventListener("touchstart", userScroll);
@@ -24877,7 +25126,7 @@ function GiApp() {
     const el = timelineRef.current;
     if (!el)
       return;
-    if (Math.abs(el.scrollTop) < 80)
+    if (pinnedBottom.current)
       el.scrollTop = 0;
   }, []);
   const refreshSessionLists = Y_(async (sid) => {
@@ -24934,7 +25183,7 @@ function GiApp() {
     if (eventType === "new_post" || eventType === "agent_response") {
       if (data?.id && data?.data && !searchView.capture().active) {
         const root = timelineRef.current;
-        scrollRestore.current = { scope: selection.capture(), view: searchView.capture(), connection: connectionRevision.current, anchor: captureTimelineAnchor(root, readingAnchor.current), bottom: !root || Math.abs(root.scrollTop) < 80 };
+        scrollRestore.current = { scope: selection.capture(), view: searchView.capture(), connection: connectionRevision.current, anchor: captureTimelineAnchor(root, readingAnchor.current), bottom: !root || pinnedBottom.current };
         const post = projectConversationEvent(data);
         if (post) {
           setPosts((prev) => mergeMessagePages(prev, [post]));
@@ -25166,6 +25415,7 @@ function GiApp() {
     setSearchError("");
     messageWindow.current = newMessageWindow();
     readingAnchor.current = null;
+    pinnedBottom.current = true;
     pageRequest.current = null;
     pageRefreshPending.current = false;
     scrollRestore.current = null;
@@ -25534,11 +25784,12 @@ function GiApp() {
                     timelineRef=${timelineRef}
                     onHashtagClick=${() => {}}
                     onMessageRef=${(id) => {
-    const refs = [...new Set([...getDraft(sessionId).messageRefs, id])];
+    const ref = messageReference(posts, id);
+    const refs = [...new Set([...getDraft(sessionId).messageRefs, ref])];
     drafts.update(sessionId, { messageRefs: refs });
     setMessageRefs(refs);
   }}
-                    onScrollToMessage=${() => {}}
+                    onScrollToMessage=${(ref) => scrollToReferencedPost(posts, ref)}
                     onFileRef=${openEditor}
                     onPostClick=${undefined}
                     onDeletePost=${handleDeletePost}
@@ -25811,12 +26062,21 @@ export {
   getAgentModels,
   selectAgentThinking,
   selectAgentModel,
-  defaultAppearance,
+  normalizeOutputPad,
   appearancePresets,
   currentAppearance,
+  appearancePresetLabels,
   persistAppearance,
   subscribeAppearance,
   modelContextBlocked,
+  useTranslation,
+  KEYBOARD_SHORTCUT_ACTIONS,
+  normalizeShortcutBindingString,
+  parseShortcutBindingList,
+  formatShortcutBindingList,
+  saveKeyboardShortcutBindings,
+  resetKeyboardShortcutBindings,
+  readAllKeyboardShortcutBindings,
   compactionNotice,
   compactionElapsed,
   authJSON,

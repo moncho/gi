@@ -27,7 +27,7 @@ func (s *Server) handleEnvironment(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, http.StatusOK, data)
 	case http.MethodPost:
-		if !keychainWriteAllowed(w, r) {
+		if !settingsWriteAllowed(w, r, "Settings") {
 			return
 		}
 		var req struct {

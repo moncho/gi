@@ -11,7 +11,7 @@
     "open": "/?chat_jid=gi:{id}"
   },
   "auth": { "mode": "none" },
-  "capabilities": ["@cap-queue", "@cap-svg-render", "@cap-thoughts", "@cap-tool-output", "@cap-message-delete", "@cap-quick-actions", "@cap-slash-commands", "@cap-skills", "@cap-pwa", "@cap-steer", "@cap-attachments", "@cap-session-picker", "@cap-workspace", "@cap-model-picker", "@cap-read-aloud", "@cap-upload-cancel", "@cap-tool-pane", "@cap-messages-tool", "@cap-reconnect", "@cap-stop", "@cap-compaction", "@cap-context-meter", "@cap-steer-idle", "@cap-session-manage", "@cap-workspace-write", "@cap-system-meters", "@cap-search", "@cap-settings-dialog"],
+  "capabilities": ["@cap-queue", "@cap-svg-render", "@cap-thoughts", "@cap-tool-output", "@cap-message-delete", "@cap-quick-actions", "@cap-slash-commands", "@cap-skills", "@cap-pwa", "@cap-steer", "@cap-attachments", "@cap-session-picker", "@cap-workspace", "@cap-model-picker", "@cap-read-aloud", "@cap-upload-cancel", "@cap-tool-pane", "@cap-messages-tool", "@cap-reconnect", "@cap-stop", "@cap-compaction", "@cap-context-meter", "@cap-steer-idle", "@cap-session-manage", "@cap-workspace-write", "@cap-system-meters", "@cap-search", "@cap-settings-dialog", "@cap-touch"],
   "selectors": { "sendButton": "button[aria-label='Send message']", "stopButton": "button[aria-label$='Stop response']", "queueItem": ".compose-queue-stack-item", "quickActionHighlight": ".timeline-quick-actions-item.active", "quickActionItem": ".timeline-quick-actions-item", "pickerHighlight": "[role='menuitem'].active, [role='option'][aria-selected='true']" },
   "tools": { "shell": "shell" },
   "commands": { "selectModel": "/model fixture-vibes/{model}" },

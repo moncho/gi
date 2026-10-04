@@ -249,3 +249,27 @@
 .settings-dialog-narrow .gi-keychain-table tr { display: block; border-bottom: 1px solid var(--border-color); }
 .settings-dialog-narrow .gi-keychain-table td { display: block; border: 0; padding: 3px 4px; }
 .settings-dialog-narrow .gi-keychain-actions { white-space: normal; }
+
+/* Appearance pane (after Piclaw 3.2.5 settings.css): preset radios, tint picker, output padding. */
+.settings-content .settings-appearance input[type="radio"],
+.settings-content .settings-appearance input[type="color"],
+.settings-content .settings-appearance input[type="range"] { display: inline-block; width: auto; margin: 0; padding: 0; cursor: pointer; }
+.settings-tint-row, .settings-output-pad-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 12px; margin: 0 0 12px; border: 1px solid var(--border-color); border-radius: 8px; }
+.settings-tint-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.settings-tint-picker, .settings-output-pad-control { display: flex; align-items: center; gap: 8px; }
+.settings-content .settings-tint-picker input[type="color"] { width: 32px; height: 24px; border: 1px solid var(--border-color); border-radius: 4px; background: none; }
+.settings-content .settings-tint-clear { padding: 0 6px; line-height: 20px; }
+.settings-tint-hex { font-family: var(--font-mono, monospace); font-size: 0.85em; color: var(--text-secondary); min-width: 60px; }
+.settings-output-pad-label { display: flex; flex-direction: column; gap: 2px; }
+.settings-content .settings-output-pad-control input[type="range"] { width: 140px; }
+.settings-content .settings-output-pad-number { display: inline-block; width: 64px; margin: 0; }
+.settings-theme-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+.settings-theme-table th, .settings-theme-table td { padding: 6px 8px; text-align: left; }
+.settings-theme-table th:first-child, .settings-theme-table td:first-child { width: 32px; text-align: center; }
+.settings-theme-table tbody tr:hover { background: var(--bg-hover, rgba(128,128,128,0.06)); }
+.settings-theme-table .settings-row-active { background: color-mix(in srgb, var(--accent-color) 10%, transparent); }
+
+/* Output padding (Piclaw 3.2.5 --output-pad) around timeline posts; phones keep the base padding, as in Piclaw. */
+@media (min-width: 640px) {
+    .post { padding: calc(var(--spacing-sm) + var(--output-pad, 0px)) calc(var(--spacing-md) + var(--output-pad, 0px)); }
+}

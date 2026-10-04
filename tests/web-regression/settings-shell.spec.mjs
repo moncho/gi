@@ -242,7 +242,8 @@ test('@ux-settings-004 Searchable header focuses and dialog width changes layout
   const filter = f.dialog.locator('header').getByRole('searchbox', { name: 'Filter models', exact: true });
   await expect(filter).toBeFocused(); await expect(filter).toHaveAttribute('placeholder', 'Filter models…');
   await expect(f.dialog.getByTestId('settings-current-model')).toBeVisible();
-  const select = f.dialog.getByRole('combobox', { name: 'Session model', exact: true });
+  // A sized select (listbox) keeps matching models visible, as Piclaw's model list does.
+  const select = f.dialog.getByRole('listbox', { name: 'Session model', exact: true });
   await filter.fill('bootstrap'); await expect(select.locator('option:not([disabled])')).toHaveText(['test/bootstrap']);
   await select.selectOption('test/bootstrap'); await expect(f.dialog.getByRole('button', { name: 'Apply model', exact: true })).toBeEnabled();
   await filter.focus(); const readCount = reads; expect(readCount).toBeGreaterThan(0);
@@ -254,7 +255,7 @@ test('@ux-settings-004 Searchable header focuses and dialog width changes layout
     await expect.poll(() => f.dialog.evaluate(element => [element.classList.contains('settings-dialog-compact'), element.classList.contains('settings-dialog-narrow')])).toEqual([compact,narrow]);
     await expect(filter).toBeVisible(); await expect(filter).toBeFocused(); await expect(filter).toHaveValue('bootstrap');
     await expect(select).toHaveValue('test/bootstrap'); await expect(select.locator('option:not([disabled])')).toHaveText(['test/bootstrap']);
-    await expect(f.dialog.getByTestId('settings-current-model')).toContainText('test/test-model');
+    await expect(f.dialog.getByTestId('settings-current-model')).toHaveCount(0); // filtered out by "bootstrap"
   }
   expect(reads).toBe(readCount); expect(writes).toEqual([]);
   await filter.fill('no-model-matches'); await expect(f.dialog.getByText('No matching models.', { exact: true })).toBeVisible();

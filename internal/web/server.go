@@ -201,6 +201,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/api/settings/providers", guard(s.handleProviderSettings))
 	s.mux.HandleFunc("/api/settings/keychain", guard(s.handleKeychain))
 	s.mux.HandleFunc("/api/settings/environment", guard(s.handleEnvironment))
+	s.mux.HandleFunc("/api/settings/general", guard(s.handleGeneralSettings))
 	s.mux.HandleFunc("/api/settings/keychain/notes", guard(s.handleKeychainNotes))
 	s.mux.HandleFunc("/api/settings/keychain/reveal", guard(s.handleKeychainReveal))
 	s.mux.HandleFunc("/api/runtime/inbound-work", guard(s.handleRuntimeInboundWork))

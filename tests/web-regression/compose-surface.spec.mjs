@@ -1,6 +1,15 @@
 import {test,expect} from '@playwright/test';
 import {journeyEnvironment} from '../ux/support/journey-environment.mjs';
 
+// Settings -> Appearance (Piclaw 3.2.5 shape): preset radios and a tint colour input apply at once.
+async function setAppearance(dialog,preset,tint){
+ if(preset==='default'){
+  await dialog.getByRole('radio',{name:/^Default/}).check();
+  if(tint)await dialog.locator('input[type=color]').first().evaluate((e,v)=>{e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));},tint);
+  else if(await dialog.getByTitle('Clear tint').count())await dialog.getByTitle('Clear tint').click();
+ }else await dialog.getByRole('radio',{name:new RegExp(`^${preset}$`,'i')}).check();
+}
+
 test('Compose surface uses persisted bounded height and retains draft across picker and reload',async({page},info)=>{
  const env=await journeyEnvironment(info);
  try{
@@ -82,13 +91,12 @@ for(const theme of ['light','dark'])test(`Active session pill uses reference pad
   const sample=()=>pill.evaluate(e=>{const c=getComputedStyle(e);const rgb=(s)=>s.match(/\d+(?:\.\d+)?/g).slice(0,3).map(Number);const lum=s=>{const a=rgb(s).map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4;});return .2126*a[0]+.7152*a[1]+.0722*a[2];};const a=lum(c.color),b=lum(c.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);});
   expect(await sample()).toBeGreaterThanOrEqual(4.5);
   await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Appearance',exact:true}).click();
-  const tint=dialog.getByRole('textbox',{name:'Custom tint',exact:true}),save=dialog.getByRole('button',{name:'Save appearance',exact:true});
-  // Blue requires white, a pale custom tint requires black. The native saved
-  // browser appearance changes, never a server write or a screenshot override.
+  // Blue requires white, a pale custom tint requires black. The browser
+  // appearance applies at once (Piclaw 3.2.5), never a server write.
   for(const [value,color]of [['#000066','rgb(255, 255, 255)'],['#ffee00','rgb(0, 0, 0)']]){
-   await tint.fill(value);await save.click();await expect(pill).toHaveCSS('color',color);expect(await sample()).toBeGreaterThanOrEqual(4.5);
+   await setAppearance(dialog,'default',value);await expect(pill).toHaveCSS('color',color);expect(await sample()).toBeGreaterThanOrEqual(4.5);
   }
-  await dialog.getByRole('button',{name:'Reset appearance',exact:true}).click();await page.keyboard.press('Escape');await expect(input).toHaveValue('Contrast retained draft Ω');await expect(input).toBeFocused();
+  await setAppearance(dialog,'default','');await page.keyboard.press('Escape');await expect(input).toHaveValue('Contrast retained draft Ω');await expect(input).toBeFocused();
   await expect(pill).toHaveCSS('color','rgb(15, 20, 25)');expect(await sample()).toBeGreaterThanOrEqual(4.5);
  }finally{await env.close();}
 });
@@ -107,12 +115,10 @@ test('Pinned theme text contrast adjusts primary and secondary without changing 
   const ratio=(a,b)=>{const lum=s=>{const v=s.match(/[\d.]+/g).slice(0,3).map(Number).map(n=>{n/=255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});return .2126*v[0]+.7152*v[1]+.0722*v[2];};const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
   await page.keyboard.press('Control+,');const dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Appearance',exact:true}).click();
   for(const [preset,tint,mode]of [['monokai','','dark'],['solarized','','light'],['default','#8040aa','dark'],['default','#cc8800','light']]){
-   await page.emulateMedia({colorScheme:mode});await dialog.getByRole('combobox',{name:'Theme preset',exact:true}).selectOption(preset);
-   if(preset==='default')await dialog.getByRole('textbox',{name:'Custom tint',exact:true}).fill(tint);
-   await dialog.getByRole('button',{name:'Save appearance',exact:true}).click();await expect(dialog.getByRole('status')).toHaveText('Appearance saved in this browser.');
+   await page.emulateMedia({colorScheme:mode});await setAppearance(dialog,preset,tint);
    const c=await colours();for(const text of ['--text-primary','--text-secondary'])for(const bg of ['--bg-primary','--bg-secondary','--bg-hover'])expect(ratio(c[text],c[bg]),`${preset}/${mode}/${text}/${bg}`).toBeGreaterThanOrEqual(4.5);
-   await expect(dialog.getByRole('button',{name:'Save appearance',exact:true})).toBeFocused();await expect(input).toHaveValue('Palette contrast draft Ω');
+   await expect(input).toHaveValue('Palette contrast draft Ω');
   }
-  await dialog.getByRole('button',{name:'Reset appearance',exact:true}).click();await page.keyboard.press('Escape');await expect(input).toBeFocused();await expect(input).toHaveValue('Palette contrast draft Ω');await expect.poll(async()=> (await colours())['--text-secondary']).toBe('rgb(83, 100, 113)');
+  await setAppearance(dialog,'default','');await page.keyboard.press('Escape');await expect(input).toBeFocused();await expect(input).toHaveValue('Palette contrast draft Ω');await expect.poll(async()=> (await colours())['--text-secondary']).toBe('rgb(83, 100, 113)');
  }finally{await env.close();}
 });

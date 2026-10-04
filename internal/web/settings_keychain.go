@@ -21,12 +21,18 @@ func (s *Server) keychain() *keychain.Keychain {
 // keychainWriteAllowed is the providers' write policy: HTTPS or loopback,
 // same origin, JSON. It writes the refusal.
 func keychainWriteAllowed(w http.ResponseWriter, r *http.Request) bool {
+	return settingsWriteAllowed(w, r, "Keychain")
+}
+
+// settingsWriteAllowed applies the same policy to other settings writes;
+// subject names them in errors ("Keychain", "Settings").
+func settingsWriteAllowed(w http.ResponseWriter, r *http.Request, subject string) bool {
 	if !providerWriteTransport(r) {
-		writeJSON(w, 403, map[string]any{"error": "Keychain changes require HTTPS or a loopback connection"})
+		writeJSON(w, 403, map[string]any{"error": subject + " changes require HTTPS or a loopback connection"})
 		return false
 	}
 	if err := http.NewCrossOriginProtection().Check(r); err != nil {
-		writeJSON(w, 403, map[string]any{"error": "Cross-origin keychain requests are not allowed"})
+		writeJSON(w, 403, map[string]any{"error": "Cross-origin " + strings.ToLower(subject) + " requests are not allowed"})
 		return false
 	}
 	if media, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type")); media != "application/json" {

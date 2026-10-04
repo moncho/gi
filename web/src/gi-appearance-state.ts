@@ -1,6 +1,12 @@
 export const APPEARANCE_KEY = 'gi_browser_appearance_v1';
-export type Appearance = { version: 1; theme: string; tint: string };
-export const defaultAppearance: Appearance = { version: 1, theme: 'default', tint: '' };
+export type Appearance = { version: 1; theme: string; tint: string; outputPad?: number };
+export const defaultAppearance: Appearance = { version: 1, theme: 'default', tint: '', outputPad: 0 };
+
+// Piclaw 3.2.5's output padding: extra pixels around posts, 0..24.
+export function normalizeOutputPad(value: any): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.min(24, Math.max(0, Math.round(parsed))) : 0;
+}
 
 export function validateAppearance(value: any, presets: readonly string[]): Appearance {
     if (!value || value.version !== 1 || typeof value.theme !== 'string' || !presets.includes(value.theme)) {
@@ -10,7 +16,7 @@ export function validateAppearance(value: any, presets: readonly string[]): Appe
     let tint = value.tint.trim().toLowerCase();
     if (tint && !/^#[0-9a-f]{3}([0-9a-f]{3})?$/.test(tint)) throw new Error('Use #RGB or #RRGGBB for the tint, or leave it empty.');
     if (tint.length === 4) tint = '#' + [...tint.slice(1)].map(c => c + c).join('');
-    return { version: 1, theme: value.theme, tint: value.theme === 'default' ? tint : '' };
+    return { version: 1, theme: value.theme, tint: value.theme === 'default' ? tint : '', outputPad: normalizeOutputPad(value.outputPad) };
 }
 
 export function readAppearance(storage: Pick<Storage, 'getItem'>, presets: readonly string[]): Appearance | null {

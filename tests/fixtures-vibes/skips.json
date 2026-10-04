@@ -111,7 +111,6 @@
     { "id": "@ux-timeline-009", "reason": "capability-absent", "capability": "@cap-text-highlights", "detail": "Needs persistent text highlights on timeline messages; Gi has no highlight store and does not claim @cap-text-highlights." },
     { "id": "@ux-timeline-010", "reason": "capability-absent", "capability": "@cap-text-highlights", "detail": "Needs persistent text highlights on timeline messages; Gi has no highlight store and does not claim @cap-text-highlights." },
     { "id": "@ux-timeline-011", "reason": "capability-absent", "capability": "@cap-text-highlights", "detail": "Needs persistent text highlights on timeline messages; Gi has no highlight store and does not claim @cap-text-highlights." },
-    { "id": "@ux-timeline-012", "reason": "capability-absent", "capability": "@cap-text-highlights", "detail": "Needs persistent text highlights on timeline messages; Gi has no highlight store and does not claim @cap-text-highlights." },
-    { "id": "@ux-mobile-002", "reason": "known-defect", "detail": "Gi's session popup is a menu, not Piclaw 3.2.5's listbox, so the scenario cannot open it before checking that a swipe inside it keeps the session.", "issue": "https://github.com/rcarmo/gi/issues/42" }
+    { "id": "@ux-timeline-012", "reason": "capability-absent", "capability": "@cap-text-highlights", "detail": "Needs persistent text highlights on timeline messages; Gi has no highlight store and does not claim @cap-text-highlights." }
   ]
 }

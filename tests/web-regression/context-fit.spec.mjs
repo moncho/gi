@@ -20,7 +20,7 @@ async function fixture(page,request,info){
  expect((await state()).context_usage.measurement).toMatchObject({turn_id:turn.turn_id,model:'ux-local/gate',iteration:1});
  const modelButton=page.getByRole('button',{name:'Open model picker',exact:true});const menu=page.getByRole('listbox',{name:'Models',exact:true});
  const option=name=>menu.getByRole('option').filter({hasText:name});
- const switchTo=async id=>{await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('menuitem').click();};
+ const switchTo=async id=>{await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('option').click();};
  return{main,child,input,state,turn,modelButton,menu,option,switchTo};
 }
 

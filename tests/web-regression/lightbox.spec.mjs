@@ -65,7 +65,7 @@ test.describe('touch surface',()=>{
 test('Gi stored images survive search, session changes and a native lookup failure without draft loss',async({page,request},info)=>{
   const f=await fixture(page,request,info);
   const child=(await (await request.post(`/api/sessions/${f.main.id}/fork`,{data:{title:'image-other',agent_id:'image-other'}})).json()).branch.chat_jid.slice(3);
-  const select=async id=>{await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('menuitem').click();};
+  const select=async id=>{await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('option').click();};
   await f.open();await page.keyboard.press('Escape');await select(child);await expect(f.post).toHaveCount(0);await expect(page.locator('.image-modal')).toHaveCount(0);
   await f.input.fill('other session draft');await select(f.main.id);await f.preserved();await expect(f.image).toBeVisible();
   await page.getByRole('button',{name:'Search',exact:true}).click();const search=page.getByRole('textbox',{name:'Search (Enter to run)...',exact:true});
@@ -97,7 +97,9 @@ test('@ux-timeline-015 Both backdrop and image clicks dismiss the lightbox',asyn
   await f.open();await page.locator('.image-modal img').click();await expect(page.locator('.image-modal')).toHaveCount(0);await f.preserved();
 });
 
-test('@ux-timeline-016 Native touch taps dismiss the stored-image lightbox',async({page,request},info)=>{
+test.describe('touch lightbox',()=>{
+  test.use({hasTouch:true});
+  test('@ux-timeline-016 Native touch taps dismiss the stored-image lightbox',async({page,request},info)=>{
     const f=await fixture(page,request,info);
     // Playwright WebKit on Linux can report maxTouchPoints=0 despite touch
     // emulation. Require delivered trusted touch events, not a navigator stub.
@@ -108,3 +110,4 @@ test('@ux-timeline-016 Native touch taps dismiss the stored-image lightbox',asyn
     await f.image.tap();await page.locator('.image-modal img').tap();await expect(page.locator('.image-modal')).toHaveCount(0);await f.preserved();
     expect(await page.evaluate(()=>window.__touches)).toEqual(Array.from({length:4},()=>({trusted:true,count:1})));
   });
+});

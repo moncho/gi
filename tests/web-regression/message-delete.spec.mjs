@@ -68,9 +68,9 @@ test('Gi deletion failure preserves the post and remains with the originating se
  await page.route(`**/api/sessions/${session.id}/messages/${target.id}?cascade=false`,async route=>{held=true;await gate;await route.abort('failed');});
  try{
   await post.getByRole('button',{name:'Delete message',exact:true}).click();await expect.poll(()=>held).toBe(true);await expect(post).not.toHaveClass(/removing/);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('menuitem').click();await input.fill('child draft');release();
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('option').click();await input.fill('child draft');release();
   await expect(input).toHaveValue('child draft');await expect(page.getByRole('alert')).toHaveCount(0);
   expect((await messages()).some(m=>m.id===target.id)).toBe(true);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${session.id}"]`).getByRole('menuitem').click();await expect(post).toBeVisible();await expect(input).toHaveValue('draft survives deletion');
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${session.id}"]`).getByRole('option').click();await expect(post).toBeVisible();await expect(input).toHaveValue('draft survives deletion');
  }finally{release()}
 });

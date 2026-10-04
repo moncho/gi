@@ -13,7 +13,7 @@ async function fixture(page, request, info) {
   await expect(input).toBeVisible();
   const switchTo = async id => {
     await page.getByRole('button', { name: /Manage sessions for/ }).last().click();
-    await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('menuitem').click();
+    await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('option').click();
     await expect.poll(() => page.evaluate(() => localStorage.getItem('gi_session_id'))).toBe(id);
   };
   return { main, child, input, switchTo };
@@ -448,9 +448,10 @@ test('@ux-compose-011 Native posts reconcile once and respect current history-re
     expect((await request.post(`/api/sessions/${main.id}/prompt`,{data:{prompt,model:'test-model',intent:'queue'}})).status()).toBe(202);
     await completedPrompt(request,main.id,prompt);
   }
-  // Queue admission can add a native status message. Assert the actual
-  // persisted baseline rather than assuming exactly two rows per turn.
-  const baseline=(await messages(request,main.id)).length;
+  // Queue admission can add a system queue row, which the timeline hides
+  // (gi-conversation.ts). Count the persisted rows that render as posts.
+  const rendered=m=>!(m.role==='system'&&m.payload?.kind==='queue');
+  const baseline=(await messages(request,main.id)).filter(rendered).length;
   await page.reload(); const timeline = page.locator('.timeline');
   await expect(page.locator('.timeline .post')).toHaveCount(baseline);
   const ack = await holdAcknowledgement(page,main.id);
@@ -483,7 +484,7 @@ test('@ux-compose-011 Native posts reconcile once and respect current history-re
     await completedPrompt(request,main.id,'near-bottom submission');
     await expect(page.locator('.timeline .post')).toHaveCount(baseline+6);
     await expect.poll(()=>timeline.evaluate(el=>Math.abs(el.scrollTop))).toBeLessThanOrEqual(1);
-    const native = await messages(request,main.id);
+    const native = (await messages(request,main.id)).filter(rendered);
     const ids = await page.locator('.timeline .post').evaluateAll(nodes=>nodes.map(n=>n.id.slice(5)));
     expect(ids).toEqual(native.map(m=>m.id)); expect(new Set(ids).size).toBe(ids.length);
   } finally { await ack.close(); }

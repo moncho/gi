@@ -31,7 +31,7 @@ async function setup(page,request,info){
  };
  const switchTo=async id=>{
   await page.getByRole('button',{name:/Manage sessions for/}).last().click();
-  await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('menuitem').click();
+  await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('option').click();
   await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(id);
  };
  return {main,child,input,active,queue,enqueue,release,switchTo};

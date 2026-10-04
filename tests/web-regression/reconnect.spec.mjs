@@ -322,11 +322,11 @@ test('@ux-reconnect-005 Initial activation and SSE readiness do not duplicate re
   const subscribed=async id=>expect.poll(()=>page.evaluate(id=>window.__giNativeConnections.includes('gi:'+id),id)).toBe(true);
   await subscribed(main.id);await expect(page.locator('.compose-connection-status')).toHaveCount(0);
   const baseline=requests.count(main.id,'activity');
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${other}"]`).getByRole('menuitem').click();
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${other}"]`).getByRole('option').click();
   await subscribed(other);await expect(page.locator('.compose-connection-status')).toHaveCount(0);
   await expect.poll(()=>requests.count(other,'activity')).toBe(1);await expect(page.locator('.compose-context-pie')).toBeVisible();
   for(const name of requests.paths)expect(requests.count(other,name)).toBe(1);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('option').click();
   await expect.poll(()=>page.evaluate(id=>window.__giNativeConnections.filter(jid=>jid==='gi:'+id).length,main.id)).toBe(2);await expect(page.locator('.compose-connection-status')).toHaveCount(0);
   await expect.poll(()=>requests.count(main.id,'activity')).toBe(baseline+1);await expect(input).toHaveValue('draft before first subscription');
   const before=Object.fromEntries(requests.paths.map(name=>[name,requests.count(main.id,name)]));await env.drop();await expect(page.locator('.compose-connection-status')).toBeVisible({timeout:15000});env.resume();await expect(page.locator('.compose-connection-status')).toHaveCount(0,{timeout:15000});

@@ -51,7 +51,7 @@ test('Gi scoped index reindex/query and missing-root failure preserve session dr
  await write(filename,`changed${id} new source`);const retried=await run();expect(retried.status()).toBe(200);expect((await retried.json()).generation).toBe(ready.generation+1);expect((await query(`orchid${id}`)).hits).toEqual([]);expect((await query(`changed${id}`)).hits.map(h=>h.path)).toEqual([filename]);
  await expect(input).toHaveValue('index draft retained');
  await page.locator('.workspace-toggle-tab.open').click();
- const select=async target=>{await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${target}"]`).getByRole('menuitem').click();};
+ const select=async target=>{await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${target}"]`).getByRole('option').click();};
  await select(child);await input.fill('other draft');await select(session.id);await expect(input).toHaveValue('index draft retained');await expect(page.locator('.compose-file-pill').filter({hasText:'index-unsent.txt'})).toBeVisible();
  expect((await (await request.get(`/api/sessions/${session.id}/messages`)).json()).messages??[]).toEqual([]);
  // The visible Refresh action reaches the explorer's existing refresh handler.

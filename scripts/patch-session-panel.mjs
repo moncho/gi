@@ -20,7 +20,15 @@ export function patchSessionPanel(source){
  // main sessions included (the host keeps the last one).
  replace("const canDeleteSession = !searchMode && typeof onDeleteSession === 'function' && !isCurrentRootSession;",
   "const canDeleteSession = !searchMode && typeof onDeleteSession === 'function' && currentSessionAgent?.capabilities?.archive !== false;");
- replace('<div id="compose-session-results" class="compose-model-popup-menu"','<div id="compose-session-results" class="compose-model-popup-menu compose-session-popup-results"');
+ // Piclaw 3.2.5 exposes the results as a listbox of session options; the
+ // highlighted row is the active descendant of the list.
+ replace('<div id="compose-session-results" class="compose-model-popup-menu" role="menu" aria-label="Sessions and agents">',
+  '<div id="compose-session-results" class="compose-model-popup-menu compose-session-popup-results" role="listbox" aria-label="Sessions and agents"\n                                aria-activedescendant=${sessionPopupEntries[sessionPopupIndex]?.type === \'session\' ? `compose-session-option-${encodeURIComponent(sessionPopupEntries[sessionPopupIndex].chat.chat_jid)}` : undefined}>');
+ replace(`                                                role="menuitem"
+                                                class=\${\`compose-model-popup-item\${archived ? ' archived' : ''}`, `                                                id=\${\`compose-session-option-\${encodeURIComponent(chat.chat_jid)}\`}
+                                                role="option"
+                                                aria-selected=\${sessionPopupIndex === listIndex ? 'true' : 'false'}
+                                                class=\${\`compose-model-popup-item\${archived ? ' archived' : ''}`);
  replace('<div class="compose-session-section-label">${group.label}</div>','<div class="compose-session-section-heading" role="presentation">${group.label}</div>');
  const pin=`                                                \${!archived && chat.capabilities?.pin !== false && typeof onPinSession === 'function' && html\`
                                                     <button type="button" class="compose-model-popup-btn" disabled=\${Boolean(sessionMutationPending)}

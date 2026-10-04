@@ -18,7 +18,7 @@ async function setup(page, request, info) {
   const models = async () => { await dialogFor(page).getByRole('button', { name: 'Models', exact: true }).click(); await expect(dialogFor(page).getByLabel('Session model', { exact: true })).toBeVisible(); };
   const switchTo = async id => {
     await page.getByRole('button', { name: /Manage sessions for/ }).last().click();
-    await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('menuitem').click();
+    await page.locator(`[data-session-jid="gi:${id}"]`).getByRole('option').click();
     await expect.poll(() => page.evaluate(() => localStorage.getItem('gi_session_id'))).toBe(id);
   };
   return { a, b, input, open, models, switchTo, dialog: dialogFor(page) };

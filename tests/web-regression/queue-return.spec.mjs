@@ -91,11 +91,11 @@ test('Gi queue return after selection changes recovers only the origin',async({p
  await page.route(`**/api/sessions/${main.id}/media/${media.media.id}`,async route=>{const response=await route.fetch();held=true;await gate;await route.fulfill({response});});
  try{
   await input.fill('origin draft');await row.getByRole('button',{name:'Return queued message to editor'}).click();await expect.poll(()=>held).toBe(true);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('menuitem').click();
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('option').click();
   await input.fill('target draft');unblock();
   await expect.poll(async()=> (await stored()).recovery?.[queued.turn_id]?.state).toBe('removed');
   await expect(input).toHaveValue('target draft');await expect(page.getByRole('alert')).toHaveCount(0);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('option').click();
   await expect(input).toHaveValue('queued origin');await expect(page.locator('.compose-file-pill[title="queued.txt"]')).toBeVisible();
  }finally{unblock();release();}
 });

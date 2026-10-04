@@ -23,14 +23,13 @@ The last full run (2026-10-04, 13:24 UTC, commit `88e5b13`, 57.7 minutes) report
 |---:|---:|---:|---:|---:|---:|
 | 329 | 158 | 1 | 85 | 7 | 78 |
 
-The one failure was `@ux-chat-lifecycle-009` on webkit-phone only: `page.goto` stopped with "WebKit encountered an internal error" while opening the second session. It passed in the other five projects, in every earlier run, and in 10 of 10 repeats on webkit-phone afterwards. There are no other gate problems: every unpassed scenario is listed. Compared with the 09:18 UTC run on `019619c`, `@ux-compose-011` and `@ux-settings-004/016/018/019` now pass in all six projects, the 52 previously unlisted capability skips are listed, and `@cap-touch` is claimed (`@ux-mobile-001/004/005/006` pass; `@ux-mobile-002` is gi#42).
+The one failure was `@ux-chat-lifecycle-009` on webkit-phone only: `page.goto` stopped with "WebKit encountered an internal error" while opening the second session. It passed in the other five projects, in every earlier run, and in 10 of 10 repeats on webkit-phone afterwards, so it is recorded as a single browser-engine fault and is not listed in `skips.json`. There are no other gate problems: every unpassed scenario is listed. Compared with the 09:18 UTC run on `019619c`, `@ux-compose-011` and `@ux-settings-004/016/018/019` now pass in all six projects, the 52 previously unlisted capability skips are listed, and `@cap-touch` is claimed (`@ux-mobile-001/004/005/006` pass; `@ux-mobile-002` was gi#42). Since that run, the session popup is a listbox as in Piclaw 3.2.5 (gi#42 fixed) and `@ux-mobile-002` passes in a focused run.
 
 Scenarios Gi does not pass:
 
 | Reason | Scenarios | Detail |
 |---|---|---|
 | Known defect | `@ux-timeline-019`–`022`, `@ux-original-024` | Deleting a parent message has no visible-reply cascade confirmation ([gi#35](https://github.com/rcarmo/gi/issues/35)). |
-| Known defect | `@ux-mobile-002` | The session popup is a menu, not Piclaw's listbox ([gi#42](https://github.com/rcarmo/gi/issues/42)). |
 | Not implemented | `@ux-extra-001` | No `/btw` side conversation ([gi#40](https://github.com/rcarmo/gi/issues/40)). |
 | Capability absent | 84 scenarios | No in-browser editor, web terminal, VNC pane, `/theme` and `/tint` commands, plan sidebar, image annotation, text highlights, agent avatars, agent-posted Adaptive Cards or widgets, or Windows shell detection. |
 
@@ -43,7 +42,7 @@ Scenarios with no suite test have no shared browser evidence either way.
 | Runtime and distribution | Implemented: one pure-Go binary with embedded browser assets; SQLite/WAL sessions, messages, turn events and recovery; `go-ai` 1.0.1 inference. Interrupted turns are held for review, not replayed. | Piclaw extensions do not run in Gi. Bun is build-time only. |
 | Chat and streaming | Implemented: prompt admission, SSE status/draft/thought updates, reconnect reconciliation, bounded timeline paging and scoped search. The timeline follows new replies while pinned to the bottom and keeps the reading position otherwise. | Conversation-level shortcuts and full visual equivalence with Piclaw are not verified. |
 | Composer and drafts | Implemented: persistent browser-local text, media and references; failed-send recovery; file, folder and message references; upload progress, cancel and retry. Message references carry the numeric message row ID (`msg:42`). | Physical IME input is untested. |
-| Sessions | Partial: selection, child sessions, grouping, search and typeahead, pin, rename, archive (except the last main session), restore and per-session drafts. | The session popup uses menu semantics ([gi#42](https://github.com/rcarmo/gi/issues/42)). `/fork` and `/clone` create a new `@agentN` ([gi#20](https://github.com/rcarmo/gi/issues/20)). |
+| Sessions | Partial: selection, child sessions, grouping, search and typeahead, pin, rename, archive (except the last main session), restore and per-session drafts. | `/fork` and `/clone` create a new `@agentN` ([gi#20](https://github.com/rcarmo/gi/issues/20)). |
 | Models and context | Implemented: session-local model and thinking selection, registry and context metadata, fit checks, and Piclaw 3.2.5's context meter. The meter can start compaction and shows an estimate after one. | The thinking regression tests predate Pi's effective default level and need updating. |
 | Queue and Stop | Implemented: durable follow-ups, reorder and cancel, run-bound steering, return to draft and run-bound Stop with explicit Resume. See [contract](internal/web-stop-queue.md). | — |
 | Compaction | Implemented: automatic and manual compaction with model-written summaries (Pi's cut point and prompts), persisted context checkpoints, progress and cancel. See [compaction](internal/compaction.md). | — |

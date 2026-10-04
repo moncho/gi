@@ -92,8 +92,8 @@ test('Gi Quick Actions capability failure stays conservative and delayed respons
   try{const response=await route.fetch();held=true;await gate;await route.fulfill({response});}finally{inFlight--;}
  });
  try{
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child.id}"]`).getByRole('menuitem').click();await expect.poll(()=>held).toBe(true);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();release();await expect(input).toHaveValue('untouched draft');await expect(palette).toHaveCount(0);
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child.id}"]`).getByRole('option').click();await expect.poll(()=>held).toBe(true);
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('option').click();release();await expect(input).toHaveValue('untouched draft');await expect(palette).toHaveCount(0);
   await expect.poll(()=>inFlight).toBe(0);deny=true;
   await page.reload();await expect.poll(()=>denied).toBeGreaterThanOrEqual(2);await expect(input).toHaveValue('untouched draft');await open('m');await query.fill('');
   await expect(page.locator('.timeline-quick-actions-item-workspace')).toHaveCount(0);await expect(page.locator('.timeline-quick-actions-item-slash')).toHaveCount(0);await expect(page.locator('.timeline-quick-actions-item-agent')).not.toHaveCount(0);
@@ -135,7 +135,7 @@ test('Settings delivers target keys while native background popups remain suspen
  for(const background of ['model','session','palette','menu']){
   let popup,open;
   if(background==='model'){popup=page.getByRole('listbox',{name:'Models',exact:true});open=()=>page.getByRole('button',{name:'Open model picker',exact:true}).click();}
-  if(background==='session'){popup=page.getByRole('menu',{name:'Sessions and agents',exact:true});open=()=>page.getByRole('button',{name:/Manage sessions for/}).last().click();}
+  if(background==='session'){popup=page.getByRole('listbox', { name: 'Sessions and agents',exact:true});open=()=>page.getByRole('button',{name:/Manage sessions for/}).last().click();}
   if(background==='palette'){popup=f.palette;open=f.open;}
   if(background==='menu'){popup=page.locator('.timeline-menu-dropdown');open=()=>page.getByTestId('hamburger').click();}
   await open();await expect(popup).toBeVisible();
@@ -148,7 +148,7 @@ test('Settings delivers target keys while native background popups remain suspen
   await input.press('q');await input.press('ArrowDown');await input.press('Home');await f.frames();await expect(input).toHaveValue(original+'q');
   expect(await page.evaluate(()=>window.__modalTargetKeys)).toEqual([{key:'q',prevented:false},{key:'ArrowDown',prevented:false},{key:'Home',prevented:false}]);expect(await active()).toEqual(before);
   await input.dispatchEvent('keydown',{key:'Escape',isComposing:true});await expect(dialog).toBeVisible();await expect(input).toBeFocused();expect(await page.evaluate(()=>window.__modalTargetKeys.at(-1))).toEqual({key:'Escape',prevented:false});
-  const close=dialog.getByRole('button',{name:'Close settings',exact:true}),last=dialog.getByRole('button',{name:'Reload saved names',exact:true});await close.focus();await page.keyboard.press('Shift+Tab');await expect(last).toBeFocused();await page.keyboard.press('Tab');await expect(close).toBeFocused();expect(await active()).toEqual(before);
+  const close=dialog.getByRole('button',{name:'Close settings',exact:true}),last=dialog.getByRole('button',{name:'Increase Upload limit (MB)',exact:true});await close.focus();await page.keyboard.press('Shift+Tab');await expect(last).toBeFocused();await page.keyboard.press('Tab');await expect(close).toBeFocused();expect(await active()).toEqual(before);
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(popup).toBeVisible();expect(await active()).toEqual(before);
   await page.keyboard.press('Escape');await expect(popup).toHaveCount(0);await f.frames();await f.unchanged();
  }

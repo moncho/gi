@@ -43,7 +43,7 @@ test('stale thinking response cannot replace another session state or its draft'
   const gate=new Promise(r=>release=r);let held=false;
   await page.route(`**/api/sessions/${id}/model`,async r=>{if(r.request().method()==='PATCH'){const response=await r.fetch();held=true;await gate;return r.fulfill({response});}await r.continue();});
   await select.selectOption('high');await expect.poll(()=>held).toBe(true);if(page.viewportSize().width<=639)await page.getByRole('button',{name:'Close model picker',exact:true}).click();
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${other.id}"]`).getByRole('menuitem').click();await input.fill('target thinking draft');release();
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${other.id}"]`).getByRole('option').click();await input.fill('target thinking draft');release();
   await page.getByRole('button',{name:'Open model picker',exact:true}).click();await expect(select).toBeEnabled();await expect(select).toHaveValue('');await expect(input).toHaveValue('target thinking draft');
   expect((await(await request.get(`${env.origin}/api/sessions/${id}/model`)).json()).thinking_level).toBe('high');expect((await(await request.get(`${env.origin}/api/sessions/${other.id}/model`)).json()).thinking_level).toBe('');
  }finally{release?.();await env.close();}

@@ -98,10 +98,10 @@ test('Gi stale Steer reply after session switch cannot change target draft',asyn
   // End the original run; queued source is allowed to run normally before the
   // delayed request reaches the server. It must not steer any newer run.
   release();await expect.poll(async()=> (await turns()).find(t=>t.id===queued.turn_id).status,{timeout:15000}).toBe('completed');
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('menuitem').click();await input.fill('target draft');
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('option').click();await input.fill('target draft');
   const response=page.waitForResponse(r=>r.url().endsWith(`/api/sessions/${main.id}/queue/${queued.turn_id}/steer`));
   unblock();expect((await response).status()).toBe(409);await expect(input).toHaveValue('target draft');await expect(page.getByRole('alert')).toHaveCount(0);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();await expect(input).toHaveValue('origin draft');await expect(row).toHaveCount(0);
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('option').click();await expect(input).toHaveValue('origin draft');await expect(row).toHaveCount(0);
   expect((await turns()).find(t=>t.id===active.id).status).toBe('completed');
  }finally{unblock();release();}
 });

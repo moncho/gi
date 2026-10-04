@@ -11734,7 +11734,8 @@ ${mediaIds.map((id, index) => {
                                 disabled=${Boolean(sessionMutationPending)}
                                 onInput=${(event) => setSessionPopupQuery(event.currentTarget.value)}
                             />
-                            <div id="compose-session-results" class="compose-model-popup-menu compose-session-popup-results" role="menu" aria-label="Sessions and agents">
+                            <div id="compose-session-results" class="compose-model-popup-menu compose-session-popup-results" role="listbox" aria-label="Sessions and agents"
+                                aria-activedescendant=${sessionPopupEntries[sessionPopupIndex]?.type === "session" ? `compose-session-option-${encodeURIComponent(sessionPopupEntries[sessionPopupIndex].chat.chat_jid)}` : undefined}>
                                 ${orderedSessionChats.length === 0 && fe`
                                     <div class="compose-model-popup-empty" role="status">No sessions match your search.</div>
                                 `}
@@ -11759,7 +11760,9 @@ ${mediaIds.map((id, index) => {
 
                                             <button
                                                 type="button"
-                                                role="menuitem"
+                                                id=${`compose-session-option-${encodeURIComponent(chat.chat_jid)}`}
+                                                role="option"
+                                                aria-selected=${sessionPopupIndex === listIndex ? "true" : "false"}
                                                 class=${`compose-model-popup-item${archived ? " archived" : ""}${sessionPopupIndex === listIndex ? " active" : ""}`}
                                                 data-session-entry-key=${`session:${chat.chat_jid}`}
                                                 aria-label=${label}
@@ -23160,14 +23163,14 @@ function NumberStepper({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-d4f1kxtv.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-hdwy0yz8.js").then((module) => module.Appearance),
-  keyboard: () => import("./keyboard-6gr019v7.js").then((module) => module.KeyboardSection),
-  compaction: () => import("./gi-settings-compaction-neh0dj3x.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-52svs462.js").then((module) => module.GiSettingsProviders),
-  keychain: () => import("./gi-settings-keychain-ffy7gc1h.js").then((module) => module.GiSettingsKeychain),
-  environment: () => import("./gi-settings-environment-eva9yepk.js").then((module) => module.GiSettingsEnvironment),
-  authentication: () => import("./gi-settings-authentication-pdz5jmkm.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-xpdrb7s0.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-mth3fxcm.js").then((module) => module.Appearance),
+  keyboard: () => import("./keyboard-nb1hq4f1.js").then((module) => module.KeyboardSection),
+  compaction: () => import("./gi-settings-compaction-vqww21e4.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-j7jxcksm.js").then((module) => module.GiSettingsProviders),
+  keychain: () => import("./gi-settings-keychain-b0k4gfmn.js").then((module) => module.GiSettingsKeychain),
+  environment: () => import("./gi-settings-environment-69wfnf70.js").then((module) => module.GiSettingsEnvironment),
+  authentication: () => import("./gi-settings-authentication-8wzd72ps.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", keyboard: "Keyboard", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" };
 var components = new Map;

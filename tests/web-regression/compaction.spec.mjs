@@ -37,11 +37,11 @@ test('Gi compaction reload, late poll and session switch preserve ownership',asy
   // A native appended queue record triggers a refresh while compaction is held.
   const queued=await(await request.post(`/api/sessions/${main.id}/prompt`,{data:{prompt:'after compaction',intent:'queue',model:'ux-local/gate'}})).json();
   await expect.poll(()=>held).toBe(true);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('menuitem').click();await input.fill('target draft');
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('option').click();await input.fill('target draft');
   release();await expect.poll(async()=> (await turns()).find(t=>t.id===queued.turn_id).status,{timeout:15000}).toBe('completed');unblock();
   await expect(page.locator('.compose-context-pie')).not.toHaveClass(/is-compacting/);await expect(input).toHaveValue('target draft');await expect(page.getByRole('alert')).toHaveCount(0);
   await page.unroute(`**/api/sessions/${main.id}/activity`);
-  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();await expect(input).toHaveValue('preserved draft during compaction');await expect(page.locator('.compose-context-pie')).not.toHaveClass(/is-compacting/);
+  await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('option').click();await expect(input).toHaveValue('preserved draft during compaction');await expect(page.locator('.compose-context-pie')).not.toHaveClass(/is-compacting/);
   expect((await request.post(`/api/sessions/${main.id}/activity`,{data:{turn_id:turn.turn_id}})).status()).toBe(409);
  }finally{unblock();release();}
 });
@@ -179,7 +179,7 @@ test('@gi-settings-017 Late accepted compaction response stays with its closed o
  await page.route(`**/api/sessions/${main}/compaction`,async route=>{if(route.request().method()!=='POST')return route.continue();const response=await route.fetch();turnId=(await response.json()).turn_id;held=true;await gate;await route.fulfill({response});done();});
  try{
   await open();await dialog.getByRole('button',{name:'Compact now',exact:true}).click();await expect.poll(()=>held).toBe(true);
-  await page.keyboard.press('Escape');await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('menuitem').click();await input.fill('target compaction draft');
+  await page.keyboard.press('Escape');await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('option').click();await input.fill('target compaction draft');
   await open();await expect(dialog).toContainText(`gi:${child}`);await expect(dialog.getByTestId('compaction-capability')).toContainText('Not enough eligible context');
   unblock();await delivered;release();await expect.poll(async()=> (await turns()).find(t=>t.id===turnId)?.status).toBe('completed');
   await expect(dialog.getByTestId('settings-compaction-progress')).toHaveCount(0);await expect(dialog.getByRole('alert')).toHaveCount(0);await expect(dialog.getByRole('button',{name:'Compact now',exact:true})).toBeDisabled();
@@ -194,7 +194,7 @@ test('@gi-settings-017 A held compaction read cannot enable actions in a differe
  try{
   await page.keyboard.press('Control+,');await dialog.getByRole('button',{name:'Compaction',exact:true}).click();await expect.poll(()=>held).toBe(true);
   await expect(dialog.getByRole('button',{name:'Compact now',exact:true})).toBeDisabled();
-  await page.keyboard.press('Escape');await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('menuitem').click();await input.fill('held-read target draft');await open();
+  await page.keyboard.press('Escape');await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('option').click();await input.fill('held-read target draft');await open();
   unblock();await delivered;await expect(dialog.getByTestId('compaction-capability')).toContainText('Not enough eligible context');await expect(dialog.getByRole('button',{name:'Compact now',exact:true})).toBeDisabled();
   await page.keyboard.press('Escape');await expect(input).toHaveValue('held-read target draft');
  }finally{unblock();release();}

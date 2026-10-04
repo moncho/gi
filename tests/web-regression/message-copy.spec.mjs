@@ -61,7 +61,7 @@ test('Gi late clipboard denial after session switch does not enter another post 
  await page.reload();await expect(post).toBeVisible();
  await page.evaluate(()=>{window.__copyPending=false;document.execCommand=()=>false;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>new Promise((_,reject)=>{window.__copyPending=true;window.__rejectCopy=()=>reject(new Error('late denied'));})}});});
  await post.getByRole('button',{name:'Copy message',exact:true}).click();await expect.poll(()=>page.evaluate(()=>window.__copyPending)).toBe(true);
- await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('menuitem').click();await expect(input).toHaveValue('');await input.fill('child draft');
+ await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${child}"]`).getByRole('option').click();await expect(input).toHaveValue('');await input.fill('child draft');
  await page.evaluate(()=>window.__rejectCopy());await expect(page.getByRole('button',{name:'Copy failed',exact:true})).toHaveCount(0);await expect(input).toHaveValue('child draft');
- await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${session.id}"]`).getByRole('menuitem').click();await expect(input).toHaveValue('newer draft 世界');await expect(post.getByRole('button',{name:'Copy message',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${session.id}"]`).getByRole('option').click();await expect(input).toHaveValue('newer draft 世界');await expect(post.getByRole('button',{name:'Copy message',exact:true})).toBeVisible();
 });

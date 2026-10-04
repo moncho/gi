@@ -6,6 +6,10 @@
  * is present.
  */
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+
+// The bundled KaTeX must be the installed package, not a hand-kept version.
+const katexVersion = JSON.parse(readFileSync(new URL('../../node_modules/katex/package.json', import.meta.url), 'utf8')).version;
 import { BASE_URL, loadPageCollectingErrors, waitForAppShell } from './helpers';
 
 test.describe('App shell', () => {
@@ -191,7 +195,7 @@ test('KaTeX renderer uses matching local CSS and fonts', async ({ page, request 
     el.remove();
     return result;
   });
-  expect(result.version).toBe('0.18.7');
+  expect(result.version).toBe(katexVersion);
   expect(result.family).toContain('KaTeX_Main');
   expect(result.fonts).toBeGreaterThan(0);
 });
@@ -276,7 +280,7 @@ test('session typeahead moves native focus from a substring to a prefix without 
  await page.addInitScript(id=>localStorage.setItem('gi_session_id',id),main.id);await page.goto(BASE_URL);await waitForAppShell(page);
  const input=page.getByRole('textbox',{name:'Message (Enter to send, Shift+Enter for newline)...',exact:true});await input.fill('functional typeahead draft');
  const trigger=page.getByRole('button',{name:/Manage sessions for/}).last();await trigger.click();const search=page.getByRole('searchbox',{name:'Search sessions',exact:true});await search.fill(token);
- const row=(id:string)=>page.locator(`.compose-session-popup [data-session-jid="gi:${id}"]`).getByRole('menuitem');await row(substring.id).focus();await row(substring.id).press('a');await expect(row(prefix.id)).toBeFocused();await expect(row(prefix.id)).toHaveClass(/active/);await expect(search).toHaveValue(token);
+ const row=(id:string)=>page.locator(`.compose-session-popup [data-session-jid="gi:${id}"]`).getByRole('option');await row(substring.id).focus();await row(substring.id).press('a');await expect(row(prefix.id)).toBeFocused();await expect(row(prefix.id)).toHaveClass(/active/);await expect(search).toHaveValue(token);
  await page.keyboard.press('Enter');await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(prefix.id);await expect(input).toHaveValue('');await trigger.click();await row(main.id).click();await expect(input).toHaveValue('functional typeahead draft');expect((await(await request.get(`/api/sessions/${main.id}/turns`)).json()).turns||[]).toEqual([]);
 });
 

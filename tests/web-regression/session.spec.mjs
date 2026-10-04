@@ -14,7 +14,7 @@ test('Gi filtered picker keeps native text editing, Tab and keyboard selection',
   await page.goto('/');
   const trigger = page.getByRole('button', { name: /Manage sessions for/ }).last();
   const search = page.getByRole('searchbox', { name: 'Search sessions', exact: true });
-  const popup = page.getByRole('menu', { name: 'Sessions and agents', exact: true });
+  const popup = page.getByRole('listbox', { name: 'Sessions and agents', exact: true });
   await trigger.click();
   await search.pressSequentially(leafName);
   await expect(search).toHaveValue(leafName);
@@ -34,8 +34,8 @@ test('Gi filtered picker keeps native text editing, Tab and keyboard selection',
 
   await trigger.click();
   await search.fill(rootName);
-  const root = popup.getByRole('menuitem').filter({ hasText: `gi:${main.id}` });
-  await expect(popup.getByRole('menuitem')).toHaveCount(1);
+  const root = popup.getByRole('option').filter({ hasText: `gi:${main.id}` });
+  await expect(popup.getByRole('option')).toHaveCount(1);
   await expect(root).toBeVisible();
   await expect(search).toBeFocused();
   await page.keyboard.press('Tab');
@@ -225,22 +225,22 @@ test('@ux-session-006 Dismiss the session picker without choosing an entry', asy
   const input = page.getByRole('textbox', { name: inputName, exact: true });
   const triggers = page.getByRole('button', { name: /Manage sessions for/ });
   const search = page.getByRole('searchbox', { name: 'Search sessions', exact: true });
-  const popup = page.getByRole('menu', { name: 'Sessions and agents', exact: true });
+  const popup = page.getByRole('listbox', { name: 'Sessions and agents', exact: true });
   await expect(input).toBeVisible(); await input.fill('unsent dismissal draft');
   for (const trigger of [triggers.first(), triggers.last()]) {
     await trigger.click(); await expect(search).toBeFocused();
     await search.pressSequentially(other.id);
-    await expect(popup.getByRole('menuitem')).toHaveCount(1);
-    await expect(popup.getByRole('menuitem')).toContainText(other.id);
+    await expect(popup.getByRole('option')).toHaveCount(1);
+    await expect(popup.getByRole('option')).toContainText(other.id);
     await page.keyboard.press('Escape');
     await expect(search).toHaveCount(0); await expect(trigger).toBeFocused();
     await expect(input).toHaveValue('unsent dismissal draft');
     expect(await page.evaluate(() => localStorage.getItem('gi_session_id'))).toBe(main.id);
     await trigger.click(); await expect(search).toBeFocused();
     await expect(search).toHaveValue('');
-    await expect(popup.getByRole('menuitem').filter({ hasText: `gi:${other.id}` })).toBeVisible();
+    await expect(popup.getByRole('option').filter({ hasText: `gi:${other.id}` })).toBeVisible();
     // The dismissed search and typeahead must not preselect the old result.
-    await expect(popup.getByRole('group', { name: 'Current', exact: true }).getByRole('menuitem')).toContainText(main.id);
+    await expect(popup.getByRole('group', { name: 'Current', exact: true }).getByRole('option')).toContainText(main.id);
     await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
   }
   expect((await (await request.get(`/api/sessions/${main.id}/messages`)).json()).messages).toEqual(before);
@@ -272,17 +272,17 @@ test('@ux-session-002 Group picker entries using current native session metadata
     await page.addInitScript(id=>localStorage.setItem('gi_session_id',id),main);await page.goto('/');
     const input=page.getByRole('textbox',{name:inputName,exact:true});await expect(input).toBeVisible();await input.fill('grouping draft');
     await page.getByRole('button',{name:/Manage sessions for/}).last().click();
-    const popup=page.getByRole('menu',{name:'Sessions and agents',exact:true});
+    const popup=page.getByRole('listbox', { name: 'Sessions and agents',exact:true});
     const row=id=>popup.locator(`[data-session-jid="gi:${id}"]`);
     const groups=[['Current',main],['Pinned',pinned],['Active',active],['This session tree',tree],['Other sessions',other],['Archived',archived]];
     for(const [label,id] of groups){
       const group=popup.getByRole('group',{name:label,exact:true});await expect(group).toBeVisible();await expect(group.locator(`[data-session-jid="gi:${id}"]`)).toBeVisible();
-      await expect(row(id).getByRole('menuitem')).toContainText(id);
+      await expect(row(id).getByRole('option')).toContainText(id);
     }
     const order=await popup.getByRole('group').evaluateAll(elements=>elements.map(el=>el.getAttribute('aria-label')));
     expect(order).toEqual(groups.map(([label])=>label));
-    await expect(row(main).getByRole('menuitem')).toHaveAttribute('aria-current','true');
-    await expect(popup.locator('[role="menuitem"][aria-current="true"]')).toHaveCount(1);
+    await expect(row(main).getByRole('option')).toHaveAttribute('aria-current','true');
+    await expect(popup.locator('[role="option"][aria-current="true"]')).toHaveCount(1);
     await expect(row(active).getByRole('button',{name:/^Archive /})).toHaveCount(0);
     await expect(input).toHaveValue('grouping draft');expect(await page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(main);
   } finally {
@@ -365,7 +365,7 @@ test('@ux-session-005 Touch swipe keeps native carousel order and target/selecti
     await expect.poll(selected).toBe(following);
     expect(following).not.toBe(child);
     await page.getByRole('button',{name:/Manage sessions for/}).last().click();
-    await page.locator(`[data-session-jid="gi:${current}"]`).getByRole('menuitem').click();
+    await page.locator(`[data-session-jid="gi:${current}"]`).getByRole('option').click();
     await expect.poll(selected).toBe(current);
     await expect(input).toHaveValue('swipe draft');
   } finally {
@@ -404,7 +404,7 @@ test('@ux-mobile-001 Eligible timeline swipe selects adjacent session and wraps 
  expect(await page.evaluate(()=>window.getSelection()?.toString()||'')).toBe('');
  await swipe();await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(ordered[0]);
  await expect(input).toHaveValue('');
- await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${last}"]`).getByRole('menuitem').click();
+ await page.getByRole('button',{name:/Manage sessions for/}).last().click();await page.locator(`[data-session-jid="gi:${last}"]`).getByRole('option').click();
  await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(last);await expect(input).toHaveValue('wrap draft');
 });
 
@@ -496,16 +496,16 @@ test('@ux-session-003 Filter session entries using their search metadata', async
   const input=page.getByRole('textbox',{name:inputName,exact:true});await expect(input).toBeVisible();await input.fill('metadata search draft');
   const trigger=page.getByRole('button',{name:/Manage sessions for/}).last();await trigger.click();
   const search=page.getByRole('searchbox',{name:'Search sessions',exact:true});
-  const popup=page.getByRole('menu',{name:'Sessions and agents',exact:true});
+  const popup=page.getByRole('listbox', { name: 'Sessions and agents',exact:true});
   await expect(search).toBeFocused();
-  await search.fill(`GI:${sibling.id}`.toUpperCase());await expect(popup.getByRole('menuitem')).toHaveCount(1);
-  await expect(popup.getByRole('menuitem')).toContainText(sibling.id);
+  await search.fill(`GI:${sibling.id}`.toUpperCase());await expect(popup.getByRole('option')).toHaveCount(1);
+  await expect(popup.getByRole('option')).toContainText(sibling.id);
   // Session metadata is refreshed by the native 10-second safety poll. Wait
   // for the accepted external model change; do not fabricate picker records.
   await search.fill(`bootstrap ${sibling.id}`);
-  await expect(popup.getByRole('menuitem')).toHaveCount(1,{timeout:16000});
-  await expect(popup.getByRole('menuitem')).toContainText(sibling.id);
-  await search.fill(`filter ${token}`);await expect(popup.getByRole('menuitem')).toHaveCount(2);
+  await expect(popup.getByRole('option')).toHaveCount(1,{timeout:16000});
+  await expect(popup.getByRole('option')).toContainText(sibling.id);
+  await search.fill(`filter ${token}`);await expect(popup.getByRole('option')).toHaveCount(2);
   const active=popup.locator('[data-session-entry-key].active');
   await expect(active).toContainText(main.id);
   await search.press('ArrowDown');await expect(active).toContainText(sibling.id);
@@ -513,13 +513,13 @@ test('@ux-session-003 Filter session entries using their search metadata', async
   await search.press('ArrowUp');await expect(active).toContainText(sibling.id);
   expect(await page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(main.id);
   await expect(input).toHaveValue('metadata search draft');
-  await search.fill(outsider.id);await expect(popup.getByRole('menuitem')).toHaveCount(1);
-  await expect(popup.getByRole('menuitem')).toContainText(outsider.id);
+  await search.fill(outsider.id);await expect(popup.getByRole('option')).toHaveCount(1);
+  await expect(popup.getByRole('option')).toContainText(outsider.id);
   await expect(active).toContainText(outsider.id);
   await search.press('Enter');await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(outsider.id);
   await expect(input).toHaveValue('');
   await trigger.click();await search.fill(main.id);
-  await expect(popup.getByRole('menuitem')).toHaveCount(1);
+  await expect(popup.getByRole('option')).toHaveCount(1);
   await expect(active).toContainText(main.id);
   await search.press('Enter');
   await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(main.id);
@@ -553,7 +553,7 @@ test('@ux-session-001 Show the selected chat timeline and ignore a superseded re
   try {
     await expect.poll(()=>held,{timeout:15000}).toBe(true);
     const picker=page.getByRole('button',{name:/Manage sessions for/}).last();await picker.click();
-    await page.locator(`[data-session-jid="gi:${research.id}"]`).getByRole('menuitem').click();
+    await page.locator(`[data-session-jid="gi:${research.id}"]`).getByRole('option').click();
     await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(research.id);
     await expect.poll(()=>seen.includes(`/api/sessions/${research.id}/messages`)).toBe(true);
     await expect(researchPost).toBeVisible();await expect(mainPost).toHaveCount(0);
@@ -561,7 +561,7 @@ test('@ux-session-001 Show the selected chat timeline and ignore a superseded re
     release();await done;await page.unroute(pattern);
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     await expect(researchPost).toBeVisible();await expect(mainPost).toHaveCount(0);await expect(input).toHaveValue('research draft');
-    await picker.click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('menuitem').click();
+    await picker.click();await page.locator(`[data-session-jid="gi:${main.id}"]`).getByRole('option').click();
     await expect.poll(()=>page.evaluate(()=>localStorage.getItem('gi_session_id'))).toBe(main.id);
     await expect(mainPost).toBeVisible();await expect(researchPost).toHaveCount(0);await expect(input).toHaveValue('main draft');
     const response = await request.get(`/api/sessions/${research.id}/messages`);
@@ -673,13 +673,13 @@ test('@ux-mobile-004 Native pinned and active overlap yields one stable active-f
       const popup = page.locator('.compose-session-popup');
       await popup.getByRole('searchbox', { name: 'Search sessions', exact: true }).fill('');
       await expect(popup.locator('[data-session-jid]')).toHaveCount(sessions.length);
-      await expect(popup.locator(`[data-session-jid="gi:${id}"] [role="menuitem"]`)).toHaveAttribute('aria-current', 'true');
+      await expect(popup.locator(`[data-session-jid="gi:${id}"] [role="option"]`)).toHaveAttribute('aria-current', 'true');
       await page.keyboard.press('Escape'); await expect(popup).toHaveCount(0);
     };
     const pick = async id => {
       await page.getByRole('button', { name: /Manage sessions for/ }).last().click();
       const popup = page.locator('.compose-session-popup'); await popup.getByRole('searchbox', { name: 'Search sessions', exact: true }).fill(id);
-      const row = popup.locator(`[data-session-jid="gi:${id}"]`).getByRole('menuitem'); await expect(row).toBeVisible(); await row.click(); await expect.poll(selected).toBe(id); await ready(id);
+      const row = popup.locator(`[data-session-jid="gi:${id}"]`).getByRole('option'); await expect(row).toBeVisible(); await row.click(); await expect.poll(selected).toBe(id); await ready(id);
     };
     // Overlap is real persisted state: activeB belongs to pinned, active and
     // ordinary catalogue membership. Both directions must visit it once, never

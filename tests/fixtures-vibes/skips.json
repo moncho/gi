@@ -1,6 +1,6 @@
 {
   "runtime": "gi",
-  "fixturesVibes": "0874ea2465394eb3d18c212c351cb9bad881acda",
+  "fixturesVibes": "3f423f4202e9b2bedfa32f8ea489e3c7fffc219f",
   "skips": [
     { "id": "@ux-compaction-001", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
     { "id": "@ux-compaction-002", "reason": "environment-limit", "detail": "Compaction summarises natively without a model call; the fixture model cannot hold it in progress." },
@@ -59,6 +59,11 @@
       "reason": "known-defect",
       "detail": "Gi offers no cascade confirmation to cancel; clicking Delete removes the parent immediately.",
       "issue": "https://github.com/rcarmo/gi/issues/35"
-    }
+    },
+    { "id": "@ux-settings-004", "reason": "known-defect", "detail": "The Models section filter does not list fixture-2 in the Settings dialog.", "issue": "https://github.com/rcarmo/gi/issues/39" },
+    { "id": "@ux-settings-016", "reason": "known-defect", "detail": "Gi's Settings has no Keyboard section for filtering and editing shortcut bindings.", "issue": "https://github.com/rcarmo/gi/issues/39" },
+    { "id": "@ux-settings-018", "reason": "known-defect", "detail": "Gi's Appearance section has no theme presets, custom tint or output padding.", "issue": "https://github.com/rcarmo/gi/issues/39" },
+    { "id": "@ux-settings-019", "reason": "known-defect", "detail": "Gi's General section has no editable fields that autosave after a debounce.", "issue": "https://github.com/rcarmo/gi/issues/39" },
+    { "id": "@ux-settings-layering-004", "reason": "known-defect", "detail": "The workspace upload the scenario uses to check layering above the backdrop does not complete in Gi.", "issue": "https://github.com/rcarmo/gi/issues/39" }
   ]
 }

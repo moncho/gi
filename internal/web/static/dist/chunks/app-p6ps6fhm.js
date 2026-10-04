@@ -1419,7 +1419,7 @@ function projectConversationMessage(m, fallbackSession) {
     data: {
       type: user ? "user_message" : "agent_response",
       content,
-      thread_id: null,
+      thread_id: m.reply_to_id || null,
       agent_id: m.role === "system" ? SYSTEM_AGENT_ID : m.payload?.agent_id || (user ? null : "agent"),
       ...projectMessageMedia(m.payload, session),
       link_previews: projectLinkPreviews(m.payload),
@@ -23111,14 +23111,14 @@ function NumberStepper({
 
 // web/src/gi-settings-lazy.ts
 var loaders = {
-  models: () => import("./gi-settings-models-ed0dxsp2.js").then((module) => module.Models),
-  appearance: () => import("./gi-settings-appearance-gcktme1q.js").then((module) => module.Appearance),
-  keyboard: () => import("./keyboard-fraz0vgm.js").then((module) => module.KeyboardSection),
-  compaction: () => import("./gi-settings-compaction-ny24rms9.js").then((module) => module.GiSettingsCompaction),
-  providers: () => import("./gi-settings-providers-81jghrkn.js").then((module) => module.GiSettingsProviders),
-  keychain: () => import("./gi-settings-keychain-5c7b2jkc.js").then((module) => module.GiSettingsKeychain),
-  environment: () => import("./gi-settings-environment-cx26z6nz.js").then((module) => module.GiSettingsEnvironment),
-  authentication: () => import("./gi-settings-authentication-8cs5cnpt.js").then((module) => module.GiSettingsAuthentication)
+  models: () => import("./gi-settings-models-4bkmdc3v.js").then((module) => module.Models),
+  appearance: () => import("./gi-settings-appearance-ygqw7p8k.js").then((module) => module.Appearance),
+  keyboard: () => import("./keyboard-bzpwfg2b.js").then((module) => module.KeyboardSection),
+  compaction: () => import("./gi-settings-compaction-76h1nawv.js").then((module) => module.GiSettingsCompaction),
+  providers: () => import("./gi-settings-providers-2s3jxrbh.js").then((module) => module.GiSettingsProviders),
+  keychain: () => import("./gi-settings-keychain-d9hyxmwf.js").then((module) => module.GiSettingsKeychain),
+  environment: () => import("./gi-settings-environment-6rxwytrc.js").then((module) => module.GiSettingsEnvironment),
+  authentication: () => import("./gi-settings-authentication-2d5jv8nb.js").then((module) => module.GiSettingsAuthentication)
 };
 var labels = { models: "Models", appearance: "Appearance", keyboard: "Keyboard", compaction: "Compaction", providers: "Providers", keychain: "Keychain", environment: "Environment", authentication: "Authentication" };
 var components = new Map;
@@ -25045,30 +25045,38 @@ function GiApp() {
     const destination = post?.chat_jid;
     if (typeof id !== "string" || !destination?.startsWith("gi:") || !deletions.begin(id))
       return;
+    const replyCount = (posts || []).filter((row) => row.chat_jid === destination && row.id !== id && row.data?.thread_id === id).length;
+    if (replyCount > 0 && !confirm(`Delete this message and its ${replyCount} replies?`)) {
+      deletions.finish(id, false);
+      return;
+    }
     setDeleteError("");
     try {
+      let result;
       try {
-        await deletePost(id, false, destination);
+        result = await deletePost(id, replyCount > 0, destination);
       } catch (error) {
-        if (!String(error?.message || "").includes("Replies exist"))
+        if (replyCount > 0 || !String(error?.message || "").includes("Replies exist"))
           throw error;
         if (!confirm("Delete this message and its replies?")) {
           deletions.finish(id, false);
           return;
         }
-        await deletePost(id, true, destination);
+        result = await deletePost(id, true, destination);
       }
-      deletions.finish(id, true);
+      const deleted = Array.isArray(result?.ids) ? result.ids : result?.deleted || [id];
+      for (const removed of deleted)
+        deletions.finish(removed, true);
       const current = () => selection.isCurrent(owner) && searchView.isCurrent(view);
       if (!current())
         return;
       timelineRevision.invalidate();
       pageRequest.current = null;
       pageRefreshPending.current = false;
-      deletingAnimation.current.add(id);
+      deleted.forEach((removed) => deletingAnimation.current.add(removed));
       setRemovingPostIds(new Set(deletingAnimation.current));
       await new Promise((resolve) => setTimeout(resolve, 220));
-      deletingAnimation.current.delete(id);
+      deleted.forEach((removed) => deletingAnimation.current.delete(removed));
       if (!current())
         return;
       const root = timelineRef.current;

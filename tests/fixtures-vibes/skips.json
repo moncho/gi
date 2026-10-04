@@ -12,31 +12,6 @@
     { "id": "@ux-original-010", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario.", "issue": "https://github.com/rcarmo/gi/issues/48" },
     { "id": "@ux-original-011", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario.", "issue": "https://github.com/rcarmo/gi/issues/48" },
     { "id": "@ux-original-012", "reason": "capability-absent", "capability": "@cap-plan-sidebar", "detail": "Gi does not provide the editable Plan sidebar exercised by this scenario.", "issue": "https://github.com/rcarmo/gi/issues/48" },
-    { "id": "@ux-original-024", "reason": "known-defect", "detail": "Gi deletes the parent without a cascade confirmation, so cancellation cannot preserve it and confirmation cannot remove its visible replies.", "issue": "https://github.com/rcarmo/gi/issues/35" },
-    {
-      "id": "@ux-timeline-019",
-      "reason": "known-defect",
-      "detail": "Gi prompts on a synthetic Replies exist conflict, but the confirmed cascade retry cannot remove the reply because cascade deletion is not supported.",
-      "issue": "https://github.com/rcarmo/gi/issues/35"
-    },
-    {
-      "id": "@ux-timeline-020",
-      "reason": "known-defect",
-      "detail": "Gi deletes a parent without asking for cascade confirmation when visible replies exist.",
-      "issue": "https://github.com/rcarmo/gi/issues/35"
-    },
-    {
-      "id": "@ux-timeline-021",
-      "reason": "known-defect",
-      "detail": "Gi deletes only the parent and leaves the visible reply rather than cascading atomically.",
-      "issue": "https://github.com/rcarmo/gi/issues/35"
-    },
-    {
-      "id": "@ux-timeline-022",
-      "reason": "known-defect",
-      "detail": "Gi offers no cascade confirmation to cancel; clicking Delete removes the parent immediately.",
-      "issue": "https://github.com/rcarmo/gi/issues/35"
-    },
     { "id": "@ux-extra-001", "reason": "not-implemented", "detail": "No /btw side conversation yet (panel UI vendored, no backend).", "issue": "https://github.com/rcarmo/gi/issues/40" },
     { "id": "@ux-shell-009", "reason": "capability-absent", "capability": "@cap-editor", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor.", "issue": "https://github.com/rcarmo/gi/issues/46" },
     { "id": "@ux-workspace-010", "reason": "capability-absent", "capability": "@cap-editor", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor.", "issue": "https://github.com/rcarmo/gi/issues/46" },

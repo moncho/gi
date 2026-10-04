@@ -13,3 +13,15 @@ const conversationVisibleSQL = `role in ('user','assistant','system')
  and not (role='system' and json_extract(payload_json,'$.kind') is 'queue')
  and not (role='assistant' and json_extract(payload_json,'$.kind') is 'tool_calls'
  and trim(` + conversationContentSQL + `)='')`
+
+// conversationReplyToSQL projects an assistant reply onto the first user
+// message in its native turn. It does not change stored/model message data.
+// Session scoping is necessary because caller-provided turn IDs are not global.
+func conversationReplyToSQL(alias string) string {
+	return `case when ` + alias + `.role='assistant' and
+ json_type(` + alias + `.payload_json,'$.turn_id')='text' and
+ json_extract(` + alias + `.payload_json,'$.turn_id')!='' then coalesce((
+ select parent.id from messages parent where parent.session_id=` + alias + `.session_id
+ and parent.role='user' and json_extract(parent.payload_json,'$.turn_id')=json_extract(` + alias + `.payload_json,'$.turn_id')
+ order by parent.created_at,parent.id limit 1),'') else '' end`
+}

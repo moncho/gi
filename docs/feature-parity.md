@@ -25,11 +25,12 @@ The last full run (2026-10-04, 13:24 UTC, commit `88e5b13`, 57.7 minutes) report
 
 The one failure was `@ux-chat-lifecycle-009` on webkit-phone only: `page.goto` stopped with "WebKit encountered an internal error" while opening the second session. It passed in the other five projects, in every earlier run, and in 10 of 10 repeats on webkit-phone afterwards, so it is recorded as a single browser-engine fault and is not listed in `skips.json`. There are no other gate problems: every unpassed scenario is listed. Compared with the 09:18 UTC run on `019619c`, `@ux-compose-011` and `@ux-settings-004/016/018/019` now pass in all six projects, the 52 previously unlisted capability skips are listed, and `@cap-touch` is claimed (`@ux-mobile-001/004/005/006` pass; `@ux-mobile-002` was gi#42). Since that run, the session popup is a listbox as in Piclaw 3.2.5 (gi#42 fixed) and `@ux-mobile-002` passes in a focused run.
 
+Since that full run, focused checks also pass for `/theme` and `/tint` (90/90), agent-avatar manifest icons (54/54), and message deletion including confirmed cascade and cancel/retry (36/36). The corresponding skips have been removed. The table above remains the recorded full-run result.
+
 Scenarios Gi does not pass:
 
 | Reason | Scenarios | Detail |
 |---|---|---|
-| Known defect | `@ux-timeline-019`–`022`, `@ux-original-024` | Deleting a parent message has no visible-reply cascade confirmation ([gi#35](https://github.com/rcarmo/gi/issues/35)). |
 | Not implemented | `@ux-extra-001` | No `/btw` side conversation ([gi#40](https://github.com/rcarmo/gi/issues/40)). |
 | Capability absent | 67 scenarios | Planned, one issue each: web terminal ([gi#45](https://github.com/rcarmo/gi/issues/45)), CodeMirror editor with vim mode ([gi#46](https://github.com/rcarmo/gi/issues/46)), VNC ([gi#47](https://github.com/rcarmo/gi/issues/47)), Plan sidebar ([gi#48](https://github.com/rcarmo/gi/issues/48)), widgets ([gi#49](https://github.com/rcarmo/gi/issues/49)). Windows shell detection is built but not tested on Windows ([gi#50](https://github.com/rcarmo/gi/issues/50)). Image annotation, text highlights and Adaptive Cards were removed from the suite after `f796ddf`; their skips go at the next repin. |
 

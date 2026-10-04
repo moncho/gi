@@ -170,3 +170,101 @@ func commitDeleteTestCheckpoint(t *testing.T, s *Store, snapshot ContextSnapshot
 	}
 	return tx.Commit()
 }
+
+func TestDeleteMessageCascadeUsesTurnRootAndSessionIsolation(t *testing.T) {
+	s, path := deleteFixture(t)
+	defer s.Close()
+	ctx := t.Context()
+	for _, m := range []struct{ id, session, role, turn string }{
+		{"root", "a", "user", "shared-turn"}, {"answer", "a", "assistant", "shared-turn"},
+		{"steer", "a", "user", "shared-turn"}, {"later-answer", "a", "assistant", "shared-turn"},
+		{"notice", "a", "system", "shared-turn"}, {"other-answer", "b", "assistant", "shared-turn"},
+	} {
+		if err := s.AddMessage(ctx, m.id, m.session, m.role, m.id, map[string]any{"kind": "chat", "turn_id": m.turn}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Keep root ordering explicit even on platforms with a coarse clock.
+	if _, err := s.db.ExecContext(ctx, "update messages set created_at='2000-01-01T00:00:00Z' where id='root'"); err != nil {
+		t.Fatal(err)
+	}
+	page, err := s.PageConversationMessages(ctx, "a", "", "", 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range page.Messages {
+		if m.ID == "answer" || m.ID == "later-answer" {
+			if m.ReplyToID != "root" {
+				t.Fatalf("page reply %s: %q", m.ID, m.ReplyToID)
+			}
+		}
+	}
+	search, err := s.SearchConversationMessages(ctx, "a", "answer", "all", 50, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range search {
+		if m.SessionID == "a" && m.ReplyToID != "root" {
+			t.Fatalf("search: %+v", m)
+		}
+		if m.SessionID == "b" && m.ReplyToID != "" {
+			t.Fatalf("cross-session parent: %+v", m)
+		}
+	}
+	ids, err := s.DeleteMessageWithReplies(ctx, "a", "root", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) != 3 {
+		t.Fatalf("deleted: %v", ids)
+	}
+	// Keep steering user rows, notices, unrelated rows and other sessions intact.
+	rows, err := s.ListMessages(ctx, "a")
+	if err != nil || len(rows) != 6 {
+		t.Fatalf("remaining %d: %v", len(rows), err)
+	}
+	other, err := s.ListMessages(ctx, "b")
+	if err != nil || len(other) != 2 {
+		t.Fatal(other, err)
+	}
+	s.Close()
+	s, err = Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	for _, id := range ids {
+		if _, err = s.MessageReplyTo(ctx, "a", id); !errors.Is(err, sql.ErrNoRows) {
+			t.Fatalf("reopen %s: %v", id, err)
+		}
+	}
+}
+
+func TestCascadeDeleteRollsBackReplyFailure(t *testing.T) {
+	s, _ := deleteFixture(t)
+	defer s.Close()
+	ctx := t.Context()
+	s.AddMessage(ctx, "root", "a", "user", "prompt", map[string]any{"turn_id": "t"})
+	s.AddMessage(ctx, "reply", "a", "assistant", "answer", map[string]any{"turn_id": "t"})
+	before, err := s.ContextSnapshot(ctx, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = commitDeleteTestCheckpoint(t, s, before, "old summary", 2); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.ExecContext(ctx, `create trigger reject_reply before delete on messages when old.id='reply' begin select raise(abort,'injected reply failure'); end`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.DeleteMessageWithReplies(ctx, "a", "root", true); err == nil {
+		t.Fatal("expected rollback")
+	}
+	rows, _ := s.ListMessages(ctx, "a")
+	if len(rows) != 6 {
+		t.Fatalf("partial cascade: %d", len(rows))
+	}
+	cp, err := s.ContextSnapshot(ctx, "a")
+	if err != nil || cp.Summary != "old summary" {
+		t.Fatalf("checkpoint changed: %+v %v", cp, err)
+	}
+}

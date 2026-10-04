@@ -50,8 +50,10 @@ test('Gi search deletion targets the result origin and ignores a held pre-delete
  await page.route(pattern,async route=>{const response=await route.fetch();if(!held){held=true;await gate;await route.fulfill({response});delivered();}else await route.fulfill({response});});
  try{
   await search.press('Enter');await expect.poll(()=>held).toBe(true);
+  page.once('dialog',async d=>{expect(d.message()).toBe('Delete this message and its 1 replies?');await d.accept()});
   await childPost.getByRole('button',{name:'Delete message',exact:true}).click();await expect(childPost).toHaveCount(0);
   expect((await childPosts()).some(m=>m.id===childTarget.id)).toBe(false);
+  expect((await childPosts()).some(m=>m.payload?.turn_id===accepted.turn_id&&m.role==='assistant')).toBe(false);
   expect((await messages()).some(m=>m.id===target.id)).toBe(true);
   release();await done;await page.unroute(pattern);await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
   await expect(childPost).toHaveCount(0);await page.getByRole('button',{name:'Close search',exact:true}).click();await expect(input).toHaveValue('draft survives deletion');

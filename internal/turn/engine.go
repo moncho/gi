@@ -4561,11 +4561,13 @@ func (r *sessionRunner) broadcastPost(sessionID, turnID, msgID, content, agentID
 	if len(blocks) > 0 {
 		contentBlocks = blocks[0]
 	}
+	parentID, err := r.engine.store.MessageReplyTo(context.Background(), sessionID, msgID)
+	logutil.WarnIfErr("read live response reply identity", err)
 	r.engine.broadcast(sessionID, map[string]any{
 		"type": "new_post", "turn_id": turnID, "id": msgID, "chat_jid": "gi:" + sessionID,
 		"content": content, "timestamp": time.Now().UTC().Format(time.RFC3339Nano),
 		"sender": "agent", "is_bot_message": true,
-		"data": map[string]any{"type": "agent_response", "content": content, "agent_id": agentID, "content_blocks": contentBlocks},
+		"data": map[string]any{"type": "agent_response", "content": content, "agent_id": agentID, "content_blocks": contentBlocks, "thread_id": parentID},
 	})
 	r.engine.broadcast(sessionID, map[string]any{"type": "agent_response", "chat_jid": "gi:" + sessionID, "turn_id": turnID, "id": msgID})
 }

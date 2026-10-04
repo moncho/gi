@@ -39,6 +39,7 @@ type Session struct {
 type Message struct {
 	// DisplayRowID is an optional UI label; ID remains canonical.
 	DisplayRowID int64          `json:"display_row_id,omitempty"`
+	ReplyToID    string         `json:"reply_to_id,omitempty"`
 	ID           string         `json:"id"`
 	SessionID    string         `json:"session_id"`
 	Role         string         `json:"role"`

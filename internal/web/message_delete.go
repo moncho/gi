@@ -15,11 +15,12 @@ func (s *Server) handleMessageDelete(w http.ResponseWriter, r *http.Request, ses
 		w.WriteHeader(405)
 		return
 	}
-	if r.URL.Query().Has("cascade") && r.URL.Query().Get("cascade") != "false" {
-		writeJSON(w, 400, map[string]any{"error": "Cascade deletion is not supported"})
+	cascade := r.URL.Query().Get("cascade")
+	if cascade != "" && cascade != "false" && cascade != "true" {
+		writeJSON(w, 400, map[string]any{"error": "cascade must be true or false"})
 		return
 	}
-	err := s.store.DeleteMessage(r.Context(), sessionID, messageID)
+	ids, err := s.store.DeleteMessageWithReplies(r.Context(), sessionID, messageID, cascade == "true")
 	if err != nil {
 		code := 500
 		if errors.Is(err, sql.ErrNoRows) {
@@ -30,5 +31,5 @@ func (s *Server) handleMessageDelete(w http.ResponseWriter, r *http.Request, ses
 		writeJSON(w, code, map[string]any{"error": err.Error()})
 		return
 	}
-	writeJSON(w, 200, map[string]any{"ok": true, "deleted": []string{messageID}})
+	writeJSON(w, 200, map[string]any{"ok": true, "deleted": ids, "ids": ids})
 }

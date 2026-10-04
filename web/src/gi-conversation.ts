@@ -22,7 +22,7 @@ export function projectConversationMessage(m: any, fallbackSession?: string) {
         id:m.id,display_row_id:m.display_row_id,chat_jid:`gi:${session}`,timestamp:m.created_at,content,
         sender:user?'user':m.role==='system'?'system':'agent',
         is_from_me:user,is_bot_message:!user,
-        data:{type:user?'user_message':'agent_response',content,thread_id:null,
+        data:{type:user?'user_message':'agent_response',content,thread_id:m.reply_to_id||null,
             agent_id:m.role==='system'?SYSTEM_AGENT_ID:(m.payload?.agent_id||(user?null:'agent')),
             ...projectMessageMedia(m.payload,session),link_previews:projectLinkPreviews(m.payload),
             content_meta:null,kind:m.payload?.kind||null,source:m.payload?.source||null,clipped:m.payload?.clipped||false},

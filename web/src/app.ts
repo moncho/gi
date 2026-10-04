@@ -592,29 +592,36 @@ function GiApp() {
         const id=post?.id,owner=selection.capture(),view=searchView.capture();
         const destination=post?.chat_jid;
         if(typeof id!=='string'||!destination?.startsWith('gi:')||!deletions.begin(id))return;
+        const replyCount = (posts || []).filter(row => row.chat_jid === destination && row.id !== id && row.data?.thread_id === id).length;
+        if (replyCount > 0 && !confirm(`Delete this message and its ${replyCount} replies?`)) {
+            deletions.finish(id,false);
+            return;
+        }
         setDeleteError('');
         try {
+            let result;
             try {
-                await deletePost(id,false,destination);
+                result = await deletePost(id,replyCount > 0,destination);
             } catch (error) {
                 // A stale timeline may not show replies that the server knows about.
                 // Confirm only this specific conflict before retrying with cascade.
-                if (!String(error?.message || '').includes('Replies exist')) throw error;
+                if (replyCount > 0 || !String(error?.message || '').includes('Replies exist')) throw error;
                 if (!confirm('Delete this message and its replies?')) {
                     deletions.finish(id,false);
                     return;
                 }
-                await deletePost(id,true,destination);
+                result = await deletePost(id,true,destination);
             }
-            deletions.finish(id,true);
+            const deleted = Array.isArray(result?.ids) ? result.ids : (result?.deleted || [id]);
+            for (const removed of deleted) deletions.finish(removed,true);
             const current=()=>selection.isCurrent(owner)&&searchView.isCurrent(view);
             if(!current())return;
             // Fence in-flight reads; subsequent reads are filtered too. Do not
             // discard retained pages or reset the editor/reading anchor.
             timelineRevision.invalidate();pageRequest.current=null;pageRefreshPending.current=false;
-            deletingAnimation.current.add(id);setRemovingPostIds(new Set(deletingAnimation.current));
+            deleted.forEach(removed=>deletingAnimation.current.add(removed));setRemovingPostIds(new Set(deletingAnimation.current));
             await new Promise(resolve=>setTimeout(resolve,220));
-            deletingAnimation.current.delete(id);
+            deleted.forEach(removed=>deletingAnimation.current.delete(removed));
             if(!current())return;
             const root=timelineRef.current;
             scrollRestore.current={scope:owner,view,connection:connectionRevision.current,anchor:captureTimelineAnchor(root,readingAnchor.current),bottom:false};

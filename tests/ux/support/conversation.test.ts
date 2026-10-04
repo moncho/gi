@@ -46,3 +46,8 @@ test('running tool projects output and command independently; retry/wait never r
  expect(projectActivityStatus({status:'idle',tool})).toBeNull();
  expect(projectActivityStatus({status:'running',phase:'retry_wait',title:'Retrying',tool}).output_preview).toBeUndefined();
 });
+
+ test('assistant reply identity survives conversation projection',()=>{
+ const reply=projectConversationMessage({id:'reply',role:'assistant',session_id:'s',content:'answer',reply_to_id:'prompt',payload:{turn_id:'turn'}});
+ expect(reply.data.thread_id).toBe('prompt');
+ });

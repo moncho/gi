@@ -42,7 +42,7 @@ The dated entries below are a working log; their test counts describe the code a
   - Terminal: `gi` starts the TUI by default; Pi's chrome, colours, selectors, keybindings, `/settings`, `/tree`, `/fork`, `/clone`, `/scoped-models`, `/login`, `/logout`, `/compact [instructions]`, `/export`, `/import`, `/share`, custom themes; idle CPU from about 21% to 3%.
   - Runtime: model-written compaction summaries; interrupted turns held instead of replayed; Pi's structured system prompt and context files; `.gi` then `.pi` configuration lookup; Copilot model list and catalogue refresh; `go-ai` v1.0.1.
   - Web: Piclaw-format keychain with Settings → Keychain and shell substitution; shell environment overrides; Settings General (upload limit), Models filter, Appearance presets/tint/output padding, Keyboard; Piclaw 3.2.5 context meter; numeric message references; messages tool search/get.
-  - Tests: owner UX suite migrated onto fixtures-vibes, now pinned at `f796ddf`; unpassed scenarios listed in `tests/fixtures-vibes/skips.json` with issues.
+  - Tests: owner UX suite migrated onto fixtures-vibes, now pinned at `6e49ae1`; unpassed scenarios listed in `tests/fixtures-vibes/skips.json` with issues.
   - Removed Gi's copies of the shared Gherkin (`features/ux/`), the upstream snapshots and their provenance checks; the passkey ledger reads the suite's feature.
   - Retired the Piclaw 3.2.4 pins: the vendored SVG and status sources are re-pinned to 3.2.5 (only the status panel's `i18n.ts` changed), and the 3.2.4 oracle probes and their `test-piclaw-*` targets are removed.
 
@@ -908,3 +908,5 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 ### Follow-up — workspace tool path resolution
 
 - [x] In a separate change (`ffbafe19`, `fix/tool-absolute-paths`; not merged), stop `read`/shared tool resolution from silently joining absolute paths to the workspace root. Accept in-workspace absolute paths or clearly reject unsupported paths; test outside-workspace paths, traversal and symlink escapes, and update the tool contract. Reported while profiling tables; deliberately excluded from renderer changes.
+
+- [x] 2026-10-04: consume the front-end only from fixtures-vibes `ui/gi` at `6e49ae1`; backend imports its embedded assets. Removed 14 retired card/highlight/annotation skips. Build, hook checks, local/moved adapter tests, Go suite/vet, functional suite (142 passed, 11 skipped), session-panel (12/12) and cross-builds pass. Full gate is run separately at this pin.

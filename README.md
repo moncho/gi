@@ -168,7 +168,7 @@ The current TUI uses `go-tui`, supports terminal resize handling through the run
 
 ## Web UI
 
-The web UI reuses pinned Piclaw component sources and is maintained in rcarmo/fixtures-vibes (`ui/gi`), which Gi consumes through its `references/fixtures-vibes` submodule. It supplies `web/src/api.ts`, `web/src/app.ts`, auth/Settings modules and CSS overrides. Build-time patches in `scripts/patch-*.mjs` change selected bundled behaviour without editing the supplied components; each patch fails the build if its anchor text changes.
+The web UI reuses pinned Piclaw component sources and is maintained in rcarmo/fixtures-vibes (`ui/gi`), which Gi consumes through its `references/fixtures-vibes` submodule. It supplies `web/src/api.ts`, `web/src/app.ts`, auth/Settings modules and CSS overrides. Build-time patches in `references/fixtures-vibes/ui/gi/scripts/patch-*.mjs` change selected bundled behaviour without editing the supplied components; each patch fails the build if its anchor text changes.
 
 Workspace tabs are read-only previews with [retained conversation return and keyboard/touch navigation](docs/internal/workspace-tab-transitions.md). Editable documents, dirty-buffer workflows, popouts and docking are not implemented. Composer padding and picker outer bounds follow a [pinned Classic reference](docs/internal/picker-geometry.md), with a documented narrow-desktop containment correction. Session-strip/catalogue structure and full visual styling still differ from Piclaw. The reproduced startup/new-chat focus and loading-retry failures are fixed and covered by [first-Return journeys](docs/internal/startup-return-journeys.md); broader keyboard and visual parity remains open. The [UX audit][audit] records those gaps and the limits of existing tests.
 
@@ -229,7 +229,7 @@ make check      # standard verification suite
 
 The `test-ux` target creates a fresh database, workspace and configuration for each run. Gi-specific race and recovery probes live in `tests/web-regression/`; see [the browser suite guide][ux].
 
-Browser compliance uses the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite, checked out at `references/fixtures-vibes` and pinned to `f796ddf` (Piclaw 3.2.5 scenarios). `make fixtures-vibes` runs it on Chromium and WebKit at phone, tablet and desktop sizes, then applies its report gate. `tests/fixtures-vibes/profile.json` declares the capabilities Gi claims; `tests/fixtures-vibes/skips.json` lists each absent capability and each known defect with its issue. Release-tag CI runs this gate separately from the native and Gi-specific browser checks. Gi keeps no copy of the shared Gherkin.
+Browser compliance uses the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite, checked out at `references/fixtures-vibes` and pinned to `6e49ae1` (Piclaw 3.2.5 scenarios). `make fixtures-vibes` runs it on Chromium and WebKit at phone, tablet and desktop sizes, then applies its report gate. `tests/fixtures-vibes/profile.json` declares the capabilities Gi claims; `tests/fixtures-vibes/skips.json` lists each absent capability and each known defect with its issue. Release-tag CI runs this gate separately from the native and Gi-specific browser checks. Gi keeps no copy of the shared Gherkin.
 
 The `test-tui-smoke` target launches `gi` inside tmux, captures the pane, submits input, verifies blur handling, exercises transcript scrolling keys, resizes the terminal, and writes pane captures plus session artifacts under `test-results/tui-smoke/`. Mouse click focus is covered in unit tests.
 

@@ -1,6 +1,6 @@
 # Gi browser tests
 
-Browser compliance uses the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite, checked out at `references/fixtures-vibes` and pinned to **`f796ddf`** (Piclaw 3.2.5 scenarios). Gi keeps no second scenario catalogue or parity report.
+Browser compliance uses the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite, checked out at `references/fixtures-vibes` and pinned to **`6e49ae1`** (Piclaw 3.2.5 scenarios). Gi keeps no second scenario catalogue or parity report.
 
 ```sh
 make fixtures-vibes       # Chromium/WebKit × phone/tablet/desktop, zero retries, report gate
@@ -37,3 +37,7 @@ Two Piclaw sources are vendored verbatim and pinned to the installed 3.2.5 relea
 ## Run hygiene
 
 Run browser tests with `PI_CODING_AGENT_DIR` and `GI_CODING_AGENT_DIR` unset, so the operator's Pi settings cannot change the results. A full fixtures-vibes run takes about 75 minutes on the development host.
+
+## Shared front-end module
+
+Gi imports its embedded UI from `references/fixtures-vibes/ui/gi`. Front-end sources, build scripts and source-dependent unit tests are maintained there by the fixtures-vibes owner. `make build-web` delegates to that module; `make test-web-adapters` runs both the retained backend adapter tests and the module's front-end tests. Browser integration tests remain in Gi and run against its backend.

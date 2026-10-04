@@ -15,7 +15,7 @@ Gi shares pinned Piclaw browser components and Pi/Piclaw configuration files, bu
 
 ## Shared browser compliance
 
-`make fixtures-vibes` runs the suite pinned at `references/fixtures-vibes` (`f796ddf`) on Chromium and WebKit at phone, tablet and desktop sizes. `tests/fixtures-vibes/profile.json` declares the capabilities Gi claims, and `tests/fixtures-vibes/skips.json` lists every scenario Gi does not pass, with its reason. A failure that is not listed, a capability skip that is not listed, or a listed scenario that now passes fails the report gate.
+`make fixtures-vibes` runs the suite pinned at `references/fixtures-vibes` (`6e49ae1`) on Chromium and WebKit at phone, tablet and desktop sizes. `tests/fixtures-vibes/profile.json` declares the capabilities Gi claims, and `tests/fixtures-vibes/skips.json` lists every scenario Gi does not pass, with its reason. A failure that is not listed, a capability skip that is not listed, or a listed scenario that now passes fails the report gate.
 
 The last full run (2026-10-04, 13:24 UTC, commit `88e5b13`, 57.7 minutes) reported:
 
@@ -32,7 +32,7 @@ Scenarios Gi does not pass:
 | Reason | Scenarios | Detail |
 |---|---|---|
 | Not implemented | `@ux-extra-001` | No `/btw` side conversation ([gi#40](https://github.com/rcarmo/gi/issues/40)). |
-| Capability absent | 67 scenarios | Planned, one issue each: web terminal ([gi#45](https://github.com/rcarmo/gi/issues/45)), CodeMirror editor with vim mode ([gi#46](https://github.com/rcarmo/gi/issues/46)), VNC ([gi#47](https://github.com/rcarmo/gi/issues/47)), Plan sidebar ([gi#48](https://github.com/rcarmo/gi/issues/48)), widgets ([gi#49](https://github.com/rcarmo/gi/issues/49)). Windows shell detection is built but not tested on Windows ([gi#50](https://github.com/rcarmo/gi/issues/50)). Image annotation, text highlights and Adaptive Cards were removed from the suite after `f796ddf`; their skips go at the next repin. |
+| Capability absent | 53 scenarios | Planned, one issue each: web terminal ([gi#45](https://github.com/rcarmo/gi/issues/45)), CodeMirror editor with vim mode ([gi#46](https://github.com/rcarmo/gi/issues/46)), VNC ([gi#47](https://github.com/rcarmo/gi/issues/47)), Plan sidebar ([gi#48](https://github.com/rcarmo/gi/issues/48)), widgets ([gi#49](https://github.com/rcarmo/gi/issues/49)). Windows shell detection is built but not tested on Windows ([gi#50](https://github.com/rcarmo/gi/issues/50)). Adaptive Cards, image annotation and text highlights are removed from the pinned suite; their 14 skip entries are gone. |
 
 Scenarios with no suite test have no shared browser evidence either way.
 
@@ -112,3 +112,9 @@ Dated plans and audits keep their original scope: the [UX audit][audit], the [fu
 [media]: internal/tui-clipboard-media.md
 [checklist]: checklists/implementation.md
 [plan]: internal/full-web-tui-parity-plan.md
+
+## Shared front-end ownership
+
+The front-end sources and embedded assets live in `references/fixtures-vibes/ui/gi`. Gi imports `giui.Static` and `giui.ThemeCatalogue` from that module. Front-end changes are made upstream and arrive through submodule updates. Go backends, integration tests and publication remain in Gi.
+
+Widget and Plan backends are implemented ([widgets](internal/dashboard-widgets.md), [Plan](internal/session-plan.md)); the capabilities stay unclaimed until their front-end browser acceptance passes.

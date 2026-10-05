@@ -39,8 +39,8 @@ jobs:
       - name: Pixel evidence helper tests
         run: make test-pixel-helpers test-compose-surface-helpers test-model-panel-helpers test-session-panel-helpers test-voice-input-helpers test-notification-helpers test-context-control-helpers
 
-      - name: Go test
-        run: go test ./...
+      - name: Go test with CPU and allocation analysis
+        run: make test
 
       - name: Durable media, queue and held-retry race checks
         run: make test-tui-media-journal test-tui-text-journal test-terminal-queue test-held-retry test-tui-submit-guards test-concurrent-session-submit
@@ -55,7 +55,15 @@ jobs:
         run: make test-active-steering
 
       - name: Go vet
-        run: go vet ./...
+        run: make vet
+
+      - name: Upload test profiles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gi-test-profiles
+          path: ~/.cache/gi-test-profile/
+          if-no-files-found: warn
 
   classic-compliance:
     name: Shared Classic compliance

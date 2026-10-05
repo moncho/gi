@@ -257,7 +257,14 @@ bun-checks:
 
 check: test vet build-web bun-checks test-web-adapters test-ux
 
-.PHONY: fixtures-vibes
+.PHONY: fixtures-vibes fixtures-vibes-focused
+# Focused acceptance does not replace full-run compliance reports.
+fixtures-vibes-focused: build-web
+	@test -n "$(FIXTURES_SPEC_ARGS)" || { echo 'FIXTURES_SPEC_ARGS is required for a focused run'; exit 2; }
+	mkdir -p $(BIN_DIR)
+	$(GO) build -tags fixtures_vibes -o $(BIN_DIR)/gi-fixtures-vibes ./cmd/gi
+	cd references/fixtures-vibes && GI_FIXTURE_BIN=$(abspath $(BIN_DIR)/gi-fixtures-vibes) FIXTURES_PROFILE=$(CURDIR)/tests/fixtures-vibes/profile.json node node_modules/@playwright/test/cli.js test -c suite/playwright.config.ts $(FIXTURES_SPEC_ARGS) --reporter=line
+
 .PHONY: fixtures-vibes-report
 fixtures-vibes-report:
 	$(MAKE) -C references/fixtures-vibes report PROFILE=$(CURDIR)/tests/fixtures-vibes/profile.json SHELL='$(SHELL)'
@@ -297,7 +304,7 @@ test-instance-stop:
 
 test-ux: playwright-browsers test-instance-start $(TESTPROFILE)
 	mkdir -p $(TEST_RESULTS)
-	GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(TESTPROFILE) run -name test-ux -- $(PLAYWRIGHT) test tests/functional/ --reporter=line --output=$(TEST_RESULTS)/playwright $(PLAYWRIGHT_ARGS); \
+	GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/ --reporter=line --output=$(TEST_RESULTS)/playwright $(PLAYWRIGHT_ARGS); \
 	rc=$$?; \
 	$(MAKE) --no-print-directory test-instance-stop; \
 	exit $$rc
@@ -641,7 +648,7 @@ test-tui-session-picker: build
 
 test-tui-smoke: build $(TESTPROFILE)
 	chmod +x scripts/test-tui-smoke.sh
-	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) $(TESTPROFILE) run -name tui-smoke -- scripts/test-tui-smoke.sh
+	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-smoke TEST_DIR=$(abspath $(TUI_TEST_DIR)) scripts/test-tui-smoke.sh
 
 test-tui-gherkin: build test-tui-markdown test-tui-inline-prose test-tui-gherkin-features
 
@@ -650,7 +657,7 @@ test-tui-gherkin: build test-tui-markdown test-tui-inline-prose test-tui-gherkin
 .PHONY: test-tui-gherkin-features
 test-tui-gherkin-features: build $(TESTPROFILE)
 	chmod +x scripts/test-tui-gherkin.sh
-	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin $(if $(FEATURE_DIR),FEATURE_DIR=$(abspath $(FEATURE_DIR))) $(TESTPROFILE) run -name tui-gherkin$(if $(FEATURE_DIR),-subset) -- scripts/test-tui-gherkin.sh
+	ARTIFACT_DIR=$(abspath $(TEST_RESULTS))/tui-gherkin TEST_DIR=$(abspath $(TUI_TEST_DIR))-gherkin $(if $(FEATURE_DIR),FEATURE_DIR=$(abspath $(FEATURE_DIR))) scripts/test-tui-gherkin.sh
 
 # ── Cleanup ─────────────────────────────────────────────────────────────
 

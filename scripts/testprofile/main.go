@@ -91,6 +91,7 @@ func main() {
 func runMode(args []string) int {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 	name := fs.String("name", "suite", "suite name (history key)")
+	key := fs.String("key", "", "selection key for a separate comparison baseline")
 	dir := fs.String("dir", defaultDir(), "report directory")
 	_ = fs.Parse(args)
 	cmdArgs := fs.Args()
@@ -98,14 +99,20 @@ func runMode(args []string) int {
 		fmt.Fprintln(os.Stderr, "testprofile run: no command")
 		return 2
 	}
-	rep := &report{Name: *name, Started: time.Now()}
+	reportName := *name
+	if *key != "" {
+		h := fnv.New32a()
+		_, _ = h.Write([]byte(*key))
+		reportName = fmt.Sprintf("%s-%08x", *name, h.Sum32())
+	}
+	rep := &report{Name: reportName, Started: time.Now()}
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	err := cmd.Run()
 	rep.Wall = time.Since(rep.Started).Seconds()
 	rep.CPU, rep.PeakRSS = childrenUsage()
 	rep.ExitCode = exitCode(err)
-	prev := lastReport(*dir, *name)
+	prev := lastReport(*dir, reportName)
 	save(*dir, rep)
 	fmt.Printf("\n── %s profile ── wall %s · cpu %s · peak RSS %s%s\n", *name, dur(rep.Wall), dur(rep.CPU), mb(rep.PeakRSS), compareTotals(prev, rep))
 	return rep.ExitCode

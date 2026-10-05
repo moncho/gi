@@ -107,6 +107,7 @@ TEST_PROFILE_DIR ?= $(HOME)/.cache/gi-test-profile
 export GI_TEST_PROFILE_DIR := $(TEST_PROFILE_DIR)
 export GO
 TESTPROFILE := $(abspath $(BIN_DIR)/testprofile)
+_PROFILE_SELECTION = $(strip $(if $(filter-out ./...,$(TEST_PKGS)),pkgs=$(TEST_PKGS)) $(if $(TEST_RUN),run=$(TEST_RUN)) $(if $(PLAYWRIGHT_ARGS),playwright=$(PLAYWRIGHT_ARGS)) $(if $(FIXTURES_SPEC_ARGS),fixtures=$(FIXTURES_SPEC_ARGS)) $(if $(UX_PARITY_ARGS),ux=$(UX_PARITY_ARGS)) $(if $(FEATURE_DIR),features=$(FEATURE_DIR)))
 # Indirection keeps make -n from executing the profiling wrapper as a
 # recursive-make recipe and recording a dry run as a passing baseline.
 PROFILE_MAKE := $(MAKE)
@@ -123,7 +124,7 @@ ifeq ($(GI_TEST_PROFILE_ACTIVE),)
 # Dispatch all requested goals so mixed invocations (build test) still work.
 .PHONY: $(MAKECMDGOALS)
 $(MAKECMDGOALS): $(TESTPROFILE)
-	$(TESTPROFILE) run -name '$@' -- $(PROFILE_MAKE) --no-print-directory GI_TEST_PROFILE_ACTIVE=1 $@
+	$(TESTPROFILE) run -name '$@' $(if $(_PROFILE_SELECTION),-key '$(_PROFILE_SELECTION)') -- $(PROFILE_MAKE) --no-print-directory GI_TEST_PROFILE_ACTIVE=1 $@
 else
 include scripts/test-targets.mk
 endif

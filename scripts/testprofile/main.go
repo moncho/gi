@@ -1,4 +1,4 @@
-// Command testprofile runs gi's volume test runs with profiling and
+// Command testprofile runs gi's test runs with profiling and
 // analysis, so the suites stay lean: every run reports wall and CPU time,
 // peak memory, the slowest packages and tests, CPU and allocation hot spots,
 // and what got slower since the previous run. Reports and a history log are
@@ -12,12 +12,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
-	"hash/fnv"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"syscall"
@@ -26,7 +27,7 @@ import (
 
 type pkgResult struct {
 	Package    string             `json:"package"`
-	Status     string             `json:"status"` // ok, fail, skip
+	Status     string             `json:"status"`    // ok, fail, skip
 	Elapsed    float64            `json:"elapsed_s"` // wall, build included
 	TestTime   float64            `json:"test_s"`    // reported by go test
 	CPU        float64            `json:"cpu_s"`     // user+sys of go and the test binary
@@ -53,7 +54,11 @@ func childrenUsage() (cpu float64, maxRSS int64) {
 		return 0, 0
 	}
 	tv := func(t syscall.Timeval) float64 { return float64(t.Sec) + float64(t.Usec)/1e6 }
-	return tv(ru.Utime) + tv(ru.Stime), int64(ru.Maxrss)
+	rss := int64(ru.Maxrss)
+	if runtime.GOOS == "darwin" { // Darwin reports bytes; Linux reports KiB.
+		rss /= 1024
+	}
+	return tv(ru.Utime) + tv(ru.Stime), rss
 }
 
 func defaultDir() string {
@@ -74,6 +79,8 @@ func main() {
 		os.Exit(goMode(os.Args[2:]))
 	case "run":
 		os.Exit(runMode(os.Args[2:]))
+	case "gotest":
+		os.Exit(goTestMode(os.Args[2:]))
 	}
 	fmt.Fprintln(os.Stderr, "usage: testprofile go|run ...")
 	os.Exit(2)
@@ -130,7 +137,52 @@ func goMode(args []string) int {
 	dir := fs.String("dir", defaultDir(), "report directory")
 	hot := fs.Int("hot", 3, "packages to show CPU/allocation hot spots for")
 	_ = fs.Parse(args)
-	patterns := fs.Args()
+	return profileGo(fs.Args(), *run, nil, *dir, *hot)
+}
+
+// goTestMode accepts the go test flags used by focused Makefile targets.
+// Profiles and uncached execution are added without dropping race/repeat/bench flags.
+func goTestMode(args []string) int {
+	patterns, run, flags, err := splitGoTestArgs(args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	return profileGo(patterns, run, flags, defaultDir(), 3)
+}
+
+func splitGoTestArgs(args []string) (patterns []string, run string, flags []string, err error) {
+	values := map[string]bool{"-run": true, "-count": true, "-bench": true, "-benchtime": true, "-timeout": true, "-parallel": true, "-tags": true}
+	bools := map[string]bool{"-race": true, "-v": true, "-benchmem": true, "-short": true}
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if !strings.HasPrefix(a, "-") {
+			patterns = append(patterns, a)
+			continue
+		}
+		key, value, hasValue := strings.Cut(a, "=")
+		if !values[key] && !bools[key] {
+			return nil, "", nil, fmt.Errorf("testprofile gotest: unsupported flag %s", key)
+		}
+		if values[key] && !hasValue {
+			i++
+			if i == len(args) {
+				return nil, "", nil, fmt.Errorf("%s needs a value", key)
+			}
+			value = args[i]
+		}
+		if key == "-run" {
+			run = value
+		} else if values[key] || hasValue {
+			flags = append(flags, key+"="+value)
+		} else {
+			flags = append(flags, a)
+		}
+	}
+	return
+}
+
+func profileGo(patterns []string, run string, flags []string, dir string, hot int) int {
 	if len(patterns) == 0 {
 		patterns = []string{"./..."}
 	}
@@ -143,15 +195,15 @@ func goMode(args []string) int {
 		fmt.Fprintln(os.Stderr, "go list:", err)
 		return 1
 	}
-	// Baselines are per package set: the full suite and each subset.
+	// Filters/repeats/benchmarks need separate baselines from the full suite.
 	name := "go"
-	if strings.Join(patterns, " ") != "./..." {
+	if strings.Join(patterns, " ") != "./..." || run != "" || len(flags) != 0 {
 		h := fnv.New32a()
-		_, _ = h.Write([]byte(strings.Join(patterns, " ")))
+		_, _ = h.Write([]byte(strings.Join(patterns, " ") + "\x00" + run + "\x00" + strings.Join(flags, " ")))
 		name = fmt.Sprintf("go-subset-%08x", h.Sum32())
 	}
 	rep := &report{Name: name, Started: time.Now()}
-	runDir := filepath.Join(*dir, "go-"+rep.Started.Format("20060102-150405"))
+	runDir := filepath.Join(dir, "go-"+rep.Started.Format("20060102-150405"))
 	_ = os.MkdirAll(runDir, 0o755)
 	var lastCPU float64
 	var lastRSS int64
@@ -162,15 +214,19 @@ func goMode(args []string) int {
 		_ = os.MkdirAll(pdir, 0o755)
 		res.CPUProfile, res.MemProfile = filepath.Join(pdir, "cpu.pprof"), filepath.Join(pdir, "mem.pprof")
 		bin := filepath.Join(pdir, "pkg.test")
-		testArgs := []string{"test", "-json", "-cpuprofile", res.CPUProfile, "-memprofile", res.MemProfile, "-o", bin}
-		if *run != "" {
-			testArgs = append(testArgs, "-run", *run)
+		testArgs := []string{"test", "-json", "-count=1", "-cpuprofile", res.CPUProfile, "-memprofile", res.MemProfile, "-o", bin}
+		testArgs = append(testArgs, flags...)
+		if run != "" {
+			testArgs = append(testArgs, "-run", run)
 		}
 		start := time.Now()
 		cmd := exec.Command(gobin, append(testArgs, pkg)...)
 		cmd.Stderr = os.Stderr
 		out, _ := cmd.StdoutPipe()
-		_ = cmd.Start()
+		if err := cmd.Start(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
 		output := consume(out, res)
 		err := cmd.Wait()
 		_ = os.Remove(bin) // profiles carry their symbols; binaries are large
@@ -197,10 +253,10 @@ func goMode(args []string) int {
 	}
 	rep.Wall = time.Since(rep.Started).Seconds()
 	rep.CPU, rep.PeakRSS = childrenUsage()
-	prev := lastReport(*dir, rep.Name)
-	save(*dir, rep)
-	analyze(rep, prev, *hot, runDir)
-	pruneRuns(*dir, "go-", 5)
+	prev := lastReport(dir, rep.Name)
+	save(dir, rep)
+	analyze(rep, prev, hot, runDir)
+	pruneRuns(dir, "go-", 5)
 	return rep.ExitCode
 }
 

@@ -52,11 +52,11 @@ Details:
 
 On the long real session, idle CPU went from about 21% to about 1%.
 
-## Volume test runs (scripts/testprofile)
+## Every test run (scripts/testprofile)
 
-Volume test runs are profiled and analysed so the suites stay lean (AGENTS.md):
+Every test run is profiled and analysed (AGENTS.md), including focused runs and fixture report checks. The Makefile dispatches test goals through a profiled recursive make, so prerequisites, server startup and cleanup are measured too. `GI_TEST_PROFILE_ACTIVE` is an internal recursion marker, not a user override. `TEST_PROFILE=0` no longer disables profiling.
 
-- **`make test`** (no `TEST_RUN`): `testprofile go` runs each package with
+- **`make test`**, with or without `TEST_RUN`: `testprofile go` runs each package with
   tests on its own (`go test -json -cpuprofile -memprofile`; one package at a
   time, as the Makefile throttling requires), then prints:
   - packages, tests, failures, wall and CPU time (build included), peak RSS
@@ -73,10 +73,8 @@ Volume test runs are profiled and analysed so the suites stay lean (AGENTS.md):
   - disk used by the Go build cache, `GOTMPDIR` and the kept profiles.
   Profiled runs are not cached by `go test`, so every test executes. Test
   binaries are deleted after profiling (the profiles carry their symbols).
-  `TEST_PROFILE=0` runs plain `go test`.
-- **Script suites** (`test-tui-smoke`, `test-tui-gherkin-features`,
-  `test-ux`): `testprofile run -name …` measures wall time, CPU time and peak
-  RSS of the whole suite and compares them with the previous passing run.
+  Focused/repeated/benchmark runs have separate baselines keyed by package set, filter and flags. Specialised Go targets use `testprofile gotest` to preserve their race, count and benchmark options while collecting CPU/allocation profiles.
+- **Script suites and fixtures**: `testprofile run -name …` measures wall time, CPU time and peak RSS of the complete lifecycle and compares them with the previous passing run. `make fixtures-vibes-report` regenerates only the report against saved results under the same profiling wrapper. Script timing/RSS is not allocation profiling; investigate runtime allocations through `GI_PPROF` or browser allocation tooling when needed. After each run, inspect the printed analysis and saved report before publication.
 
 Everything is kept in `~/.cache/gi-test-profile` (`GI_TEST_PROFILE_DIR`,
 `TEST_PROFILE_DIR`): `history.jsonl` (totals of every run), `latest-<suite>.json`

@@ -48,6 +48,8 @@ type Server struct {
 	indexScheduler        *indexer.Scheduler
 	indexConfigs          map[string]searchstore.ScopeConfig
 	indexClosed           bool
+	workspaceWatchMu      sync.Mutex
+	workspaceWatch        *workspaceWatch
 	webSkills             map[string]loadedWebSkill
 }
 
@@ -162,6 +164,9 @@ func (s *Server) routes() {
 	s.mux.Handle("/static/icon-512.png", http.StripPrefix("/static", fileServer))
 	// Supplied Adaptive Card renderer's lazy SDK URL (public static asset).
 	s.mux.Handle("/static/js/vendor/adaptivecards.min.js", http.StripPrefix("/static", fileServer))
+	// Piclaw pane loaders use /static/dist, /static/css and /static/js.
+	// This alias serves embedded public assets only, never workspace files.
+	s.mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
 			s.serveIndex(w, r)
@@ -221,6 +226,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/api/workspace/rename", guard(s.handleWorkspaceRename))
 	s.mux.HandleFunc("/api/workspace/move", guard(s.handleWorkspaceMove))
 	s.mux.HandleFunc("/api/workspace/stat", guard(s.handleWorkspaceStat))
+	// Protected Piclaw editor/specialised-pane compatibility routes.
+	s.mux.HandleFunc("/workspace/file", guard(s.handleWorkspaceFile))
+	s.mux.HandleFunc("/workspace/raw", guard(s.handleWorkspaceRaw))
+	s.mux.HandleFunc("/workspace/stat", guard(s.handleWorkspaceStat))
 	s.mux.HandleFunc("/sse/stream", guard(s.handleSSEStream))
 	s.mux.HandleFunc("/sse/topics", guard(s.handleTopicSSE))
 	s.mux.HandleFunc("/api/system-metrics", guard(s.handleSystemMetrics))

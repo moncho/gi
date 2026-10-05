@@ -144,6 +144,39 @@ test('Read-only pinned workspace tab survives Close All and preserves draft', as
  await a.getByRole('button',{name:`Close ${paths[0]}`,exact:true}).click();await expect(tabs).toHaveCount(0);await expect(input).toHaveValue('pin keeps draft');await expect(input).toBeFocused();
 });
 
+test('editor compatibility API reads complete text and saves without changing unchanged files', async ({request}) => {
+ const path=`functional-editor-api-${Date.now()}.md`,content='αβ editor bytes\n'.repeat(3000);
+ expect((await request.post('/api/workspace/file',{data:{path:'.',name:path,content}})).status()).toBe(200);
+ try {
+  const original=await (await request.get(`/workspace/file?path=${path}&mode=edit&max=1000000`)).json();
+  expect(original).toMatchObject({path,text:content,content,truncated:false});
+  const unchanged=await request.put('/workspace/file',{data:{path,content}});expect(unchanged.status()).toBe(200);expect((await unchanged.json()).mtime).toBe(original.mtime);
+  const changed=await request.put('/workspace/file',{data:{path,content:'saved by native editor API'}});expect(changed.status()).toBe(200);
+  expect(await (await request.get(`/workspace/raw?path=${path}`)).text()).toBe('saved by native editor API');
+  expect((await (await request.get(`/workspace/stat?path=${path}`)).json()).size).toBe(26);
+  expect((await request.get('/workspace/file?path=../../etc/passwd&mode=edit')).status()).toBe(400);
+  const oversize=await request.put('/workspace/file',{data:{path,content:'x'.repeat(262145)}});expect(oversize.status()).toBe(400);
+  expect(await (await request.get(`/workspace/raw?path=${path}`)).text()).toBe('saved by native editor API');
+ } finally { expect((await request.delete(`/api/workspace/file?path=${path}`)).status()).toBe(200); }
+});
+
+test('editor workspace SSE observes external tool writes without publishing file contents', async ({page,request}) => {
+ const created=await request.post('/api/sessions',{data:{agent_id:`editor-sse-${Date.now()}`}});expect(created.status()).toBe(201);const session=(await created.json()).id;
+ const path=`editor-external-${Date.now()}.md`;
+ await page.goto(BASE_URL);await waitForAppShell(page);
+ await page.evaluate(async id=>{
+  const source=new EventSource(`/sse/stream?chat_jid=gi:${id}`);
+  (window as any).__editorChanges=[];(window as any).__editorEvents=source;
+  source.addEventListener('workspace_update',e=>(window as any).__editorChanges.push(JSON.parse((e as MessageEvent).data)));
+  await new Promise<void>((resolve,reject)=>{source.addEventListener('connected',()=>resolve(),{once:true});source.onerror=()=>reject(new Error('SSE failed'));});
+ },session);
+ try {
+  const written=await request.post('/api/tools/execute',{data:{tool:'write',input:{path,content:'private editor contents'}}});expect((await written.json()).error).toBeFalsy();
+  await expect.poll(()=>page.evaluate(p=>(window as any).__editorChanges.some((x:any)=>x.updates.some((u:any)=>u.changed_paths?.includes(p)||u.changed_paths?.includes('.'))),path)).toBe(true);
+  const updates=await page.evaluate(()=>(window as any).__editorChanges);expect(JSON.stringify(updates)).not.toContain('private editor contents');
+ } finally { await page.evaluate(()=>(window as any).__editorEvents.close());await request.delete(`/api/workspace/file?path=${path}`); }
+});
+
 import { checkWorkspaceMotion } from '../ux/support/workspace-motion.mjs';
 test('workspace close stays left-anchored throughout the animation', async ({ page }, info) => {
   await page.setViewportSize({width:1440,height:900});

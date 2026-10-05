@@ -43,6 +43,8 @@ func (s *Server) handleSSEStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
+	workspaceChanges, stopWorkspaceChanges := s.subscribeWorkspaceChanges()
+	defer stopWorkspaceChanges()
 	var lifecycle <-chan topics.Envelope
 	if sessionID != "" && s.turns.Topics() != nil {
 		channel, unsubscribe := s.turns.Topics().Subscribe(ctx, "*", topics.SubscribeOptions{SessionID: sessionID, Buffer: 64})
@@ -61,6 +63,13 @@ func (s *Server) handleSSEStream(w http.ResponseWriter, r *http.Request) {
 			return
 		case <-heartbeat.C:
 			writeSSE(w, "heartbeat", map[string]any{"ts": time.Now().UnixMilli()})
+			flusher.Flush()
+		case paths, ok := <-workspaceChanges:
+			if !ok {
+				workspaceChanges = nil
+				continue
+			}
+			writeSSE(w, "workspace_update", s.workspaceUpdatePayload(paths))
 			flusher.Flush()
 		case event, ok := <-lifecycle:
 			if !ok {

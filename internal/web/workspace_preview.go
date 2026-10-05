@@ -90,30 +90,52 @@ func (s *Server) handleWorkspacePreview(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+	q := r.URL.Query()
+	edit := q.Get("mode") == "edit"
 	limit := 20000
-	if raw := r.URL.Query().Get("max_bytes"); raw != "" {
+	if edit {
+		// An editor must receive the complete document, never a preview that
+		// could silently replace a larger file when saved.
+		limit = workspaceMaxEditBytes
+	} else if raw := q.Get("max_bytes"); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil || n < 1 || n > workspacePreviewLimit {
 			writeJSON(w, 400, map[string]any{"error": "invalid preview limit"})
 			return
 		}
 		limit = n
+	} else if raw := q.Get("max"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil {
+			limit = min(max(n, 1024), 64*1024)
+		}
 	}
 	f, info, path, err := s.openWorkspaceFile(r.URL.Query().Get("path"))
 	if err != nil {
 		status := http.StatusBadRequest
 		if errors.Is(err, os.ErrNotExist) {
-			status = http.StatusInternalServerError
-		} // preserve legacy file API status
+			status = http.StatusInternalServerError // legacy preview status
+			if edit {
+				status = http.StatusNotFound
+			}
+		}
 		writeJSON(w, status, map[string]any{"error": "Unable to read workspace file"})
 		return
 	}
 	defer f.Close()
+	if edit && info.Size() > workspaceMaxEditBytes {
+		writeJSON(w, 400, map[string]any{"error": "File too large to edit"})
+		return
+	}
 	// Read at least a sniff window, never more than the preview bound plus a
 	// short UTF-8 tail. Large files are not read in full for metadata/preview.
 	raw, err := io.ReadAll(io.LimitReader(f, int64(max(512, limit)+utf8.UTFMax)))
 	if err != nil {
 		writeJSON(w, 500, map[string]any{"error": "Unable to read workspace file"})
+		return
+	}
+	if edit && len(raw) > workspaceMaxEditBytes {
+		// The file may have grown after stat while it was being read.
+		writeJSON(w, 400, map[string]any{"error": "File too large to edit"})
 		return
 	}
 	contentType := workspaceContentType(path, raw[:min(512, len(raw))])
@@ -136,14 +158,22 @@ func (s *Server) handleWorkspacePreview(w http.ResponseWriter, r *http.Request) 
 			kind = "text"
 		}
 	}
-	preview := map[string]any{"path": path, "kind": kind, "content_type": contentType, "size": info.Size(), "mtime": info.ModTime().UTC().Format(time.RFC3339Nano)}
+	if edit && kind != "text" {
+		writeJSON(w, 400, map[string]any{"error": "File is not editable text"})
+		return
+	}
+	preview := map[string]any{"path": path, "name": filepath.Base(path), "kind": kind, "content_type": contentType, "size": info.Size(), "mtime": info.ModTime().UTC().Format(time.RFC3339Nano)}
 	if kind == "text" {
 		text := raw[:min(limit, len(raw))]
 		for len(text) > 0 && !utf8.Valid(text) {
 			text = text[:len(text)-1]
 		}
-		preview["text"], preview["content"] = string(text), string(text) // legacy content alias
+		value := string(text)
+		preview["text"], preview["content"] = value, value // legacy content alias
 		preview["truncated"] = info.Size() > int64(len(text))
+		if edit {
+			preview["size"], preview["truncated"] = len(raw), false
+		}
 	}
 	if kind == "image" {
 		preview["url"] = "/api/workspace/raw?path=" + url.QueryEscape(path)

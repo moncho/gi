@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // Workspace writes follow Piclaw's explorer API (runtime/src/channels/web/workspace/
@@ -163,12 +164,32 @@ func (s *Server) workspaceUpdate(root *os.Root, pathParam string, content *strin
 	if len(*content) > workspaceMaxEditBytes {
 		return workspaceErr(400, "File too large to edit")
 	}
+	if !utf8.ValidString(*content) || strings.ContainsRune(*content, 0) {
+		return workspaceErr(400, "File is not editable text")
+	}
 	info, err := root.Stat(path)
 	if err != nil {
 		return workspaceErr(404, "File not found")
 	}
 	if info.IsDir() {
 		return workspaceErr(400, "Path is a directory")
+	}
+	if !info.Mode().IsRegular() {
+		return workspaceErr(400, "File is not editable text")
+	}
+	if info.Size() == int64(len(*content)) {
+		f, err := root.Open(path)
+		if err != nil {
+			return workspaceErr(500, "Failed to read file")
+		}
+		previous, err := io.ReadAll(io.LimitReader(f, workspaceMaxEditBytes+1))
+		f.Close()
+		if err != nil {
+			return workspaceErr(500, "Failed to read file")
+		}
+		if string(previous) == *content {
+			return workspaceResult{200, map[string]any{"path": slashPath(path), "name": filepath.Base(path), "size": info.Size(), "mtime": info.ModTime().UTC().Format(time.RFC3339Nano)}}
+		}
 	}
 	if err := root.WriteFile(path, []byte(*content), info.Mode().Perm()); err != nil {
 		return workspaceErr(500, "Failed to write file")

@@ -1,6 +1,6 @@
 # Gi features and Piclaw parity
 
-Updated: 2026-10-04, at commit `f106199`. Gi's terminal follows Pi 1.0.1 (`@earendil-works/pi-coding-agent`) and its browser follows Piclaw 3.2.5. Browser behaviour is measured with the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite.
+Updated: 2026-10-05, after runtime commit `423e8bf`. Gi's terminal follows Pi 1.0.1 (`@earendil-works/pi-coding-agent`) and its browser follows Piclaw 3.2.5. Browser behaviour is measured with the shared [fixtures-vibes](https://github.com/rcarmo/fixtures-vibes) suite.
 
 Gi shares pinned Piclaw browser components and Pi/Piclaw configuration files, but has its own Go runtime, SQLite state and terminal UI. It does not replace Piclaw. The browser and the terminal share one turn engine; their interaction coverage is tracked separately.
 
@@ -17,22 +17,25 @@ Gi shares pinned Piclaw browser components and Pi/Piclaw configuration files, bu
 
 `make fixtures-vibes` runs the suite pinned at `references/fixtures-vibes` (`6e49ae1`) on Chromium and WebKit at phone, tablet and desktop sizes. `tests/fixtures-vibes/profile.json` declares the capabilities Gi claims, and `tests/fixtures-vibes/skips.json` lists every scenario Gi does not pass, with its reason. A failure that is not listed, a capability skip that is not listed, or a listed scenario that now passes fails the report gate.
 
-The last full run (2026-10-04, 13:24 UTC, commit `88e5b13`, 57.7 minutes) reported:
+The last full run started on 2026-10-04 at 20:46:28 UTC with Gi `5a68f4005a9fdab60d72808579c0c483536f07d1` and fixtures `6e49ae1dfb0c6ca900a9173ecc80817c12fd77cb`. It finished on 2026-10-05 after 388.5 minutes. Playwright recorded 1,233 passed tests, 280 failed, 71 skipped and zero flaky results across the six projects.
 
-| Scenarios | Passed | Failed | Skipped | Listed failing | No suite test yet |
-|---:|---:|---:|---:|---:|---:|
-| 329 | 158 | 1 | 85 | 7 | 78 |
+| Report | Scenarios | Passed | Failed (unlisted) | Skipped | Listed failing | No suite test yet |
+|---|---:|---:|---:|---:|---:|---:|
+| Original full4 gate | 316 | 185 | 1 | 3 | 49 | 78 |
+| Same results, reconciled skips on 2026-10-05 | 316 | 185 | 0 | 3 | 50 | 78 |
 
-The one failure was `@ux-chat-lifecycle-009` on webkit-phone only: `page.goto` stopped with "WebKit encountered an internal error" while opening the second session. It passed in the other five projects, in every earlier run, and in 10 of 10 repeats on webkit-phone afterwards, so it is recorded as a single browser-engine fault and is not listed in `skips.json`. There are no other gate problems: every unpassed scenario is listed. Compared with the 09:18 UTC run on `019619c`, `@ux-compose-011` and `@ux-settings-004/016/018/019` now pass in all six projects, the 52 previously unlisted capability skips are listed, and `@cap-touch` is claimed (`@ux-mobile-001/004/005/006` pass; `@ux-mobile-002` was gi#42). Since that run, the session popup is a listbox as in Piclaw 3.2.5 (gi#42 fixed) and `@ux-mobile-002` passes in a focused run.
+The original gate failed because mandatory-core scenarios still used `capability-absent`, `@ux-extra-004/005` and `@ux-editor-007` had stale skips despite passing, and Vim scenario `@ux-editor-009` failed in all six projects without an issue-backed entry. The corrected skips file uses `not-implemented` for core workflows, removes those three passing entries and adds editor009 under [gi#46](https://github.com/rcarmo/gi/issues/46). Re-running only `make -C references/fixtures-vibes report` against the existing `compliance.json` gives `Gate: OK`; no browser tests were rerun. This gate accepts the issue-backed failure inventory, not feature completeness. Reports and the raw results are in `references/fixtures-vibes/test-results/`; an archived report is in [full4](internal/fixtures-vibes-full4.md).
 
-Since that full run, focused checks also pass for `/theme` and `/tint` (90/90), agent-avatar manifest icons (54/54), and message deletion including confirmed cascade and cancel/retry (36/36). The corresponding skips have been removed. The table above remains the recorded full-run result.
+The earlier 13:24 UTC run on `88e5b13` had a single `@ux-chat-lifecycle-009` WebKit `page.goto` engine error. It passed in the other five projects and in 10 of 10 repeats afterwards. Full4 passes that scenario. Focused checks also passed for `/theme` and `/tint` (90/90), avatar manifest icons (54/54), and confirmed cascade deletion with cancel/retry (36/36).
 
 Scenarios Gi does not pass:
 
 | Reason | Scenarios | Detail |
 |---|---|---|
-| Not implemented | `@ux-extra-001` | No `/btw` side conversation ([gi#40](https://github.com/rcarmo/gi/issues/40)). |
-| Capability absent | 53 scenarios | Planned, one issue each: web terminal ([gi#45](https://github.com/rcarmo/gi/issues/45)), CodeMirror editor with vim mode ([gi#46](https://github.com/rcarmo/gi/issues/46)), VNC ([gi#47](https://github.com/rcarmo/gi/issues/47)), Plan sidebar ([gi#48](https://github.com/rcarmo/gi/issues/48)), widgets ([gi#49](https://github.com/rcarmo/gi/issues/49)). Windows shell detection is built but not tested on Windows ([gi#50](https://github.com/rcarmo/gi/issues/50)). Adaptive Cards, image annotation and text highlights are removed from the pinned suite; their 14 skip entries are gone. |
+| Not implemented | 50 entries | `/btw` ([gi#40](https://github.com/rcarmo/gi/issues/40)), terminal ([gi#45](https://github.com/rcarmo/gi/issues/45)), CodeMirror/Vim editor ([gi#46](https://github.com/rcarmo/gi/issues/46)), VNC ([gi#47](https://github.com/rcarmo/gi/issues/47)) and editable Plan sidebar ([gi#48](https://github.com/rcarmo/gi/issues/48)). Plan and widget backends exist; independent browser acceptance of the newer frontend is still required. |
+| Capability absent | 2 entries | `@ux-shell-env-002/007`: Windows builds and shell detection exist, but no Windows host test ([gi#50](https://github.com/rcarmo/gi/issues/50)). |
+
+`@ux-shell-008` is skipped by the suite in all six projects. Adaptive Cards, image annotation and text highlights are removed from this suite pin; their 14 former skip entries are gone.
 
 Scenarios with no suite test have no shared browser evidence either way.
 
@@ -47,8 +50,8 @@ Scenarios with no suite test have no shared browser evidence either way.
 | Models and context | Implemented: session-local model and thinking selection, registry and context metadata, fit checks, and Piclaw 3.2.5's context meter. The meter can start compaction and shows an estimate after one. | The thinking regression tests predate Pi's effective default level and need updating. |
 | Queue and Stop | Implemented: durable follow-ups, reorder and cancel, run-bound steering, return to draft and run-bound Stop with explicit Resume. See [contract](internal/web-stop-queue.md). | — |
 | Compaction | Implemented: automatic and manual compaction with model-written summaries (Pi's cut point and prompts), persisted context checkpoints, progress and cancel. See [compaction](internal/compaction.md). | — |
-| Timeline and media | Partial: Markdown, tables and code copy; image lightbox; stored media and resource links; tool timing; turn-outcome chips; single-message deletion; browser speech. | No cascade deletion ([gi#35](https://github.com/rcarmo/gi/issues/35)), iPad annotation or text highlights. Physical audio is unverified. |
-| Cards and widgets | Partial: Adaptive Cards render, and unsupported Submit actions are rejected visibly. | No tool or API posts cards or dashboard widgets. |
+| Timeline and media | Partial: Markdown, tables and code copy; image lightbox; stored media and resource links; tool timing; turn-outcome chips; single-message and confirmed cascade deletion; browser speech. | No iPad annotation or text highlights. Physical audio is unverified. See [cascade deletion](internal/message-deletion.md). |
+| Cards and widgets | Partial: Adaptive Cards render, and unsupported Submit actions are rejected visibly. Dashboard widgets have a durable tool, authenticated artifact lookup and post-commit SSE. | Widget bridge, isolation and lifecycle need independent acceptance on the newer frontend ([gi#49](https://github.com/rcarmo/gi/issues/49)). See [widgets](internal/dashboard-widgets.md). |
 | Workspace | Partial: rooted tree with hidden files, bounded previews, read-only tabs, folder hints, uploads within a configurable limit, explicit lexical index and reindex. | No document editing, popouts or docking. Plain code workspaces index nothing by default ([gi#22](https://github.com/rcarmo/gi/issues/22)). No vector search. |
 | Settings | Implemented: General (identity, upload limit), Models (filtered), Appearance (theme presets, tint, output padding; stored in the browser; also set by `/theme` and `/tint`), Keyboard (shortcut editing), Compaction, Providers (OpenAI and Anthropic API keys), Keychain, Environment and Authentication. | Providers cannot set up OAuth or custom providers; use `/login` in the terminal. |
 | Keychain and shell environment | Implemented: Piclaw-format encrypted keychain, shell substitution of named secrets, and environment overrides applied to every shell path. See [keychain](internal/keychain.md) and [shell environment](internal/shell-environment.md). | — |
@@ -56,7 +59,7 @@ Scenarios with no suite test have no shared browser evidence either way.
 | Browser authentication | Partial: single-user TOTP sign-in, HttpOnly/Strict cookie, transport and origin checks, transactional auth storage, browser-owner proof, Settings logout and loopback-only initial owner setup. | No QR setup, family accounts or broader session management. |
 | Multiple passkeys | Partial: pure-Go WebAuthn registration, login and re-authentication; add, list, rename and remove with fresh proof; last-factor protection; Settings and login controls tested with Chromium virtual authenticators. See [contract](internal/passkeys.md). | WebKit ceremonies and physical or synced keys are untested. |
 | Skills, tools and scripting | Partial: native tools (including Pi's edit tool and the messages tool), embedded Joker/JavaScript bridges, process extensions and hooks, user and project skills, managed VFS and browser skill commands. | No general Pi or Piclaw package compatibility. |
-| Operator integrations | Partial: backend routing, topics and inbound-work primitives. | Piclaw's plan sidebar, scheduled tasks, dashboard, SSH/Proxmox/Portainer and remote-agent surfaces are not ported. |
+| Operator integrations | Partial: backend routing, topics and inbound-work primitives; transactional per-session Plan storage/tool/API with SSE. | Editable Plan browser workflow needs acceptance ([gi#48](https://github.com/rcarmo/gi/issues/48)). Scheduled tasks, SSH/Proxmox/Portainer and remote-agent surfaces are not ported. See [Plan](internal/session-plan.md). |
 
 An instance with no enrolled owner permits application access. The CLI binds to loopback by default; `make start` binds to `0.0.0.0`. Use `BIND=127.0.0.1` until authentication is configured. Serving HTTPS does not enrol an owner.
 

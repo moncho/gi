@@ -5,7 +5,8 @@
 # CPU subset so the machine stays usable and runs are reproducible. Tune per
 # invocation, e.g. `make test CPU_SET=0-3 CPU_PROCS=4` or `CPU_NICE=0`.
 #   CPU_NICE   nice level for every recipe
-#   CPU_SET    taskset CPU list every recipe is pinned to
+#   CPU_SET    taskset CPU list every recipe is pinned to (skipped where
+#              taskset is unavailable, e.g. macOS, which has no CPU pinning)
 #   CPU_PROCS  GOMAXPROCS and Go build parallelism (-p)
 # Make itself is .NOTPARALLEL, and test* targets run one Go package at a
 # time (-p=1), so test suites always execute sequentially.
@@ -13,8 +14,10 @@ CPU_NICE ?= 10
 CPU_SET ?= 0-1
 CPU_PROCS ?= 2
 .NOTPARALLEL:
-SHELL := /usr/bin/nice
-.SHELLFLAGS := -n $(CPU_NICE) /usr/bin/taskset -c $(CPU_SET) /usr/bin/env bash -c
+# Arguments go in SHELL itself, not .SHELLFLAGS: make 3.81 (macOS's
+# /usr/bin/make) ignores .SHELLFLAGS and runs `$(SHELL) -c '<recipe>'`.
+TASKSET := $(shell command -v taskset 2>/dev/null)
+SHELL := /usr/bin/env nice -n $(CPU_NICE) $(if $(TASKSET),$(TASKSET) -c $(CPU_SET)) bash
 export GOMAXPROCS := $(CPU_PROCS)
 export GOFLAGS += -p=$(CPU_PROCS)
 test%: export GOFLAGS := $(filter-out -p=%,$(GOFLAGS)) -p=1

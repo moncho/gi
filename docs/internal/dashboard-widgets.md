@@ -64,11 +64,11 @@ Authenticated `GET /api/sessions/{session}/widgets/{widget_id}` returns:
 Front-end bridge contract:
 
 - `widget.submit`: send validated non-empty text to the origin session's existing prompt endpoint, with its usual client request ID and queue admission rules.
-- `widget.request_refresh`: fetch the stored artifact and deliver a host update to the iframe. No server-side JavaScript execution or arbitrary callback dispatch.
+- `widget.request_refresh`: rebuild the dashboard snapshot through host session routes and deliver a host update. The authenticated artifact lookup is host-only, not fetched by the opaque-origin frame.
 - `widget.close`: close the pane locally. No HTTP request and no queue mutation.
 
-The front-end follows Piclaw 3.2.5's sandbox and bridge policy. Interactive frames use scripts and same-origin permissions; keyed messages are matched by session key, and source-window checking applies to unkeyed messages. This permits access to the application origin. Rui's cross-runtime sandbox decision is separate from the backend contract.
+The shared frontend applies Rui's strict sandbox: interactive HTML frames allow scripts but never `allow-same-origin`. The host checks iframe source and session key for every bridge message. Public embedded JavaScript grants `Access-Control-Allow-Origin: *`, including Brotli/gzip responses, so opaque-origin frames can import modules. Authenticated APIs grant no CORS.
 
 ## Verification
 
-`make test-dashboard-widgets` covers validation, transaction rollback, persistence across reopen, duplicate IDs, session isolation, HTTP authentication, SSE publication after commit and completion after the tool batch. The broader store/tools/turn/web suites pass. Browser lifecycle and bridge acceptance still need the front-end implementation before claiming the capability.
+`make test-dashboard-widgets` covers validation, transaction rollback, persistence across reopen, duplicate IDs, session isolation, HTTP authentication, SSE publication after commit and completion after the tool batch. Independent Plan/widget/extra014 acceptance passes 66/66 across Chromium/WebKit phone, tablet and desktop at fixtures4259e82; the profile claims `@cap-widgets`. CORS/auth/Plan/widget handler checks pass 15/15; full Go tests pass 2,122, and functional tests pass 142 with 11 skips. See [acceptance and profiles](classic-ui-acceptance.md).

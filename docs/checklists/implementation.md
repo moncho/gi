@@ -709,7 +709,8 @@ Direct port of Piclaw's `/meters` functionality. On by default until slash comma
 - [ ] Diff view
 - [ ] Split panes
 - [x] File pills in timeline
-- [ ] Interactive widgets
+- [x] Interactive widgets (durable tool/artifacts, strict sandbox, host bridge; six-project acceptance 2026-10-05)
+- [x] Session Plan sidebar (edit/save/progress, captured-session submit; six-project acceptance 2026-10-05)
 - [ ] Inline charting
 - [x] Search UI (scoped timeline search)
 - [ ] Schedule management commands

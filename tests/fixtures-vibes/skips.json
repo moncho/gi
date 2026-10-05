@@ -1,17 +1,9 @@
 {
   "runtime": "gi",
-  "fixturesVibes": "6e49ae1dfb0c6ca900a9173ecc80817c12fd77cb",
+  "fixturesVibes": "4259e825964d2b60dd6c6f7242e2b1daf4280a7d",
   "skips": [
     {"id": "@ux-shell-004", "reason": "not-implemented", "detail": "Gi has no web Terminal or VNC callbacks.", "issue": "https://github.com/rcarmo/gi/issues/45"},
     {"id": "@ux-shell-007", "reason": "not-implemented", "detail": "Gi has read-only preview tabs but no web Terminal pane.", "issue": "https://github.com/rcarmo/gi/issues/45"},
-    {"id": "@ux-shared-009", "reason": "not-implemented", "detail": "Plan backend exists; this pinned browser does not provide the editable Plan sidebar workflow.", "issue": "https://github.com/rcarmo/gi/issues/48"},
-    {"id": "@ux-shared-010", "reason": "not-implemented", "detail": "Plan backend exists; this pinned browser does not provide the editable Plan sidebar workflow.", "issue": "https://github.com/rcarmo/gi/issues/48"},
-    {"id": "@ux-shared-011", "reason": "not-implemented", "detail": "Plan backend exists; this pinned browser does not provide the editable Plan sidebar workflow.", "issue": "https://github.com/rcarmo/gi/issues/48"},
-    {"id": "@ux-shared-012", "reason": "not-implemented", "detail": "Plan backend exists; this pinned browser does not provide the editable Plan sidebar workflow.", "issue": "https://github.com/rcarmo/gi/issues/48"},
-    {"id": "@ux-original-009", "reason": "not-implemented", "detail": "Plan backend exists; this pinned browser does not provide the editable Plan sidebar workflow.", "issue": "https://github.com/rcarmo/gi/issues/48"},
-    {"id": "@ux-original-010", "reason": "not-implemented", "detail": "Plan backend exists; this pinned browser does not provide the editable Plan sidebar workflow.", "issue": "https://github.com/rcarmo/gi/issues/48"},
-    {"id": "@ux-original-011", "reason": "not-implemented", "detail": "Plan backend exists; this pinned browser does not provide the editable Plan sidebar workflow.", "issue": "https://github.com/rcarmo/gi/issues/48"},
-    {"id": "@ux-original-012", "reason": "not-implemented", "detail": "Plan backend exists; this pinned browser does not provide the editable Plan sidebar workflow.", "issue": "https://github.com/rcarmo/gi/issues/48"},
     {"id": "@ux-extra-001", "reason": "not-implemented", "detail": "No /btw side conversation yet (panel UI vendored, no backend).", "issue": "https://github.com/rcarmo/gi/issues/40"},
     {"id": "@ux-shell-009", "reason": "not-implemented", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor.", "issue": "https://github.com/rcarmo/gi/issues/46"},
     {"id": "@ux-workspace-010", "reason": "not-implemented", "detail": "Needs the in-browser editor (Open in editor, editable tabs); Gi has read-only preview tabs and does not claim @cap-editor.", "issue": "https://github.com/rcarmo/gi/issues/46"},

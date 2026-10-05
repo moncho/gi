@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"io"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -37,6 +38,14 @@ func (h precompressedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		h.next.ServeHTTP(w, r)
 		return
 	}
+	// Opaque-origin widget iframes may import public JavaScript modules. This
+	// handler only serves embedded assets; authenticated API routes never pass
+	// through it. Do not grant CORS to missing files or non-script assets.
+	if ext := path.Ext(name); ext == ".js" || ext == ".mjs" {
+		if info, err := fs.Stat(h.root, name); err == nil && !info.IsDir() {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+	}
 	var chosen, available []string
 	for _, v := range encodedVariants {
 		if _, err := fs.Stat(h.root, name+v.suffix); err == nil {
@@ -53,10 +62,22 @@ func (h precompressedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		h.next.ServeHTTP(w, r)
 		return
 	}
-	data, err := fs.ReadFile(h.root, name+chosen[1])
+	file, err := h.root.Open(name + chosen[1])
 	if err != nil {
 		h.next.ServeHTTP(w, r)
 		return
+	}
+	defer file.Close()
+	// Embedded files implement ReadSeeker; serve directly instead of copying
+	// the entire compressed asset into a fresh buffer for every request.
+	content, ok := file.(io.ReadSeeker)
+	if !ok {
+		data, err := io.ReadAll(file)
+		if err != nil {
+			h.next.ServeHTTP(w, r)
+			return
+		}
+		content = bytes.NewReader(data)
 	}
 	ctype := mime.TypeByExtension(path.Ext(name))
 	if ctype == "" {
@@ -64,7 +85,7 @@ func (h precompressedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 	w.Header().Set("Content-Type", ctype)
 	w.Header().Set("Content-Encoding", chosen[0])
-	http.ServeContent(w, r, name, time.Time{}, bytes.NewReader(data))
+	http.ServeContent(w, r, name, time.Time{}, content)
 }
 
 // acceptsEncoding reports whether an Accept-Encoding header allows enc

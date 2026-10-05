@@ -8,8 +8,9 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
-// The bundled KaTeX must be the installed package, not a hand-kept version.
-const katexVersion = JSON.parse(readFileSync(new URL('../../node_modules/katex/package.json', import.meta.url), 'utf8')).version;
+// The shared frontend owns the installed renderer; root dependencies are
+// test tooling and may have a different KaTeX version.
+const katexVersion = JSON.parse(readFileSync(new URL('../../references/fixtures-vibes/ui/classic/node_modules/katex/package.json', import.meta.url), 'utf8')).version;
 import { BASE_URL, loadPageCollectingErrors, waitForAppShell } from './helpers';
 
 test.describe('App shell', () => {

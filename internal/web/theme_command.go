@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	giui "github.com/rcarmo/gi/references/fixtures-vibes/ui/gi"
+	giui "github.com/rcarmo/gi/references/fixtures-vibes/ui/classic"
 	"net/http"
 	"regexp"
 	"strings"

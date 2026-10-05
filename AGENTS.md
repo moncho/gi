@@ -19,7 +19,7 @@ internal/
 tests/functional/    Playwright functional test suite
 tests/web-regression/  Gi-only browser regressions
 tests/fixtures-vibes/  fixtures-vibes profile, skips and seed script
-references/fixtures-vibes/  shared browser compliance suite and the web front-end (ui/gi; git submodule)
+references/fixtures-vibes/  shared browser compliance suite and the web front-end (ui/classic; git submodule)
 scripts/             build/check scripts
 docs/
   adr/               architecture decision records
@@ -46,7 +46,7 @@ Makefile             canonical build/test/run interface
 ### Piclaw UX parity
 - Parts that are ported must be **100% identical** to Piclaw — same DOM, same classes, same behavior, same visual output
 - No approximations — if it's in gi it matches Piclaw exactly; if it's not ready it simply isn't in gi yet
-- **The web front-end is not edited here.** Its sources, build, embedded assets and front-end unit tests live in rcarmo/fixtures-vibes `ui/gi` (owned by the fixtures-vibes front-end owner) and reach Gi only through `references/fixtures-vibes`; Go embeds it via `github.com/rcarmo/gi/references/fixtures-vibes/ui/gi` (`giui.Static`, `giui.ThemeCatalogue`). Change it upstream, then bump the submodule.
+- **The web front-end is not edited here.** Its sources, build, embedded assets and front-end unit tests live in rcarmo/fixtures-vibes `ui/classic` (owned by the fixtures-vibes front-end owner) and reach Gi only through `references/fixtures-vibes`; Go embeds it via `github.com/rcarmo/gi/references/fixtures-vibes/ui/classic` (`giui.Static`, `giui.ThemeCatalogue`). Change it upstream, then bump the submodule.
 - Future Piclaw updates should drop in with zero diff on gi's side
 
 ### Go-native runtime

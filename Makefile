@@ -53,8 +53,8 @@ endif
 
 GO ?= go
 BUN ?= bun
-# Web front-end: owned in rcarmo/fixtures-vibes (ui/gi), consumed only through this submodule.
-GI_UI := references/fixtures-vibes/ui/gi
+# Web front-end: owned in rcarmo/fixtures-vibes (ui/classic), consumed only through this submodule.
+GI_UI := references/fixtures-vibes/ui/classic
 PLAYWRIGHT ?= scripts/run-playwright.sh
 
 # ── Runtime defaults ────────────────────────────────────────────────────
@@ -271,7 +271,7 @@ test-web-send-receipts:
 test-web-basic-controls:
 	$(MAKE) test-ux-steer UX_LOCAL_ENV="GI_UX_BASIC_HTTP=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN))" UX_LOCAL_SPEC=tests/web-regression/basic-http-control.spec.mjs
 test-web-http-helpers:
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/random-id.test.ts tests/ux/support/drafts.test.ts tests/ux/support/send-recovery.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/random-id.test.ts tests/unit/drafts.test.ts tests/unit/send-recovery.test.ts
 
 test-web-basic-send: test-instance-start
 	@GI_TEST_URL=http://127.0.0.1:$(TEST_PORT) $(PLAYWRIGHT) test tests/functional/18-basic-http-send.spec.ts tests/functional/19-http-delivery.spec.ts --reporter=line --output=$(TEST_RESULTS)/basic-http-send; \
@@ -362,7 +362,7 @@ test-ux-settings-title:
 .PHONY: test-conversation-projection
 test-conversation-projection:
 	$(GO) test $(RACE) -count=3 ./internal/store ./internal/web -run 'TestConversation|TestMessagePage'
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/conversation.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/conversation.test.ts
 
 .PHONY: test-provider-retry-oracle test-provider-retry
 test-provider-retry-oracle:
@@ -502,7 +502,7 @@ build-pane-host-fixture:
 .PHONY: test-tool-activity
 test-tool-activity:
 	$(GO) test $(RACE) -count=3 ./internal/store ./internal/web ./internal/turn -run 'ToolActivity|ToolPreview|SessionActivity|ToolTerminal'
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/tool-activity.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/tool-activity.test.ts
 
 .PHONY: test-ux-tool-terminal
 test-ux-tool-terminal: test-tool-activity
@@ -617,7 +617,7 @@ test-pi-preparation-steer:
 .PHONY: test-ux-queue-return
 
 test-ux-queue-return:
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/drafts.test.ts tests/ux/support/queue-return.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/drafts.test.ts tests/unit/queue-return.test.ts
 	$(MAKE) test-ux-parity-regression UX_PARITY_ARGS='tests/web-regression/queue-return.spec.mjs'
 
 .PHONY: diagnose-webkit-unload
@@ -799,11 +799,11 @@ test-pixel-helpers:
 
 .PHONY: test-context-control-helpers
 test-context-control-helpers:
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/context-usage.test.ts tests/ux/support/compaction-state.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/context-usage.test.ts tests/unit/compaction-state.test.ts
 
 .PHONY: test-notification-helpers test-ux-notifications
 test-notification-helpers:
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/notifications.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/notifications.test.ts
 
 test-ux-notifications: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
@@ -812,7 +812,7 @@ test-ux-notifications: build-web
 
 .PHONY: test-voice-input-helpers test-ux-voice-input
 test-voice-input-helpers:
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/voice-input.test.ts tests/ux/support/voice-adapter.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/voice-input.test.ts tests/unit/voice-adapter.test.ts
 
 test-ux-voice-input: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
@@ -821,7 +821,7 @@ test-ux-voice-input: build-web
 
 .PHONY: test-ux-session-panel test-session-panel-helpers
 test-session-panel-helpers:
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/session-panel.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/session-panel.test.ts
 
 test-ux-session-panel: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
@@ -830,7 +830,7 @@ test-ux-session-panel: build-web
 
 .PHONY: test-ux-model-panel test-model-panel-helpers
 test-model-panel-helpers:
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/model-panel.test.ts tests/ux/support/model-picker.test.ts tests/ux/support/model-accessibility.test.ts tests/ux/support/model-thinking.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/model-panel.test.ts tests/unit/model-picker.test.ts tests/unit/model-accessibility.test.ts tests/unit/model-thinking.test.ts
 
 .PHONY: test-ux-compose-escape
 
@@ -851,7 +851,7 @@ test-ux-model-panel: build-web
 
 .PHONY: test-ux-compose-surface test-compose-surface-helpers
 test-compose-surface-helpers:
-	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/compose-surface.test.ts tests/ux/support/accent-contrast.test.ts tests/ux/support/theme-text-contrast.test.ts
+	$(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/compose-surface.test.ts tests/unit/accent-contrast.test.ts tests/unit/theme-text-contrast.test.ts
 
 test-ux-compose-surface: build-web
 	mkdir -p $(dir $(UX_LOCAL_BIN))
@@ -897,7 +897,7 @@ test-passkey-login-boundary: build-web test-passkey-criteria
 	GI_UX_PASSKEYS=1 GI_UX_SERVER_BIN=$(abspath $(UX_LOCAL_BIN)) $(PLAYWRIGHT) test --config playwright.web-regression.config.mjs tests/web-regression/passkeys.spec.mjs --project=chromium-phone --project=chromium-tablet --project=chromium-desktop --grep 'passkey login cancellation owns'
 
 test-passkey-criteria:
-	$(BUN) test tests/ux/support/passkey-criteria.test.ts && ($(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/ux/support/passkey-lifecycle.test.ts)
+	$(BUN) test tests/ux/support/passkey-criteria.test.ts && ($(MAKE) -s -C $(GI_UI) deps && cd $(GI_UI) && $(BUN) test tests/unit/passkey-lifecycle.test.ts)
 
 test-ux-passkeys: build-web test-passkey-criteria
 	$(GO) build -o $(UX_LOCAL_BIN) ./tests/ux/server
